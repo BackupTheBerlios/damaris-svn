@@ -16,7 +16,7 @@
    \ingroup states
    The state sequences consist of states and again sequences. A state is defined by a number of state_atom objects.
    This definition results in a file with nested sections, that is parsed into a tree formed by the state objects.
-   The leaves of the tree are normaly state_atom objects.
+   The leaves of the tree are normaly state_atom objects. These state_atom objects define the state of a device.
    
    An example for a sequence definition is:
 \verbatim<?xml version="1.0" encoding="ISO-8859-1"?>
@@ -33,6 +33,9 @@
      <analogout channel="1" f="1e6" p="0"/>
      <analogout channel="2" f="1e6" p="90"/>
     </state>
+    <state time="1e-3">
+      <analogin f="5e6" s="4096"/>
+    <state/>
   </sequent>
 </sequent>\endverbatim
 
@@ -54,7 +57,8 @@ attributes must be quoted (single or double quotes). If such a section has no co
 before the closing angle, e.g. \<ttlout value="7"/\>.
 \n
 Of course outside these tags, text can be supplied. By now, xml_state_reader ignores this text.
-Inside a state section the definition of the state is collected. How these states are merged is machine dependent.
+Inside a %state section the definition of the state is collected. Implemented are ttlout, analogout and
+analogin. One element can occurr several times. How these states are merged is machine dependent.
 
 So a state sequence is defined by <b>one sequent</b> section, containing again serval <b>state</b> or <b>sequent</b>
 sections. The <b>state</b> sections must not contain other <b>state</b> sections or <b>sequent</b> sections.

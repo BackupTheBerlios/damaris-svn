@@ -8,7 +8,7 @@
 
 .PHONY: clean install all
 
-SUBDIRS=core drivers machines tests control doc tools
+SUBDIRS=core drivers machines tests doc tools
 PREFIX=$(shell cd && pwd)/nmr_software
 
 all:
