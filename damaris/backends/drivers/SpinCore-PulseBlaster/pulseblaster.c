@@ -166,35 +166,26 @@ static char amcc_inb(unsigned int address) {
   int XFER_ERROR = 0;
   int RECV_POLLING = 0;
 
-  unsigned int OGMB = 0x0C;
   unsigned int CHK_RECV = 0x1F;
   unsigned int SIG_TRNS = 0x0F;
   unsigned int ICMB = 0x1C;
 
-  unsigned int CLEAR31 = 0x00000001;
   unsigned int CLEAR24 = 0x000000FF;
-  unsigned int CLEAR28 = 0x0000000F;
 
   unsigned int BIT1 = 0x00000002;
   unsigned int INV1 = 0x000000FD;
 
-  //unsigned int SET_XFER = 0x01000000;
-  unsigned int SET_XFER = 0x1;
   unsigned short READ_ADDR = 0x9;
 
   int Toggle = 0;
   int Toggle_Temp = 0;
 
-  unsigned int Temp_Address = address;
   unsigned int Temp_Data = 0;
 
   // CHEK FOR 1 in MD1
 
-  //pci_outp(SET_ADDR_REG, address); // Set address for incoming data
-  //pci_outp(2,1);
-  outb(address, base_address+8);
-  //pci_outp(4,0);
-  outb(0,base_address+READ_ADDR); // Tell board to start a read cycle
+  amcc_outb(address, 8);
+  amcc_outb(0,READ_ADDR); // Tell board to start a read cycle
 
   RECV_POLLING = 1;	// Set Polling Flag
   RECV_TIMEOUT = 0;
