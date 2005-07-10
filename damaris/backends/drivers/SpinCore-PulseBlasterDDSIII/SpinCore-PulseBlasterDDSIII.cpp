@@ -157,21 +157,21 @@ int PulseBlasterDDSIIIProgram::write_to_file(FILE* out, size_t indent) const {
     fprintf(out,"%s  <frequencies>",indent_string.c_str());
     for (size_t i=0; i<frequency_registers.size(); i++)
       fprintf(out," %g",frequency_registers[i]);
-    fprintf(out," </frequencies>\n",indent_string.c_str());
+    fprintf(out," </frequencies>\n");
   }
 
   if (!rx_phase_registers.empty()) {
     fprintf(out,"%s  <rxphases>",indent_string.c_str());
     for (size_t i=0;i<rx_phase_registers.size();i++)
       fprintf(out," %g",rx_phase_registers[i]);
-    fprintf(out," </rxphases>\n",indent_string.c_str());
+    fprintf(out," </rxphases>\n");
   }
 
   if (!tx_phase_registers.empty()) {
     fprintf(out,"%s  <txphases>",indent_string.c_str());
     for (size_t i=0;i<tx_phase_registers.size();i++)
       fprintf(out," %g",tx_phase_registers[i]);
-    fprintf(out," </txphases>\n",indent_string.c_str());
+    fprintf(out," </txphases>\n");
   }
 
   for(const_iterator i=begin();i!=end();++i) {

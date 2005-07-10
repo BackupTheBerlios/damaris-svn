@@ -462,7 +462,7 @@ int xml_result_writer::write_adcs_to_file(const std::string& filename, const adc
     return 0;
   }
   fprintf(out,"<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-  fprintf(out,"<result job=\"%lu\">\n",ress->job_no);
+  fprintf(out,"<result job=\"%u\">\n",ress->job_no);
   fwrite(ress->description.c_str(),ress->description.size(),1,out);
   fprintf(out,"\n");
   int num_res=0;

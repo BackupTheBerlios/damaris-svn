@@ -83,4 +83,6 @@ public:
 
   /// write the command to a give file as xml tag
   virtual int write_to_file(FILE* out, size_t indent=0) const=0;
+
+  virtual ~PulseBlasterCommand() {}
 };
