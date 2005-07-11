@@ -8,7 +8,7 @@ from Experiment import *
 
 class JobWriter(threading.Thread):
     def __init__(self, path = None, config_object = None):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name = "Thread-JobWriter")
 
         # Directory to check for result-files
         if path is None and config_object is None:
@@ -29,6 +29,7 @@ class JobWriter(threading.Thread):
 
         # Suspending / Waking up thread
         self.event_lock = threading.Event()
+        self.event = threading.Event()
 
         # Flowcontrol
         self.quit_main_loop = False
@@ -37,80 +38,94 @@ class JobWriter(threading.Thread):
         # Symbolizing the job writer is ready to write the jobs
         self.__is_ready = False
 
+        # Telling other threads that an error occured
+        self.__error_occured = None   # None = Parsing, True = Error occured, False = Parsing ok
+
+        # Symbolizing the data handler no errors in other threads occured
+        self.__ok_to_start = None   # None = Still waiting, True = Startsignal, False = Error occured
+
+        # Thread up and running?
+        self.__busy = False
+
+
 
 
     def run(self):
 
         while 1:
             # Idling...
+            self.__busy = False
             self.event_lock.wait()
+            self.__busy = True
+
+            # Telling other threads we are still parsing
+            self.__error_occured = None
 
             # Quit thread?
             if self.quit_main_loop: break
 
             # Import needed libraries
             from Experiment import Experiment
+            reset()
 
             # Remove leader/trailing whitespaces
             experiment_script_string = self.gui.get_experiment_script().strip()
 
             # Syntax ok?
             if self.check_syntax(experiment_script_string):
-                print "Syntax ok!"
+                self.__error_occured = False
+
+                # Wait for ok from GUI (no errors occured in other threads)
+                while self.__ok_to_start is None:
+                    self.event.wait(0.2)
+
+                # Error occured somewhere else
+                if not self.__ok_to_start:
+                    self.__ok_to_start = None
+                    self.event_lock.clear()
+                    continue
+                
             else:
+                self.__error_occured = True
+                self.__ok_to_start = None
                 self.event_lock.clear()
                 continue
-                # send Error Signal
-##        while 1:
-##
-##            # Waiting for start from gui
-##            self.event_lock.wait()
-##
-##            # Quit thread?
-##            if self.quit_main_loop: break
-##
-##            from Experiment import Experiment
-##
-##            experiment_script_string = self.gui.get_experiment_script()
-##            experiment_script_string = experiment_script_string.strip()
-##
-##            # Syntax checking
-##            if experiment_script_string is not ok:
-##                self.gui.show_syntax_error_dialog("Experiment Script: " + str(e))
-##                self.event_lock.clear()
-##                continue
-##            else:
-##                try:
-##                    exec experiment_script_string in locals()
-##                    self.experiment_script = experiment_script
-##                except:
-##                    Fehlerbehandlung
-##
-##                self.__is_ready = True
-##                self.event_lock.wait()   # waiting for data_handling ok
-##                self.event_lock.clear()  # Sofort wieder set() löschen
-##                
-##        
-##                try:
-##                    for exp in self.experiment_script(self):
-##                        job_file = file(os.path.join(self.path, "job.tmp"), "w")
-##                        job_file.write(exp.write_xml_string())
-##                        job_file.close()
-##                        os.rename(os.path.join(self.path, "job.tmp"), os.path.join(self.path, self.filename % exp.get_job_id()))
-##
-##                    end_job = Experiment()
-##
-##                    end_job_file = file(os.path.join(self.path, "job.tmp"), "w")
-##                    end_job_file.write(end_job.write_quit_job())
-##                    end_job_file.close()
-##                    os.rename(os.path.join(self.path, "job.tmp"), os.path.join(self.path, self.filename % end_job.get_job_id()))
-##
-##                except:
-##                    raise
-##
-##            self.event_lock.clear()
-##            self.is_ready = False
-##            Experiment.reset()
+
+            # Bind script to self
+            try:
+                exec experiment_script_string in locals()
+                self.experiment_script = experiment_script
+            except Exception, e:
+                self.gui.show_syntax_error_dialog("Experiment Script: Unexpected error during execution!\n" + str(e))
+                self.event_lock.clear()
+                self.__error_occured = None
+                self.__ok_to_start = None
+                #Experiment.reset()
+                continue
+
+            # Run script
+            try:
+                for exp in self.experiment_script(self):
+                    job_file = file(os.path.join(self.path, "job.tmp"), "w")
+                    job_file.write(exp.write_xml_string())
+                    job_file.close()
+                    os.rename(os.path.join(self.path, "job.tmp"), os.path.join(self.path, self.filename % exp.get_job_id()))
+
+                end_job = Experiment()
+
+                end_job_file = file(os.path.join(self.path, "job.tmp"), "w")
+                end_job_file.write(end_job.write_quit_job())
+                end_job_file.close()
+                os.rename(os.path.join(self.path, "job.tmp"), os.path.join(self.path, self.filename % end_job.get_job_id()))
+
+            except Exception, e:
+                self.gui.show_syntax_error_dialog("Experiment Script: Unexpected error during execution!\n" + str(e))
+
+            # Cleanup
+            self.event_lock.clear()
+            self.__error_occured = None
+            self.__ok_to_start = None
+            #Experiment.reset()
 
 
 
@@ -136,13 +151,8 @@ class JobWriter(threading.Thread):
         return Experiment.job_id + 0
 
 
-    def start_job_writing(self):
-        print "Start writing jobs..."
-        self.event_lock.set()
-
-
-    def stop_job_writing(self):
-        pass
+    def start_writing(self, ready_to_start):
+        self.__ok_to_start = ready_to_start
 
 
     def quit_job_writer(self):
@@ -154,7 +164,11 @@ class JobWriter(threading.Thread):
         self.event_lock.set()
 
 
-    def is_ready(self):
-        return self.__is_ready
+    def error_occured(self):
+        return self.__error_occured
+
+
+    def is_busy(self):
+        return self.__busy
 
     # / Schnittstellen nach Außen ------------------------------------------------------------------

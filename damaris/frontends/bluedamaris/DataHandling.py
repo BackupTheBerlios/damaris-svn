@@ -8,7 +8,7 @@ from ResultReader import *
 
 class DataHandling(threading.Thread):
     def __init__(self, path = None, config_object = None):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name = "Thread-DataHandling")
 
         # Directory to check for result-files
         if path is None and config_object is None:
@@ -25,12 +25,19 @@ class DataHandling(threading.Thread):
 
         # Event-Stuff
         self.event_lock = threading.Event()
+        self.event = threading.Event()  # Timer
 
         # Quit
         self.quit_main_loop = False
 
         # Symbolizing the data handler is ready for running
-        self.__is_ready = False
+        self.__error_occured = None   # None = Still parsing, True = Error occured, False = No Error occured
+
+        # Symbolizing the data handler no errors in other threads occured
+        self.__ok_to_start = None   # None = Still waiting, True = Startsignal, False = Error occured
+
+        # Thread up and running?
+        self.__busy = False
 
 
 
@@ -38,7 +45,12 @@ class DataHandling(threading.Thread):
 
         while 1:
             # Idling...
+            self.__busy = False
             self.event_lock.wait()
+            self.__busy = True
+
+            # Telling other threads DataHandling is still parsing
+            self.__error_occured = None
 
             # Quit thread?
             if self.quit_main_loop: break
@@ -48,52 +60,49 @@ class DataHandling(threading.Thread):
             from Accumulation import Accumulation
 
             # Remove leader/trailing whitespaces
-            data_handling_string = self.gui.get_data_handling().strip()
+            data_handling_string = self.gui.get_data_handling_script().strip()
+            print data_handling_string
 
             # Syntax ok?
             if self.check_syntax(data_handling_string):
-                print "Syntax ok!"
+                self.__error_occured = False
+
+                # Wait for ok from GUI (no errors occured in other threads)
+                while self.__ok_to_start is None:
+                    self.event.wait(0.2)
+
+                # Error occured somewhere else
+                if not self.__ok_to_start:
+                    self.__ok_to_start = None
+                    self.event_lock.clear()
+                    continue
+                                
             else:
+                self.__ok_to_start = None
+                self.__error_occured = True
                 self.event_lock.clear()
                 continue
-                # send Error Signal
+                
+            try:
+                print "1"
+                self.result_reader.start()
+                print "2"
+                exec data_handling_string in locals()
+                print "3"
+                data_handling(self)
+                print "4"
+            except Exception, e:
+                self.gui.show_syntax_error_dialog("Data Handling: Unexpected error during execution of data handling script.\n" + str(e))
+                self.event_lock.clear()
+                self.__error_occured = None
+                self.result_reader.reset()
+                continue
 
+            self.result_reader.reset()
+            self.__ok_to_start = None
+            self.event_lock.clear()
 
-##        while 1:
-##
-##            # Waiting for start from gui
-##            self.event_lock.wait()
-##
-##            # Quit thread?
-##            if self.quit_main_loop: break
-##
-##            from Result import Result
-##            from Accumulation import Accumulation
-##
-##            data_handling_script_string = self.gui.get_data_handling_script()
-##            data_handling_script_string = data_handling_script_string.strip()
-##
-##            # Syntax checking
-##            if data_handling_script_string is not ok:
-##                self.gui.show_syntax_error_dialog("Data Handling: " + str(e))
-##                self.event_lock.clear()
-##                continue
-##            else:
-##                try:
-##
-##                    self.is_ready = True
-##                    self.event_lock.wait()   # waiting for job_writer ok (von auﬂen bet‰tigt)
-##                    self.event_lock.clear()  # Sofort wieder set() lˆschen
-##                    
-##                    self.result_reader.start()                    
-##                    exec data_handling_script_string in locals()
-##                except:
-##                    Fehlerbehandlung
-##
-##            self.event_lock.clear()
-##            self.is_ready = False
-
-
+            
     def check_syntax(self, cmd_string):
         try:
             compiler.parse(cmd_string)
@@ -131,21 +140,14 @@ class DataHandling(threading.Thread):
         self.result_reader.join()
 
 
-    def get_next_result(self, blocking = True):
-        if blocking:
-            while self.result_reader.get_number_of_results_pending() is 0:
-                self.event.wait(0.1)
+    def get_next_result(self):
+        tmp = self.result_reader.get_next_result()
+        while tmp is None:
+            self.event.wait(0.1)
+            tmp = self.result_reader.get_next_result()
 
-            if self.result_reader.is_running():
-                return self.result_reader.get_next_result()
-            else:
-                return 0
-        else:
-            if self.result_reader.is_running():
-                return self.result_reader.get_next_result()
-            else:
-                return 0
-
+        return tmp
+ 
 
     def connect_job_writer(self, job_writer):
         self.job_writer = job_writer
@@ -166,26 +168,27 @@ class DataHandling(threading.Thread):
             return False
         else: return True
 
-
-
+    
     # Schnittstellen nach Auﬂen --------------------------------------------------------------------
 
+    def is_busy(self):
+        return self.__busy
+
+
     def quit_data_handling(self):
-        print "Quitting data handling..."
         self.quit_main_loop = True
         self.event_lock.set()
 
 
-    def start_data_handling(self):
-        print "Starting data handling..."
-        self.event_lock.set()
+    def start_handling(self, ready_for_start):
+        self.__ok_to_start = ready_for_start
 
 
     def wake_up(self):
         self.event_lock.set()
 
 
-    def is_ready(self):
-        return __is_ready
+    def error_occured(self):
+        return self.__error_occured
 
     # / Schnittstellen nach Auﬂen ------------------------------------------------------------------

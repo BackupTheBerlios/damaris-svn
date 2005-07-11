@@ -29,7 +29,7 @@ from matplotlib.figure import Figure
 class DamarisGUI(threading.Thread):
 
     def __init__(self, config_object = None):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name = "Thread-GUI")
         gtk.gdk.threads_init()
 
         if config_object is not None:
@@ -57,8 +57,8 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("main_window_close", self.quit_application)
         self.xml_gui.signal_connect("on_toolbar_run_button_clicked", self.start_experiment)
         self.xml_gui.signal_connect("on_toolbar_open_file_button_clicked", self.open_file)
-        self.xml_gui.signal_connect("on_experiment_script_textview_event", self.experiment_script_textview_changed)
-        self.xml_gui.signal_connect("on_data_handling_textview_event", self.data_handling_textview_changed)
+        #self.xml_gui.signal_connect("on_experiment_script_textview_event", self.experiment_script_textview_changed)
+        #self.xml_gui.signal_connect("on_data_handling_textview_event", self.data_handling_textview_changed)
         
         # Sonstige inits ---------------------------------------------------------------------------
 
@@ -82,9 +82,27 @@ class DamarisGUI(threading.Thread):
         self.data_handling_textbuffer.set_text("def data_handling(input):\n    ")
 
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
+        self.toolbar_stop_button.set_sensitive(False)
+        
         self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
 
         self.main_notebook = self.xml_gui.get_widget("main_notebook")
+
+        self.toolbar_new_button = self.xml_gui.get_widget("toolbar_new_button")
+        self.toolbar_new_button.set_sensitive(False)
+
+        self.toolbar_save_button = self.xml_gui.get_widget("toolbar_save_file_button")
+        self.toolbar_save_button.set_sensitive(False)
+
+        self.toolbar_save_as_button = self.xml_gui.get_widget("toolbar_save_as_button")
+        self.toolbar_save_as_button.set_sensitive(False)
+
+        self.toolbar_check_scripts_button = self.xml_gui.get_widget("toolbar_check_scripts_button")
+        self.toolbar_check_scripts_button.set_sensitive(False)
+
+        self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
+        self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
+
 
         # Matplot hinzufügen (Display_Table, 1. Zeile) ----------------------------------------------
 
@@ -143,30 +161,74 @@ class DamarisGUI(threading.Thread):
 
 
     def start_experiment(self, widget, Data = None):
-        gtk.gdk.threads_enter()
- 
-        #self.toolbar_stop_button.set_sensitive(True)
-        #self.toolbar_run_button.set_sensitive(False)
 
-        gtk.gdk.threads_leave()
+        try:
+            gtk.gdk.threads_enter()
 
-        self.job_writer.start_job_writing()
-        self.data_handler.start_data_handling()
+            self.experiment_script_statusbar_label.set_text("Experiment Script: Busy...")
+            self.data_handling_statusbar_label.set_text("Data Handling: Busy...")
+            self.toolbar_run_button.set_sensitive(False)
 
-        gobject.timeout_add(100, self.sync_job_writer_data_handler)
-        return True
+            # Waking both threads up
+            print "Waking jw up"
+            self.job_writer.wake_up()
+            print "Waking dh up"
+            self.data_handler.wake_up()
+
+            gobject.timeout_add(100, self.sync_job_writer_data_handler)
+            gobject.timeout_add(500, self.check_job_writer_data_handler_finished)
+            gtk.gdk.threads_leave()
+            return True
+        finally:
+            gtk.gdk.threads_leave()
+            return True
 
 
     def sync_job_writer_data_handler(self):
-        if self.job_writer.is_ready() and self.data_handler.is_ready():
-            self.job_writer.wake_up()
-            self.data_handler.wake_up()
 
-            return False
+        try:
+            gtk.gdk.threads_enter()
+            # Check if still parsing
+            if self.job_writer.error_occured() == None:
+                print "jw still parsing"
+                return True
 
-        else:
-            return True
+            if self.data_handler.error_occured() == None:
+                print "dh still parsing"
+                return True
 
+            # Check if an error occured
+            if self.job_writer.error_occured() == True or self.data_handler.error_occured() == True:
+                print "Error occureed!!"
+                self.job_writer.start_writing(False)
+                self.data_handler.start_handling(False)            
+                return False
+            else:
+                print "No Error occured"
+                self.job_writer.start_writing(True)
+                self.data_handler.start_handling(True)
+                self.main_notebook.set_current_page(2)
+                return False
+        finally:
+            gtk.gdk.threads_leave()
+
+
+    def check_job_writer_data_handler_finished(self):
+
+        try:
+            gtk.gdk.threads_enter()
+            
+            if self.job_writer.is_busy() or self.data_handler.is_busy():
+                return True
+
+            else:
+                self.experiment_script_statusbar_label.set_text("Experiment Script: Idle.")
+                self.data_handling_statusbar_label.set_text("Data Handling: Idle.")
+                self.toolbar_run_button.set_sensitive(True)
+                return False
+        finally:
+            gtk.gdk.threads_leave()
+    
 
     def open_file(self, widget, Data = None):
 
@@ -206,7 +268,7 @@ class DamarisGUI(threading.Thread):
             else:
                 return
         
-        print "Page No. %d open" % self.main_notebook.get_current_page()
+        #print "Page No. %d open" % self.main_notebook.get_current_page()
         if self.main_notebook.get_current_page() == 0:
             dialog = gtk.FileChooserDialog(title="Open Experiment Script...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons = ("Open", 1, "Cancel", 0))
         elif self.main_notebook.get_current_page() == 1:

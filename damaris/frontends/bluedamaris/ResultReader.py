@@ -11,7 +11,7 @@ class ResultReader(threading.Thread):
     ERROR_TYPE = 0
 
     def __init__(self, in_path, timeout = -1):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name = "Thread-ResultReader")
 
         # Directory to check for result-files
         self.path = in_path
@@ -20,7 +20,9 @@ class ResultReader(threading.Thread):
 
         # The result-queue
         self.result_queue = []
-        self.result_queue_max_length = -1
+
+        # Maximum Number of Results in Queue (if reached, ResultReader will sleep until results are read)
+        self.max_result_queue_length = 1000
         
         # Filename stuff
         self.filename = "job.%09d.result"
@@ -45,19 +47,39 @@ class ResultReader(threading.Thread):
         self.tmp_result = None
 
         # Event-Objekt für Thread-Suspending
-        self.event = threading.Event()
-
-        # Number of pending Results
-        self.pending_results = 0
+        self.event = threading.Event()          # Timeout
+        self.event_lock = threading.Event()     # Thread locking
 
         # Type of result-file - Error or Result?
         self.result_type = -1 # Nothing so far
 
+        # ResultReader reset?
+        self.__reset = False
 
+        # ResultReader started?
+        self.__started = False
+
+
+ 
     # Thread activity - checks for result files in the given directory
     def run(self):
+        self.__started = True
 
         while not self.quit_loop:
+            # Making ResultReader restartable and/or waiting for user to read pending results
+            self.event_lock.wait()
+
+            # Reset-quest from other Thread?
+            if self.__reset:
+                self.event_lock.clear()
+                self.__do_reset()
+                continue
+
+            # Too many results pending?
+            if self.get_number_of_results_pending() >= self.max_result_queue_length:
+                self.event_lock.clear()
+                #print "Waiting for results being read from Queue... %d >= %d" % (self.get_number_of_results_pending(), self.max_result_queue_length)
+                continue                
 
             if os.access(os.path.join(self.path, self.filename % self.files_read), os.R_OK):
                 #print "File found! " + os.path.join(self.path, self.filename % self.files_read)
@@ -77,6 +99,17 @@ class ResultReader(threading.Thread):
                     self.quit_loop = True
 
                 self.is_idling = False
+
+
+
+    # Overwritten start-method (asuring "run()" is called only once)
+    def start(self):
+        if self.__started:
+            self.event_lock.set()
+        else:
+            self.event_lock.set()
+            threading.Thread.start(self)
+
 
 
     # Opens the file and hands it to the parser
@@ -144,7 +177,7 @@ class ResultReader(threading.Thread):
             key_list = self.result_description.keys()
             for key in key_list:
                 self.tmp_result.add_description(key, self.result_description[key])
-#########################
+
 
         elif in_name == "error":
             self.tmp_result = Result(1, 1)
@@ -180,10 +213,9 @@ class ResultReader(threading.Thread):
     def xmlEndTagFound(self, in_name):
         if in_name == "adcdata":
             self.result_queue.append(self.tmp_result)
-            #print "Result Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read)
+            print "Result Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read)
             self.current_channel = 0
             self.current_pos = 0
-            self.pending_results += 1
             self.result_type = -1
 
            
@@ -191,17 +223,21 @@ class ResultReader(threading.Thread):
     # Returns the next result from the queue
     def get_next_result(self):
 
-        if self.pending_results == 0: return None
+        if len(self.result_queue) == 0: return None
         else:
             out_result = self.result_queue[0]
             del self.result_queue[0]
-            self.pending_results -= 1
+            
+            if self.get_number_of_results_pending() < self.max_result_queue_length and not self.event_lock.isSet():
+                print "True"
+                self.event_lock.set()                
+            
             return out_result
 
 
     # Returns the number of waiting elements
     def get_number_of_results_pending(self):
-        return self.pending_results + 0
+        return len(self.result_queue)
 
     
 
@@ -221,4 +257,39 @@ class ResultReader(threading.Thread):
 
     def get_number_of_results_read(self):
         return self.files_read + 0
-    
+
+
+    def reset(self):
+
+        # Waiting for ResultReader to parse current file
+        self.__reset = True
+        
+
+    def __do_reset(self):
+
+        if len(self.result_queue) != 0:
+            print "ResultReader Warning: Deleting %d results due reset-request!" % len(self.result_queue)
+        
+        # The result-queue
+        self.result_queue = []
+        
+        # Quit main loop?
+        self.quit_loop = False
+
+        # Indicates thread being active (= reading, parsing, giving back results)
+        self.is_idling = False
+
+        # How many files have been read?
+        self.files_read = 0
+
+        # When shall the thread be quit, if not files are found?
+        self.timeout_counter = 0
+
+        # class-intern result-object currently being processed
+        self.tmp_result = None
+
+        # Type of result-file - Error or Result?
+        self.result_type = -1 # Nothing so far
+
+        # Setting back reset
+        self.__reset = False
