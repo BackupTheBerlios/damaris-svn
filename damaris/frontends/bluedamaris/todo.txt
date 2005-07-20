@@ -7,6 +7,7 @@ Bis zur ersten lauffähigen Version:
 - Stop implementieren
 - Warnung, das Dateien überschrieben werden implementieren (beim Start des Exp.)
 - sinnvolle XML-Statements durch den Job-Writer ausgeben
+- nach verlorenen Methoden gucken, die mittlerweile nicht mehr gebraucht werden (z.b. suspend und wakeup)
 
 ? Skript checken mit Dummycore ?
 ? Line / Column implementieren ?

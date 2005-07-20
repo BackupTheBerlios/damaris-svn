@@ -121,7 +121,7 @@ class ResultReader(threading.Thread):
             result_file = file(in_filename, "r")
             #print result_file
             
-            self.____parseFile(result_file)
+            self.__parseFile(result_file)
 
             self.files_read += 1
             result_file.close()
@@ -150,7 +150,7 @@ class ResultReader(threading.Thread):
 
         # Parsing all cdata as one block
         self.xml_parser.buffer_text = True
-        self.xml_parser.parseFile(in_file)
+        self.xml_parser.ParseFile(in_file)
 
 
 

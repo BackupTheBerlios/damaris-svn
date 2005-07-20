@@ -1,20 +1,28 @@
+#!/bin/bash
+# -*- coding: iso-8859-1 -*-
+
+#################################################
+#                                               #
+# Purpose: The place where everything starts!   #
+#                                               #
+#################################################
+
+
 from JobWriter import *
 from DataHandling import *
 from DamarisGUI import *
 from Configuration import *
 
-import pygtk
-import gtk
 
-import time
-
+# Loading configuration (no arguments -> current working directory)
 cfg = Configuration()
 
+# creating instances of all components
 jw = JobWriter(config_object = cfg)
 dh = DataHandling(config_object = cfg)
 gui = DamarisGUI(config_object = cfg)
 
-
+# connecting them so they can make use of each other
 print "Connecting components..."
 dh.connect_job_writer(jw)
 jw.connect_data_handler(dh)
@@ -23,12 +31,10 @@ jw.connect_gui(gui)
 gui.connect_job_writer(jw)
 gui.connect_data_handler(dh)
 
-
+# starting all threads
 gui.start()
 jw.start()
 dh.start()
-
-time.sleep(2)
 
 gui.join()
     

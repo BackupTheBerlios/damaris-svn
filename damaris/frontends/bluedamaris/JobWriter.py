@@ -1,5 +1,13 @@
 # -*- coding: iso-8859-1 -*-
 
+#########################################################################
+#                                                                       #
+# Class: JobWriter                                                      #
+#                                                                       #
+# Purpose: Creates Job-Files out of the experiment-script.              #
+#                                                                       #
+#########################################################################
+
 import threading
 import os
 import compiler
@@ -48,7 +56,11 @@ class JobWriter(threading.Thread):
         self.__busy = False
 
 
+
+    # Private Methods ------------------------------------------------------------------------------
+
     def run(self):
+        "Represents threads acitivity: working through the experiment script and writing job-files"
 
         while 1:
             # Idling...
@@ -136,6 +148,7 @@ class JobWriter(threading.Thread):
 
 
     def check_syntax(self, cmd_string):
+        "Checks syntax for syntax-errors"
         try:
             compiler.parse(cmd_string)
             return True
@@ -143,38 +156,52 @@ class JobWriter(threading.Thread):
             self.gui.show_syntax_error_dialog("Experiment Script: " + str(e))
             return False
 
-    # Schnittstellen nach Außen --------------------------------------------------------------------
+
+    # /Private Methods -----------------------------------------------------------------------------
+
+    # Public Methods (internally used) -------------------------------------------------------------
 
     def connect_data_handler(self, data_handler):
+        "Connects the data handler (internally used)"
         self.data_handling = data_handler
 
 
     def connect_gui(self, gui):
+        "Connects the GUI (internally used)"
         self.gui = gui
 
 
-    def jobs_written(self):
-        return Experiment.job_id + 0
-
-
     def start_writing(self, ready_to_start):
+        "Sets internal flag to true/false, depending if errors occured in other threads (internally used)"
         self.__ok_to_start = ready_to_start
 
 
     def quit_job_writer(self):
         self.quit_main_loop = True
         self.event_lock.set()
-        
+
 
     def wake_up(self):
+        "Wakes the thread up (internally used)"
         self.event_lock.set()
 
 
     def error_occured(self):
+        "Returns true if an error occured while parsing (internally used)"
         return self.__error_occured
 
 
     def is_busy(self):
+        "Returns true if the thread is not idling(internally used)"
         return self.__busy
+    
+    # /Public Methods (internally used) ------------------------------------------------------------
 
-    # / Schnittstellen nach Außen ------------------------------------------------------------------
+
+    # Public Methods -------------------------------------------------------------------------------
+    
+    def jobs_written(self):
+        "Returns the number of jobs already written"
+        return Experiment.job_id + 0
+
+    # /Public Methods ------------------------------------------------------------------------------
