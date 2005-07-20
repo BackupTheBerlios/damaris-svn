@@ -1,5 +1,15 @@
 # -*- coding: iso-8859-1 -*-
 
+#############################################################################
+#                                                                           #
+# Name: Class ResultReader                                                  #
+#                                                                           #
+# Purpose: Checks periodically a given directory for Result-Files.          #
+#          If some are found, they are parsed and stored internally, until  #
+#          they are read (returned as results: See class Result             #
+#                                                                           #
+#############################################################################
+
 import threading
 import os
 import xml.parsers.expat
@@ -9,6 +19,8 @@ class ResultReader(threading.Thread):
 
     RESULT_TYPE = 1
     ERROR_TYPE = 0
+
+    # Private Methods ------------------------------------------------------------------------------
 
     def __init__(self, in_path, timeout = -1):
         threading.Thread.__init__(self, name = "Thread-ResultReader")
@@ -60,9 +72,9 @@ class ResultReader(threading.Thread):
         self.__started = False
 
 
- 
-    # Thread activity - checks for result files in the given directory
+
     def run(self):
+        "Represents the threads activity: Checking the given directory for result-files"
         self.__started = True
 
         while not self.quit_loop:
@@ -83,7 +95,7 @@ class ResultReader(threading.Thread):
 
             if os.access(os.path.join(self.path, self.filename % self.files_read), os.R_OK):
                 #print "File found! " + os.path.join(self.path, self.filename % self.files_read)
-                self.readFile(os.path.join(self.path, self.filename % self.files_read))
+                self.__readFile(os.path.join(self.path, self.filename % self.files_read))
                 self.timeout_counter = 0
             else:
                 #print "No File found, waiting... (" + str(self.wait) + ")"
@@ -102,24 +114,14 @@ class ResultReader(threading.Thread):
 
 
 
-    # Overwritten start-method (asuring "run()" is called only once)
-    def start(self):
-        if self.__started:
-            self.event_lock.set()
-        else:
-            self.event_lock.set()
-            threading.Thread.start(self)
-
-
-
-    # Opens the file and hands it to the parser
-    def readFile(self, in_filename):
+    def __readFile(self, in_filename):
+        "Opens the found file and hands it to the parser"
 
         try:
             result_file = file(in_filename, "r")
             #print result_file
             
-            self.parseFile(result_file)
+            self.____parseFile(result_file)
 
             self.files_read += 1
             result_file.close()
@@ -133,8 +135,8 @@ class ResultReader(threading.Thread):
 
 
 
-    # Parses the file and adds it relevant data to the result-object
-    def parseFile(self, in_file):
+    def __parseFile(self, in_file):
+        "Parses the given file, adding it to the result-queue"
 
         self.result_description = {}
         self.current_channel = 0
@@ -142,17 +144,18 @@ class ResultReader(threading.Thread):
 
         # Expat XML-Parser & Binding handlers
         self.xml_parser = xml.parsers.expat.ParserCreate()
-        self.xml_parser.StartElementHandler = self.xmlStartTagFound
-        self.xml_parser.CharacterDataHandler = self.xmlCharacterDataFound
-        self.xml_parser.EndElementHandler = self.xmlEndTagFound
+        self.xml_parser.StartElementHandler = self.__xmlStartTagFound
+        self.xml_parser.CharacterDataHandler = self.__xmlCharacterDataFound
+        self.xml_parser.EndElementHandler = self.__xmlEndTagFound
 
         # Parsing all cdata as one block
         self.xml_parser.buffer_text = True
-        self.xml_parser.ParseFile(in_file)
+        self.xml_parser.parseFile(in_file)
+
 
 
     # Callback when a xml start tag is found
-    def xmlStartTagFound(self, in_name, in_attribute):
+    def __xmlStartTagFound(self, in_name, in_attribute):
 
         # Beginning for the adcdata-section
         if in_name == "adcdata":
@@ -196,7 +199,7 @@ class ResultReader(threading.Thread):
 
      
 
-    def xmlCharacterDataFound(self, in_cdata):
+    def __xmlCharacterDataFound(self, in_cdata):
         if not in_cdata.isspace():
             values = map(int, in_cdata.split())
 
@@ -210,7 +213,7 @@ class ResultReader(threading.Thread):
 
 
 
-    def xmlEndTagFound(self, in_name):
+    def __xmlEndTagFound(self, in_name):
         if in_name == "adcdata":
             self.result_queue.append(self.tmp_result)
             print "Result Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read)
@@ -218,52 +221,7 @@ class ResultReader(threading.Thread):
             self.current_pos = 0
             self.result_type = -1
 
-           
 
-    # Returns the next result from the queue
-    def get_next_result(self):
-
-        if len(self.result_queue) == 0: return None
-        else:
-            out_result = self.result_queue[0]
-            del self.result_queue[0]
-            
-            if self.get_number_of_results_pending() < self.max_result_queue_length and not self.event_lock.isSet():
-                print "True"
-                self.event_lock.set()                
-            
-            return out_result
-
-
-    # Returns the number of waiting elements
-    def get_number_of_results_pending(self):
-        return len(self.result_queue)
-
-    
-
-    def quit_result_reader(self):
-        self.quit_loop = True
-
-
-    
-    def is_running(self):
-        return not self.quit_loop
-
-
-    # Ausbauwürdig und fraglich, ob nötig.
-    def isIdle(self):
-        return self.is_idling
-
-
-    def get_number_of_results_read(self):
-        return self.files_read + 0
-
-
-    def reset(self):
-
-        # Waiting for ResultReader to parse current file
-        self.__reset = True
-        
 
     def __do_reset(self):
 
@@ -293,3 +251,64 @@ class ResultReader(threading.Thread):
 
         # Setting back reset
         self.__reset = False
+
+    # /Private Methods -----------------------------------------------------------------------------
+
+    # Public Methods -------------------------------------------------------------------------------
+
+    def start(self):
+        "Overwritten start-method - allowing a reset ResultReader to be started again"
+        if self.__started:
+            self.event_lock.set()
+        else:
+            self.event_lock.set()
+            threading.Thread.start(self)
+
+
+
+    def get_next_result(self):
+        "Returns the next result in queue"
+
+        if len(self.result_queue) == 0: return None
+        else:
+            out_result = self.result_queue[0]
+            del self.result_queue[0]
+            
+            if self.get_number_of_results_pending() < self.max_result_queue_length and not self.event_lock.isSet():
+                print "True"
+                self.event_lock.set()                
+            
+            return out_result
+
+
+
+    def get_number_of_results_pending(self):
+        "Returns the number of results waiting to be returned"
+        return len(self.result_queue)
+
+    
+
+    def quit_result_reader(self):
+        self.quit_loop = True
+
+
+    
+    def is_running(self):
+        "Returns true, if the ResultReader is still running (no matter if idling or parsing etc...)"
+        return not self.quit_loop
+
+
+
+    def get_number_of_results_read(self):
+        "Returns the number of result-files read"
+        return self.files_read + 0
+
+
+
+    def reset(self):
+        "Resets the result reader, so it can be started again"
+        # Waiting for ResultReader to finish parsing the current file (look into run() method)
+        self.__reset = True
+
+
+    # /Public Methods ------------------------------------------------------------------------------

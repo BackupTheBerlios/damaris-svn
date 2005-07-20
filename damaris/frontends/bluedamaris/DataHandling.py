@@ -1,5 +1,13 @@
-#! /usr/bin/env python
 # -*- coding: iso-8859-1 -*-
+
+#########################################################################
+#                                                                       #
+# Class: DataHandling                                                   #
+#                                                                       #
+# Purpose: Executes the script recieved from the GUI, also              #
+#          provides functions for being used inside the script          #
+#                                                                       #
+#########################################################################
 
 import threading
 import compiler
@@ -40,8 +48,10 @@ class DataHandling(threading.Thread):
         self.__busy = False
 
 
+    # Private Methods ------------------------------------------------------------------------------
 
     def run(self):
+        "Threads activity, trying to parse a data-handling script and idling again if it finished"
 
         while 1:
             # Idling...
@@ -101,6 +111,7 @@ class DataHandling(threading.Thread):
 
             
     def check_syntax(self, cmd_string):
+        "Checks syntax for syntax-errors"
         try:
             compiler.parse(cmd_string)
             return True
@@ -108,8 +119,13 @@ class DataHandling(threading.Thread):
             self.gui.show_syntax_error_dialog("Data Handling: " + str(e))
             return False
             
-        
+
+    # /Private Methods -----------------------------------------------------------------------------
+
+    # Public Methods -------------------------------------------------------------------------------
+    
     def get_variable(self, name, blocking = True):
+        "Returns the value of the desired variable"
         if blocking:
             if self.__dict__.has_key(name):
                 return self.__dict__[name]
@@ -126,49 +142,44 @@ class DataHandling(threading.Thread):
                 return None           
 
 
-    def quit_data_handling(self):
-        self.result_reader.quit_result_reader()
-        self.result_reader.join()
-
-        self.quit_main_loop = True
-
-
-    def join(self):
-        self.result_reader.join()
-
-
     def get_next_result(self):
+        "Returns the next result in queue"
         tmp = self.result_reader.get_next_result()
         while tmp is None:
             self.event.wait(0.1)
             tmp = self.result_reader.get_next_result()
 
         return tmp
- 
 
-    def connect_job_writer(self, job_writer):
-        self.job_writer = job_writer
-
-
-
-    def connect_gui(self, gui):
-        self.gui = gui
 
 
     def draw(self, result):
+        "Displays a result on the GUI"
         self.gui.draw_result(result)
         #self.gui.flush()
 
 
     def jobs_pending(self):
+        "Returns true, if jobs are still processed"
         if self.result_reader.get_number_of_results_pending() == 0 and self.result_reader.get_number_of_results_read() == self.job_writer.jobs_written():
             return False
         else: return True
 
     
-    # Schnittstellen nach Auﬂen --------------------------------------------------------------------
+    # Public Methods (Internally used) -------------------------------------------------------------
+
+    def connect_job_writer(self, job_writer):
+        "Connects the Job-Writer to the data-handler (internally used)"
+        self.job_writer = job_writer
+
+
+    def connect_gui(self, gui):
+        "Connects the GUI to the data-handler (internally used)"
+        self.gui = gui
+
 
     def is_busy(self):
+        "Returns true if DataHandling is currently not idling (internally used)"
         return self.__busy
 
 
@@ -178,14 +189,29 @@ class DataHandling(threading.Thread):
 
 
     def start_handling(self, ready_for_start):
+        "Sets an internal flag true/false if handling can start and no errors occured in this or other threads (only used internally)"
         self.__ok_to_start = ready_for_start
 
 
     def wake_up(self):
+        "Waking this thread up(internally used)"
         self.event_lock.set()
 
 
     def error_occured(self):
+        "Returns true, if an error occured while parsing (internally used)"
         return self.__error_occured
 
-    # / Schnittstellen nach Auﬂen ------------------------------------------------------------------
+
+    def quit_data_handling(self):
+        self.result_reader.quit_result_reader()
+        self.result_reader.join()
+
+        self.quit_main_loop = True
+
+
+    def join(self):
+        "Overwritten join (since DataHandling calls the thread ResultReader"
+        self.result_reader.join()
+
+    # /Public Methods (Internally used) ------------------------------------------------------------

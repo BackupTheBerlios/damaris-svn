@@ -1,4 +1,14 @@
 # -*- coding: ISO-8859-1 -*-
+
+#############################################################
+#                                                           #
+# Class: Experiment                                         #
+#                                                           #
+# Purpose: Represents one full experiment (one program on   #
+#          the pulse-card; one file)                        #
+#                                                           #
+#############################################################
+
 class Experiment:
 
     job_id = 0
@@ -10,6 +20,8 @@ class Experiment:
         self.state_list = []
         self.description = { }
 
+
+    # Commands -------------------------------------------------------------------------------------
 
     def rf_pulse(self, channel, length = None):
         if length is None:
@@ -44,14 +56,29 @@ class Experiment:
 
 
     def set_frequency(self, frequency, phase):
+        "Sets the frequency generator to a desired frequency (Hz)"
         self.state_list.append('<state time="1e-6"><analogout f="%f" phase="%d" /></state>\n' % (frequency, phase))
-        
+
+
+    def set_description(self, key, value):
+        "Sets a description"
+        if key in self.description.keys():
+            print 'Warning: Overwriting existing description "%s" = "%s" with "%s"' % (key, self.description[key], value)
+
+        self.description[key] = value
+
+    # / Commands -----------------------------------------------------------------------------------
+
+
+    # Public Methods -------------------------------------------------------------------------------
 
     def get_job_id(self):
+        "Returns the current job-id the experiment got"
         return self.job_id
 
 
     def write_xml_string(self):
+        "Returns the current program as a string"
 
         # Standart XML-Kopf
         xml_string = '<?xml version="1.0" encoding="ISO-8859-1"?>\n'
@@ -80,17 +107,13 @@ class Experiment:
         return xml_string
 
 
-    def set_description(self, key, value):
-        if key in self.description.keys():
-            print 'Warning: Overwriting existing description "%s" = "%s" with "%s"' % (key, self.description[key], value)
-
-        self.description[key] = value
-
-
     def write_quit_job(self):
+        "Returns a xml quit-job"
         return '<?xml version="1.0" encoding="ISO-8859-1"?>\n<quit/>'
 
 
+    # /Public Methods ------------------------------------------------------------------------------
 
 def reset():
+    "Resets the internal id-inkrementer to 0"
     Experiment.job_id = 0

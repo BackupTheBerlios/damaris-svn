@@ -1,9 +1,20 @@
 # -*- coding: iso-8859-1 -*-
-# Usage: Result(Channels, Samples per Channel)
+
+#####################################################################
+#                                                                   #
+# Class: Result                                                     #
+#                                                                   #
+# Purpose: Represents a result parsed by the ResultReader           #
+#          which can be worked with (for example plotting,          #
+#          mathematical operations, accumulating etc.).             #
+#                                                                   #
+#####################################################################
 
 import numarray
 
 class Result:
+
+    # Private Methods ------------------------------------------------------------------------------
 
     def __init__(self, in_channels, in_samples, **keywords):
 
@@ -30,43 +41,53 @@ class Result:
                     self.sampling_rate = keywords[key]
 
 
+    # /Private Methods -----------------------------------------------------------------------------
+
+    # Public Methods -------------------------------------------------------------------------------
+
     def set_job_number(self, in_job_nr):
+        "Sets the job-number (only used internally)"
         self.job_nr = in_job_nr
 
 
     def get_job_id(self):
+        "Returns job-number which produced the result"
         return self.job_nr
 
 
     def get_job_number(self):
+        "Returns job-number which produced the result"
         return self.job_nr
 
 
     def get_number_of_samples(self):
-        return self.samples
-
-    def get_samples(self):
+        "Returns the number of recorded samples"
         return self.samples
 
 
     def get_number_of_channels(self):
+        "Returns the number of used channels"
         return (self.channels.getshape())[0]
 
 
     def set_sampling_rate(self, in_sampling_rate):
+        "Sets the sampling-rate, with which samples were recorded (only used internally)"
         self.sampling_rate = in_sampling_rate
 
 
     def get_sampling_rate(self):
+        "Returns the sampling-rate, with which samples were recorded"
         return self.sampling_rate
 
 
     def add_description(self, in_key, in_value):
+        "Adds a description to the result"
         if self.description.has_key(in_key): print "Warning: Overwriting existing key \"%s\" (%s) with \"%s\"." % (str(in_key), str(self.description[in_key]), str(in_value))
         self.description[in_key] = in_value
 
 
     def get_description(self, in_key):
+        "Reads a description from the result"
         if self.description.has_key(in_key):
             return self.description[in_key]
         else:
@@ -74,18 +95,22 @@ class Result:
 
 
     def get_description_list(self):
+        "Returns a list of all description keys"
         return self.description.keys()
 
 
     def get_channel(self, in_nr):
+        "Returns all samples of an entire channel"
         return self.channels[in_nr]
 
 
     def get_channels(self):
+        "Returns all samples of all channels"
         return self.channels
 
 
     def set_value(self, in_channel, in_pos, in_value):
+        "Sets a value (only used internally)"
         try:
             self.channels[in_channel, in_pos] = in_value
             if in_value > self.y_max: self.y_max = in_value
@@ -95,6 +120,7 @@ class Result:
 
 
     def set_xvalue(self, in_pos, in_value):
+        "Sets a value of the x-axis (only used internally for plotting purposes)"
         try:
             self.x[in_pos] = in_value
             if in_value > self.x_max: self.x_max = in_value
@@ -104,11 +130,13 @@ class Result:
 
 
     def get_xvalues(self):
+        "Returns all x-values (only used internally)"
         return self.x
 
 
 
     def get_xvalue(self, in_pos):
+        "Returns a x-value (only used internally)"
         try:
             return self.x[in_pos]
         except:
@@ -116,6 +144,7 @@ class Result:
 
 
     def get_value(self, in_channel, in_pos):
+        "Returns a sample"
         try:
             return self.channels[in_channel, in_pos]
         except:
@@ -123,24 +152,28 @@ class Result:
 
 
     def get_xmax(self):
+        "Returns largest x-value (only used internally for plotting)"
         return self.x_max
 
 
     def get_ymax(self):
+        "Returns largest y-value (only used internally for plotting)"
         return self.y_max
 
 
     def get_xmin(self):
+        "Returns smallest x-value (only used internally for plotting)"
         return self.x_min
 
 
     def get_ymin(self):
+        "Returns smallest y-value (only used internally for plotting)"
         return self.y_min
 
 
-    # Überladen der Operatoren ---------------------------------------------------------------------
+    # Overloading Operators ------------------------------------------------------------------------
 
-    # Überladen von += ---------------------------
+    # Overloading += ---------------------------
     def __iadd__(self, other):
 
         try:
@@ -205,7 +238,7 @@ class Result:
             raise
 
 
-    # Überladen von + ----------------------------
+    # Overloading + ----------------------------
     def __add__(self, other):
         try:
             # Integer soll aufaddiert werden

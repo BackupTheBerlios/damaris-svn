@@ -1,5 +1,14 @@
 # -*- coding: iso-8859-1 -*-
-# Usage: Result(Channels, Samples per Channel)
+
+#################################################################
+#                                                               #
+# Class: Accumulation                                           #
+#                                                               #
+# Purpose: Represents an accumulation of results. Whenever two  #
+#          results will be added (or similiar operations),      #
+#          an accumulation will be returned.                    #
+#                                                               #
+#################################################################
 
 from types import *
 import numarray
@@ -43,41 +52,61 @@ class Accumulation:
 
             self.x = numarray.reshape(self.x, (self.samples,))
 
-        # Hä?
         else:
             raise TypeError("Accumulation: Wrong usage of copy-constructor: expected 0 or 4 keywords, got %d" % len(keywords))
                 
-        
+
+    # Public Methods -------------------------------------------------------------------------------     
 
     def get_number_of_samples(self):
+        "Returns the number of samples recorded"
         return self.samples
 
 
     def is_empty(self):
+        "Returns true if the accumulation is still empty"
         if self.channels is None: return True
         else: return False
 
+
     def get_number_of_channels(self):
+        "Returns the number of channels"
         return (self.channels.getshape())[0]
 
 
-    def set_sampling_rate(self, in_sampling_rate):
-        self.sampling_rate = in_sampling_rate
-
-
     def get_sampling_rate(self):
+        "Returns the sampling frequency used"
         return self.sampling_rate
 
 
     def get_channel(self, in_nr):
+        "Gets the number of channels"
         return self.channels[in_nr]
 
 
     def get_channels(self):
+        "Returns all channels"
         return self.channels
 
 
+    def get_value(self, in_channel, in_pos):
+        "Returns a value"
+        try:
+            return self.channels[in_channel, in_pos]
+        except:
+            raise
+        
+    # /Public Methods ------------------------------------------------------------------------------
+    
+    # Public methods (internally used) -------------------------------------------------------------
+
+    def set_sampling_rate(self, in_sampling_rate):
+        "Sets the sampling frequency (internally used)"
+        self.sampling_rate = in_sampling_rate
+
+
     def set_value(self, in_channel, in_pos, in_value):
+        "Sets a value (internally used)"
         try:
             self.channels[in_channel, in_pos] = in_value
             if in_value > self.y_max: self.y_max = in_value
@@ -87,6 +116,7 @@ class Accumulation:
 
 
     def set_xvalue(self, in_pos, in_value):
+        "Sets an x-value (internally used for plotting)"
         try:
             self.x[in_pos] = in_value
             if in_value > self.x_max: self.x_max = in_value
@@ -96,43 +126,41 @@ class Accumulation:
 
 
     def get_xvalues(self):
+        "Returns all x-values (internally used for plotting)"
         return self.x
 
 
     def get_xvalue(self, in_pos):
+        "Returns a single x-value (internally used for plotting)"
         try:
             return self.x[in_pos]
         except:
             raise
 
-
-    def get_value(self, in_channel, in_pos):
-        try:
-            return self.channels[in_channel, in_pos]
-        except:
-            raise
-
-
     def get_xmax(self):
+        "Returns the largest x-value (internally used for plotting)"
         return max(self.x)
 
 
     def get_ymax(self):
+        "Returns the largest y-value (internally used for plotting)"
         return max(self.channels)
 
 
     def get_xmin(self):
+        "Returns the smallest x-value (internally used for plotting)"
         return min(self.x)
 
 
     def get_ymin(self):
+        "Returns the smallest y-value (internally used for plotting)"
         return min(self.channels)
+    
+    # /Public Methods (internally used) ------------------------------------------------------------
 
+    # Overloading Operators ------------------------------------------------------------------------
 
-
-    # Überladen der Operatoren ---------------------------------------------------------------------
-
-    # Überladen von += ---------------------------
+    # Overloading += -------------------------
     def __iadd__(self, other):
 
         try:
@@ -196,7 +224,7 @@ class Accumulation:
             raise
 
 
-    # Überladen von + ----------------------------
+    # Overloading + ----------------------------
     def __add__(self, other):
         try:
             # Integer soll aufaddiert werden

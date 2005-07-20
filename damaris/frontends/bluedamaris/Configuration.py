@@ -1,3 +1,16 @@
+# -*- coding: iso-8859-1 -*-
+
+#############################################################
+#                                                           #
+# Class Configuration                                       #
+#                                                           #
+# Purpose: Reads a xml-configuration file and creates a     #
+#          configuration object which configuratable        #
+#          classes can ask for their configuration.         #
+#                                                           s#
+#############################################################
+
+
 import xml.parsers.expat
 import os
 
@@ -61,6 +74,7 @@ class Configuration:
  
 
     def get_my_config(self, applicant):
+        "Returns a dictionairy with all the configuration information needed for the applicant"
         #print "applicant: " + str(applicant.__class__)
 
         if str(applicant.__class__) == "JobWriter.JobWriter" or str(applicant.__class__) == "<class 'JobWriter.JobWriter'>":
