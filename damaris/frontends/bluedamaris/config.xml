@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <config>
-	<job_writer path="/tmp/damarisspool"/>
-	<data_handling path="/tmp/damarisspool" timout="None"/>
+	<job_writer path="D:\cygwin\tmp\dummyspool"/>
+	<data_handling path="D:\cygwin\tmp\dummyspool" timout="None"/>
 	<core path="/home/achim/damaris/backends/machines/Mobilecore.exe"/>
 </config>

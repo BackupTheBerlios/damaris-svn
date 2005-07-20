@@ -4,6 +4,7 @@
 import threading
 import os
 import compiler
+import glob
 from Experiment import *
 
 class JobWriter(threading.Thread):
@@ -48,8 +49,6 @@ class JobWriter(threading.Thread):
         self.__busy = False
 
 
-
-
     def run(self):
 
         while 1:
@@ -57,6 +56,17 @@ class JobWriter(threading.Thread):
             self.__busy = False
             self.event_lock.wait()
             self.__busy = True
+
+            # Delete existing job-files
+            file_list = glob.glob(os.path.join(self.path, "job*"))
+            try:
+                for job_file in file_list:
+                    if job_file.find("job.state") != -1:
+                        continue
+                    os.remove(job_file)
+            except IOError, e:
+                print "IOError: Cannot delete Job-Files" + str(e)
+                raise
 
             # Telling other threads we are still parsing
             self.__error_occured = None
@@ -100,7 +110,6 @@ class JobWriter(threading.Thread):
                 self.event_lock.clear()
                 self.__error_occured = None
                 self.__ok_to_start = None
-                #Experiment.reset()
                 continue
 
             # Run script
@@ -125,8 +134,6 @@ class JobWriter(threading.Thread):
             self.event_lock.clear()
             self.__error_occured = None
             self.__ok_to_start = None
-            #Experiment.reset()
-
 
 
     def check_syntax(self, cmd_string):

@@ -61,7 +61,7 @@ class DataHandling(threading.Thread):
 
             # Remove leader/trailing whitespaces
             data_handling_string = self.gui.get_data_handling_script().strip()
-            print data_handling_string
+            #print data_handling_string
 
             # Syntax ok?
             if self.check_syntax(data_handling_string):
@@ -93,11 +93,8 @@ class DataHandling(threading.Thread):
                 print "4"
             except Exception, e:
                 self.gui.show_syntax_error_dialog("Data Handling: Unexpected error during execution of data handling script.\n" + str(e))
-                self.event_lock.clear()
-                self.__error_occured = None
-                self.result_reader.reset()
-                continue
 
+            # Cleanup
             self.result_reader.reset()
             self.__ok_to_start = None
             self.event_lock.clear()

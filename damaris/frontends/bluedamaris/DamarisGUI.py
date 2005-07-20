@@ -37,6 +37,7 @@ class DamarisGUI(threading.Thread):
 
 
     def run(self):
+        "Starting thread and GTK-mainloop"
         self.xml_gui = gtk.glade.XML("damaris.glade")
 
         self.damaris_gui_init()
@@ -49,6 +50,7 @@ class DamarisGUI(threading.Thread):
     # Inits der einzelnen Fenster ##################################################################
 
     def damaris_gui_init(self):
+        "Initialises the GUI-elements (connecting signals, referencing elements...)"
 
         self.main_window = self.xml_gui.get_widget("main_window")
 
@@ -155,16 +157,15 @@ class DamarisGUI(threading.Thread):
     # Callbacks ####################################################################################
 
     def quit_application(self, widget, Data = None):
+        "Callback for everything that quits the application"
         self.job_writer.quit_job_writer()
         self.data_handler.quit_data_handling()
         gtk.main_quit()
 
 
     def start_experiment(self, widget, Data = None):
-
+        """Callback for the "Start-Experiment" button"""
         try:
-            gtk.gdk.threads_enter()
-
             self.experiment_script_statusbar_label.set_text("Experiment Script: Busy...")
             self.data_handling_statusbar_label.set_text("Data Handling: Busy...")
             self.toolbar_run_button.set_sensitive(False)
@@ -177,15 +178,13 @@ class DamarisGUI(threading.Thread):
 
             gobject.timeout_add(100, self.sync_job_writer_data_handler)
             gobject.timeout_add(500, self.check_job_writer_data_handler_finished)
-            gtk.gdk.threads_leave()
             return True
-        finally:
-            gtk.gdk.threads_leave()
-            return True
-
+        except:
+            raise
+        
 
     def sync_job_writer_data_handler(self):
-
+        "Timeout-Callback for synchronising Job-Writer and Data-Handler (for example restarting everthing if an error occured)"
         try:
             gtk.gdk.threads_enter()
             # Check if still parsing
@@ -214,23 +213,28 @@ class DamarisGUI(threading.Thread):
 
 
     def check_job_writer_data_handler_finished(self):
-
+        "Timeout-Callback for checking the state of the Job-Writer and Data-Handler"
         try:
             gtk.gdk.threads_enter()
             
-            if self.job_writer.is_busy() or self.data_handler.is_busy():
-                return True
-
-            else:
+            if not self.job_writer.is_busy():
                 self.experiment_script_statusbar_label.set_text("Experiment Script: Idle.")
+
+            if not self.data_handler.is_busy():
                 self.data_handling_statusbar_label.set_text("Data Handling: Idle.")
+
+            if not self.data_handler.is_busy() and not self.job_writer.is_busy():
                 self.toolbar_run_button.set_sensitive(True)
                 return False
+
+            return True
+            
         finally:
             gtk.gdk.threads_leave()
     
 
     def open_file(self, widget, Data = None):
+        "Callback for the open-file dialog"
 
         main_notebook = self.main_notebook
         experiment_buffer = self.experiment_script_textview.get_buffer()
@@ -281,20 +285,12 @@ class DamarisGUI(threading.Thread):
         dialog.destroy()
 
         return True
-
-
-    def experiment_script_textview_changed(self, event, Data = None):
-        print "Experiment Script changed!"
-
-
-    def data_handling_textview_changed(self, event, Data = None):
-        print "Data Handling changed!"
     
 
     # Schnittstellen nach Auﬂen ####################################################################
 
     def draw_result(self, in_result):
-
+        "Interface to surface for drawing results/accumulated results"
         def idle_func():
             gtk.gdk.threads_enter()
 
@@ -316,22 +312,27 @@ class DamarisGUI(threading.Thread):
 
 
     def get_experiment_script(self):
+        "Interface for getting the content of the experiment-script textarea"
         return self.experiment_script_textbuffer.get_text(self.experiment_script_textbuffer.get_start_iter(), self.experiment_script_textbuffer.get_end_iter())
 
 
     def get_data_handling_script(self):
+        "Interface for getting the content of the data-handling-script textarea"
         return self.data_handling_textbuffer.get_text(self.data_handling_textbuffer.get_start_iter(), self.data_handling_textbuffer.get_end_iter())
 
 
     def connect_data_handler(self, data_handler):
+        "Referencing the data-handler"
         self.data_handler = data_handler
 
 
     def connect_job_writer(self, job_writer):
+        "Referencing job-writer"
         self.job_writer = job_writer
 
 
     def show_syntax_error_dialog(self, error_message):
+        "Displays a syntax-error dialog"
         def idle_func():
             try:
                 gtk.gdk.threads_enter()

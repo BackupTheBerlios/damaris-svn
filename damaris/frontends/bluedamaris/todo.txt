@@ -1,0 +1,12 @@
+Bis zur ersten lauffähigen Version:
+
+- Core stop/start aus der Oberfläche heraus
+- Neue Skripte / Skript speichern Toolbar-Button implementieren
+- Error Results implementieren (-> Zustände einführen)
+- Experiment restartable machen
+- Stop implementieren
+- Warnung, das Dateien überschrieben werden implementieren (beim Start des Exp.)
+- sinnvolle XML-Statements durch den Job-Writer ausgeben
+
+? Skript checken mit Dummycore ?
+? Line / Column implementieren ?
