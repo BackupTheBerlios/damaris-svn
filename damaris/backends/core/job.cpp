@@ -192,6 +192,7 @@ state_atom* experiment::state_factory(const XERCES_CPP_NAMESPACE_QUALIFIER DOMEl
     XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&length_string);
     // but now we do not accept anything
     if (result!=0) throw job_exception("state requires length as floating point value");
+    if (length<0) throw job_exception("state's length must be non-negative");
     state* new_state=new state(length);
     new_state->parent=NULL;
 
@@ -316,44 +317,56 @@ state_atom* experiment::state_factory(const XERCES_CPP_NAMESPACE_QUALIFIER DOMEl
     analogin* ain=new analogin();
     // read parameters
     char* id=get_parameter(element,"id","i",(char*)NULL);
-    char* frequency=get_parameter(element,"f","frequency",(char*)NULL);
-    char* samples=get_parameter(element,"s","samples",(char*)NULL);
-    char* channels=get_parameter(element,"c","channels",(char*)NULL);
-    char* sensitivity=get_parameter(element,"sen","sensitivity",(char*)NULL);
-    char* resolution=get_parameter(element,"r","res","resolution",(char*)NULL);
-    if (frequency!=NULL) {
-      ain->sample_frequency=strtod(frequency,NULL);
-      XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&frequency);
-    }
-    if (samples!=NULL) {
-      ain->samples=strtoul(samples,NULL,0);
-      XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&samples);
-    }
     if (id!=NULL) {
       ain->id=strtoul(id,NULL,0);
       XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&id);
     }
+    char* frequency=get_parameter(element,"f","frequency",(char*)NULL);
+    if (frequency!=NULL) {
+      ain->sample_frequency=strtod(frequency,NULL);
+      XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&frequency);
+      if (ain->sample_frequency<0) {
+	  delete ain;
+	  throw job_exception("frequency must be non-negative");
+      }
+    }
+    char* samples=get_parameter(element,"s","samples",(char*)NULL);
+    if (samples!=NULL) {
+	char* samples_startpos=samples;
+	while (*samples_startpos!=0 && isspace(*samples_startpos)) ++samples_startpos;
+	if (*samples_startpos=='-') {
+	    XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&samples);
+	    delete ain;
+	    throw job_exception("frequency must be non-negative");
+	}
+	ain->samples=strtoul(samples,NULL,0);
+	XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&samples);
+    }
+    char* channels=get_parameter(element,"c","channels",(char*)NULL);
     if (channels!=NULL) {
-      ain->channels=strtoul(channels,NULL,0);
-      XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&channels);
+	ain->channels=strtoul(channels,NULL,0);
+	XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&channels);
     }
     else
-      ain->channels=3;
+	ain->channels=3;
+    char* sensitivity=get_parameter(element,"sen","sensitivity",(char*)NULL);
     if (sensitivity!=NULL) {
-      ain->sensitivity=strtod(sensitivity,NULL);
-      XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&sensitivity);
+	ain->sensitivity=strtod(sensitivity,NULL);
+	XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&sensitivity);
     }
     else
-      ain->sensitivity=5.0;
+	ain->sensitivity=5.0;
+    char* resolution=get_parameter(element,"r","res","resolution",(char*)NULL);
     if (resolution!=NULL) {
-      ain->resolution=strtoul(resolution,NULL,0);
-      XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&resolution);
+	ain->resolution=strtoul(resolution,NULL,0);
+	XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&resolution);
     }
     else
-      ain->resolution=12;
+	ain->resolution=12;
+    
     return (state_atom*)ain;
   }
-
+  
   return NULL;
 }
 
