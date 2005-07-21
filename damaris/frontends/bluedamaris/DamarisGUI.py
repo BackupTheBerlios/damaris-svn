@@ -34,6 +34,8 @@ class DamarisGUI(threading.Thread):
         if config_object is not None:
             self.config = config_object.get_my_config(self)
 
+        self.__experiment_running = False
+
 
     def run(self):
         "Starting thread and GTK-mainloop"
@@ -58,8 +60,7 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("main_window_close", self.quit_application)
         self.xml_gui.signal_connect("on_toolbar_run_button_clicked", self.start_experiment)
         self.xml_gui.signal_connect("on_toolbar_open_file_button_clicked", self.open_file)
-        #self.xml_gui.signal_connect("on_experiment_script_textview_event", self.experiment_script_textview_changed)
-        #self.xml_gui.signal_connect("on_data_handling_textview_event", self.data_handling_textview_changed)
+        self.xml_gui.signal_connect("on_main_notebook_switch_page", self.main_notebook_page_changed)
         
         # Sonstige inits ---------------------------------------------------------------------------
 
@@ -128,6 +129,9 @@ class DamarisGUI(threading.Thread):
         self.toolbar_new_button = self.xml_gui.get_widget("toolbar_new_button")
         self.toolbar_new_button.set_sensitive(False)
 
+        self.toolbar_open_button = self.xml_gui.get_widget("toolbar_open_file_button")
+        self.toolbar_open_button.set_sensitive(True)
+
         self.toolbar_save_button = self.xml_gui.get_widget("toolbar_save_file_button")
         self.toolbar_save_button.set_sensitive(False)
 
@@ -183,12 +187,6 @@ class DamarisGUI(threading.Thread):
     # /Inits der einzelnen Fenster #################################################################        
 
 
-    # Interne Funktionen ###########################################################################
-
-    
-            
-
-
     # Callbacks ####################################################################################
 
     def quit_application(self, widget, Data = None):
@@ -201,6 +199,9 @@ class DamarisGUI(threading.Thread):
 
     def start_experiment(self, widget, Data = None):
         """Callback for the "Start-Experiment" button"""
+
+        self.__experiment_running = True
+        
         try:
             self.experiment_script_statusbar_label.set_text("Experiment Script: Busy...")
             self.data_handling_statusbar_label.set_text("Data Handling: Busy...")
@@ -216,6 +217,7 @@ class DamarisGUI(threading.Thread):
             gobject.timeout_add(500, self.check_job_writer_data_handler_finished)
             return True
         except:
+            self.__experiment_running = False
             raise
         
 
@@ -225,21 +227,17 @@ class DamarisGUI(threading.Thread):
             gtk.gdk.threads_enter()
             # Check if still parsing
             if self.job_writer.error_occured() == None:
-                print "jw still parsing"
                 return True
 
             if self.data_handler.error_occured() == None:
-                print "dh still parsing"
                 return True
 
             # Check if an error occured
             if self.job_writer.error_occured() == True or self.data_handler.error_occured() == True:
-                print "Error occureed!!"
                 self.job_writer.start_writing(False)
                 self.data_handler.start_handling(False)            
                 return False
             else:
-                print "No Error occured"
                 self.job_writer.start_writing(True)
                 self.data_handler.start_handling(True)
                 self.main_notebook.set_current_page(2)
@@ -261,6 +259,7 @@ class DamarisGUI(threading.Thread):
 
             if not self.data_handler.is_busy() and not self.job_writer.is_busy():
                 self.toolbar_run_button.set_sensitive(True)
+                self.__experiment_running = False
                 return False
 
             return True
@@ -322,6 +321,37 @@ class DamarisGUI(threading.Thread):
 
         return True
     
+
+    def main_notebook_page_changed(self, widget, page, page_num, data = None):
+        "Make sure you can only access toolbar-buttons usable for the open notebook-tab"
+
+        # In Zukunft auch "Running" beachten
+
+        if self.__experiment_running: return True
+        
+        if page_num == 0:
+            self.toolbar_new_button.set_sensitive(True)
+            self.toolbar_open_button.set_sensitive(True)
+            self.toolbar_save_button.set_sensitive(True)
+            self.toolbar_save_as_button.set_sensitive(True)
+            self.toolbar_run_button.set_sensitive(True)
+            self.toolbar_check_scripts_button.set_sensitive(True)
+        elif page_num == 1:
+            self.toolbar_new_button.set_sensitive(True)
+            self.toolbar_open_button.set_sensitive(True)
+            self.toolbar_save_button.set_sensitive(True)
+            self.toolbar_save_as_button.set_sensitive(True)
+            self.toolbar_run_button.set_sensitive(True)
+            self.toolbar_check_scripts_button.set_sensitive(True)
+        elif page_num == 2:
+            self.toolbar_new_button.set_sensitive(True)
+            self.toolbar_open_button.set_sensitive(False)
+            self.toolbar_save_button.set_sensitive(False)
+            self.toolbar_save_as_button.set_sensitive(False)
+            self.toolbar_run_button.set_sensitive(True)
+            self.toolbar_check_scripts_button.set_sensitive(True)
+
+        return True
 
     # Schnittstellen nach Auﬂen ####################################################################
 

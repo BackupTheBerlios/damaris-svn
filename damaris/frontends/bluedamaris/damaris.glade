@@ -196,6 +196,7 @@
 	  <property name="tab_pos">GTK_POS_TOP</property>
 	  <property name="scrollable">False</property>
 	  <property name="enable_popup">False</property>
+	  <signal name="switch_page" handler="on_main_notebook_switch_page" last_modification_time="Thu, 21 Jul 2005 11:53:02 GMT"/>
 
 	  <child>
 	    <widget class="GtkTable" id="experiment_script_table">
@@ -954,6 +955,8 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_new_button">
 	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">New</property>
+	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-new</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
@@ -985,6 +988,8 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_save_file_button">
 	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Save</property>
+	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-save</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
@@ -999,6 +1004,8 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_save_as_button">
 	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Save AS</property>
+	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-save-as</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
@@ -1044,6 +1051,8 @@ log</property>
 	    <widget class="GtkToolButton" id="toolbar_stop_button">
 	      <property name="visible">True</property>
 	      <property name="sensitive">False</property>
+	      <property name="label" translatable="yes">Stop</property>
+	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-stop</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>

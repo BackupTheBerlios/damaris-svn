@@ -64,10 +64,8 @@ class JobWriter(threading.Thread):
 
         while 1:
             # Idling...
-            print "Idlin..."
             self.__busy = False
             self.event_lock.wait()
-            print "I woke up!"
 
             # Quit thread?
             if self.quit_main_loop: break
@@ -126,14 +124,12 @@ class JobWriter(threading.Thread):
 
             # Run script
             try:
-                print "Running script"
                 for exp in self.experiment_script(self):
                     job_file = file(os.path.join(self.path, "job.tmp"), "w")
                     job_file.write(exp.write_xml_string())
                     job_file.close()
                     os.rename(os.path.join(self.path, "job.tmp"), os.path.join(self.path, self.filename % exp.get_job_id()))
 
-                print "Done!"
                 end_job = Experiment()
 
                 end_job_file = file(os.path.join(self.path, "job.tmp"), "w")
