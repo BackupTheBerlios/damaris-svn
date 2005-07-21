@@ -57,13 +57,14 @@ class DataHandling(threading.Thread):
             # Idling...
             self.__busy = False
             self.event_lock.wait()
+
+            # Quit thread?
+            if self.quit_main_loop: break
+
             self.__busy = True
 
             # Telling other threads DataHandling is still parsing
             self.__error_occured = None
-
-            # Quit thread?
-            if self.quit_main_loop: break
 
             # Import needed libraries
             from Result import Result
@@ -76,29 +77,27 @@ class DataHandling(threading.Thread):
             # Syntax ok?
             if self.check_syntax(data_handling_string):
                 self.__error_occured = False
-
-                # Wait for ok from GUI (no errors occured in other threads)
-                while self.__ok_to_start is None:
-                    self.event.wait(0.2)
-
-                # Error occured somewhere else
-                if not self.__ok_to_start:
-                    self.__ok_to_start = None
-                    self.event_lock.clear()
-                    continue
-                                
             else:
-                self.__ok_to_start = None
                 self.__error_occured = True
+
+
+            # Waiting for GUI and other Threads
+            while self.__ok_to_start is None:
+                self.event.wait(0.2)
+
+            # Error occured -> __ok_to_start will be set to False (from the GUI)
+            if not self.__ok_to_start:
+                self.__ok_to_start = None
                 self.event_lock.clear()
                 continue
-                
+                                
             try:
                 print "1"
                 self.result_reader.start()
                 print "2"
                 exec data_handling_string in locals()
                 print "3"
+                self.event.wait(0.5)
                 data_handling(self)
                 print "4"
             except Exception, e:
@@ -152,11 +151,9 @@ class DataHandling(threading.Thread):
         return tmp
 
 
-
     def draw(self, result):
         "Displays a result on the GUI"
         self.gui.draw_result(result)
-        #self.gui.flush()
 
 
     def jobs_pending(self):
@@ -183,10 +180,6 @@ class DataHandling(threading.Thread):
         return self.__busy
 
 
-    def quit_data_handling(self):
-        self.quit_main_loop = True
-        self.event_lock.set()
-
 
     def start_handling(self, ready_for_start):
         "Sets an internal flag true/false if handling can start and no errors occured in this or other threads (only used internally)"
@@ -208,10 +201,11 @@ class DataHandling(threading.Thread):
         self.result_reader.join()
 
         self.quit_main_loop = True
+        self.event_lock.set()
 
 
     def join(self):
-        "Overwritten join (since DataHandling calls the thread ResultReader"
+        "Overwritten join (since DataHandling calls the thread ResultReader)"
         self.result_reader.join()
 
     # /Public Methods (Internally used) ------------------------------------------------------------

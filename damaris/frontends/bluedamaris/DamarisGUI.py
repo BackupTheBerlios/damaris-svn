@@ -77,10 +77,46 @@ class DamarisGUI(threading.Thread):
         self.data_handling_textview.modify_font(pango.FontDescription("Courier 10"))
 
         self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
-        self.experiment_script_textbuffer.set_text("def experiment_script(input):\n    ")
+
+        # For faster testing...
+        self.experiment_script_textbuffer.set_text("""def experiment_script(input):
+
+    pi = 1e-3
+
+    tau = 1e-3
+    px = 0
+    py = 90
+    mx = 180
+    my = 270
+
+    while tau <= 5e-3:
+
+        for accu in range(10):
+
+            exp = Experiment()
+            print "Job %d erstellt!" % exp.get_job_id()
+            exp.set_description("tau", tau)
+
+            exp.set_frequency(100e6, 0)
+
+            exp.rf_pulse(0, pi/2)
+            exp.wait(tau)
+            exp.rf_pulse(0, pi)
+            exp.wait(tau + 1e-6)
+
+            exp.record(512, 1e6)
+
+            yield exp
+
+        tau += 1e-3""")
 
         self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
-        self.data_handling_textbuffer.set_text("def data_handling(input):\n    ")
+        self.data_handling_textbuffer.set_text("""def data_handling(input):
+
+    while input.jobs_pending():
+        timesignal = input.get_next_result()
+        print "Drawing %d..." % timesignal.get_job_id()
+        input.draw(timesignal)""")
 
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
         self.toolbar_stop_button.set_sensitive(False)
@@ -159,6 +195,7 @@ class DamarisGUI(threading.Thread):
         "Callback for everything that quits the application"
         self.job_writer.quit_job_writer()
         self.data_handler.quit_data_handling()
+
         gtk.main_quit()
 
 

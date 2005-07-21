@@ -64,8 +64,14 @@ class JobWriter(threading.Thread):
 
         while 1:
             # Idling...
+            print "Idlin..."
             self.__busy = False
             self.event_lock.wait()
+            print "I woke up!"
+
+            # Quit thread?
+            if self.quit_main_loop: break
+
             self.__busy = True
 
             # Delete existing job-files
@@ -82,9 +88,6 @@ class JobWriter(threading.Thread):
             # Telling other threads we are still parsing
             self.__error_occured = None
 
-            # Quit thread?
-            if self.quit_main_loop: break
-
             # Import needed libraries
             from Experiment import Experiment
             reset()
@@ -95,22 +98,20 @@ class JobWriter(threading.Thread):
             # Syntax ok?
             if self.check_syntax(experiment_script_string):
                 self.__error_occured = False
-
-                # Wait for ok from GUI (no errors occured in other threads)
-                while self.__ok_to_start is None:
-                    self.event.wait(0.2)
-
-                # Error occured somewhere else
-                if not self.__ok_to_start:
-                    self.__ok_to_start = None
-                    self.event_lock.clear()
-                    continue
-                
             else:
                 self.__error_occured = True
+
+
+            # Waiting for GUI & other Threads
+            while self.__ok_to_start is None:
+                self.event.wait(0.2)
+
+            # Error occured -> __ok_to_start will be set False (from the GUI)
+            if not self.__ok_to_start:
                 self.__ok_to_start = None
                 self.event_lock.clear()
                 continue
+
 
             # Bind script to self
             try:
@@ -125,12 +126,14 @@ class JobWriter(threading.Thread):
 
             # Run script
             try:
+                print "Running script"
                 for exp in self.experiment_script(self):
                     job_file = file(os.path.join(self.path, "job.tmp"), "w")
                     job_file.write(exp.write_xml_string())
                     job_file.close()
                     os.rename(os.path.join(self.path, "job.tmp"), os.path.join(self.path, self.filename % exp.get_job_id()))
 
+                print "Done!"
                 end_job = Experiment()
 
                 end_job_file = file(os.path.join(self.path, "job.tmp"), "w")
@@ -173,6 +176,7 @@ class JobWriter(threading.Thread):
 
     def start_writing(self, ready_to_start):
         "Sets internal flag to true/false, depending if errors occured in other threads (internally used)"
+        print "Start Writing called! (%s)" % str(ready_to_start)
         self.__ok_to_start = ready_to_start
 
 
