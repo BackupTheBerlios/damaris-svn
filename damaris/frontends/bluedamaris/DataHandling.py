@@ -197,15 +197,12 @@ class DataHandling(threading.Thread):
 
 
     def quit_data_handling(self):
-        self.result_reader.quit_result_reader()
-        self.result_reader.join()
+        if self.result_reader.isAlive():
+            self.result_reader.quit_result_reader()
+            self.result_reader.join()
 
         self.quit_main_loop = True
         self.event_lock.set()
 
-
-    def join(self):
-        "Overwritten join (since DataHandling calls the thread ResultReader)"
-        self.result_reader.join()
 
     # /Public Methods (Internally used) ------------------------------------------------------------

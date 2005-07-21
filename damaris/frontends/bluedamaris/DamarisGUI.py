@@ -61,6 +61,7 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("on_toolbar_run_button_clicked", self.start_experiment)
         self.xml_gui.signal_connect("on_toolbar_open_file_button_clicked", self.open_file)
         self.xml_gui.signal_connect("on_main_notebook_switch_page", self.main_notebook_page_changed)
+        self.xml_gui.signal_connect("on_toolbar_new_button_clicked", self.new_file)
         
         # Sonstige inits ---------------------------------------------------------------------------
 
@@ -127,7 +128,7 @@ class DamarisGUI(threading.Thread):
         self.main_notebook = self.xml_gui.get_widget("main_notebook")
 
         self.toolbar_new_button = self.xml_gui.get_widget("toolbar_new_button")
-        self.toolbar_new_button.set_sensitive(False)
+        self.toolbar_new_button.set_sensitive(True)
 
         self.toolbar_open_button = self.xml_gui.get_widget("toolbar_open_file_button")
         self.toolbar_open_button.set_sensitive(True)
@@ -192,7 +193,10 @@ class DamarisGUI(threading.Thread):
     def quit_application(self, widget, Data = None):
         "Callback for everything that quits the application"
         self.job_writer.quit_job_writer()
+        self.job_writer.join()
+        
         self.data_handler.quit_data_handling()
+        self.data_handler.join()
 
         gtk.main_quit()
 
@@ -321,6 +325,21 @@ class DamarisGUI(threading.Thread):
 
         return True
     
+
+    def new_file(self, widget, Data = None):
+
+        # Implemented in Future?
+        self.__scripts_changed = False
+
+        if not self.__scripts_changed:
+            self.experiment_script_textbuffer.set_text("def experiment_script(input):\n    pass")
+            self.data_handling_textbuffer.set_text("def data_handling(input):\n    pass")
+        else:
+            #Show "U want 2 save"-Dialog
+            pass
+        
+        return True
+        
 
     def main_notebook_page_changed(self, widget, page, page_num, data = None):
         "Make sure you can only access toolbar-buttons usable for the open notebook-tab"

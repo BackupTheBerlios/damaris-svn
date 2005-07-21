@@ -1,13 +1,12 @@
 Bis zur ersten lauffähigen Version:
 
 - Core stop/start aus der Oberfläche heraus
-- Neue Skripte / Skript speichern Toolbar-Button implementieren
+- New / Skript speichern Toolbar-Button (richtig) implementieren
 - Error Results implementieren (-> Zustände einführen)
 - Stop implementieren
 - Warnung, das Dateien überschrieben werden implementieren (beim Start des Exp.)
 - sinnvolle XML-Statements durch den Job-Writer ausgeben
 - nach verlorenen Methoden gucken, die mittlerweile nicht mehr gebraucht werden (z.b. suspend und wakeup)
-- Fehlermeldung bei sofortigem Quit nach Start fixen
 - Absturz beim beenden des Programms beheben
 
 ? Skript checken mit Dummycore ?
@@ -16,4 +15,8 @@ Bis zur ersten lauffähigen Version:
 Vermutlich erledigt:
 - Experiment restartable machen:
   Habe ein paar Konfigurationen getestet (Keine Fehler, Fehler im Experiment Script oder Data Handling Script,
-  Fehler bei beiden - jedes Mal ließen sich die Experimente nach korrektur mehrere Male starten) 
+  Fehler bei beiden - jedes Mal ließen sich die Experimente nach korrektur mehrere Male starten)
+  
+  
+Erledigt:
+- Absturz bei sofortigem Quit nach Start fixen
