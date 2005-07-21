@@ -117,6 +117,10 @@ class DamarisGUI(threading.Thread):
 
     while input.jobs_pending():
         timesignal = input.get_next_result()
+
+        if timesignal.is_error():
+            continue
+        
         print "Drawing %d..." % timesignal.get_job_id()
         input.draw(timesignal)""")
 
@@ -192,11 +196,21 @@ class DamarisGUI(threading.Thread):
 
     def quit_application(self, widget, Data = None):
         "Callback for everything that quits the application"
+
+        # An idea for an bugfix (crashing when clicking "exit")
+        print "THREADS STILL ACTIVE: %s" % str(threading.enumerate())
+        
         self.job_writer.quit_job_writer()
         self.job_writer.join()
+
+        # An idea for an bugfix (crashing when clicking "exit")
+        print "THREADS STILL ACTIVE: %s" % str(threading.enumerate())
         
         self.data_handler.quit_data_handling()
         self.data_handler.join()
+
+        # An idea for an bugfix (crashing when clicking "exit")
+        print "THREADS STILL ACTIVE: %s" % str(threading.enumerate())
 
         gtk.main_quit()
 
@@ -439,7 +453,31 @@ class DamarisGUI(threading.Thread):
                 gtk.gdk.threads_leave()
 
         gobject.idle_add(idle_func)
-            
+
+
+    def show_error_result_dialog(self, error_message):
+        "Displays a syntax-error dialog"
+        def idle_func():
+            try:
+                gtk.gdk.threads_enter()
+                dialog = gtk.MessageDialog(parent = self.main_window,
+                                           flags = gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+                                           type = gtk.MESSAGE_ERROR,
+                                           buttons = gtk.BUTTONS_OK,
+                                           message_format = error_message)
+
+                dialog.set_title("Error Result occured")
+                dialog.set_position(gtk.WIN_POS_CENTER)
+                                                          
+                dialog.run()
+                dialog.destroy()
+
+                return False
+                
+            finally:
+                gtk.gdk.threads_leave()
+
+        gobject.idle_add(idle_func)            
 
 ##    def flush(self):
 ##        gtk.gdk.threads_enter()

@@ -1,22 +1,33 @@
 Bis zur ersten lauffähigen Version:
+-----------------------------------
 
 - Core stop/start aus der Oberfläche heraus
 - New / Skript speichern Toolbar-Button (richtig) implementieren
-- Error Results implementieren (-> Zustände einführen)
 - Stop implementieren
 - Warnung, das Dateien überschrieben werden implementieren (beim Start des Exp.)
 - sinnvolle XML-Statements durch den Job-Writer ausgeben
 - nach verlorenen Methoden gucken, die mittlerweile nicht mehr gebraucht werden (z.b. suspend und wakeup)
 - Absturz beim beenden des Programms beheben
+- "Successfully parsed blabla.result" und der tatsächlich geparsten Datei stimmen nicht überein (vielleicht nur bei Error-Messages?)
+- ResultReader auf mehrere Results pro File umbauen
+- Convenience-Functions verbessern, wie z.B. jobs_pending() oder get_variable()
 
 ? Skript checken mit Dummycore ?
 ? Line / Column implementieren ?
 
+
+Auf irgendeine Art erledigt:
+----------------------------
+
 Vermutlich erledigt:
 - Experiment restartable machen:
   Habe ein paar Konfigurationen getestet (Keine Fehler, Fehler im Experiment Script oder Data Handling Script,
-  Fehler bei beiden - jedes Mal ließen sich die Experimente nach korrektur mehrere Male starten)
-  
-  
+  Fehler bei beiden - jedes Mal ließen sich die Experimente auch nach korrektur mehrere Male starten)
+
+Verbesserungswürdig, läuft aber:
+- Error Results implementieren (-> Zustände einführen)
+  Vielleicht findet sich im Laufe der Zeit eine geschicktere Methode, Error-Results zu behandeln.
+  Momentan werden sie durchgereicht + Error-Dialog in der Oberfläche angezeigt (sowie in der Console zusätzlich nochmal angezeigt)
+
 Erledigt:
 - Absturz bei sofortigem Quit nach Start fixen

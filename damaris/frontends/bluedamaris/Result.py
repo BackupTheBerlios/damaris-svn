@@ -45,6 +45,11 @@ class Result:
 
     # Public Methods -------------------------------------------------------------------------------
 
+    def is_error(self):
+        "If this result is an error-result return True"
+        if self.description.has_key("error_msg"): return True
+        else: return False
+
     def set_job_number(self, in_job_nr):
         "Sets the job-number (only used internally)"
         self.job_nr = in_job_nr
@@ -81,7 +86,7 @@ class Result:
 
 
     def add_description(self, in_key, in_value):
-        "Adds a description to the result"
+        "Adds a description to the result (prints a warning if key exists)"
         if self.description.has_key(in_key): print "Warning: Overwriting existing key \"%s\" (%s) with \"%s\"." % (str(in_key), str(self.description[in_key]), str(in_value))
         self.description[in_key] = in_value
 
@@ -92,6 +97,11 @@ class Result:
             return self.description[in_key]
         else:
             print "Warning: No existing key \"%s\" in descriptions." % in_key
+
+
+    def set_description(self, key, value):
+        "Adds/Overwrites a description of the result"
+        self.description[key] = value
 
 
     def get_description_list(self):

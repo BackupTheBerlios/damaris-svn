@@ -17,7 +17,7 @@ from Result import *
 
 class ResultReader(threading.Thread):
 
-    RESULT_TYPE = 1
+    ADCDATA_TYPE = 1
     ERROR_TYPE = 0
 
     # Private Methods ------------------------------------------------------------------------------
@@ -38,6 +38,9 @@ class ResultReader(threading.Thread):
         
         # Filename stuff
         self.filename = "job.%09d.result"
+
+        # Kind of file (Error, ADC-Data...)
+        self.__filetype = None
 
         # Quit main loop?
         self.quit_loop = False
@@ -61,9 +64,6 @@ class ResultReader(threading.Thread):
         # Event-Objekt für Thread-Suspending
         self.event = threading.Event()          # Timeout
         self.event_lock = threading.Event()     # Thread locking
-
-        # Type of result-file - Error or Result?
-        self.result_type = -1 # Nothing so far
 
         # ResultReader reset?
         self.__reset = False
@@ -159,9 +159,10 @@ class ResultReader(threading.Thread):
 
         # Beginning for the adcdata-section
         if in_name == "adcdata":
+            self.__filetype = ResultReader.ADCDATA_TYPE
             if in_attribute.has_key("samples"):
                 self.adcdata_samples = int(in_attribute["samples"])
-                self.result_type = ResultReader.RESULT_TYPE
+
             else:
                 print "Error parsing result-file: Missing number of recorded samples"
                 return 
@@ -183,8 +184,9 @@ class ResultReader(threading.Thread):
 
 
         elif in_name == "error":
-            self.tmp_result = Result(1, 1)
-            self.tmp_result.set_description("error", "no message")
+            self.__filetype = ResultReader.ERROR_TYPE
+            self.tmp_result = Result(2, 1)
+            self.tmp_result.add_description("error_msg", "")
         
         elif in_name == "result":
             if in_attribute.has_key("job"):
@@ -200,16 +202,22 @@ class ResultReader(threading.Thread):
      
 
     def __xmlCharacterDataFound(self, in_cdata):
-        if not in_cdata.isspace():
-            values = map(int, in_cdata.split())
 
-            for i in values:
-                self.tmp_result.set_value(self.current_channel, self.current_pos, i)
-                #print "added value " + str(i) + " at: " + str(self.current_channel) + ", " + str(self.current_pos)
-                self.current_channel = (self.current_channel + 1) % self.tmp_result.get_number_of_channels()
-                if self.current_channel == 0:
-                    self.tmp_result.set_xvalue(self.current_pos, self.current_pos / float(self.tmp_result.get_sampling_rate()))
-                    self.current_pos += 1
+        if self.__filetype == ResultReader.ERROR_TYPE:
+            tmp_str = str(self.tmp_result.get_description("error_msg"))
+            self.tmp_result.set_description("error_msg", tmp_str + in_cdata)
+
+        elif self.__filetype == ResultReader.ADCDATA_TYPE:
+             if not in_cdata.isspace():
+                values = map(int, in_cdata.split())
+
+                for i in values:
+                    self.tmp_result.set_value(self.current_channel, self.current_pos, i)
+                    #print "added value " + str(i) + " at: " + str(self.current_channel) + ", " + str(self.current_pos)
+                    self.current_channel = (self.current_channel + 1) % self.tmp_result.get_number_of_channels()
+                    if self.current_channel == 0:
+                        self.tmp_result.set_xvalue(self.current_pos, self.current_pos / float(self.tmp_result.get_sampling_rate()))
+                        self.current_pos += 1
 
 
 
@@ -220,6 +228,15 @@ class ResultReader(threading.Thread):
             self.current_channel = 0
             self.current_pos = 0
             self.result_type = -1
+            self.__file_type = None
+
+        elif in_name == "error":
+            self.result_queue.append(self.tmp_result)
+            print "Result Reader: Error-Result parsed (%s)! Error Message: %s" % (os.path.join(self.path, self.filename % self.files_read), self.tmp_result.get_description("error_msg"))
+            self.current_channel = 0
+            self.current_pos = 0
+            self.result_type = -1
+            self.__file_type = None            
 
 
 

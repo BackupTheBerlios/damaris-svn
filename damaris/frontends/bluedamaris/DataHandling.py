@@ -92,14 +92,11 @@ class DataHandling(threading.Thread):
                 continue
                                 
             try:
-                print "1"
                 self.result_reader.start()
-                print "2"
                 exec data_handling_string in locals()
-                print "3"
-                self.event.wait(0.5)
+                # self.jobs_pending() doesnt work correctly if we start everything immedeatly
+                self.event.wait(1)
                 data_handling(self)
-                print "4"
             except Exception, e:
                 self.gui.show_syntax_error_dialog("Data Handling: Unexpected error during execution of data handling script.\n" + str(e))
 
@@ -147,6 +144,9 @@ class DataHandling(threading.Thread):
         while tmp is None:
             self.event.wait(0.1)
             tmp = self.result_reader.get_next_result()
+
+        if tmp.is_error():
+            self.gui.show_error_result_dialog(tmp.get_description("error_msg"))
 
         return tmp
 
