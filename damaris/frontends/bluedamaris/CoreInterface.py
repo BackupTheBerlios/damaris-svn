@@ -1,6 +1,14 @@
 import Configuration
 import os
 import os.path
+import sys
+import time
+import re
+
+try:
+    import signal
+except ImportException:
+    pass
 
 __doc__ = """
 This class handles the backend driver
@@ -30,36 +38,76 @@ class CoreInterface:
 
     def start_core(self):
 
+        # take care of older logfiles
+        self.core_output_filename=os.path.join(self.core_dir,"logdata")
+        if os.path.isfile(self.core_output_filename):
+            i=0
+            max_logs=100
+            while i<max_logs-1 and os.path.isfile(self.core_output_filename+".%02d"%i):
+                i+=1
+            for j in xrange(i):
+                os.rename(self.core_output_filename+".%02d"%(i-j-1),self.core_output_filename+".%02d"%(i-j))
+            os.rename(self.core_output_filename, self.core_output_filename+".00")
+        # create logfile
+        file(self.core_output_filename,"w")
+        
         print "starting core %s"%self.core_executable,
-        # save current dir
-        my_dir=os.getcwd()
-        # change directory
-        os.chdir(self.core_dir)
-        # popen implementation
-        (self.core_input,self.core_output)=os.popen4(self.core_executable+" --spool "+self.core_dir,"rw")
-        os.chdir(my_dir)
-        print "done"
+        if sys.platform[:5]=="linux":
+            self.core_input=os.popen(self.core_executable+" --spool "+self.core_dir+" >"+self.core_output_filename+" 2>&1","w")
+        if sys.platform[:7]=="windows":
+            self.core_input=os.popen(self.core_executable+" --spool "+self.core_dir+" >"+self.core_output_filename,"w")
+
+        # look out for state file
+        timeout=1
+        # to do: how should I know core's state name????!!!!!
+        self.statefilename=os.path.join(self.core_dir,"dummy core.state")
+        while not os.path.isfile(self.statefilename) and timeout>0:
+            time.sleep(0.1)
+            timeout-=0.1
+        if timeout<0:
+            raise AssertionError("state file did not show up")
+
+        statefile=file(self.statefilename,"r")
+        statelines=statefile.readlines()
+        statelinepattern=re.compile("<state name=\"([^\"]+)\" pid=\"([^\"]+)\" starttime=\"([^\"]+)\">")
+        self.core_pid=-1
+        for l in statelines:
+            matched=statelinepattern.match(l)
+            if matched:
+                self.core_pid=int(matched.group(2))
+                break
+
+        # now open output file
+        self.core_output=file(self.core_output_filename,"r")
+        print "done (pid=%d)"%self.core_pid
 
     def get_messages(self):
         # return pending messages
-        return self.core_output.read(1)
+        if self.core_output.tell()==os.path.getsize(self.core_output_filename):
+            return None
+        return self.core_output.read()
 
     def start_queue(self):
         # start core or reset it
-        pass
+        if sys.platform[:5]=="linux":
+            os.kill(self.core_pid,signal.SIGUSR1)
 
     def stop_queue(self):
         # stop core but finish job
-        pass
+        if sys.platform[:5]=="linux":
+            os.kill(self.core_pid,signal.SIGQUIT)
 
     def abort(self):
         # abort execution
-        pass
+        if sys.platform[:5]=="linux":
+            os.kill(self.core_pid,signal.SIGTERM)
 
     def __del__(self):
         # stop core and wait for it
-        pass
-
+        try:
+            self.abort()
+        except OSError:
+            pass
         
 if __name__=="__main__":
     # for test purposes only
@@ -68,4 +116,6 @@ if __name__=="__main__":
     ci.start_core()
     
     while 1:
-        print ci.get_messages()
+        m=ci.get_messages()
+        if m is not None:
+            print m,
