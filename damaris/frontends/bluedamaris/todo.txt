@@ -10,6 +10,10 @@ Bis zur ersten lauffähigen Version:
 - "Successfully parsed blabla.result" und der tatsächlich geparsten Datei stimmen nicht überein (vielleicht nur bei Error-Messages?)
 - ResultReader auf mehrere Results pro File umbauen
 - Convenience-Functions verbessern, wie z.B. jobs_pending() oder get_variable()
+- mehrere Watchpoints implementieren -> "Quelle-Pulldownmenü" (und mehrere Graphen)
+- Open-Dialog mit Doppelklick austatten und weniger anfällig für falsche Angaben machen
+- Beim Save-File Dialog Warnung implementieren, falls Dateien überschrieben werden
+- Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln)
 
 ? Skript checken mit Dummycore ?
 ? Line / Column implementieren ?

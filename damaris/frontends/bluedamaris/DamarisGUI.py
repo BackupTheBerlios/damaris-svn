@@ -62,6 +62,17 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("on_toolbar_open_file_button_clicked", self.open_file)
         self.xml_gui.signal_connect("on_main_notebook_switch_page", self.main_notebook_page_changed)
         self.xml_gui.signal_connect("on_toolbar_new_button_clicked", self.new_file)
+        self.xml_gui.signal_connect("on_toolbar_save_as_button_clicked", self.save_file_as)
+        self.xml_gui.signal_connect("on_toolbar_save_file_button_clicked", self.save_file)
+
+        self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
+        self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
+        self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
+        self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
+
+        self.experiment_script_textbuffer.connect("modified-changed", self.textviews_modified)
+        self.data_handling_textbuffer.connect("modified-changed", self.textviews_modified)
+        
         
         # Sonstige inits ---------------------------------------------------------------------------
 
@@ -72,13 +83,39 @@ class DamarisGUI(threading.Thread):
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
 
-        self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
-        self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
+        self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
+        self.toolbar_stop_button.set_sensitive(False)
+        
+        self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
+
+        self.main_notebook = self.xml_gui.get_widget("main_notebook")
+
+        self.toolbar_new_button = self.xml_gui.get_widget("toolbar_new_button")
+        self.toolbar_new_button.set_sensitive(True)
+
+        self.toolbar_open_button = self.xml_gui.get_widget("toolbar_open_file_button")
+        self.toolbar_open_button.set_sensitive(True)
+
+        self.toolbar_save_button = self.xml_gui.get_widget("toolbar_save_file_button")
+        self.toolbar_save_button.set_sensitive(False)
+
+        self.toolbar_save_as_button = self.xml_gui.get_widget("toolbar_save_as_button")
+        self.toolbar_save_as_button.set_sensitive(True)
+
+        self.toolbar_check_scripts_button = self.xml_gui.get_widget("toolbar_check_scripts_button")
+        self.toolbar_check_scripts_button.set_sensitive(False)
+
+        self.toolbar_save_all_button = self.xml_gui.get_widget("toolbar_save_all_button")
+        self.toolbar_save_all_button.set_sensitive(False)
+
+        self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
+        self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
 
         self.experiment_script_textview.modify_font(pango.FontDescription("Courier 10"))
         self.data_handling_textview.modify_font(pango.FontDescription("Courier 10"))
 
-        self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
+        self.experiment_script_textview.associated_filename = None
+        self.data_handling_textview.associated_filename = None
 
         # For faster testing...
         self.experiment_script_textbuffer.set_text("""def experiment_script(input):
@@ -112,7 +149,8 @@ class DamarisGUI(threading.Thread):
 
         tau += 1e-3""")
 
-        self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
+        self.experiment_script_textbuffer.set_modified(False)
+
         self.data_handling_textbuffer.set_text("""def data_handling(input):
 
     while input.jobs_pending():
@@ -124,31 +162,7 @@ class DamarisGUI(threading.Thread):
         print "Drawing %d..." % timesignal.get_job_id()
         input.draw(timesignal)""")
 
-        self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
-        self.toolbar_stop_button.set_sensitive(False)
-        
-        self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
-
-        self.main_notebook = self.xml_gui.get_widget("main_notebook")
-
-        self.toolbar_new_button = self.xml_gui.get_widget("toolbar_new_button")
-        self.toolbar_new_button.set_sensitive(True)
-
-        self.toolbar_open_button = self.xml_gui.get_widget("toolbar_open_file_button")
-        self.toolbar_open_button.set_sensitive(True)
-
-        self.toolbar_save_button = self.xml_gui.get_widget("toolbar_save_file_button")
-        self.toolbar_save_button.set_sensitive(False)
-
-        self.toolbar_save_as_button = self.xml_gui.get_widget("toolbar_save_as_button")
-        self.toolbar_save_as_button.set_sensitive(False)
-
-        self.toolbar_check_scripts_button = self.xml_gui.get_widget("toolbar_check_scripts_button")
-        self.toolbar_check_scripts_button.set_sensitive(False)
-
-        self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
-        self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
-
+        self.data_handling_textbuffer.set_modified(False)
 
         # Matplot hinzufügen (Display_Table, 1. Zeile) ----------------------------------------------
 
@@ -301,6 +315,7 @@ class DamarisGUI(threading.Thread):
                     script_file.close()
 
                     experiment_buffer.set_text(experiment_script_string)
+                    experiment_buffer.set_modified(False)
 
                 elif main_notebook.get_current_page() == 1:
                     data_handling_string = ""
@@ -310,35 +325,94 @@ class DamarisGUI(threading.Thread):
 
                     script_file.close()
 
-                    data_buffer.set_text(data_handling_string)                    
+                    data_buffer.set_text(data_handling_string)
+                    data_buffer.set_modified(False)
                     
                 
             else:
                 return
         
-        #print "Page No. %d open" % self.main_notebook.get_current_page()
+        # Determining the tab which is currently open
         if self.main_notebook.get_current_page() == 0:
             dialog = gtk.FileChooserDialog(title="Open Experiment Script...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons = ("Open", 1, "Cancel", 0))
         elif self.main_notebook.get_current_page() == 1:
             dialog = gtk.FileChooserDialog(title="Open Data Handling Script...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons = ("Open", 1, "Cancel", 0))
 
         dialog.set_select_multiple(False)
+        
+        # Event-Handler for responce-signal (when one of the button is pressed)
         dialog.connect("response", response)
 
         dialog.run()
         dialog.destroy()
 
         return True
+
+
+
+    def save_file(self, widget, Data = None):
+        print "No Save-File at the moment. Please use Save-As."
+        return True
+
+
+    def save_file_as(self, widget, Data = None):
+        "Callback for the save-file-as dialog"
+
+        main_notebook = self.main_notebook
+        experiment_buffer = self.experiment_script_textview.get_buffer()
+        data_buffer = self.data_handling_textview.get_buffer()
+
+        def response(self, response_id, Data = None):
+            if response_id == 1:
+                file_name = dialog.get_filename()
+                if file_name is None:
+                    return
+                
+                script_file = file(file_name, "w")
+
+                if main_notebook.get_current_page() == 0:
+                    script_file.write(experiment_buffer.get_text(experiment_buffer.get_start_iter(), experiment_buffer.get_end_iter()))
+
+                    script_file.close()
+
+                    experiment_buffer.set_modified(False)
+
+                elif main_notebook.get_current_page() == 1:
+                    script_file.write(data_buffer.get_text(data_buffer.get_start_iter(), data_buffer.get_end_iter()))
+
+                    script_file.close()
+
+                    data_buffer.set_modified(False)
+                    
+                
+            else:
+                return
+        
+        # Determining the tab which is currently open
+        if self.main_notebook.get_current_page() == 0:
+            dialog = gtk.FileChooserDialog(title="Save Experiment Script As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = ("Save", 1, "Cancel", 0))
+        elif self.main_notebook.get_current_page() == 1:
+            dialog = gtk.FileChooserDialog(title="Save Data Handling As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = ("Save", 1, "Cancel", 0))
+
+        dialog.set_select_multiple(False)
+
+        # Event-Handler for responce-signal (when one of the button is pressed)
+        dialog.connect("response", response)
+
+        dialog.run()
+        dialog.destroy()
+
+        return True
+
     
 
     def new_file(self, widget, Data = None):
 
-        # Implemented in Future?
-        self.__scripts_changed = False
-
-        if not self.__scripts_changed:
+        if not self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
             self.experiment_script_textbuffer.set_text("def experiment_script(input):\n    pass")
             self.data_handling_textbuffer.set_text("def data_handling(input):\n    pass")
+            self.experiment_script_textbuffer.set_modified(False)
+            self.data_handling_textbuffer.set_modified(False)
         else:
             #Show "U want 2 save"-Dialog
             pass
@@ -356,17 +430,31 @@ class DamarisGUI(threading.Thread):
         if page_num == 0:
             self.toolbar_new_button.set_sensitive(True)
             self.toolbar_open_button.set_sensitive(True)
-            self.toolbar_save_button.set_sensitive(True)
+
+            if self.experiment_script_textbuffer.get_modified():
+                self.toolbar_save_button.set_sensitive(True)
+                self.toolbar_save_all_button.set_sensitive(True)
+            else:
+                self.toolbar_save_button.set_sensitive(False)
+                
             self.toolbar_save_as_button.set_sensitive(True)
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_check_scripts_button.set_sensitive(True)
+            
         elif page_num == 1:
             self.toolbar_new_button.set_sensitive(True)
             self.toolbar_open_button.set_sensitive(True)
-            self.toolbar_save_button.set_sensitive(True)
+            
+            if self.data_handling_textbuffer.get_modified():
+                self.toolbar_save_button.set_sensitive(True)
+                self.toolbar_save_all_button.set_sensitive(True)
+            else:
+                self.toolbar_save_button.set_sensitive(False)
+                
             self.toolbar_save_as_button.set_sensitive(True)
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_check_scripts_button.set_sensitive(True)
+            
         elif page_num == 2:
             self.toolbar_new_button.set_sensitive(True)
             self.toolbar_open_button.set_sensitive(False)
@@ -374,6 +462,18 @@ class DamarisGUI(threading.Thread):
             self.toolbar_save_as_button.set_sensitive(False)
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_check_scripts_button.set_sensitive(True)
+
+        return True
+
+
+    def textviews_modified(self, data = None):
+        
+        if self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
+            self.toolbar_save_button.set_sensitive(True)
+            self.toolbar_save_all_button.set_sensitive(True)
+        else:
+            self.toolbar_save_button.set_sensitive(False)
+            self.toolbar_save_all_button.set_sensitive(False)
 
         return True
 
