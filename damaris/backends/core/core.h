@@ -18,14 +18,15 @@
 /**
 \mainpage
 
-\section sec_introduction Introduction
+\section sec_introduction Introduction to DAMARIS backends
 
-The "pilot study" is a base for further discussion on new software for the AG Fujara/Nestle NMR spectrometers.
-The timeline of this project is determined by
+DAMARIS stands for DArmstadt MAgnetic Resonance Instrument Software. There is a homepage avaialbe at http://www.fkp.physik.tu-darmstadt.de/damaris/
+
+The project started as study for a common software base for different spectrometer hardware setups.
+
+The first time of this project was determined by
 - the need of software for SpinCore and TiePie Hardware,
 - and the wish for a "better" and unified software for our spectrometers.
-
-So the "pilot study" is ment to be a temporary solution, that has to be redesigned next year (begin 2005), in order to fund the codebase of the next generation of NMR software.
 
 Next step is a functional raw spectrometer control for the mobile NMR spectrometer. Main contributors are Achim and Holger.
 
@@ -38,7 +39,7 @@ Next step is a functional raw spectrometer control for the mobile NMR spectromet
   implementation and the \link design design considerations\endlink.
 
 \section sec_source_code Source Code
-The source code of this project is available from CVS at element:/share/SoftwareDevelopment/cvsroot and also accessible via a web frontend http://element.fkp.physik.tu-darmstadt.de/cgi-bin/viewcvs.cgi/pilotstudy/
+The source code of this project is available from CVS at svn://element.fkp.physik.tu-darmstadt.de/share/SoftwareDevelopment/svnrepository/damaris and also accessible via a web frontend http://element.fkp.physik.tu-darmstadt.de/cgi-bin/viewcvs.cgi/damaris/
 */
 
 /**
