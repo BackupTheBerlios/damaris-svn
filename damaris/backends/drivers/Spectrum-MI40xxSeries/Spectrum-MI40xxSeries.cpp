@@ -64,7 +64,7 @@ if (name == NULL) { FreeLibrary(spectrum_driver_dll); \
 	  SpcSetParam (deviceno, SPC_CLOCK50OHM,    1)==ERR_OK &&             // clock input with 50Ohm impedance
 	  SpcSetParam (deviceno, SPC_TRIGGERMODE,   TM_TTLPOS)==ERR_OK &&     // ttl trigger is used
 	  SpcSetParam (deviceno, SPC_TRIGGEROUT,    0)==ERR_OK &&             // No trigger output
-	  SpcSetParam (deviceno, SPC_TRIGGER50OHM,  1)==ERR_OK &&             // Trigger to 50MOhm, assuming suitable linedriver
+	  SpcSetParam (deviceno, SPC_TRIGGER50OHM,  0)==ERR_OK &&             // Trigger to 1MOhm, necessary for steep slopes
 	  (ErrorOccurred=0);                                                  // done, really no error occurred
 
       // ----- driver error: request error and end program -----
