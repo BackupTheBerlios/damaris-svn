@@ -7,7 +7,6 @@ Bis zur ersten lauffähigen Version:
 - Warnung, das Dateien überschrieben werden implementieren (beim Start des Exp.)
 - sinnvolle XML-Statements durch den Job-Writer ausgeben
 - nach verlorenen Methoden gucken, die mittlerweile nicht mehr gebraucht werden (z.b. suspend und wakeup)
-- Absturz beim beenden des Programms beheben
 - "Successfully parsed blabla.result" und der tatsächlich geparsten Datei stimmen nicht überein (vielleicht nur bei Error-Messages?)
 - ResultReader auf mehrere Results pro File umbauen
 - Convenience-Functions verbessern, wie z.B. jobs_pending() oder get_variable()
@@ -31,3 +30,4 @@ Verbesserungswürdig, läuft aber:
 
 Erledigt:
 - Absturz bei sofortigem Quit nach Start fixen
+- Absturz beim beenden des Programms beheben

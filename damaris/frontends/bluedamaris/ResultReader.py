@@ -81,6 +81,10 @@ class ResultReader(threading.Thread):
             # Making ResultReader restartable and/or waiting for user to read pending results
             self.event_lock.wait()
 
+            # Making sure it really quits, if ResultReader somehow was hold (like waiting for queue to empty)
+            if self.quit_loop:
+                break
+
             # Reset-quest from other Thread?
             if self.__reset:
                 self.event_lock.clear()
@@ -99,7 +103,6 @@ class ResultReader(threading.Thread):
                 self.timeout_counter = 0
             else:
                 #print "No File found, waiting... (" + str(self.wait) + ")"
-                self.is_idling = True
                 self.event.wait(self.wait)
                 self.timeout_counter += self.wait
                 #print self.timeout_counter
@@ -110,7 +113,6 @@ class ResultReader(threading.Thread):
                     #print self.result_queue
                     self.quit_loop = True
 
-                self.is_idling = False
 
 
 
@@ -292,7 +294,6 @@ class ResultReader(threading.Thread):
             del self.result_queue[0]
             
             if self.get_number_of_results_pending() < self.max_result_queue_length and not self.event_lock.isSet():
-                print "True"
                 self.event_lock.set()                
             
             return out_result
@@ -307,6 +308,8 @@ class ResultReader(threading.Thread):
 
     def quit_result_reader(self):
         self.quit_loop = True
+        self.event.set()
+        self.event_lock.set()
 
 
     

@@ -197,20 +197,11 @@ class DamarisGUI(threading.Thread):
     def quit_application(self, widget, Data = None):
         "Callback for everything that quits the application"
 
-        # An idea for an bugfix (crashing when clicking "exit")
-        print "THREADS STILL ACTIVE: %s" % str(threading.enumerate())
-        
         self.job_writer.quit_job_writer()
         self.job_writer.join()
 
-        # An idea for an bugfix (crashing when clicking "exit")
-        print "THREADS STILL ACTIVE: %s" % str(threading.enumerate())
-        
         self.data_handler.quit_data_handling()
         self.data_handler.join()
-
-        # An idea for an bugfix (crashing when clicking "exit")
-        print "THREADS STILL ACTIVE: %s" % str(threading.enumerate())
 
         gtk.main_quit()
 
