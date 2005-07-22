@@ -33,7 +33,7 @@ class Configuration:
         if os.access(os.path.join(self.path, "config.xml"), os.R_OK):
             self.config_file = file(os.path.join(self.path, "config.xml"), "r")
         else:
-            raise IOError("Configuration: Error, cant open config.xml")
+            raise IOError("Configuration: Error, can't find config.xml in %s"%self.path)
 
         try:
             # Parser erstellen
@@ -85,3 +85,6 @@ class Configuration:
 
         if str(applicant.__class__) == "DamarisGUI.DamarisGUI" or str(applicant.__class__) == "<class 'DamarisGUI.DamarisGUI'>":
             return self.config_gui.copy()
+
+        if str(applicant.__class__.__name__) == "CoreInterface" or str(applicant.__class__) == "<class 'CoreInterface.CoreInterface'>":
+            return self.config_core.copy()
