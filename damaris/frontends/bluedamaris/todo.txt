@@ -12,7 +12,9 @@ Bis zur ersten lauffähigen Version:
 - mehrere Watchpoints implementieren -> "Quelle-Pulldownmenü" (und mehrere Graphen)
 - Open-Dialog mit Doppelklick austatten und weniger anfällig für falsche Angaben machen
 - Beim Save-File Dialog Warnung implementieren, falls Dateien überschrieben werden
+- Bei Save-File automatisch SaveAs aufrufen, wenn noch keine Datei angegeben
 - Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln)
+- ^X ^V ^C ^S in Skript Fenstern einführen
 
 ? Skript checken mit Dummycore ?
 
@@ -28,6 +30,8 @@ Vermutlich erledigt:
   (Achim) core wird von GUI vor JobWriter gestartet
 -  Line / Column implementieren ?
   (Achim) wird angezeigt, wäre ganz nett, auch etwas hineinschreiben zu können. 
+- Fehlermeldungen zu Runtime von Skripts mit Traceback und
+  Zeilennummerierung ausgestattet
 
 Verbesserungswürdig, läuft aber:
 - Error Results implementieren (-> Zustände einführen)

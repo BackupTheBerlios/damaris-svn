@@ -116,7 +116,8 @@ class JobWriter(threading.Thread):
                 exec experiment_script_string in locals()
                 self.experiment_script = experiment_script
             except Exception, e:
-                self.gui.show_syntax_error_dialog("Experiment Script: Unexpected error during execution!\n" + str(e))
+                tb_infos=traceback.extract_tb(sys.exc_info()[2])
+                self.gui.show_syntax_error_dialog("Experiment Script:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
                 self.event_lock.clear()
                 self.__error_occured = None
                 self.__ok_to_start = None

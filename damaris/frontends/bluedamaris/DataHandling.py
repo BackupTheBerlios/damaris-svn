@@ -11,6 +11,8 @@
 
 import threading
 import compiler
+import sys
+import traceback
 from ResultReader import *
 
 
@@ -94,11 +96,13 @@ class DataHandling(threading.Thread):
             try:
                 self.result_reader.start()
                 exec data_handling_string in locals()
-                # self.jobs_pending() doesnt work correctly if we start everything immedeatly
+                # self.jobs_pending() doesnt work correctly if we start everything immedeatly,
+                # todo: maybe resolved
                 self.event.wait(1)
                 data_handling(self)
             except Exception, e:
-                self.gui.show_syntax_error_dialog("Data Handling: Unexpected error during execution of data handling script.\n" + str(e))
+                tb_infos=traceback.extract_tb(sys.exc_info()[2])
+                self.gui.show_syntax_error_dialog("Data Handling:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
 
             # Cleanup
             self.result_reader.reset()
