@@ -71,8 +71,11 @@ class DamarisGUI(threading.Thread):
         self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
 
         self.experiment_script_textbuffer.connect("modified-changed", self.textviews_modified)
+        self.experiment_script_textview.connect_after("move-cursor", self.textviews_moved)
+        self.experiment_script_textview.connect("button-release-event", self.textviews_clicked)
         self.data_handling_textbuffer.connect("modified-changed", self.textviews_modified)
-        
+        self.data_handling_textview.connect_after("move-cursor", self.textviews_moved)
+        self.data_handling_textview.connect("button-release-event", self.textviews_clicked)        
         
         # Sonstige inits ---------------------------------------------------------------------------
 
@@ -111,11 +114,17 @@ class DamarisGUI(threading.Thread):
         self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
         self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
 
-        self.experiment_script_textview.modify_font(pango.FontDescription("Courier 10"))
-        self.data_handling_textview.modify_font(pango.FontDescription("Courier 10"))
+        self.experiment_script_textview.modify_font(pango.FontDescription("Courier 12"))
+        self.data_handling_textview.modify_font(pango.FontDescription("Courier 12"))
 
         self.experiment_script_textview.associated_filename = None
         self.data_handling_textview.associated_filename = None
+
+        # line and coumn number indicators
+        self.experiment_script_line_indicator=self.xml_gui.get_widget("experiment_script_line_textfield")
+        self.experiment_script_column_indicator=self.xml_gui.get_widget("experiment_script_column_textfield")
+        self.data_handling_line_indicator=self.xml_gui.get_widget("data_handling_line_textfield")
+        self.data_handling_column_indicator=self.xml_gui.get_widget("data_handling_column_textfield")
 
         # For faster testing...
         self.experiment_script_textbuffer.set_text("""def experiment_script(input):
@@ -476,6 +485,23 @@ class DamarisGUI(threading.Thread):
             self.toolbar_save_all_button.set_sensitive(False)
 
         return True
+
+    def textviews_clicked(self, widget, event):
+        self.textviews_moved(widget)
+        return False
+
+    def textviews_moved(self, widget, text=None, count=None, ext_selection=None, data = None):
+        textbuffer=widget.get_buffer()
+        cursor_mark=textbuffer.get_insert()
+        cursor_iter=textbuffer.get_iter_at_mark(cursor_mark)
+        if textbuffer==self.experiment_script_textbuffer:
+            self.experiment_script_line_indicator.set_text("%d"%(cursor_iter.get_line()+1))
+            self.experiment_script_column_indicator.set_text("%d"%(cursor_iter.get_line_offset()+1))
+        if textbuffer==self.data_handling_textbuffer:
+            self.data_handling_line_indicator.set_text("%d"%(cursor_iter.get_line()+1))
+            self.data_handling_column_indicator.set_text("%d"%(cursor_iter.get_line_offset()+1))
+        return False
+
 
     # Schnittstellen nach Auﬂen ####################################################################
 
