@@ -1,7 +1,6 @@
 Bis zur ersten lauffähigen Version:
 -----------------------------------
 
-- Core stop/start aus der Oberfläche heraus
 - New / Skript speichern Toolbar-Button (richtig) implementieren
 - Stop implementieren
 - Warnung, das Dateien überschrieben werden implementieren (beim Start des Exp.)
@@ -16,7 +15,6 @@ Bis zur ersten lauffähigen Version:
 - Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln)
 
 ? Skript checken mit Dummycore ?
-? Line / Column implementieren ?
 
 
 Auf irgendeine Art erledigt:
@@ -26,6 +24,10 @@ Vermutlich erledigt:
 - Experiment restartable machen:
   Habe ein paar Konfigurationen getestet (Keine Fehler, Fehler im Experiment Script oder Data Handling Script,
   Fehler bei beiden - jedes Mal ließen sich die Experimente auch nach korrektur mehrere Male starten)
+- Core stop/start aus der Oberfläche heraus
+  (Achim) core wird von GUI vor JobWriter gestartet
+-  Line / Column implementieren ?
+  (Achim) wird angezeigt, wäre ganz nett, auch etwas hineinschreiben zu können. 
 
 Verbesserungswürdig, läuft aber:
 - Error Results implementieren (-> Zustände einführen)

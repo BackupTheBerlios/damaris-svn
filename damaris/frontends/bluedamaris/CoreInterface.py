@@ -38,7 +38,7 @@ class CoreInterface:
         if not os.access(self.core_executable,os.X_OK):
             raise AssertionError("insufficient rights for backend %s execution"%self.core_executable)
 
-    def start_core(self):
+    def start(self):
 
         # take care of older logfiles
         self.core_output_filename=os.path.join(self.core_dir,"logdata")
@@ -86,6 +86,14 @@ class CoreInterface:
         self.core_output=file(self.core_output_filename,"r")
         print "done (pid=%d)"%self.core_pid
 
+    def clear_job(self,no):
+        jobfilename=os.path.join(self.core_dir,"job.%09d")
+        resultfilename=os.path.join(self.core_dir,"job.%09d.result")
+        if os.path.isfile(jobfilename):
+            os.remove(jobfilename)
+        if os.path.isfile(resultfilename):
+            os.remove(resultfilename)
+
     def get_messages(self):
         # return pending messages
         if self.core_output.tell()==os.path.getsize(self.core_output_filename):
@@ -123,7 +131,7 @@ if __name__=="__main__":
     # for test purposes only
     conf=Configuration.Configuration(".")
     ci=CoreInterface(conf)
-    ci.start_core()
+    ci.start()
     
     for i in xrange(10):
         m=ci.get_messages()

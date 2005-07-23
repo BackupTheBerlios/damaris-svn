@@ -11,8 +11,8 @@
 from JobWriter import *
 from DataHandling import *
 from DamarisGUI import *
+from CoreInterface import *
 from Configuration import *
-
 
 # Loading configuration (no arguments -> current working directory)
 cfg = Configuration()
@@ -20,6 +20,7 @@ cfg = Configuration()
 # creating instances of all components
 jw = JobWriter(config_object = cfg)
 dh = DataHandling(config_object = cfg)
+core= CoreInterface(cfg)
 gui = DamarisGUI(config_object = cfg)
 
 # connecting them so they can make use of each other
@@ -30,6 +31,7 @@ dh.connect_gui(gui)
 jw.connect_gui(gui)
 gui.connect_job_writer(jw)
 gui.connect_data_handler(dh)
+gui.connect_core(core)
 
 # starting all threads
 gui.start()
@@ -37,5 +39,3 @@ jw.start()
 dh.start()
 
 gui.join()
-    
-

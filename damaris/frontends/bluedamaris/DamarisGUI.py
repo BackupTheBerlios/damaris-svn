@@ -240,8 +240,11 @@ class DamarisGUI(threading.Thread):
             self.toolbar_run_button.set_sensitive(False)
 
             # Waking both threads up
+            self.core_interface.clear_job(0)
             print "Waking jw up"
             self.job_writer.wake_up()
+            print "(re)starting core"
+            self.core_interface.start()
             print "Waking dh up"
             self.data_handler.wake_up()
 
@@ -249,6 +252,7 @@ class DamarisGUI(threading.Thread):
             gobject.timeout_add(500, self.check_job_writer_data_handler_finished)
             return True
         except:
+            # todo: stop successfully started threads
             self.__experiment_running = False
             raise
         
@@ -546,6 +550,8 @@ class DamarisGUI(threading.Thread):
         "Referencing job-writer"
         self.job_writer = job_writer
 
+    def connect_core(self, core):
+        self.core_interface=core
 
     def show_syntax_error_dialog(self, error_message):
         "Displays a syntax-error dialog"

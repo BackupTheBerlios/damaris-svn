@@ -76,7 +76,7 @@ class JobWriter(threading.Thread):
             file_list = glob.glob(os.path.join(self.path, "job*"))
             try:
                 for job_file in file_list:
-                    if job_file.find("job.state") != -1:
+                    if job_file.find(".state") != -1:
                         continue
                     os.remove(job_file)
             except IOError, e:
@@ -182,7 +182,7 @@ class JobWriter(threading.Thread):
 
 
     def wake_up(self):
-        "Wakes the thread up (internally used)"
+        "Wakes the thread up, used by DamarisGUI to start experiment script"
         self.event_lock.set()
 
 
