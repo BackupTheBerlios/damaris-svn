@@ -10,6 +10,11 @@ try:
 except ImportException:
     pass
 
+try:
+    import _winreg
+except ImportException:
+    pass
+
 __doc__ = """
 This class handles the backend driver
 """
@@ -51,11 +56,14 @@ class CoreInterface:
         # create logfile
         file(self.core_output_filename,"w")
         
-        print "starting core %s"%self.core_executable,
+        print "starting core %s ..."%self.core_executable,
         if sys.platform[:5]=="linux":
             self.core_input=os.popen(self.core_executable+" --spool "+self.core_dir+" >"+self.core_output_filename+" 2>&1","w")
-        if sys.platform[:7]=="windows":
-            self.core_input=os.popen(self.core_executable+" --spool "+self.core_dir+" >"+self.core_output_filename,"w")
+        if sys.platform=="win32":
+            cygwin_root_key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/")
+            cygwin_path=_winreg.QueryValueEx(cygwin_root_key,"native")[0]
+            os.environ["PATH"]+=";"+os.path.join(cygwin_path,"bin")+";"+os.path.join(cygwin_path,"lib")
+            self.core_input=os.popen(self.core_executable+" --spool "+self.core_dir+" >"+self.core_output_filename+" 2>&1","w")
 
         # look out for state file
         timeout=1
@@ -65,7 +73,7 @@ class CoreInterface:
             time.sleep(0.1)
             timeout-=0.1
         if timeout<0:
-            raise AssertionError("state file did not show up")
+            raise AssertionError("state file %s did not show up"%self.statefilename)
 
         statefile=file(self.statefilename,"r")
         statelines=statefile.readlines()
@@ -88,20 +96,25 @@ class CoreInterface:
         return self.core_output.read()
 
     def start_queue(self):
-        # start core or reset it
-        if sys.platform[:5]=="linux":
-            os.kill(self.core_pid,signal.SIGUSR1)
+        self.send_signal("SIGUSR1")
 
     def stop_queue(self):
-        # stop core but finish job
-        if sys.platform[:5]=="linux":
-            os.kill(self.core_pid,signal.SIGQUIT)
+        self.send_signal("SIGQUIT")
 
     def abort(self):
         # abort execution
-        if sys.platform[:5]=="linux":
-            os.kill(self.core_pid,signal.SIGTERM)
+        self.send_signal("SIGTERM")
 
+    def send_signal(self, signal):
+        if sys.platform[:5]=="linux":
+            os.kill(self.core_pid,signal.__dict__(signal))
+        if sys.platform[:7]=="win32":
+            # reg_handle=_winreg.ConnectRegistry(None,_winreg.HKEY_LOCAL_MACHINE)
+            cygwin_root_key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/")
+            cygwin_path=_winreg.QueryValueEx(cygwin_root_key,"native")[0]
+            kill_command=os.path.join(cygwin_path,"bin","kill.exe")
+            os.popen("%s -%s %d"%(kill_command,signal,self.core_pid))
+                    
     def __del__(self):
         # stop core and wait for it
         try:
@@ -115,7 +128,11 @@ if __name__=="__main__":
     ci=CoreInterface(conf)
     ci.start_core()
     
-    while 1:
+    for i in xrange(100):
         m=ci.get_messages()
         if m is not None:
             print m,
+        time.sleep(0.1)
+
+    ci.abort()
+    time.sleep(1)
