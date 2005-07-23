@@ -5,15 +5,11 @@ import sys
 import time
 import re
 
-try:
-    import signal
-except ImportException:
-    pass
 
-try:
+if sys.platform[:5]=="linux":
+    import signal
+if sys.platform=="win32":
     import _winreg
-except ImportException:
-    pass
 
 __doc__ = """
 This class handles the backend driver
@@ -24,6 +20,7 @@ class CoreInterface:
 
     core_executable=None
     core_dir=None
+    core_pid=None
     
     def __init__(self, config_object = None):
         if config_object is None:
@@ -95,7 +92,7 @@ class CoreInterface:
             return None
         return self.core_output.read()
 
-    def start_queue(self):
+    def restart_queue(self):
         self.send_signal("SIGUSR1")
 
     def stop_queue(self):
@@ -105,9 +102,9 @@ class CoreInterface:
         # abort execution
         self.send_signal("SIGTERM")
 
-    def send_signal(self, signal):
+    def send_signal(self, sig):
         if sys.platform[:5]=="linux":
-            os.kill(self.core_pid,signal.__dict__(signal))
+            os.kill(self.core_pid,signal.__dict__[sig])
         if sys.platform[:7]=="win32":
             # reg_handle=_winreg.ConnectRegistry(None,_winreg.HKEY_LOCAL_MACHINE)
             cygwin_root_key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/")
@@ -128,11 +125,8 @@ if __name__=="__main__":
     ci=CoreInterface(conf)
     ci.start_core()
     
-    for i in xrange(100):
+    for i in xrange(10):
         m=ci.get_messages()
         if m is not None:
             print m,
         time.sleep(0.1)
-
-    ci.abort()
-    time.sleep(1)
