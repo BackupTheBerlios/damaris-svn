@@ -40,14 +40,7 @@ public:
       trigger.ttls=4; /* line 2 */
       the_adc=new SpectrumMI40xxSeries(trigger);
       the_pg=new SpinCorePulseBlaster24Bit();
-      PTS* my_pts=new PTS(0);
-      my_pts->negative_logic=0;
-      for (int i=23; i>=15; --i) {
-	ttlout phase_out;
-	phase_out.id=0;
-	phase_out.ttls=1<<i;
-	my_pts->ttl_masks.push_back(phase_out);
-      }	
+      PTS* my_pts=new PTS_latched(0);
       the_fg=my_pts;
   }
 
