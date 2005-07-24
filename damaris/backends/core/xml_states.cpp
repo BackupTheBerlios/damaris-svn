@@ -265,7 +265,7 @@ int xml_state_writer::write_states(FILE* output, const state_atom& states_to_wri
   }
   const ttlout* ttlo=dynamic_cast<const ttlout*>(&states_to_write);
   if (ttlo!=NULL) {
-    fprintf(output,"%s<ttlout value=\"%lu\"/>\n",
+    fprintf(output,"%s<ttlout value=\"0x%lx\"/>\n",
 	    indent_string.c_str(),
 	    ttlo->ttls.to_ulong());
     return 1;
