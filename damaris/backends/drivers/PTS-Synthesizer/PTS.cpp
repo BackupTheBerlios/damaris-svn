@@ -126,3 +126,132 @@ void PTS::set_frequency_ttls(state& the_state) {
   }
 
 }
+
+
+/* **************************************************************************
+
+PTS_latched
+
+************************************************************************** */
+
+void PTS_latched::set_frequency(state& experiment) {
+  // find the frequency informations...
+  // and exchange the phase informations
+  frequency=0;
+  phase=0;
+  state_sequent* exp_sequence=dynamic_cast<state_sequent*>(&experiment);
+  if (exp_sequence==NULL)
+    // is a very state on top level, todo: change interface
+    throw frequ_exception("cannot work on a single state, sorry (todo: change interface)");
+  else {
+    for(state_sequent::iterator child_state=exp_sequence->begin(); child_state!=exp_sequence->end(); ++child_state)
+      set_frequency_recursive(*exp_sequence, child_state);
+  }
+}
+
+void PTS_latched::set_frequency_recursive(state_sequent& the_sequence, state::iterator& the_state) {
+
+  state_sequent* a_sequence=dynamic_cast<state_sequent*>(*the_state);
+  if (a_sequence!=NULL) {
+    for(state_sequent::iterator child_state=a_sequence->begin(); child_state!=a_sequence->end(); ++child_state)
+      set_frequency_recursive(*a_sequence, child_state);
+  }
+  else {
+    // find the frequency informations...
+    state* this_state=dynamic_cast<state*>(*the_state);
+    if (this_state==NULL) throw frequ_exception("state_atom in state_sequent not expected");
+    // and exchange the phase informations
+    analogout* pts_aout=NULL;
+    /* find a analogout section with suitable id */
+    state::iterator i=this_state->begin();
+    while(i!=this_state->end()) {
+      analogout* aout=dynamic_cast<analogout*>(*i);
+      if (aout!=NULL && aout->id==id) {
+	if (pts_aout==NULL) {
+	  /* save the informations */
+	  pts_aout=aout;
+	}
+	else {
+	  fprintf(stderr, "found another pts decade section, ignoring\n");
+	  delete aout;
+	}
+	/* remove the analog out section */
+	this_state->erase(i++);
+      }
+      else
+	++i;
+    } /* state members loop */
+
+    if (pts_aout!=NULL) {
+      if (this_state->length<9e-8*4.0) throw frequ_exception("time is too short to save phase information");
+      /* now, insert the ttl information*/
+      /* set phase everytime */
+      pts_aout->phase-=floor(pts_aout->phase/360.0)*360.0;
+      int phase_int=(int)floor(pts_aout->phase/0.225+0.5);
+      /* copy of original state */
+      state* register_state=new state(*this_state);
+      ttlout* register_ttls=new ttlout();
+      register_ttls->id=0;
+      register_state->length=9e-8;
+      register_state->push_back(register_ttls);
+      /* set frequency if necessary */
+      if (pts_aout->frequency!=0) {
+	if (this_state->length<9e-8*12.0) throw frequ_exception("time is too short to save frequency information");
+	// enable remote frequency control
+	register_ttls->ttls=0x8010;
+	the_sequence.insert(the_state,register_state->copy_new());
+	register_ttls->ttls&=0x7fff;
+	the_sequence.insert(the_state,register_state->copy_new());
+	// in 0.1 Hz units !
+	size_t frequency_int=(int)floor(pts_aout->frequency*10.0+0.5);
+	/* 100MHz and 10MHz */
+	register_ttls->ttls=(frequency_int/1000000000)%10<<8|((frequency_int/100000000)%10)<<4|15<<12;
+	the_sequence.insert(the_state,register_state->copy_new());
+	register_ttls->ttls&=0x7fff;
+	the_sequence.insert(the_state,register_state->copy_new());
+	/* 1MHz and 100kHz */
+	register_ttls->ttls=(frequency_int/10000000)%10<<8|((frequency_int/1000000)%10)<<4|14<<12;
+	the_sequence.insert(the_state,register_state->copy_new());
+	register_ttls->ttls&=0x7fff;
+	the_sequence.insert(the_state,register_state->copy_new());
+	/* 10kHz and 1kHz */
+	register_ttls->ttls=(frequency_int/100000)%10<<8|((frequency_int/10000)%10)<<4|13<<12;
+	the_sequence.insert(the_state,register_state->copy_new());
+	register_ttls->ttls&=0x7fff;
+	the_sequence.insert(the_state,register_state->copy_new());
+	/* 100Hz and 10Hz */
+	register_ttls->ttls=(frequency_int/1000)%10<<8|((frequency_int/100)%10)<<4|12<<12;
+	the_sequence.insert(the_state,register_state->copy_new());
+	register_ttls->ttls&=0x7fff;
+	the_sequence.insert(the_state,register_state->copy_new());
+	/* 1Hz and 0.1Hz (not used for all models) */
+	register_ttls->ttls=(frequency_int/10)%10<<8|((frequency_int)%10)<<4|11<<12;
+	the_sequence.insert(the_state,register_state->copy_new());
+	register_ttls->ttls&=0x7fff;
+	the_sequence.insert(the_state,register_state->copy_new());
+	/* and shorten the remaining state */
+	this_state->length-=9e-8*12;
+      }
+      if (1) {
+	/* first entry for phase */      
+	register_ttls->ttls=((phase_int/100)%16)<<8|9<<12;
+	the_sequence.insert(the_state,register_state->copy_new());
+	register_ttls->ttls&=0x7fff;
+	the_sequence.insert(the_state,register_state->copy_new());
+	/* second entry for phase */
+	register_ttls->ttls=(phase_int%10)<<4|((phase_int/10)%10)<<8|10<<12;
+	the_sequence.insert(the_state,register_state->copy_new());
+	register_ttls->ttls&=0x7fff;
+	the_sequence.insert(the_state,register_state->copy_new());
+	/* and shorten the remaining state */
+	this_state->length-=9e-8*4;
+      }
+      delete register_state;
+      delete pts_aout;
+
+    }
+
+
+  /* end of state modifications */
+  }
+}

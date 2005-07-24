@@ -80,10 +80,43 @@ public:
 
 };
 
+class PTS_latched_test {
+
+public:
+  PTS_latched p;
+
+  PTS_latched_test() {
+    p.id=0;
+  }
+
+  void test_simple() {
+    state_sequent ss;
+    state s(1e-3,&ss);
+    ss.push_back(s.copy_new());
+    s.length=2e-6;
+    analogout aout;
+    aout.phase=90.225;
+    aout.frequency=0;
+    s.push_back(aout.copy_new());
+    ss.push_back(s.copy_new());
+    delete s.front();
+    aout.phase=190;
+    aout.frequency=2e6;
+    s.front()=aout.copy_new();
+    ss.push_back(s.copy_new());
+
+    xml_state_writer().write_states(stdout,ss);    
+    p.set_frequency(ss);
+    xml_state_writer().write_states(stdout,ss);    
+  }
+  
+
+};
+
 int main() {
 
-  //PTS_test().sequent_iterate_test();
-  PTS_test().freq_digit_translation_test();
+  PTS_latched_test().test_simple();
+  //PTS_test().freq_digit_translation_test();
   return 0;
 }
 

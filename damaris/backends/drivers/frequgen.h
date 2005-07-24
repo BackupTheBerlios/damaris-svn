@@ -12,6 +12,16 @@
    \addtogroup basedrivers
    @{
 */
+
+/**
+   \brief frequency generation related error handling
+ */
+class frequ_exception: public std::string {
+ public:
+  frequ_exception(const std::string& s): std::string(s){}
+};
+
+
 /**
    \brief the frequency generator can set the reference frequency and pulse output
    also phase shifts and different channels are possible

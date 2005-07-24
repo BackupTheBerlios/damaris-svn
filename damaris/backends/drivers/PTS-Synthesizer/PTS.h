@@ -90,6 +90,31 @@ class PTS: public frequgen {
   virtual ~PTS();
 };
 
+
+/**
+ */
+class PTS_latched: public PTS {
+
+public:
+  PTS_latched() {}
+
+  /**
+     \brief exchange analogout sections with frequency and phase TTLs
+   */
+  virtual void set_frequency_recursive(state_sequent& the_sequence, state_sequent::iterator& the_state);
+
+  /**
+     \brief exchange analogout sections in all substates
+   */
+  virtual void set_frequency(state& experiment);
+
+  /**
+     \brief destructor
+     nothing to do now... will change with frequency control
+   */
+  virtual ~PTS_latched(){}
+};
+
 /**
    @}
 */
