@@ -164,9 +164,14 @@ class DataHandling(threading.Thread):
 
 
     def draw(self, result):
-        "Displays a result on the GUI"
+        "Displays a result immideately on the GUI"
         self.gui.draw_result(result)
 
+
+    def watch(self, result, channel):
+        "Watches a result (creates a history, makes it selectable etc.)"
+        self.gui.watch_result(result, channel)
+        
 
     def jobs_pending(self):
         "Returns true, if jobs are still processed"

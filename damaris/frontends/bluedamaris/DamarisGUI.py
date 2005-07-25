@@ -35,6 +35,7 @@ class DamarisGUI(threading.Thread):
             self.config = config_object.get_my_config(self)
 
         self.__experiment_running = False
+        self.__display_channels = { }
 
 
     def run(self):
@@ -64,6 +65,7 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("on_toolbar_new_button_clicked", self.new_file)
         self.xml_gui.signal_connect("on_toolbar_save_as_button_clicked", self.save_file_as)
         self.xml_gui.signal_connect("on_toolbar_save_file_button_clicked", self.save_file)
+        self.xml_gui.signal_connect("on_display_source_combobox_changed", self.display_source_changed)
 
         self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
         self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
@@ -141,7 +143,7 @@ class DamarisGUI(threading.Thread):
 
     while tau <= 5e-3:
 
-        for accu in range(10):
+        for accu in range(1):
 
             exp = Experiment()
             print "Job %d erstellt!" % exp.get_job_id()
@@ -171,7 +173,7 @@ class DamarisGUI(threading.Thread):
             continue
         
         print "Drawing %d..." % timesignal.get_job_id()
-        input.draw(timesignal)""")
+        input.watch(timesignal, "Zeitsignal")""")
 
         self.data_handling_textbuffer.set_modified(False)
 
@@ -509,6 +511,16 @@ class DamarisGUI(threading.Thread):
         return False
 
 
+    def display_source_changed(self, Data = None):
+        channel = (self.display_source_combobox.get_model()).get_value(self.display_source_combobox.get_active_iter(), 0)
+
+        # Event triggers when we init the box -> Catch Channel "None"
+        if channel == "None":
+            return True
+        
+        self.draw_result(self.__display_channels[channel][0])
+        return True
+
     # Schnittstellen nach Auﬂen ####################################################################
 
     def draw_result(self, in_result):
@@ -530,7 +542,33 @@ class DamarisGUI(threading.Thread):
             finally:
                 gtk.gdk.threads_leave()
 
-        gobject.idle_add(idle_func)  
+        gobject.idle_add(idle_func)
+
+
+    def watch_result(self, result, channel):
+        "Interface to surface for watching some data (under a certain name)"
+
+        def idle_func():
+            gtk.gdk.threads_enter()
+
+            try:
+                # Check if channel exists or needs to be added
+                if not self.__display_channels.has_key(channel):
+                    self.__display_channels[channel] = [ ]
+                    self.__display_channels[channel].insert(0,result)
+                    self.display_source_combobox.append_text(channel)
+                    print "-------- Created new channel!"
+                else:
+                    self.__display_channels[channel].insert(0,result)
+
+                # Getting active text in Combobox and compairing it
+                if channel == (self.display_source_combobox.get_model()).get_value(self.display_source_combobox.get_active_iter(), 0):
+                    self.draw_result(self.__display_channels[channel][0])
+                     
+            finally:
+                gtk.gdk.threads_leave()
+
+        gobject.idle_add(idle_func)
 
 
     def get_experiment_script(self):

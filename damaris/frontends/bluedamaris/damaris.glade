@@ -829,9 +829,9 @@ log</property>
 			  </child>
 
 			  <child>
-			    <widget class="GtkLabel" id="label24">
+			    <widget class="GtkLabel" id="display_x_scaling_label">
 			      <property name="visible">True</property>
-			      <property name="label" translatable="yes">   x-Skalierung: </property>
+			      <property name="label" translatable="yes">   x-Scaling: </property>
 			      <property name="use_underline">False</property>
 			      <property name="use_markup">False</property>
 			      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -854,9 +854,9 @@ log</property>
 			  </child>
 
 			  <child>
-			    <widget class="GtkLabel" id="label25">
+			    <widget class="GtkLabel" id="display_y_scaling_label">
 			      <property name="visible">True</property>
-			      <property name="label" translatable="yes">   y-Skalierung: </property>
+			      <property name="label" translatable="yes">   y-Scaling: </property>
 			      <property name="use_underline">False</property>
 			      <property name="use_markup">False</property>
 			      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -882,6 +882,7 @@ log</property>
 			    <widget class="GtkComboBox" id="display_source_combobox">
 			      <property name="visible">True</property>
 			      <property name="items" translatable="yes">None</property>
+			      <signal name="changed" handler="on_display_source_combobox_changed" last_modification_time="Mon, 25 Jul 2005 14:06:23 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">1</property>

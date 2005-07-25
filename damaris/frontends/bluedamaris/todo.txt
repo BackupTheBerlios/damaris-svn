@@ -18,10 +18,11 @@ Bis zur ersten lauffähigen Version:
 - ^X ^V ^C ^S in Skript Fenstern einführen
 - Zustandsdiagramm der Threads zeichnen
 - Bei vielen Fehlern verhindern, das sich hundertweise Fehlerfenster stapeln
-- Crash beim Restart des Cores beheben. (nur Windows?:   
+- Crash beim Restart des Cores beheben. (nur Windows?:
   File "E:\Eigene Dateien\Projekt NMR\svnrepository\CoreInterface.py", line 60, in start
   os.rename(self.core_output_filename, self.core_output_filename+".00")
   OSError: [Errno 13] Permission denied)
+- Kommandozeile zu öffnende Dateien mitgeben
 
 ? Skript checken mit Dummycore ?
 
