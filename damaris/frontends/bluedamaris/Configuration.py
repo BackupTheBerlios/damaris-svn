@@ -72,6 +72,23 @@ class Configuration:
             print "Name: " + str(name) + ", Attribute: " + str(attribute)
          
  
+    def add_config(self, destination, key, value):
+        if destination == "job_writer" and not self.config_job_writer.has_key(key):
+            self.config_job_writer[key] = value
+
+        elif destination == "data_handling" and not self.config_data_handling.has_key(key):
+            self.config_data_handling[key] = value
+
+        elif destination == "core" and not self.config_core.has_key(key):
+            self.config_core[key] = value
+
+        elif destination == "gui" and not self.config_core.has_key(key):
+            self.config_gui[key] = value
+
+        else:
+            print "Configuration: Warning, found unknown config-tag!"
+            print "Name: " + str(name) + ", Attribute: " + str(attribute)
+
 
     def get_my_config(self, applicant):
         "Returns a dictionairy with all the configuration information needed for the applicant"

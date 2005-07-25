@@ -131,49 +131,78 @@ class DamarisGUI(threading.Thread):
         self.data_handling_column_indicator=self.xml_gui.get_widget("data_handling_column_textfield")
 
         # For faster testing...
-        self.experiment_script_textbuffer.set_text("""def experiment_script(input):
+        if self.config.has_key("experiment_script"):
+            script_file = file(self.config["experiment_script"], "r")
 
-    pi = 1e-3
+            experiment_script_string = ""
 
-    tau = 1e-3
-    px = 0
-    py = 90
-    mx = 180
-    my = 270
+            for line in script_file:
+                experiment_script_string += line
 
-    while tau <= 5e-3:
+            script_file.close()
 
-        for accu in range(1):
+            self.experiment_script_textbuffer.set_text(experiment_script_string)
 
-            exp = Experiment()
-            print "Job %d erstellt!" % exp.get_job_id()
-            exp.set_description("tau", tau)
+        else:
+                    
+            self.experiment_script_textbuffer.set_text("""def experiment_script(input):
 
-            exp.set_frequency(100e6, 0)
+        pi = 1e-3
 
-            exp.rf_pulse(0, pi/2)
-            exp.wait(tau)
-            exp.rf_pulse(0, pi)
-            exp.wait(tau + 1e-6)
+        tau = 1e-3
+        px = 0
+        py = 90
+        mx = 180
+        my = 270
 
-            exp.record(512, 1e6)
+        while tau <= 5e-3:
 
-            yield exp
+            for accu in range(1):
 
-        tau += 1e-3""")
+                exp = Experiment()
+                print "Job %d erstellt!" % exp.get_job_id()
+                exp.set_description("tau", tau)
+
+                exp.set_frequency(100e6, 0)
+
+                exp.rf_pulse(0, pi/2)
+                exp.wait(tau)
+                exp.rf_pulse(0, pi)
+                exp.wait(tau + 1e-6)
+
+                exp.record(512, 1e6)
+
+                yield exp
+
+            tau += 1e-3""")
 
         self.experiment_script_textbuffer.set_modified(False)
 
-        self.data_handling_textbuffer.set_text("""def data_handling(input):
+        # For faster testing...
+        if self.config.has_key("datahandling_script"):
+            script_file = file(self.config["datahandling_script"], "r")
 
-    while input.jobs_pending():
-        timesignal = input.get_next_result()
+            datahandling_script_string = ""
 
-        if timesignal.is_error():
-            continue
-        
-        print "Drawing %d..." % timesignal.get_job_id()
-        input.watch(timesignal, "Zeitsignal")""")
+            for line in script_file:
+                datahandling_script_string += line
+
+            script_file.close()
+
+            self.data_handling_textbuffer.set_text(datahandling_script_string)
+
+        else:
+
+            self.data_handling_textbuffer.set_text("""def data_handling(input):
+
+        while input.jobs_pending():
+            timesignal = input.get_next_result()
+
+            if timesignal.is_error():
+                continue
+            
+            print "Drawing %d..." % timesignal.get_job_id()
+            input.watch(timesignal, "Zeitsignal")""")
 
         self.data_handling_textbuffer.set_modified(False)
 

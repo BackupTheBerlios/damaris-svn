@@ -14,8 +14,23 @@ from DamarisGUI import *
 from CoreInterface import *
 from Configuration import *
 
+import sys
+
 # Loading configuration (no arguments -> current working directory)
 cfg = Configuration()
+
+experiment_script_filename = ""
+datahandling_script_filename = ""
+
+for cmd in sys.argv:
+    if cmd.find("--experiment-script=") != -1:
+        experiment_script_filename = cmd[20:len(cmd)]
+        cfg.add_config("gui", "experiment_script", experiment_script_filename)
+        
+    elif cmd.find("--datahandling-script=") != -1:
+        datahandling_script_filename = cmd[22:len(cmd)]
+        cfg.add_config("gui", "datahandling_script", datahandling_script_filename)
+
 
 # creating instances of all components
 jw = JobWriter(config_object = cfg)
