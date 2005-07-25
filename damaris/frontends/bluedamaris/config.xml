@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <config>
 	<job_writer path="D:\cygwin\tmp\dummyspool"/>
-	<data_handling path="D:\cygwin\tmp\dummyspool" timout="None"/>
-	<core path="/home/achim/damaris/backends/machines/Mobilecore.exe"/>
+	<data_handling path="D:\cygwin\tmp\dummyspool"/>
+	<core exec="D:\cygwin\home\Sharky\nmrlaboratory\backend\machines\dummycore.exe" path="D:\cygwin\tmp\dummyspool"/>
 </config>

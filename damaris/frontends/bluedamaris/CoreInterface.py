@@ -28,8 +28,16 @@ class CoreInterface:
         
         self.config = config_object.get_my_config(self)
 
-        self.core_executable=self.config["path"]
-        self.core_dir=self.config["dir"]
+        try:
+            self.core_executable=self.config["exec"]
+            self.core_dir=self.config["path"]
+        except KeyError, e:
+            print "CoreInterface: Required config attribute not found: %s" % str(e)
+            print "Excpecting: 'path' -> directory for the job-/result-files"
+            print "            'exec' -> core executable"
+            raise
+        except:
+            raise
 
         if not os.path.isfile(self.core_executable):
             raise AssertionError("could not find backend %s "%self.core_executable)

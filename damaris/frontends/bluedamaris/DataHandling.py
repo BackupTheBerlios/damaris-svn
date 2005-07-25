@@ -25,7 +25,15 @@ class DataHandling(threading.Thread):
             raise ValueError("JobWriter: missing config-object")
         elif config_object is not None:
             self.config = config_object.get_my_config(self)
-            self.path = self.config["path"]
+
+            try:
+                self.path = self.config["path"]
+            except KeyError, e:
+                print "DataHandling: Required config attribute not found: %s" % str(e)
+                print "Excpecting:  'path' -> directory for the result-files"
+                raise
+            except:
+                raise                
             
         elif path is not None:
             self.path = path

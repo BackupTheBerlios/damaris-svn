@@ -22,8 +22,18 @@ class JobWriter(threading.Thread):
         if path is None and config_object is None:
             raise ValueError("JobWriter: missing config-object")
         elif config_object is not None:
-            self.config = config_object.get_my_config(self)
-            self.path = self.config["path"]
+
+            try:
+                self.config = config_object.get_my_config(self)
+                self.path = self.config["path"]
+            except KeyError, e:
+                print "JobWriter:  Required config attribute not found: %s" % str(e)
+                print "Excpecting: 'path' -> directory where the job-files will be written into"
+                raise
+            except:
+                raise
+
+            
         elif path is not None:
             self.path = path
 

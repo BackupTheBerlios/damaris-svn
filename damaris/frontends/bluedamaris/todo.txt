@@ -15,6 +15,7 @@ Bis zur ersten lauffähigen Version:
 - Bei Save-File automatisch SaveAs aufrufen, wenn noch keine Datei angegeben
 - Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln)
 - ^X ^V ^C ^S in Skript Fenstern einführen
+- Zustandsdiagramm der Threads zeichnen
 
 ? Skript checken mit Dummycore ?
 
@@ -29,7 +30,7 @@ Vermutlich erledigt:
 - Core stop/start aus der Oberfläche heraus
   (Achim) core wird von GUI vor JobWriter gestartet
 -  Line / Column implementieren ?
-  (Achim) wird angezeigt, wäre ganz nett, auch etwas hineinschreiben zu können. 
+  (Achim) wird angezeigt, wäre ganz nett, auch etwas hineinschreiben zu können.
 - Fehlermeldungen zu Runtime von Skripts mit Traceback und
   Zeilennummerierung ausgestattet
 
