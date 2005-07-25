@@ -68,12 +68,12 @@ class CoreInterface:
             cygwin_root_key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/")
             cygwin_path=_winreg.QueryValueEx(cygwin_root_key,"native")[0]
             os.environ["PATH"]+=";"+os.path.join(cygwin_path,"bin")+";"+os.path.join(cygwin_path,"lib")
-            self.core_input=os.popen(self.core_executable+" --spool "+self.core_dir+" >"+self.core_output_filename+" 2>&1","w")
+            self.core_input=os.popen("\"" + self.core_executable + "\"" + " --spool "+self.core_dir+" >"+self.core_output_filename+" 2>&1","w")
 
         # look out for state file
         timeout=1
         # to do: how should I know core's state name????!!!!!
-        self.statefilename=os.path.join(self.core_dir,"dummy core.state")
+        self.statefilename=os.path.join(self.core_dir,"Dummy core.state")
         while not os.path.isfile(self.statefilename) and timeout>0:
             time.sleep(0.1)
             timeout-=0.1

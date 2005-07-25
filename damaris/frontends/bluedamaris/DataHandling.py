@@ -170,7 +170,13 @@ class DataHandling(threading.Thread):
 
     def jobs_pending(self):
         "Returns true, if jobs are still processed"
-        if self.result_reader.get_number_of_results_pending() == 0 and self.result_reader.get_number_of_results_read() == self.job_writer.jobs_written():
+
+        # If Job-Writer hasnt finished writing all jobs there are jobs pending for sure.
+        if self.job_writer.jobs_written() is None:
+            return True
+
+        # Results still pending and less results read than jobs written = jobs pending.
+        if self.result_reader.get_number_of_results_pending() == 0 and (self.result_reader.get_number_of_results_read() == self.job_writer.jobs_written()):
             return False
         else: return True
 

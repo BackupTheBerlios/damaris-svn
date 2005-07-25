@@ -65,6 +65,9 @@ class JobWriter(threading.Thread):
         # Thread up and running?
         self.__busy = False
 
+        # How many jobs have been written? (updated when all jobs have been written)
+        self.__jobs_written = None
+
 
 
     # Private Methods ------------------------------------------------------------------------------
@@ -81,6 +84,7 @@ class JobWriter(threading.Thread):
             if self.quit_main_loop: break
 
             self.__busy = True
+            self.__jobs_written = None
 
             # Delete existing job-files
             file_list = glob.glob(os.path.join(self.path, "job*"))
@@ -153,6 +157,7 @@ class JobWriter(threading.Thread):
 
             # Cleanup
             self.event_lock.clear()
+            self.__jobs_written = Experiment.job_id + 0
             self.__error_occured = None
             self.__ok_to_start = None
 
@@ -212,7 +217,7 @@ class JobWriter(threading.Thread):
     # Public Methods -------------------------------------------------------------------------------
     
     def jobs_written(self):
-        "Returns the number of jobs already written"
-        return Experiment.job_id + 0
+        "Returns the total number of jobs written or None if still writing"
+        return self.__jobs_written
 
     # /Public Methods ------------------------------------------------------------------------------

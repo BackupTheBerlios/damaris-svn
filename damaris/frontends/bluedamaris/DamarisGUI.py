@@ -82,9 +82,11 @@ class DamarisGUI(threading.Thread):
         self.statusbar_label = self.xml_gui.get_widget("statusbar_label")
         self.display_x_scaling_combobox = self.xml_gui.get_widget("display_x_scaling_combobox")
         self.display_y_scaling_combobox = self.xml_gui.get_widget("display_y_scaling_combobox")
-
+        self.display_source_combobox = self.xml_gui.get_widget("display_source_combobox")
+        
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
+        self.display_source_combobox.set_active(0)
 
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
         self.toolbar_stop_button.set_sensitive(False)
@@ -187,7 +189,7 @@ class DamarisGUI(threading.Thread):
         self.matplot_axes.grid(True)
 
         # Ersten Plot erstellen und Referenz des ersten Eintrags im zurückgegebenen Tupel speichern
-        self.graphen = self.matplot_axes.plot([1,2], [1,8192], "b-", [1,2], [8192,1], "r-")
+        self.graphen = self.matplot_axes.plot([1,2], [-1280,1280], "b-", [1,2], [1280,-1280], "r-")
 
         self.matplot_axes.set_ylim([-1280, 1280])
 

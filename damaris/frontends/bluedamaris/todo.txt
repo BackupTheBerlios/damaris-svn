@@ -9,13 +9,19 @@ Bis zur ersten lauffähigen Version:
 - "Successfully parsed blabla.result" und der tatsächlich geparsten Datei stimmen nicht überein (vielleicht nur bei Error-Messages?)
 - ResultReader auf mehrere Results pro File umbauen
 - Convenience-Functions verbessern, wie z.B. jobs_pending() oder get_variable()
-- mehrere Watchpoints implementieren -> "Quelle-Pulldownmenü" (und mehrere Graphen)
+- mehrere Watchpoints implementieren -> "Quelle-Pulldownmenü"
+- mehrere Graphen implementieren
 - Open-Dialog mit Doppelklick austatten und weniger anfällig für falsche Angaben machen
 - Beim Save-File Dialog Warnung implementieren, falls Dateien überschrieben werden
 - Bei Save-File automatisch SaveAs aufrufen, wenn noch keine Datei angegeben
 - Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln)
 - ^X ^V ^C ^S in Skript Fenstern einführen
 - Zustandsdiagramm der Threads zeichnen
+- Bei vielen Fehlern verhindern, das sich hundertweise Fehlerfenster stapeln
+- Crash beim Restart des Cores beheben. (nur Windows?:   
+  File "E:\Eigene Dateien\Projekt NMR\svnrepository\CoreInterface.py", line 60, in start
+  os.rename(self.core_output_filename, self.core_output_filename+".00")
+  OSError: [Errno 13] Permission denied)
 
 ? Skript checken mit Dummycore ?
 
@@ -33,6 +39,7 @@ Vermutlich erledigt:
   (Achim) wird angezeigt, wäre ganz nett, auch etwas hineinschreiben zu können.
 - Fehlermeldungen zu Runtime von Skripts mit Traceback und
   Zeilennummerierung ausgestattet
+- datahandler.jobs_pending() sollte nun stets korrekte Wahrheitswerte liefern.
 
 Verbesserungswürdig, läuft aber:
 - Error Results implementieren (-> Zustände einführen)
