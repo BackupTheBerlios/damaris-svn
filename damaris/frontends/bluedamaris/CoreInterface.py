@@ -48,6 +48,8 @@ class CoreInterface:
 
     def start(self):
 
+        # Free remaining handle on file
+        self.core_output = None
         # take care of older logfiles
         self.core_output_filename=os.path.join(self.core_dir,"logdata")
         if os.path.isfile(self.core_output_filename):
@@ -73,7 +75,7 @@ class CoreInterface:
         # look out for state file
         timeout=1
         # to do: how should I know core's state name????!!!!!
-        self.statefilename=os.path.join(self.core_dir,"Dummy core.state")
+        self.statefilename=os.path.join(self.core_dir,"dummy core.state")
         while not os.path.isfile(self.statefilename) and timeout>0:
             time.sleep(0.1)
             timeout-=0.1

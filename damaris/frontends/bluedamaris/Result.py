@@ -163,22 +163,31 @@ class Result:
 
     def get_xmax(self):
         "Returns largest x-value (only used internally for plotting)"
-        return self.x_max
+        return max(self.x)
 
 
     def get_ymax(self):
         "Returns largest y-value (only used internally for plotting)"
-        return self.y_max
+        maximum = []
+        for i in range(self.get_number_of_channels()):
+            maximum.append(max(self.get_channel(i)))
+            
+        return max(maximum)
 
 
     def get_xmin(self):
         "Returns smallest x-value (only used internally for plotting)"
-        return self.x_min
+        return min(self.x)
 
 
     def get_ymin(self):
         "Returns smallest y-value (only used internally for plotting)"
-        return self.y_min
+
+        minimum = []
+        for i in range(self.get_number_of_channels()):
+            minimum.append(min(self.get_channel(i)))        
+        
+        return min(minimum)
 
 
     # Overloading Operators ------------------------------------------------------------------------

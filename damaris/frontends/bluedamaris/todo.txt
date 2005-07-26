@@ -22,7 +22,9 @@ Bis zur ersten lauffähigen Version:
   File "E:\Eigene Dateien\Projekt NMR\svnrepository\CoreInterface.py", line 60, in start
   os.rename(self.core_output_filename, self.core_output_filename+".00")
   OSError: [Errno 13] Permission denied)
-- Kommandozeile zu öffnende Dateien mitgeben
+- Autoscaling einbauen
+- Gelegentliches Hängenbleiben im Reader fixen
+- in Accumulation mitführen, wieviel Results akkumuliert wurden
 
 ? Skript checken mit Dummycore ?
 
@@ -42,10 +44,13 @@ Vermutlich erledigt:
   Zeilennummerierung ausgestattet
 - datahandler.jobs_pending() sollte nun stets korrekte Wahrheitswerte liefern.
 
+
 Verbesserungswürdig, läuft aber:
 - Error Results implementieren (-> Zustände einführen)
   Vielleicht findet sich im Laufe der Zeit eine geschicktere Methode, Error-Results zu behandeln.
   Momentan werden sie durchgereicht + Error-Dialog in der Oberfläche angezeigt (sowie in der Console zusätzlich nochmal angezeigt)
+- Kommandozeile zu öffnende Dateien mitgeben (Fehlersicher machen)
+
 
 Erledigt:
 - Absturz bei sofortigem Quit nach Start fixen

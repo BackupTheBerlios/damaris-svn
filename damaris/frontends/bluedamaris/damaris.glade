@@ -729,7 +729,7 @@
 			  </child>
 
 			  <child>
-			    <widget class="GtkCheckButton" id="display_auto_scaling_checkbutton">
+			    <widget class="GtkCheckButton" id="display_autoscaling_checkbutton">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="label" translatable="yes">Auto-Scaling</property>
@@ -739,6 +739,7 @@
 			      <property name="active">False</property>
 			      <property name="inconsistent">False</property>
 			      <property name="draw_indicator">True</property>
+			      <signal name="toggled" handler="on_display_autoscaling_checkbutton_toggled" last_modification_time="Tue, 26 Jul 2005 09:01:41 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">5</property>

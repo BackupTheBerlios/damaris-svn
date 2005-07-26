@@ -17,7 +17,8 @@ class Accumulation:
 
     def __init__(self, **keywords):
 
-        self.job_ids_added = []
+        # Todo---------------
+        self.jobs_added = 0
     
         
         # Normaler Konstruktor
@@ -138,23 +139,32 @@ class Accumulation:
             raise
 
     def get_xmax(self):
-        "Returns the largest x-value (internally used for plotting)"
+        "Returns largest x-value (only used internally for plotting)"
         return max(self.x)
 
 
     def get_ymax(self):
-        "Returns the largest y-value (internally used for plotting)"
-        return max(self.channels)
+        "Returns largest y-value (only used internally for plotting)"
+        maximum = []
+        for i in range(self.get_number_of_channels()):
+            maximum.append(max(self.get_channel(i)))
+            
+        return max(maximum)
 
 
     def get_xmin(self):
-        "Returns the smallest x-value (internally used for plotting)"
+        "Returns smallest x-value (only used internally for plotting)"
         return min(self.x)
 
 
     def get_ymin(self):
-        "Returns the smallest y-value (internally used for plotting)"
-        return min(self.channels)
+        "Returns smallest y-value (only used internally for plotting)"
+
+        minimum = []
+        for i in range(self.get_number_of_channels()):
+            minimum.append(min(self.get_channel(i)))        
+        
+        return min(minimum)
     
     # /Public Methods (internally used) ------------------------------------------------------------
 

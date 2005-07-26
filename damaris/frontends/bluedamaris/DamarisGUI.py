@@ -66,6 +66,7 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("on_toolbar_save_as_button_clicked", self.save_file_as)
         self.xml_gui.signal_connect("on_toolbar_save_file_button_clicked", self.save_file)
         self.xml_gui.signal_connect("on_display_source_combobox_changed", self.display_source_changed)
+        self.xml_gui.signal_connect("on_display_autoscaling_checkbutton_toggled", self.display_autoscaling_toggled)
 
         self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
         self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
@@ -89,6 +90,9 @@ class DamarisGUI(threading.Thread):
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
         self.display_source_combobox.set_active(0)
+
+        self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
+        self.display_autoscaling_checkbutton.set_active(False)
 
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
         self.toolbar_stop_button.set_sensitive(False)
@@ -157,7 +161,7 @@ class DamarisGUI(threading.Thread):
 
         while tau <= 5e-3:
 
-            for accu in range(1):
+            for accu in range(10):
 
                 exp = Experiment()
                 print "Job %d erstellt!" % exp.get_job_id()
@@ -220,12 +224,13 @@ class DamarisGUI(threading.Thread):
         self.matplot_axes.grid(True)
 
         # Ersten Plot erstellen und Referenz des ersten Eintrags im zur¸ckgegebenen Tupel speichern
-        self.graphen = self.matplot_axes.plot([1,2], [-1280,1280], "b-", [1,2], [1280,-1280], "r-")
+        self.graphen = self.matplot_axes.plot([0], [0], "b-", [0], [0], "r-")
 
-        self.matplot_axes.set_ylim([-1280, 1280])
+        self.matplot_axes.set_ylim([-8192, 8192])
 
-        # Lineare y-Skalierung
+        # Lineare y-/x-Skalierung
         self.matplot_axes.set_yscale("linear")
+        self.matplot_axes.set_xscale("linear")
 
         # Matplot in einen GTK-Rahmen stopfen
         self.matplot_canvas = FigureCanvas(self.matplot_figure)
@@ -541,6 +546,7 @@ class DamarisGUI(threading.Thread):
 
 
     def display_source_changed(self, Data = None):
+        # Getting active text
         channel = (self.display_source_combobox.get_model()).get_value(self.display_source_combobox.get_active_iter(), 0)
 
         # Event triggers when we init the box -> Catch Channel "None"
@@ -549,6 +555,19 @@ class DamarisGUI(threading.Thread):
         
         self.draw_result(self.__display_channels[channel][0])
         return True
+
+
+    def display_autoscaling_toggled(self, widget, Data = None):
+
+        channel = (self.display_source_combobox.get_model()).get_value(self.display_source_combobox.get_active_iter(), 0)
+
+        self.matplot_axes.set_ylim(self.__display_channels[channel][0].get_ymin(), self.__display_channels[channel][0].get_ymax())
+        self.matplot_canvas.queue_resize()
+        
+        return True
+
+    
+    # / Callbacks ##################################################################################
 
     # Schnittstellen nach Auﬂen ####################################################################
 
@@ -562,7 +581,9 @@ class DamarisGUI(threading.Thread):
                 self.graphen[1].set_data(in_result.get_xvalues(), in_result.get_channel(1))
 
                 self.matplot_axes.set_xlim(0, in_result.get_xmax())
-                #self.matplot_axes.set_ylim(in_result.get_ymin(), in_result.get_ymax())
+
+                if self.display_autoscaling_checkbutton.get_active():
+                    self.matplot_axes.set_ylim(in_result.get_ymin(), in_result.get_ymax())
 
                 self.matplot_canvas.queue_resize()
 
