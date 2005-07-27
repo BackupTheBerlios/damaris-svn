@@ -18,7 +18,7 @@ Bis zur ersten lauffähigen Version:
 - Description und ID im Graphen anzeigen (oder beim)
 - bei Start / Stop die Buttons richtig setzen (set_sensitive)
 - Dialoge verbessern, sodaß sie bei zu langem Fehlertext ( ;) ) sich selbsttätig vergrößern
-
+- bei Schliessen des Fensters nach Speicherung der Texte fragen
 
 Version 0.0.2:
 ? Console Fenster einbauen ?
