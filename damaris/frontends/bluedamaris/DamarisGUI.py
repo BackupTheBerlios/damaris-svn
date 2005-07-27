@@ -681,8 +681,14 @@ class DamarisGUI(threading.Thread):
 
         channel = (self.display_source_combobox.get_model()).get_value(self.display_source_combobox.get_active_iter(), 0)
 
-        self.matplot_axes.set_ylim(self.__display_channels[channel][0].get_ymin(), self.__display_channels[channel][0].get_ymax())
-        self.matplot_canvas.queue_resize()
+        if channel == "None":
+            return True
+
+        else:
+            if self.display_autoscaling_checkbutton.get_active():
+                self.matplot_axes.set_xlim(self.__display_channels[channel][0].get_xmin(), self.__display_channels[channel][0].get_xmax())
+                self.matplot_axes.set_ylim(self.__display_channels[channel][0].get_ymin(), self.__display_channels[channel][0].get_ymax())
+                self.matplot_canvas.queue_resize()
         
         return True
 
@@ -698,11 +704,10 @@ class DamarisGUI(threading.Thread):
 
             try:
                 self.graphen[0].set_data(in_result.get_xvalues(), in_result.get_channel(0))
-                self.graphen[1].set_data(in_result.get_xvalues(), in_result.get_channel(1))
-
-                self.matplot_axes.set_xlim(0, in_result.get_xmax())
+                self.graphen[1].set_data(in_result.get_xvalues(), in_result.get_channel(1))               
 
                 if self.display_autoscaling_checkbutton.get_active():
+                    self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
                     self.matplot_axes.set_ylim(in_result.get_ymin(), in_result.get_ymax())
 
                 self.matplot_canvas.queue_resize()
@@ -727,7 +732,6 @@ class DamarisGUI(threading.Thread):
                     self.__display_channels[channel] = [ ]
                     self.__display_channels[channel].insert(0,result)
                     self.display_source_combobox.append_text(channel)
-                    print "-------- Created new channel!"
                 else:
                     self.__display_channels[channel].insert(0,result)
 

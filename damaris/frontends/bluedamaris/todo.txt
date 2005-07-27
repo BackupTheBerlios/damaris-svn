@@ -19,14 +19,11 @@ Bis zur ersten lauffähigen Version:
   File "E:\Eigene Dateien\Projekt NMR\svnrepository\CoreInterface.py", line 60, in start
   os.rename(self.core_output_filename, self.core_output_filename+".00")
   OSError: [Errno 13] Permission denied)
-
 - in Accumulation mitführen, wieviel Results akkumuliert wurden
 - DamarisGUI Signale / Inits nach Sparte ordnen & kommentieren
-- "None" Kanal richtig implementieren (-> Anzeige Stumm schalten)
+
 - get_next_result umschreiben, sodaß None = no Jobs pending (um periodischen Crash des while jobs_pending() zu beheben)
 - NiftyGuiElements vollständig in der Oberfläche verwenden
-- x_scaling bei ausgeschaltetem Autoscaling entfernen
-- Autoscaling einbauen
 - Dummycore beenden, falls es einen Fehler gab
 - Core in die Fehlerbehandlung einbauen (Falls Fehler im Core -> sicherer neustart)
 
@@ -34,6 +31,7 @@ Bis zur ersten lauffähigen Version:
 Version 0.0.2:
 ? Console Fenster einbauen ?
 ? Skript checken mit Dummycore ?
+? Synchronen ablauf implementieren ?
 
 
 Auf irgendeine Art erledigt:
@@ -50,6 +48,7 @@ Vermutlich erledigt:
 - Fehlermeldungen zu Runtime von Skripts mit Traceback und
   Zeilennummerierung ausgestattet
 - datahandler.jobs_pending() sollte nun stets korrekte Wahrheitswerte liefern.
+- "None" Kanal richtig implementieren (-> Anzeige Stumm schalten)
 
 
 Verbesserungswürdig, läuft aber:
@@ -66,3 +65,5 @@ Erledigt:
 - Bei Save-File automatisch SaveAs aufrufen, wenn noch keine Datei angegeben
 - Warnung, das Dateien überschrieben werden implementieren (beim Start des Exp.
 - File-Delte etwas sicherer gemacht (mit Fehlerdialog)
+- x_scaling bei ausgeschaltetem Autoscaling entfernen
+- Autoscaling einbauen
