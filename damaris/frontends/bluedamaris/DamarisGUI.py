@@ -44,6 +44,8 @@ class DamarisGUI(threading.Thread):
             self.config = config_object.get_my_config(self)
 
         self.__experiment_running = False
+
+        # Place where graphs get saved internally
         self.__display_channels = { }
 
         # Determines, wether x-scale needs to be adjusted
@@ -316,7 +318,6 @@ class DamarisGUI(threading.Thread):
     def quit_application_part_2(self, Data = None):
 
         if self.__experiment_running:
-            print "Still runnin!"
             return True
 
         self.job_writer.quit_job_writer()
@@ -333,6 +334,16 @@ class DamarisGUI(threading.Thread):
         """Callback for the "Start-Experiment" button"""
 
         self.__experiment_running = True
+
+        # Remove all entries except "None"
+        self.display_source_combobox.set_active(0)
+        
+        length = len(self.__display_channels)
+        for i in range(length):
+            self.display_source_combobox.remove_text(i+1)
+
+        # Deleting all history
+        self.__display_channels = { }
         
         try:
             self.experiment_script_statusbar_label.set_text("Experiment Script: Busy...")

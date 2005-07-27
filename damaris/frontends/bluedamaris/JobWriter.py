@@ -170,7 +170,7 @@ class JobWriter(threading.Thread):
 
             except Exception, e:
                 self.gui.show_error_dialog("Unexpected Error In Experiment Script", "Unexpected error during execution!\n" + str(e))
-                self.gui.stop_experiment()
+                self.gui.stop_experiment(None)
 
             # Cleanup
             self.event_lock.clear()

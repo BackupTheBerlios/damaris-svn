@@ -1,30 +1,23 @@
 Bis zur ersten lauffähigen Version:
 -----------------------------------
 
-- Stop implementieren
-
 - nach verlorenen Methoden gucken, die mittlerweile nicht mehr gebraucht werden (z.b. suspend und wakeup)
 - "Successfully parsed blabla.result" und der tatsächlich geparsten Datei stimmen nicht überein (vielleicht nur bei Error-Messages?)
 - ResultReader auf mehrere Results pro File umbauen
 - Convenience-Functions verbessern, wie z.B. jobs_pending() oder get_variable()
-- mehrere Watchpoints implementieren -> "Quelle-Pulldownmenü"
 - mehrere Graphen implementieren
 - Open-Dialog mit Doppelklick austatten und weniger anfällig für falsche Angaben machen
 - Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln)
 - ^X ^V ^C ^S in Skript Fenstern einführen
 - Zustandsdiagramm der Threads zeichnen
-- Crash beim Restart des Cores beheben. (nur Windows?:
-  File "E:\Eigene Dateien\Projekt NMR\svnrepository\CoreInterface.py", line 60, in start
-  os.rename(self.core_output_filename, self.core_output_filename+".00")
-  OSError: [Errno 13] Permission denied)
 - in Accumulation mitführen, wieviel Results akkumuliert wurden
 - DamarisGUI Signale / Inits nach Sparte ordnen & kommentieren
-- get_next_result umschreiben, sodaß None = no Jobs pending (um periodischen Crash des while jobs_pending() zu beheben)
 - Dummycore beenden, falls es einen Fehler gab
 - Core in die Fehlerbehandlung einbauen (Falls Fehler im Core -> sicherer neustart)
 - im Graphen ErrorResults anzeigbar machen
 - Description und ID im Graphen anzeigen (oder beim)
 - bei Start / Stop die Buttons richtig setzen (set_sensitive)
+- Dialoge verbessern, sodaß sie bei zu langem Fehlertext ( ;) ) sich selbsttätig vergrößern
 
 
 Version 0.0.2:
@@ -48,6 +41,11 @@ Vermutlich erledigt:
   Zeilennummerierung ausgestattet
 - datahandler.jobs_pending() sollte nun stets korrekte Wahrheitswerte liefern.
 - "None" Kanal richtig implementieren (-> Anzeige Stumm schalten)
+- Stop implementieren
+- Crash beim Restart des Cores beheben. (nur Windows?:
+  File "E:\Eigene Dateien\Projekt NMR\svnrepository\CoreInterface.py", line 60, in start
+  os.rename(self.core_output_filename, self.core_output_filename+".00")
+  OSError: [Errno 13] Permission denied)
 
 
 Verbesserungswürdig, läuft aber:
@@ -55,6 +53,8 @@ Verbesserungswürdig, läuft aber:
   Vielleicht findet sich im Laufe der Zeit eine geschicktere Methode, Error-Results zu behandeln.
   Momentan werden sie durchgereicht + Error-Dialog in der Oberfläche angezeigt (sowie in der Console zusätzlich nochmal angezeigt)
 - Kommandozeile zu öffnende Dateien mitgeben (Fehlersicher machen)
+- mehrere Watchpoints implementieren -> "Quelle-Pulldownmenü" (Den Pool besser managen, sodaß es keinen Überlauf etc.
+  geben kann)
 
 
 Erledigt:
@@ -69,3 +69,4 @@ Erledigt:
 - NiftyGuiElements vollständig in der Oberfläche verwenden
 - Bei vielen Fehlern verhindern, das sich hundertweise Fehlerfenster stapeln
 - Beim Save-File Dialog Warnung implementieren, falls Dateien überschrieben werden
+- get_next_result umschreiben, sodaß None = no Jobs pending (um periodischen Crash des while jobs_pending() zu beheben)

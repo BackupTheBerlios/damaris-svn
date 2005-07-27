@@ -109,12 +109,12 @@ class DataHandling(threading.Thread):
             try:
                 self.result_reader.start()
                 exec data_handling_string in locals()
-                self.event.wait(0.5)
+                self.event.wait(0.3)
                 data_handling(self)
             except Exception, e:
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
                 self.gui.show_error_dialog("Execution Error In Data Handling", "Data Handling:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
-                self.gui.stop_experiment()
+                self.gui.stop_experiment(None)
 
             # Cleanup
             self.event_lock.clear()
