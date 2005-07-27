@@ -136,7 +136,7 @@ class JobWriter(threading.Thread):
                 self.experiment_script = experiment_script
             except Exception, e:
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
-                self.gui.show_syntax_error_dialog("Experiment Script:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
+                self.gui.show_error_dialog("Experiment Script Execution Error", "Experiment Script:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
                 self.event_lock.clear()
                 self.__error_occured = None
                 self.__ok_to_start = None
@@ -173,7 +173,7 @@ class JobWriter(threading.Thread):
             compiler.parse(cmd_string)
             return True
         except Exception, e:
-            self.gui.show_syntax_error_dialog("Experiment Script: " + str(e))
+            self.gui.show_error_dialog("Syntax Error In Experiment Script", "Experiment Script: " + str(e))
             return False
 
 

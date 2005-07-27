@@ -23,7 +23,7 @@ Bis zur ersten lauffähigen Version:
 - DamarisGUI Signale / Inits nach Sparte ordnen & kommentieren
 
 - get_next_result umschreiben, sodaß None = no Jobs pending (um periodischen Crash des while jobs_pending() zu beheben)
-- NiftyGuiElements vollständig in der Oberfläche verwenden
+
 - Dummycore beenden, falls es einen Fehler gab
 - Core in die Fehlerbehandlung einbauen (Falls Fehler im Core -> sicherer neustart)
 
@@ -67,3 +67,4 @@ Erledigt:
 - File-Delte etwas sicherer gemacht (mit Fehlerdialog)
 - x_scaling bei ausgeschaltetem Autoscaling entfernen
 - Autoscaling einbauen
+- NiftyGuiElements vollständig in der Oberfläche verwenden

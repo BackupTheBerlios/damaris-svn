@@ -104,13 +104,11 @@ class DataHandling(threading.Thread):
             try:
                 self.result_reader.start()
                 exec data_handling_string in locals()
-                # self.jobs_pending() doesnt work correctly if we start everything immedeatly,
-                # todo: maybe resolved
-                self.event.wait(1)
+                self.event.wait(0.5)
                 data_handling(self)
             except Exception, e:
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
-                self.gui.show_syntax_error_dialog("Data Handling:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
+                self.gui.show_error_dialog("Execution Error In Data Handling", "Data Handling:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
 
             # Cleanup
             self.result_reader.reset()
@@ -124,7 +122,7 @@ class DataHandling(threading.Thread):
             compiler.parse(cmd_string)
             return True
         except Exception, e:
-            self.gui.show_syntax_error_dialog("Data Handling: " + str(e))
+            self.gui.show_error_dialog("Syntax Error in Data Handling", str(e))
             return False
             
 
@@ -158,7 +156,7 @@ class DataHandling(threading.Thread):
             tmp = self.result_reader.get_next_result()
 
         if tmp.is_error():
-            self.gui.show_error_result_dialog(tmp.get_description("error_msg"))
+            self.gui.show_error_dialog("Error Result Occured!", tmp.get_description("error_msg"))
 
         return tmp
 

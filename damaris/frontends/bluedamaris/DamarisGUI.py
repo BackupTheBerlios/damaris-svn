@@ -45,7 +45,10 @@ class DamarisGUI(threading.Thread):
         self.__experiment_running = False
         self.__display_channels = { }
 
+        # Determines, wether x-scale needs to be adjusted
+        self.__rescale = True
 
+        
     def run(self):
         "Starting thread and GTK-mainloop"
         self.xml_gui = gtk.glade.XML("damaris.glade")
@@ -268,6 +271,7 @@ class DamarisGUI(threading.Thread):
         self.graphen = self.matplot_axes.plot([0], [0], "b-", [0], [0], "r-")
 
         self.matplot_axes.set_ylim([-8192, 8192])
+        self.matplot_axes.set_xlim([0,1])
 
         # Lineare y-/x-Skalierung
         self.matplot_axes.set_yscale("linear")
@@ -375,6 +379,7 @@ class DamarisGUI(threading.Thread):
             if not self.data_handler.is_busy() and not self.job_writer.is_busy():
                 self.toolbar_run_button.set_sensitive(True)
                 self.__experiment_running = False
+                self.__rescale = True
                 return False
 
             return True
@@ -704,7 +709,11 @@ class DamarisGUI(threading.Thread):
 
             try:
                 self.graphen[0].set_data(in_result.get_xvalues(), in_result.get_channel(0))
-                self.graphen[1].set_data(in_result.get_xvalues(), in_result.get_channel(1))               
+                self.graphen[1].set_data(in_result.get_xvalues(), in_result.get_channel(1))
+
+                if self.__rescale:
+                    self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
+                    self.__rescale = False
 
                 if self.display_autoscaling_checkbutton.get_active():
                     self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
@@ -767,59 +776,9 @@ class DamarisGUI(threading.Thread):
     def connect_core(self, core):
         self.core_interface=core
 
-    def show_syntax_error_dialog(self, error_message):
-        "Displays a syntax-error dialog"
-        def idle_func():
-            try:
-                gtk.gdk.threads_enter()
-                dialog = gtk.MessageDialog(parent = self.main_window,
-                                           flags = gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
-                                           type = gtk.MESSAGE_ERROR,
-                                           buttons = gtk.BUTTONS_OK,
-                                           message_format = error_message)
-
-                dialog.set_title("Syntax Error")
-                dialog.set_position(gtk.WIN_POS_CENTER)
-                                                          
-                dialog.run()
-                dialog.destroy()
-
-                return False
-                
-            finally:
-                gtk.gdk.threads_leave()
-
-        gobject.idle_add(idle_func)
-
-
-    def show_error_result_dialog(self, error_message):
-        "Displays a syntax-error dialog"
-        def idle_func():
-            try:
-                gtk.gdk.threads_enter()
-                dialog = gtk.MessageDialog(parent = self.main_window,
-                                           flags = gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
-                                           type = gtk.MESSAGE_ERROR,
-                                           buttons = gtk.BUTTONS_OK,
-                                           message_format = error_message)
-
-                dialog.set_title("Error Result occured")
-                dialog.set_position(gtk.WIN_POS_CENTER)
-                                                          
-                dialog.run()
-                dialog.destroy()
-
-                return False
-                
-            finally:
-                gtk.gdk.threads_leave()
-
-        gobject.idle_add(idle_func)
-
-
 
     def show_error_dialog(self, title, error_message):
-        "Displays a syntax-error dialog"
+        "Displays an error dialog"
         def idle_func():
             try:
                 gtk.gdk.threads_enter()
