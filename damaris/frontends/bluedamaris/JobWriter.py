@@ -14,6 +14,8 @@ import compiler
 import glob
 from Experiment import *
 
+import time
+
 class JobWriter(threading.Thread):
     def __init__(self, path = None, config_object = None):
         threading.Thread.__init__(self, name = "Thread-JobWriter")
@@ -68,6 +70,9 @@ class JobWriter(threading.Thread):
         # How many jobs have been written? (updated when all jobs have been written)
         self.__jobs_written = None
 
+        # Used to stop an experiment
+        self.__stop_experiment = False
+
 
 
     # Private Methods ------------------------------------------------------------------------------
@@ -79,6 +84,8 @@ class JobWriter(threading.Thread):
             # Idling...
             self.__busy = False
             self.event_lock.wait()
+
+            self.__stop_experiment = False
 
             # Quit thread?
             if self.quit_main_loop: break
@@ -145,10 +152,14 @@ class JobWriter(threading.Thread):
             # Run script
             try:
                 for exp in self.experiment_script(self):
+
                     job_file = file(os.path.join(self.path, "job.tmp"), "w")
                     job_file.write(exp.write_xml_string())
                     job_file.close()
                     os.rename(os.path.join(self.path, "job.tmp"), os.path.join(self.path, self.filename % exp.get_job_id()))
+
+                    # Stop Experiment?
+                    if self.__stop_experiment: break
 
                 end_job = Experiment()
 
@@ -158,7 +169,8 @@ class JobWriter(threading.Thread):
                 os.rename(os.path.join(self.path, "job.tmp"), os.path.join(self.path, self.filename % end_job.get_job_id()))
 
             except Exception, e:
-                self.gui.show_syntax_error_dialog("Experiment Script: Unexpected error during execution!\n" + str(e))
+                self.gui.show_error_dialog("Unexpected Error In Experiment Script", "Unexpected error during execution!\n" + str(e))
+                self.gui.stop_experiment()
 
             # Cleanup
             self.event_lock.clear()
@@ -215,6 +227,10 @@ class JobWriter(threading.Thread):
     def is_busy(self):
         "Returns true if the thread is not idling(internally used)"
         return self.__busy
+
+
+    def stop_experiment(self):
+        self.__stop_experiment = True
     
     # /Public Methods (internally used) ------------------------------------------------------------
 

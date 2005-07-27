@@ -2,6 +2,7 @@ Bis zur ersten lauffähigen Version:
 -----------------------------------
 
 - Stop implementieren
+
 - nach verlorenen Methoden gucken, die mittlerweile nicht mehr gebraucht werden (z.b. suspend und wakeup)
 - "Successfully parsed blabla.result" und der tatsächlich geparsten Datei stimmen nicht überein (vielleicht nur bei Error-Messages?)
 - ResultReader auf mehrere Results pro File umbauen
@@ -21,6 +22,9 @@ Bis zur ersten lauffähigen Version:
 - get_next_result umschreiben, sodaß None = no Jobs pending (um periodischen Crash des while jobs_pending() zu beheben)
 - Dummycore beenden, falls es einen Fehler gab
 - Core in die Fehlerbehandlung einbauen (Falls Fehler im Core -> sicherer neustart)
+- im Graphen ErrorResults anzeigbar machen
+- Description und ID im Graphen anzeigen (oder beim)
+- bei Start / Stop die Buttons richtig setzen (set_sensitive)
 
 
 Version 0.0.2:

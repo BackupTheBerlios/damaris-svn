@@ -92,6 +92,7 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("on_toolbar_save_as_button_clicked", self.save_file_as)
         self.xml_gui.signal_connect("on_toolbar_save_file_button_clicked", self.save_file)
         self.xml_gui.signal_connect("on_toolbar_save_all_button_clicked", self.save_all_files)
+        self.xml_gui.signal_connect("on_toolbar_stop_button_clicked", self.stop_experiment)
 
         # Display:
         
@@ -100,7 +101,6 @@ class DamarisGUI(threading.Thread):
 
         # Scripts:
 
-        # Before connecting signals we need the entitites...
         self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
         self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
         self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
@@ -244,9 +244,9 @@ class DamarisGUI(threading.Thread):
 
             self.data_handling_textbuffer.set_text("""def data_handling(input):
 
-    while input.jobs_pending():
+    while 1:
         timesignal = input.get_next_result()
-
+        if timesignal is None: break
         if timesignal.is_error():
             continue
         
@@ -307,6 +307,18 @@ class DamarisGUI(threading.Thread):
     def quit_application(self, widget, Data = None):
         "Callback for everything that quits the application"
 
+        if self.__experiment_running:
+            self.stop_experiment(widget)
+
+        gobject.timeout_add(200, self.quit_application_part_2)
+
+
+    def quit_application_part_2(self, Data = None):
+
+        if self.__experiment_running:
+            print "Still runnin!"
+            return True
+
         self.job_writer.quit_job_writer()
         self.job_writer.join()
 
@@ -314,6 +326,7 @@ class DamarisGUI(threading.Thread):
         self.data_handler.join()
 
         gtk.main_quit()
+        return False
 
 
     def start_experiment(self, widget, Data = None):
@@ -325,6 +338,7 @@ class DamarisGUI(threading.Thread):
             self.experiment_script_statusbar_label.set_text("Experiment Script: Busy...")
             self.data_handling_statusbar_label.set_text("Data Handling: Busy...")
             self.toolbar_run_button.set_sensitive(False)
+            # stop_button.set_sensitive(True) -> look sync_job_writer_data_handler
 
             # Waking both threads up
             self.core_interface.clear_job(0)
@@ -337,6 +351,7 @@ class DamarisGUI(threading.Thread):
 
             gobject.timeout_add(100, self.sync_job_writer_data_handler)
             gobject.timeout_add(500, self.check_job_writer_data_handler_finished)
+            
             return True
         except:
             # todo: stop successfully started threads
@@ -363,6 +378,7 @@ class DamarisGUI(threading.Thread):
             else:
                 self.job_writer.start_writing(True)
                 self.data_handler.start_handling(True)
+                self.toolbar_stop_button.set_sensitive(True)
                 self.main_notebook.set_current_page(2)
                 return False
         finally:
@@ -382,14 +398,27 @@ class DamarisGUI(threading.Thread):
 
             if not self.data_handler.is_busy() and not self.job_writer.is_busy():
                 self.toolbar_run_button.set_sensitive(True)
+                self.toolbar_stop_button.set_sensitive(False)
                 self.__experiment_running = False
                 self.__rescale = True
+
+                print "\n\nDone."
+                
                 return False
 
             return True
             
         finally:
             gtk.gdk.threads_leave()
+
+
+
+    def stop_experiment(self, widget, data = None):
+        print "\nStopping Experiment... (Waiting for components to stop safely)\n"
+        self.job_writer.stop_experiment()
+        self.data_handler.stop_experiment()
+
+        return True
     
 
     def open_file(self, widget, Data = None):

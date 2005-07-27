@@ -57,6 +57,9 @@ class DataHandling(threading.Thread):
         # Thread up and running?
         self.__busy = False
 
+        # Used to stop an experiment
+        self.__stop_experiment = False
+
 
     # Private Methods ------------------------------------------------------------------------------
 
@@ -67,6 +70,8 @@ class DataHandling(threading.Thread):
             # Idling...
             self.__busy = False
             self.event_lock.wait()
+
+            self.__stop_experiment = False
 
             # Quit thread?
             if self.quit_main_loop: break
@@ -109,11 +114,12 @@ class DataHandling(threading.Thread):
             except Exception, e:
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
                 self.gui.show_error_dialog("Execution Error In Data Handling", "Data Handling:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
+                self.gui.stop_experiment()
 
             # Cleanup
+            self.event_lock.clear()
             self.result_reader.reset()
             self.__ok_to_start = None
-            self.event_lock.clear()
 
             
     def check_syntax(self, cmd_string):
@@ -132,6 +138,9 @@ class DataHandling(threading.Thread):
     
     def get_variable(self, name, blocking = True):
         "Returns the value of the desired variable"
+
+        # Serious updating von Nöten. Vor allem an Stop-Experiment / Quit denken!!
+        
         if blocking:
             if self.__dict__.has_key(name):
                 return self.__dict__[name]
@@ -150,13 +159,21 @@ class DataHandling(threading.Thread):
 
     def get_next_result(self):
         "Returns the next result in queue"
+
+        if self.__stop_experiment:
+            return None
+
         tmp = self.result_reader.get_next_result()
+        
         while tmp is None:
+
+            if not self.jobs_pending() or self.__stop_experiment:
+                return None
             self.event.wait(0.1)
             tmp = self.result_reader.get_next_result()
 
         if tmp.is_error():
-            self.gui.show_error_dialog("Error Result Occured!", tmp.get_description("error_msg"))
+            self.gui.show_error_dialog("Error Result Read!", tmp.get_description("error_msg"))
 
         return tmp
 
@@ -225,5 +242,8 @@ class DataHandling(threading.Thread):
         self.quit_main_loop = True
         self.event_lock.set()
 
+
+    def stop_experiment(self):
+        self.__stop_experiment = True
 
     # /Public Methods (Internally used) ------------------------------------------------------------
