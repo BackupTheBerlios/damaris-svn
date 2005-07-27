@@ -48,6 +48,9 @@ class DamarisGUI(threading.Thread):
         # Determines, wether x-scale needs to be adjusted
         self.__rescale = True
 
+        # Number of currently open error-dialogs
+        self.__error_dialogs_open = 0
+
         
     def run(self):
         "Starting thread and GTK-mainloop"
@@ -779,6 +782,13 @@ class DamarisGUI(threading.Thread):
 
     def show_error_dialog(self, title, error_message):
         "Displays an error dialog"
+
+        if self.__error_dialogs_open > 2:
+            print "\nWarning: Dropped error-dialog due too many opened windows.\nError Title: %s\nError Message: %s" % (title, error_message)
+            return None
+
+        self.__error_dialogs_open += 1
+        
         def idle_func():
             try:
                 gtk.gdk.threads_enter()
@@ -787,6 +797,7 @@ class DamarisGUI(threading.Thread):
                 return False
                 
             finally:
+                self.__error_dialogs_open -= 1
                 gtk.gdk.threads_leave()
 
         gobject.idle_add(idle_func) 

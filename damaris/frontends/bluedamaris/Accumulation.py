@@ -19,8 +19,8 @@ class Accumulation:
 
         # Will be increased, when a result is added to acc.
         self.jobs_added = 0
-    
-        
+
+
         # Normaler Konstruktor
         if len(keywords) is 0:
 
@@ -49,15 +49,15 @@ class Accumulation:
                     ctr += 1
 
             if ctr is not 4:
-                raise TypeError("Accumulation: Wrong usage of copy-constructor: expected 0 or 4 keywords, got %d" % ctr)            
+                raise TypeError("Accumulation: Wrong usage of copy-constructor: expected 0 or 4 keywords, got %d" % ctr)
 
             self.x = numarray.reshape(self.x, (self.samples,))
 
         else:
             raise TypeError("Accumulation: Wrong usage of copy-constructor: expected 0 or 4 keywords, got %d" % len(keywords))
-                
 
-    # Public Methods -------------------------------------------------------------------------------     
+
+    # Public Methods -------------------------------------------------------------------------------
 
     def get_number_of_samples(self):
         "Returns the number of samples recorded"
@@ -96,9 +96,9 @@ class Accumulation:
             return self.channels[in_channel, in_pos]
         except:
             raise
-        
+
     # /Public Methods ------------------------------------------------------------------------------
-    
+
     # Public methods (internally used) -------------------------------------------------------------
 
     def set_sampling_rate(self, in_sampling_rate):
@@ -148,7 +148,7 @@ class Accumulation:
         maximum = []
         for i in range(self.get_number_of_channels()):
             maximum.append(max(self.get_channel(i)))
-            
+
         return max(maximum)
 
 
@@ -162,10 +162,10 @@ class Accumulation:
 
         minimum = []
         for i in range(self.get_number_of_channels()):
-            minimum.append(min(self.get_channel(i)))        
-        
+            minimum.append(min(self.get_channel(i)))
+
         return min(minimum)
-    
+
     # /Public Methods (internally used) ------------------------------------------------------------
 
     # Overloading Operators ------------------------------------------------------------------------
@@ -178,7 +178,7 @@ class Accumulation:
             if isinstance(other, IntType):
                 if self.channels is None:
                     raise TypeError("Accumulation: Cannot add integer-offset to an empty accumulation!")
-                
+
                 self.channels += other
                 return self
             # Float soll aufaddiert werden
@@ -186,12 +186,12 @@ class Accumulation:
                 if self.channels is None:
                     raise TypeError("Accumulation: Cannot add float-offset to an empty accumulation!")
 
-                print "Accumulation: Warning, converting accumulation to float might result in incorrect data (due to rounding-errors)!"
+                print "\nAccumulation: Warning, converting accumulation to float might result in incorrect data (due to rounding-errors)!"
                 self.channels += other
                 return self
 
             # Result soll aufaddiert werden
-            elif str(other.__class__) == "Result.Result":         
+            elif str(other.__class__) == "Result.Result":
                 if self.channels is None:
                     self.channels = numarray.array(other.get_channels(), type="Int32")
                     self.x = numarray.array(other.get_xvalues())
@@ -200,7 +200,7 @@ class Accumulation:
                     return self
                 else:
                     if self.sampling_rate != other.get_sampling_rate():
-                        print "Accumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
+                        print "\nAccumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
 
                     self.channels += other.get_channels()
                     # X-Kanäle neu setzen? self.x = numarray.array(other.getXValues())
@@ -211,7 +211,7 @@ class Accumulation:
 
                 if other.is_empty():
                     return self
-                
+
                 if self.channels is None:
                     self.channels = numarray.array(other.get_channels(), type="Int32")
                     self.x = numarray.array(other.get_xvalues())
@@ -220,13 +220,13 @@ class Accumulation:
                     return self
                 else:
                     if self.sampling_rate is not other.get_sampling_rate():
-                        print "Accumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
+                        print "\nAccumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
                     self.channels += other.get_channels()
                     # X-Kanäle neu setzen? self.x = numarray.array(other.getXValues())
-                    return self                
+                    return self
 
-                
-            # Anderes geht nicht.   
+
+            # Anderes geht nicht.
             else:
                 raise TypeError, "Cannot add %s to accumulation-object!" % str(other.__class__)
 
@@ -241,7 +241,7 @@ class Accumulation:
             if isinstance(other, IntType):
                 if self.channels is None:
                     return other
-                
+
                 return Accumulation(number_of_samples = self.samples, channel_array = self.channels + other, x = self.x, sampling_rate = self.sampling_rate)
 
             # Float soll aufaddiert werden
@@ -249,7 +249,7 @@ class Accumulation:
                 if self.channels is None:
                     return other
 
-                print "Accumulation: Warning, converting accumulation to float might result in incorrect data (due to rounding-errors)!"
+                print "\nAccumulation: Warning, converting accumulation to float might result in incorrect data (due to rounding-errors)!"
                 return Accumulation(number_of_samples = self.samples, channel_array = self.channels + other, x = self.x, sampling_rate = self.sampling_rate)
 
             # Result soll aufaddiert werden
@@ -259,7 +259,7 @@ class Accumulation:
 
                 else:
                     if self.sampling_rate is not other.get_sampling_rate():
-                        print "Accumulation warning: Adding results to accumulation with diffrent sampling-rates!"
+                        print "\nAccumulation warning: Adding results to accumulation with diffrent sampling-rates!"
 
                     # X-Kanäle neu setzen? self.x = numarray.array(other.getXValues())
                     return Accumulation(number_of_samples = self.get_number_of_samples(), channel_array = self.channels + other.get_cannels(), x = self.x, sampling_rate = self.sampling_rate)
@@ -276,18 +276,18 @@ class Accumulation:
 
                 # 0 + Akku2 = Akku2
                 if self.channels is None:
-                    return Accumulation(number_of_samples = other.get_number_of_samples(), channel_array = other.get_channels(), x = other.get_xvalues(), sampling_rate = other.get_sampling_rate()) 
+                    return Accumulation(number_of_samples = other.get_number_of_samples(), channel_array = other.get_channels(), x = other.get_xvalues(), sampling_rate = other.get_sampling_rate())
 
                 # Akku1 + Akku2 = Akku3
                 else:
                     if self.sampling_rate is not other.get_sampling_rate():
-                        print "Accumulation warning: Adding accumulation to accumulation with diffrent sampling-rates!"
+                        print "\nAccumulation warning: Adding accumulation to accumulation with diffrent sampling-rates!"
 
                     # X-Kanäle neu setzen? self.x = numarray.array(other.getXValues())
-                    return Accumulation(number_of_samples = self.get_number_of_samples(), channel_array = self.channels + other.get_channels(), x = self.x, sampling_rate = self.sampling_rate)               
+                    return Accumulation(number_of_samples = self.get_number_of_samples(), channel_array = self.channels + other.get_channels(), x = self.x, sampling_rate = self.sampling_rate)
 
-                
-            # Anderes geht nicht.   
+
+            # Anderes geht nicht.
             else:
                 raise TypeError, "Cannot add %s to accumulation-object!" % str(type(other))
 

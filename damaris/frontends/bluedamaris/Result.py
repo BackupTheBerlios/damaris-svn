@@ -87,7 +87,7 @@ class Result:
 
     def add_description(self, in_key, in_value):
         "Adds a description to the result (prints a warning if key exists)"
-        if self.description.has_key(in_key): print "Warning: Overwriting existing key \"%s\" (%s) with \"%s\"." % (str(in_key), str(self.description[in_key]), str(in_value))
+        if self.description.has_key(in_key): print "\nWarning: Overwriting existing key \"%s\" (%s) with \"%s\"." % (str(in_key), str(self.description[in_key]), str(in_value))
         self.description[in_key] = in_value
 
 
@@ -96,7 +96,7 @@ class Result:
         if self.description.has_key(in_key):
             return self.description[in_key]
         else:
-            print "Warning: No existing key \"%s\" in descriptions." % in_key
+            print "\nWarning: No existing key \"%s\" in descriptions." % in_key
 
 
     def set_description(self, key, value):
@@ -208,7 +208,7 @@ class Result:
                 if self.channels is None:
                     raise TypeError("Accumulation: Cannot add float-offset to an empty accumulation!")
 
-                print "Accumulation: Warning, converting accumulation to float might result in incorrect data (due to rounding-errors)!"
+                print "\nAccumulation: Warning, converting accumulation to float might result in incorrect data (due to rounding-errors)!"
                 self.channels += other
                 return self
 
@@ -222,7 +222,7 @@ class Result:
                     return self
                 else:
                     if self.sampling_rate is not other.get_sampling_rate():
-                        print "Accumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
+                        print "\nAccumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
 
                     self.channels += other.get_channels()
                     # X-Kanäle neu setzen? self.x = numarray.array(other.getXValues())
@@ -242,7 +242,7 @@ class Result:
                     return self
                 else:
                     if self.sampling_rate is not other.get_sampling_rate():
-                        print "Accumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
+                        print "\nAccumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
 
                     self.channels += other.get_channels()
                     # X-Kanäle neu setzen? self.x = numarray.array(other.getXValues())
@@ -272,7 +272,7 @@ class Result:
                 if self.channels is None:
                     return other
 
-                print "Accumulation: Warning, converting accumulation to float might result in incorrect data (due to rounding-errors)!"
+                print "\nAccumulation: Warning, converting accumulation to float might result in incorrect data (due to rounding-errors)!"
                 return Accumulation(number_of_samples = self.samples, channel_array = self.channels + other, x = self.x, sampling_rate = self.sampling_rate)
 
             # Result soll aufaddiert werden
@@ -282,7 +282,7 @@ class Result:
 
                 else:
                     if self.sampling_rate is not other.get_sampling_rate():
-                        print "Accumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
+                        print "\nAccumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
 
                     # X-Kanäle neu setzen? self.x = numarray.array(other.getXValues())
                     return Accumulation(number_of_samples = self.get_number_of_samples(), channel_array = self.channels + other.get_cannels(), x = self.x, sampling_rate = self.sampling_rate)
@@ -304,7 +304,7 @@ class Result:
                 # Akku1 + Akku2 = Akku3
                 else:
                     if self.sampling_rate is not other.get_sampling_rate():
-                        print "Accumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
+                        print "\nAccumulation warning: Adding results to accumulation with diffrent sampling-rates (%d, %d)!" % (self.sampling_rate, other.get_sampling_rate())
 
                     # X-Kanäle neu setzen? self.x = numarray.array(other.getXValues())
                     return Accumulation(number_of_samples = self.get_number_of_samples(), channel_array = self.channels + other.get_channels(), x = self.x, sampling_rate = self.sampling_rate)               

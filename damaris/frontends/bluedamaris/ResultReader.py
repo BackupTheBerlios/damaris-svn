@@ -226,7 +226,7 @@ class ResultReader(threading.Thread):
     def __xmlEndTagFound(self, in_name):
         if in_name == "adcdata":
             self.result_queue.append(self.tmp_result)
-            print "Result Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read)
+            print "\nResult Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read)
             self.current_channel = 0
             self.current_pos = 0
             self.result_type = -1
@@ -234,7 +234,7 @@ class ResultReader(threading.Thread):
 
         elif in_name == "error":
             self.result_queue.append(self.tmp_result)
-            print "Result Reader: Error-Result parsed (%s)! Error Message: %s" % (os.path.join(self.path, self.filename % self.files_read), self.tmp_result.get_description("error_msg"))
+            print "\nResult Reader: Error-Result parsed (%s)! Error Message: %s" % (os.path.join(self.path, self.filename % self.files_read), self.tmp_result.get_description("error_msg"))
             self.current_channel = 0
             self.current_pos = 0
             self.result_type = -1
