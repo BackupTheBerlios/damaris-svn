@@ -1,5 +1,11 @@
 # -*- coding: iso-8859-1 -*-
 
+#####################################################################
+#                                                                   #
+# Purpose: GUI-Class, manages everything neither                    #
+#          JobWriter nor DataHandling does (espacally GUI-Stuff)    #
+#                                                                   #
+#####################################################################
 
 import pygtk
 pygtk.require("2.0")
@@ -11,6 +17,8 @@ import gtk.glade
 import pango
 
 import numarray
+
+import NiftyGuiElements
 
 # switch comments for gtk over gtkagg
 # from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
@@ -55,32 +63,60 @@ class DamarisGUI(threading.Thread):
         "Initialises the GUI-elements (connecting signals, referencing elements...)"
 
         self.main_window = self.xml_gui.get_widget("main_window")
+        self.main_window_title = "DAMARIS - %s, %s"
+
 
         # Alle Signale verbinden -------------------------------------------------------------------
 
-        self.xml_gui.signal_connect("main_window_close", self.quit_application)
+        # Menu:
+
+        self.xml_gui.signal_connect("on_menu_new_file_item_activate", self.new_file)
+        self.xml_gui.signal_connect("on_menu_open_file_item_activate", self.open_file)
+        self.xml_gui.signal_connect("on_menu_save_file_item_activate", self.save_file)
+        self.xml_gui.signal_connect("on_menu_save_all_files_item_activate", self.save_all_files)
+        self.xml_gui.signal_connect("on_menu_save_file_as_item_activate", self.save_file_as)
+        self.xml_gui.signal_connect("on_menu_quit_item_activate", self.quit_application)
+
+        # Toolbar:
+
         self.xml_gui.signal_connect("on_toolbar_run_button_clicked", self.start_experiment)
         self.xml_gui.signal_connect("on_toolbar_open_file_button_clicked", self.open_file)
-        self.xml_gui.signal_connect("on_main_notebook_switch_page", self.main_notebook_page_changed)
         self.xml_gui.signal_connect("on_toolbar_new_button_clicked", self.new_file)
         self.xml_gui.signal_connect("on_toolbar_save_as_button_clicked", self.save_file_as)
         self.xml_gui.signal_connect("on_toolbar_save_file_button_clicked", self.save_file)
+        self.xml_gui.signal_connect("on_toolbar_save_all_button_clicked", self.save_all_files)
+
+        # Display:
+        
         self.xml_gui.signal_connect("on_display_source_combobox_changed", self.display_source_changed)
         self.xml_gui.signal_connect("on_display_autoscaling_checkbutton_toggled", self.display_autoscaling_toggled)
 
+        # Scripts:
+
+        # Before connecting signals we need the entitites...
         self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
         self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
         self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
         self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
-
+        
         self.experiment_script_textbuffer.connect("modified-changed", self.textviews_modified)
         self.experiment_script_textview.connect_after("move-cursor", self.textviews_moved)
         self.experiment_script_textview.connect("button-release-event", self.textviews_clicked)
         self.data_handling_textbuffer.connect("modified-changed", self.textviews_modified)
         self.data_handling_textview.connect_after("move-cursor", self.textviews_moved)
-        self.data_handling_textview.connect("button-release-event", self.textviews_clicked)        
+        self.data_handling_textview.connect("button-release-event", self.textviews_clicked)  
+
+        # Misc:
+
+        self.xml_gui.signal_connect("main_window_close", self.quit_application)
+        self.xml_gui.signal_connect("on_main_notebook_switch_page", self.main_notebook_page_changed)
         
+        # / Signale --------------------------------------------------------------------------------
+       
         # Sonstige inits ---------------------------------------------------------------------------
+
+        self.menu_save_file_item = self.xml_gui.get_widget("menu_save_file_item")
+        self.menu_save_all_files_item = self.xml_gui.get_widget("menu_save_all_files_item")
 
         self.statusbar_label = self.xml_gui.get_widget("statusbar_label")
         self.display_x_scaling_combobox = self.xml_gui.get_widget("display_x_scaling_combobox")
@@ -125,8 +161,8 @@ class DamarisGUI(threading.Thread):
         self.experiment_script_textview.modify_font(pango.FontDescription("Courier 12"))
         self.data_handling_textview.modify_font(pango.FontDescription("Courier 12"))
 
-        self.experiment_script_textview.associated_filename = None
-        self.data_handling_textview.associated_filename = None
+        self.experiment_script_textview.associated_filename = "Unnamed"
+        self.data_handling_textview.associated_filename = "Unnamed"
 
         # line and coumn number indicators
         self.experiment_script_line_indicator=self.xml_gui.get_widget("experiment_script_line_textfield")
@@ -137,6 +173,7 @@ class DamarisGUI(threading.Thread):
         # For faster testing...
         if self.config.has_key("experiment_script"):
             script_file = file(self.config["experiment_script"], "r")
+            self.experiment_script_textview.associated_filename = self.config["experiment_script"]
 
             experiment_script_string = ""
 
@@ -185,6 +222,7 @@ class DamarisGUI(threading.Thread):
         # For faster testing...
         if self.config.has_key("datahandling_script"):
             script_file = file(self.config["datahandling_script"], "r")
+            self.data_handling_textview.associated_filename = self.config["datahandling_script"]
 
             datahandling_script_string = ""
 
@@ -209,6 +247,9 @@ class DamarisGUI(threading.Thread):
             input.watch(timesignal, "Zeitsignal")""")
 
         self.data_handling_textbuffer.set_modified(False)
+        self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
+
+        #gobject.timeout_add(1000, self.test)
 
         # Matplot hinzufügen (Display_Table, 1. Zeile) ----------------------------------------------
 
@@ -345,30 +386,41 @@ class DamarisGUI(threading.Thread):
     def open_file(self, widget, Data = None):
         "Callback for the open-file dialog"
 
-        main_notebook = self.main_notebook
-        experiment_buffer = self.experiment_script_textview.get_buffer()
-        data_buffer = self.data_handling_textview.get_buffer()
+        # Save changes made...
+        if self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
+            answer = NiftyGuiElements.show_question_dialog(self.main_window, "Unsaved changes", "Do you want to save your changes made to the scripts?")
 
-        def response(self, response_id, Data = None):
+            if answer == 0:
+                # User wants to save
+                self.save_all_files(widget)
+
+            elif answer == 2:
+                # User cancels
+                return True
+
+        # No changes made or user answered "No"
+
+        def response(self, response_id, outer_space):
             if response_id == 1:
                 file_name = dialog.get_filename()
                 if file_name is None:
                     return
-                
-                script_file = file(file_name, "r")
 
-                if main_notebook.get_current_page() == 0:
+                script_file = file(file_name, "r")
+                
+                if outer_space.main_notebook.get_current_page() == 0:
                     experiment_script_string = ""
 
                     for line in script_file:
                         experiment_script_string += line
-
                     script_file.close()
 
-                    experiment_buffer.set_text(experiment_script_string)
-                    experiment_buffer.set_modified(False)
+                    outer_space.experiment_script_textbuffer.set_text(experiment_script_string)
+                    outer_space.experiment_script_textbuffer.set_modified(False)
+                    outer_space.experiment_script_textview.associated_filename = file_name
 
-                elif main_notebook.get_current_page() == 1:
+
+                elif outer_space.main_notebook.get_current_page() == 1:
                     data_handling_string = ""
 
                     for line in script_file:
@@ -376,8 +428,9 @@ class DamarisGUI(threading.Thread):
 
                     script_file.close()
 
-                    data_buffer.set_text(data_handling_string)
-                    data_buffer.set_modified(False)
+                    outer_space.data_handling_textbuffer.set_text(data_handling_string)
+                    outer_space.data_handling_textbuffer.set_modified(False)
+                    outer_space.data_handling_textview.associated_filename = file_name
                     
                 
             else:
@@ -390,30 +443,48 @@ class DamarisGUI(threading.Thread):
             dialog = gtk.FileChooserDialog(title="Open Data Handling Script...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons = ("Open", 1, "Cancel", 0))
 
         dialog.set_select_multiple(False)
-        
+
         # Event-Handler for responce-signal (when one of the button is pressed)
-        dialog.connect("response", response)
+        dialog.connect("response", response, self)
 
         dialog.run()
         dialog.destroy()
+
+        self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
 
         return True
 
 
 
     def save_file(self, widget, Data = None):
-        print "No Save-File at the moment. Please use Save-As."
+
+        if self.main_notebook.get_current_page() == 0:
+            if self.experiment_script_textview.associated_filename == "Unnamed":
+                self.save_file_as(widget)
+            else:
+                script_file = file(self.experiment_script_textview.associated_filename, "w")
+                script_file.write(self.experiment_script_textbuffer.get_text(self.experiment_script_textbuffer.get_start_iter(), self.experiment_script_textbuffer.get_end_iter()))
+                script_file.close()
+                self.experiment_script_textbuffer.set_modified(False)
+
+        elif self.main_notebook.get_current_page() == 1:
+            if self.data_handling_textview.associated_filename == "Unnamed":
+                self.save_file_as(widget)
+            else:
+                script_file = file(self.data_handling_textview.associated_filename, "w")
+                script_file.write(self.data_handling_textbuffer.get_text(self.data_handling_textbuffer.get_start_iter(), self.data_handling_textbuffer.get_end_iter()))
+                script_file.close()
+                self.data_handling_textbuffer.set_modified(False)
+        else:
+            pass
+        
         return True
 
 
     def save_file_as(self, widget, Data = None):
         "Callback for the save-file-as dialog"
 
-        main_notebook = self.main_notebook
-        experiment_buffer = self.experiment_script_textview.get_buffer()
-        data_buffer = self.data_handling_textview.get_buffer()
-
-        def response(self, response_id, Data = None):
+        def response(self, response_id, outer_space):
             if response_id == 1:
                 file_name = dialog.get_filename()
                 if file_name is None:
@@ -421,19 +492,21 @@ class DamarisGUI(threading.Thread):
                 
                 script_file = file(file_name, "w")
 
-                if main_notebook.get_current_page() == 0:
-                    script_file.write(experiment_buffer.get_text(experiment_buffer.get_start_iter(), experiment_buffer.get_end_iter()))
+                if outer_space.main_notebook.get_current_page() == 0:
+                    script_file.write(outer_space.experiment_script_textbuffer.get_text(outer_space.experiment_script_textbuffer.get_start_iter(), outer_space.experiment_script_textbuffer.get_end_iter()))
 
                     script_file.close()
 
-                    experiment_buffer.set_modified(False)
+                    outer_space.experiment_script_textbuffer.set_modified(False)
+                    outer_space.experiment_script_textview.associated_filename = file_name
 
-                elif main_notebook.get_current_page() == 1:
-                    script_file.write(data_buffer.get_text(data_buffer.get_start_iter(), data_buffer.get_end_iter()))
+                elif outer_space.main_notebook.get_current_page() == 1:
+                    script_file.write(outer_space.data_handling_textbuffer.get_text(outer_space.data_handling_textbuffer.get_start_iter(), outer_space.data_handling_textbuffer.get_end_iter()))
 
                     script_file.close()
 
-                    data_buffer.set_modified(False)
+                    outer_space.data_handling_textbuffer.set_modified(False)
+                    outer_space.data_handling_textview.associated_filename = file_name
                     
                 
             else:
@@ -448,25 +521,58 @@ class DamarisGUI(threading.Thread):
         dialog.set_select_multiple(False)
 
         # Event-Handler for responce-signal (when one of the button is pressed)
-        dialog.connect("response", response)
+        dialog.connect("response", response, self)
 
         dialog.run()
         dialog.destroy()
 
+        self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
+
         return True
 
+
+
+    def save_all_files(self, widget, Data = None):
+
+        ye_olde_page = self.main_notebook.get_current_page()
+
+        if self.experiment_script_textbuffer.get_modified():
+            self.main_notebook.set_current_page(0)
+            self.save_file(widget)
+
+        if self.data_handling_textbuffer.get_modified():
+            self.main_notebook.set_current_page(1)
+            self.save_file(widget)
+
+        self.main_notebook.set_current_page(ye_olde_page)
+       
+        return True
     
 
     def new_file(self, widget, Data = None):
 
-        if not self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
-            self.experiment_script_textbuffer.set_text("def experiment_script(input):\n    pass")
-            self.data_handling_textbuffer.set_text("def data_handling(input):\n    pass")
-            self.experiment_script_textbuffer.set_modified(False)
-            self.data_handling_textbuffer.set_modified(False)
-        else:
-            #Show "U want 2 save"-Dialog
-            pass
+        if self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
+            answer = NiftyGuiElements.show_question_dialog(self.main_window, "Unsaved changes", "Do you want to save your changes made to the scripts?")
+
+            if answer == 0:
+                # User wants to save
+                self.save_all_files(widget)
+
+            elif answer == 2:
+                # User cancels
+                return True
+
+        # No changes made or user answered "No"
+
+        self.experiment_script_textbuffer.set_text("def experiment_script(input):\n    pass")
+        self.data_handling_textbuffer.set_text("def data_handling(input):\n    pass")
+        self.experiment_script_textbuffer.set_modified(False)
+        self.data_handling_textbuffer.set_modified(False)
+
+        self.experiment_script_textview.associated_filename = "Unnamed"
+        self.data_handling_textview.associated_filename = "Unnamed"            
+
+        self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
         
         return True
         
@@ -484,9 +590,14 @@ class DamarisGUI(threading.Thread):
 
             if self.experiment_script_textbuffer.get_modified():
                 self.toolbar_save_button.set_sensitive(True)
+                self.menu_save_file_item.set_sensitive(True)
+                
                 self.toolbar_save_all_button.set_sensitive(True)
+                self.menu_save_all_files_item.set_sensitive(True)
             else:
                 self.toolbar_save_button.set_sensitive(False)
+                self.menu_save_file_item.set_sensitive(False)
+
                 
             self.toolbar_save_as_button.set_sensitive(True)
             self.toolbar_run_button.set_sensitive(True)
@@ -498,9 +609,13 @@ class DamarisGUI(threading.Thread):
             
             if self.data_handling_textbuffer.get_modified():
                 self.toolbar_save_button.set_sensitive(True)
+                self.menu_save_file_item.set_sensitive(True)
+                
                 self.toolbar_save_all_button.set_sensitive(True)
+                self.menu_save_all_files_item.set_sensitive(True)
             else:
                 self.toolbar_save_button.set_sensitive(False)
+                self.menu_save_file_item.set_sensitive(False)
                 
             self.toolbar_save_as_button.set_sensitive(True)
             self.toolbar_run_button.set_sensitive(True)
@@ -510,6 +625,7 @@ class DamarisGUI(threading.Thread):
             self.toolbar_new_button.set_sensitive(True)
             self.toolbar_open_button.set_sensitive(False)
             self.toolbar_save_button.set_sensitive(False)
+            self.menu_save_file_item.set_sensitive(False)
             self.toolbar_save_as_button.set_sensitive(False)
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_check_scripts_button.set_sensitive(True)
@@ -518,13 +634,17 @@ class DamarisGUI(threading.Thread):
 
 
     def textviews_modified(self, data = None):
-        
+
         if self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
             self.toolbar_save_button.set_sensitive(True)
+            self.menu_save_file_item.set_sensitive(True)
             self.toolbar_save_all_button.set_sensitive(True)
+            self.menu_save_all_files_item.set_sensitive(True)
         else:
             self.toolbar_save_button.set_sensitive(False)
+            self.menu_save_file_item.set_sensitive(False)
             self.toolbar_save_all_button.set_sensitive(False)
+            self.menu_save_all_files_item.set_sensitive(False)
 
         return True
 
@@ -698,4 +818,8 @@ class DamarisGUI(threading.Thread):
 ##            gtk.main_iteration_do()
 ##        gtk.gdk.threads_leave()
 
-        
+
+    def test(self, Data = None):
+        print self.experiment_script_textview.associated_filename
+        print self.data_handling_textview.associated_filename
+        return True

@@ -25,6 +25,11 @@ Bis zur ersten lauff‰higen Version:
 - Autoscaling einbauen
 - Gelegentliches H‰ngenbleiben im Reader fixen
 - in Accumulation mitf¸hren, wieviel Results akkumuliert wurden
+- DamarisGUI Signale / Inits nach Sparte ordnen & kommentieren
+- "None" Kanal richtig implementieren (-> Anzeige Stumm schalten)
+- get_next_result umschreiben, sodaﬂ None = no Jobs pending (um periodischen Crash des while jobs_pending() zu beheben)
+- NiftyGuiElements vollst‰ndig in der Oberfl‰che verwenden
+- x_scaling bei ausgeschaltetem Autoscaling entfernen
 
 ? Skript checken mit Dummycore ?
 
