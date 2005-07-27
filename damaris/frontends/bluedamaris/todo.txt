@@ -9,7 +9,6 @@ Bis zur ersten lauffähigen Version:
 - mehrere Watchpoints implementieren -> "Quelle-Pulldownmenü"
 - mehrere Graphen implementieren
 - Open-Dialog mit Doppelklick austatten und weniger anfällig für falsche Angaben machen
-- Beim Save-File Dialog Warnung implementieren, falls Dateien überschrieben werden
 - Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln)
 - ^X ^V ^C ^S in Skript Fenstern einführen
 - Zustandsdiagramm der Threads zeichnen
@@ -65,3 +64,4 @@ Erledigt:
 - Autoscaling einbauen
 - NiftyGuiElements vollständig in der Oberfläche verwenden
 - Bei vielen Fehlern verhindern, das sich hundertweise Fehlerfenster stapeln
+- Beim Save-File Dialog Warnung implementieren, falls Dateien überschrieben werden

@@ -17,6 +17,7 @@ import gtk.glade
 import pango
 
 import numarray
+import os
 
 import NiftyGuiElements
 
@@ -496,7 +497,13 @@ class DamarisGUI(threading.Thread):
             if response_id == 1:
                 file_name = dialog.get_filename()
                 if file_name is None:
-                    return
+                    return True
+
+                if os.access(file_name, os.F_OK):
+                    answer = NiftyGuiElements.show_question_dialog_compulsive(outer_space.main_window, "File Exists", "Do you want to overwrite the existing file %s?" % file_name)
+
+                    if answer == 1:
+                        return True
                 
                 script_file = file(file_name, "w")
 
@@ -518,7 +525,7 @@ class DamarisGUI(threading.Thread):
                     
                 
             else:
-                return
+                return True
         
         # Determining the tab which is currently open
         if self.main_notebook.get_current_page() == 0:
