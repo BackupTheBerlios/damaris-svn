@@ -188,34 +188,34 @@ class DamarisGUI(threading.Thread):
                     
             self.experiment_script_textbuffer.set_text("""def experiment_script(input):
 
-        pi = 1e-3
+    pi = 1e-3
 
-        tau = 1e-3
-        px = 0
-        py = 90
-        mx = 180
-        my = 270
+    tau = 1e-3
+    px = 0
+    py = 90
+    mx = 180
+    my = 270
 
-        while tau <= 5e-3:
+    while tau <= 5e-3:
 
-            for accu in range(10):
+        for accu in range(10):
 
-                exp = Experiment()
-                print "Job %d erstellt!" % exp.get_job_id()
-                exp.set_description("tau", tau)
+            exp = Experiment()
+            print "Job %d erstellt!" % exp.get_job_id()
+            exp.set_description("tau", tau)
 
-                exp.set_frequency(100e6, 0)
+            exp.set_frequency(100e6, 0)
 
-                exp.rf_pulse(0, pi/2)
-                exp.wait(tau)
-                exp.rf_pulse(0, pi)
-                exp.wait(tau + 1e-6)
+            exp.rf_pulse(0, pi/2)
+            exp.wait(tau)
+            exp.rf_pulse(0, pi)
+            exp.wait(tau + 1e-6)
 
-                exp.record(512, 1e6)
+            exp.record(512, 1e6)
 
-                yield exp
+            yield exp
 
-            tau += 1e-3""")
+        tau += 1e-3""")
 
         self.experiment_script_textbuffer.set_modified(False)
 
@@ -237,14 +237,14 @@ class DamarisGUI(threading.Thread):
 
             self.data_handling_textbuffer.set_text("""def data_handling(input):
 
-        while input.jobs_pending():
-            timesignal = input.get_next_result()
+    while input.jobs_pending():
+        timesignal = input.get_next_result()
 
-            if timesignal.is_error():
-                continue
-            
-            print "Drawing %d..." % timesignal.get_job_id()
-            input.watch(timesignal, "Zeitsignal")""")
+        if timesignal.is_error():
+            continue
+        
+        print "Drawing %d..." % timesignal.get_job_id()
+        input.watch(timesignal, "Zeitsignal")""")
 
         self.data_handling_textbuffer.set_modified(False)
         self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
@@ -810,7 +810,23 @@ class DamarisGUI(threading.Thread):
             finally:
                 gtk.gdk.threads_leave()
 
-        gobject.idle_add(idle_func)            
+        gobject.idle_add(idle_func)
+
+
+
+    def show_error_dialog(self, title, error_message):
+        "Displays a syntax-error dialog"
+        def idle_func():
+            try:
+                gtk.gdk.threads_enter()
+                NiftyGuiElements.show_error_dialog(self.main_window, title, error_message)
+
+                return False
+                
+            finally:
+                gtk.gdk.threads_leave()
+
+        gobject.idle_add(idle_func) 
 
 ##    def flush(self):
 ##        gtk.gdk.threads_enter()
@@ -818,8 +834,3 @@ class DamarisGUI(threading.Thread):
 ##            gtk.main_iteration_do()
 ##        gtk.gdk.threads_leave()
 
-
-    def test(self, Data = None):
-        print self.experiment_script_textview.associated_filename
-        print self.data_handling_textview.associated_filename
-        return True

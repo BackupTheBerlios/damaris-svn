@@ -17,7 +17,7 @@ class Accumulation:
 
     def __init__(self, **keywords):
 
-        # Todo---------------
+        # Will be increased, when a result is added to acc.
         self.jobs_added = 0
     
         

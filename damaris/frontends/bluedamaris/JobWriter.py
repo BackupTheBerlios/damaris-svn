@@ -86,6 +86,9 @@ class JobWriter(threading.Thread):
             self.__busy = True
             self.__jobs_written = None
 
+            # Telling other threads we are still parsing
+            self.__error_occured = None
+
             # Delete existing job-files
             file_list = glob.glob(os.path.join(self.path, "job*"))
             try:
@@ -93,12 +96,14 @@ class JobWriter(threading.Thread):
                     if job_file.find(".state") != -1:
                         continue
                     os.remove(job_file)
-            except IOError, e:
-                print "IOError: Cannot delete Job-Files" + str(e)
-                raise
 
-            # Telling other threads we are still parsing
-            self.__error_occured = None
+                print "\nWarning: Deleted %d job/result files" % len(file_list)
+            except IOError, e:
+                self.gui.show_error_dialog("File Error", "IOError: Cannot delete Job-Files" + str(e))
+                self.__error_occured = True
+                self.__ok_to_start = None
+                self.event_lock.clear()
+                continue
 
             # Import needed libraries
             from Experiment import Experiment
@@ -107,7 +112,7 @@ class JobWriter(threading.Thread):
             # Remove leader/trailing whitespaces
             experiment_script_string = self.gui.get_experiment_script().strip()
 
-            # Syntax ok?
+            # Syntax ok? If not, tell other threads an error occured
             if self.check_syntax(experiment_script_string):
                 self.__error_occured = False
             else:
