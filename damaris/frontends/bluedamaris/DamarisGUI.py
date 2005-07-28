@@ -73,6 +73,7 @@ class DamarisGUI(threading.Thread):
         "Initialises the GUI-elements (connecting signals, referencing elements...)"
 
         self.main_window = self.xml_gui.get_widget("main_window")
+        self.main_window.connect("delete-event", self.quit_application)
         self.main_window_title = "DAMARIS - %s, %s"
 
 
@@ -118,7 +119,6 @@ class DamarisGUI(threading.Thread):
 
         # Misc:
 
-        self.xml_gui.signal_connect("main_window_close", self.quit_application)
         self.xml_gui.signal_connect("on_main_notebook_switch_page", self.main_notebook_page_changed)
         
         # / Signale --------------------------------------------------------------------------------
@@ -310,6 +310,16 @@ class DamarisGUI(threading.Thread):
 
     def quit_application(self, widget, Data = None):
         "Callback for everything that quits the application"
+
+        # Contents changed? Shall we save?
+
+        if self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
+            answer = NiftyGuiElements.show_question_dialog_compulsive(self.main_window, "Unsaved changes", "Do you want so save your changes?")
+            
+            if answer == 0:
+                self.save_all_files(None)
+            elif answer == 2:
+                self.save_all_files(None)
 
         if self.__experiment_running:
             self.stop_experiment(widget)

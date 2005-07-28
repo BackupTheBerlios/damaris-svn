@@ -10,16 +10,15 @@ Bis zur ersten lauffähigen Version:
 - DamarisGUI Signale / Inits nach Sparte ordnen & kommentieren
 - Core in die Fehlerbehandlung einbauen (Falls Fehler im Core -> sicherer neustart)
 - Dialoge verbessern, sodaß sie bei zu langem Fehlertext ( ;) ) sich selbsttätig vergrößern
-- bei Schliessen des Fensters nach Speicherung der Texte fragen
 - Bug: bei core_interface.stop_queue (vermutlich bewirkt das abschießen manchmal, daß ein Counter falsch gezählt wird?)
-  -> 
+  ->
     Traceback (most recent call last):
       File "E:\Eigene Dateien\Projekt NMR\damaris\frontends\bluedamaris\DamarisGUI.py", line 373, in start_experiment
         self.core_interface.start()
       File "E:\Eigene Dateien\Projekt NMR\damaris\frontends\bluedamaris\CoreInterface.py", line 61, in start
         os.rename(self.core_output_filename+".%02d"%(i-j-1),self.core_output_filename+".%02d"%(i-j))
     OSError: [Errno 17] File exists
-    
+
 - Herausfinden, wie man den Expat-Parser abbrechen kann (Problem bei Stop: bei extrem großen results kann der ResultReader nachhinken
 - core_interface.stop_queue reentrancysicher machen
 - New-File nicht mehr auf alles, sondern nur noch auf aktuelles Tab beziehen
@@ -84,3 +83,4 @@ Erledigt:
 - Beim Save-File Dialog Warnung implementieren, falls Dateien überschrieben werden
 - get_next_result umschreiben, sodaß None = no Jobs pending (um periodischen Crash des while jobs_pending() zu beheben)
 - bei Start / Stop die Buttons richtig setzen (set_sensitive)
+- bei Schliessen des Fensters nach Speicherung der Texte fragen
