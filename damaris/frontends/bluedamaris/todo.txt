@@ -2,18 +2,13 @@ Bis zur ersten lauff‰higen Version:
 -----------------------------------
 
 - nach verlorenen Methoden gucken, die mittlerweile nicht mehr gebraucht werden (z.b. suspend und wakeup)
-- ResultReader auf mehrere Results pro File umbauen
 - Convenience-Functions verbessern, wie z.B. jobs_pending() oder get_variable()
-- mehrere Graphen implementieren
 - Open-Dialog mit Doppelklick austatten und weniger anf‰llig f¸r falsche Angaben machen
 - Fehlersicher machen (alles in Try/Catch Blˆcke einschlieﬂen und angemessen handeln)
 - ^X ^V ^C ^S in Skript Fenstern einf¸hren
 - Zustandsdiagramm der Threads zeichnen
-- in Accumulation mitf¸hren, wieviel Results akkumuliert wurden
 - DamarisGUI Signale / Inits nach Sparte ordnen & kommentieren
 - Core in die Fehlerbehandlung einbauen (Falls Fehler im Core -> sicherer neustart)
-- im Graphen ErrorResults anzeigbar machen
-- Description und ID im Graphen anzeigen (oder beim)
 - Dialoge verbessern, sodaﬂ sie bei zu langem Fehlertext ( ;) ) sich selbstt‰tig vergrˆﬂern
 - bei Schliessen des Fensters nach Speicherung der Texte fragen
 - Bug: bei core_interface.stop_queue (vermutlich bewirkt das abschieﬂen manchmal, daﬂ ein Counter falsch gez‰hlt wird?)
@@ -28,7 +23,15 @@ Bis zur ersten lauff‰higen Version:
 - Herausfinden, wie man den Expat-Parser abbrechen kann (Problem bei Stop: bei extrem groﬂen results kann der ResultReader nachhinken
 - core_interface.stop_queue reentrancysicher machen
 - New-File nicht mehr auf alles, sondern nur noch auf aktuelles Tab beziehen
-    
+
+Datentypen-bunch (NMR-Array und Co):
+  - ResultReader auf mehrere Results pro File umbauen
+  - in Accumulation mitf¸hren, wieviel Results akkumuliert wurden
+  - im Graphen ErrorResults anzeigbar machen
+  - Description und ID im Graphen anzeigen (oder beim)
+  - mehrere Graphen implementieren
+  - DataPool Klasse implementieren (Alles was mit History/Channels und sonstiger Darstellung zu tun hat)
+
 Version 0.0.2:
 ? Console Fenster einbauen ?
 ? Skript checken mit Dummycore ?
