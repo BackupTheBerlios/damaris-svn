@@ -18,6 +18,7 @@ import pango
 
 import numarray
 import os
+import glob
 
 import NiftyGuiElements
 
@@ -327,6 +328,7 @@ class DamarisGUI(threading.Thread):
         self.data_handler.join()
 
         gtk.main_quit()
+        
         return False
 
 
@@ -350,6 +352,19 @@ class DamarisGUI(threading.Thread):
             self.data_handling_statusbar_label.set_text("Data Handling: Busy...")
             self.toolbar_run_button.set_sensitive(False)
             # stop_button.set_sensitive(True) -> look sync_job_writer_data_handler
+
+            # Delete existing job-files
+            file_list = glob.glob(os.path.join(self.job_writer.get_job_writer_path(), "job*"))
+            try:
+                for job_file in file_list:
+                    if job_file.find(".state") != -1:
+                        continue
+                    os.remove(job_file)
+
+                print "\nWarning: Deleted %d job/result files" % len(file_list)
+            except IOError, e:
+                self.gui.show_error_dialog("File Error", "IOError: Cannot delete Job-Files" + str(e))
+                return True
 
             # Waking both threads up
             self.core_interface.clear_job(0)
@@ -425,7 +440,9 @@ class DamarisGUI(threading.Thread):
 
 
     def stop_experiment(self, widget, data = None):
-        print "\nStopping Experiment... (Waiting for components to stop safely)\n"
+        print "\nStopping Experiment... (Waiting for components to stop safely)\n"       
+
+        self.core_interface.stop_queue()
         self.job_writer.stop_experiment()
         self.data_handler.stop_experiment()
 
@@ -824,6 +841,7 @@ class DamarisGUI(threading.Thread):
         self.job_writer = job_writer
 
     def connect_core(self, core):
+        "Referencing core"
         self.core_interface=core
 
 

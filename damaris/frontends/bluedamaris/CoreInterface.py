@@ -128,7 +128,7 @@ class CoreInterface:
             cygwin_root_key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/")
             cygwin_path=_winreg.QueryValueEx(cygwin_root_key,"native")[0]
             kill_command=os.path.join(cygwin_path,"bin","kill.exe")
-            os.popen("%s -%s %d"%(kill_command,signal,self.core_pid))
+            os.popen("%s -%s %d"%(kill_command,sig,self.core_pid))
                     
     def __del__(self):
         # stop core and wait for it

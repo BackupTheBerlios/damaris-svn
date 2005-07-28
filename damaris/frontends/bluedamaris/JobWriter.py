@@ -11,7 +11,9 @@
 import threading
 import os
 import compiler
-import glob
+import traceback
+import sys
+
 from Experiment import *
 
 import time
@@ -96,22 +98,6 @@ class JobWriter(threading.Thread):
             # Telling other threads we are still parsing
             self.__error_occured = None
 
-            # Delete existing job-files
-            file_list = glob.glob(os.path.join(self.path, "job*"))
-            try:
-                for job_file in file_list:
-                    if job_file.find(".state") != -1:
-                        continue
-                    os.remove(job_file)
-
-                print "\nWarning: Deleted %d job/result files" % len(file_list)
-            except IOError, e:
-                self.gui.show_error_dialog("File Error", "IOError: Cannot delete Job-Files" + str(e))
-                self.__error_occured = True
-                self.__ok_to_start = None
-                self.event_lock.clear()
-                continue
-
             # Import needed libraries
             from Experiment import Experiment
             reset()
@@ -169,7 +155,8 @@ class JobWriter(threading.Thread):
                 os.rename(os.path.join(self.path, "job.tmp"), os.path.join(self.path, self.filename % end_job.get_job_id()))
 
             except Exception, e:
-                self.gui.show_error_dialog("Unexpected Error In Experiment Script", "Unexpected error during execution!\n" + str(e))
+                tb_infos=traceback.extract_tb(sys.exc_info()[2])
+                self.gui.show_error_dialog("Execution Error In Experiment Script", "Experiment Script:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
                 self.gui.stop_experiment(None)
 
             # Cleanup
@@ -240,5 +227,9 @@ class JobWriter(threading.Thread):
     def jobs_written(self):
         "Returns the total number of jobs written or None if still writing"
         return self.__jobs_written
+
+
+    def get_job_writer_path(self):
+        return self.path
 
     # /Public Methods ------------------------------------------------------------------------------
