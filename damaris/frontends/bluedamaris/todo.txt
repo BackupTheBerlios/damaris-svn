@@ -6,7 +6,6 @@ Bis zur ersten lauffähigen Version:
 - Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln)
 - ^X ^V ^C ^S in Skript Fenstern einführen
 - Zustandsdiagramm der Threads zeichnen
-- DamarisGUI Signale / Inits nach Sparte ordnen & kommentieren
 - Core in die Fehlerbehandlung einbauen (Falls Fehler im Core -> sicherer neustart)
 - Dialoge verbessern, sodaß sie bei zu langem Fehlertext ( ;) ) sich selbsttätig vergrößern
 - Bug: bei core_interface.stop_queue (vermutlich bewirkt das abschießen manchmal, daß ein Counter falsch gezählt wird?)
@@ -84,3 +83,4 @@ Erledigt:
 - bei Start / Stop die Buttons richtig setzen (set_sensitive)
 - bei Schliessen des Fensters nach Speicherung der Texte fragen
 - Open-Dialog mit Doppelklick austatten und weniger anfällig für falsche Angaben machen
+- DamarisGUI Signale / Inits nach Sparte ordnen & kommentieren

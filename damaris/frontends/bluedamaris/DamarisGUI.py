@@ -74,15 +74,54 @@ class DamarisGUI(threading.Thread):
     def damaris_gui_init(self):
         "Initialises the GUI-elements (connecting signals, referencing elements...)"
 
-        self.main_window = self.xml_gui.get_widget("main_window")
-        self.main_window.connect("delete-event", self.quit_application)
-        self.main_window_title = "DAMARIS - %s, %s"
 
+        # Widgets mit Variablen verbinden ----------------------------------------------------------
+
+        # Menu:
+        self.menu_new_item = self.xml_gui.get_widget("menu_new_file_item")
+        self.menu_open_item = self.xml_gui.get_widget("menu_open_file_item")
+        self.menu_save_item = self.xml_gui.get_widget("menu_save_file_item")
+        self.menu_save_as_item = self.xml_gui.get_widget("menu_save_file_as_item")
+        self.menu_save_all_item = self.xml_gui.get_widget("menu_save_all_files_item")
+
+        # Toolbar:
+        self.toolbar_new_button = self.xml_gui.get_widget("toolbar_new_button")
+        self.toolbar_open_button = self.xml_gui.get_widget("toolbar_open_file_button")
+        self.toolbar_save_button = self.xml_gui.get_widget("toolbar_save_file_button")
+        self.toolbar_save_as_button = self.xml_gui.get_widget("toolbar_save_as_button")
+        self.toolbar_save_all_button = self.xml_gui.get_widget("toolbar_save_all_button")
+        self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
+        self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
+        self.toolbar_check_scripts_button = self.xml_gui.get_widget("toolbar_check_scripts_button")
+
+        # Scripts:
+        self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
+        self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
+        self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
+        self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
+        self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
+        self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
+        self.experiment_script_line_indicator=self.xml_gui.get_widget("experiment_script_line_textfield")
+        self.experiment_script_column_indicator=self.xml_gui.get_widget("experiment_script_column_textfield")
+        self.data_handling_line_indicator=self.xml_gui.get_widget("data_handling_line_textfield")
+        self.data_handling_column_indicator=self.xml_gui.get_widget("data_handling_column_textfield")
+        
+        # Display:
+        self.display_x_scaling_combobox = self.xml_gui.get_widget("display_x_scaling_combobox")
+        self.display_y_scaling_combobox = self.xml_gui.get_widget("display_y_scaling_combobox")
+        self.display_source_combobox = self.xml_gui.get_widget("display_source_combobox")
+        self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
+
+        # Sonstiges:
+        self.main_window = self.xml_gui.get_widget("main_window")
+        self.main_notebook = self.xml_gui.get_widget("main_notebook")
+        self.statusbar_label = self.xml_gui.get_widget("statusbar_label")        
+        
+        # / Widgets mit Variablen verbinden --------------------------------------------------------
 
         # Alle Signale verbinden -------------------------------------------------------------------
 
         # Menu:
-
         self.xml_gui.signal_connect("on_menu_new_file_item_activate", self.new_file)
         self.xml_gui.signal_connect("on_menu_open_file_item_activate", self.open_file)
         self.xml_gui.signal_connect("on_menu_save_file_item_activate", self.save_file)
@@ -91,7 +130,6 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("on_menu_quit_item_activate", self.quit_application)
 
         # Toolbar:
-
         self.xml_gui.signal_connect("on_toolbar_run_button_clicked", self.start_experiment)
         self.xml_gui.signal_connect("on_toolbar_open_file_button_clicked", self.open_file)
         self.xml_gui.signal_connect("on_toolbar_new_button_clicked", self.new_file)
@@ -100,18 +138,11 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("on_toolbar_save_all_button_clicked", self.save_all_files)
         self.xml_gui.signal_connect("on_toolbar_stop_button_clicked", self.stop_experiment)
 
-        # Display:
-        
+        # Display:      
         self.xml_gui.signal_connect("on_display_source_combobox_changed", self.display_source_changed)
         self.xml_gui.signal_connect("on_display_autoscaling_checkbutton_toggled", self.display_autoscaling_toggled)
 
-        # Scripts:
-
-        self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
-        self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
-        self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
-        self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
-        
+        # Scripts:        
         self.experiment_script_textbuffer.connect("modified-changed", self.textviews_modified)
         self.experiment_script_textview.connect_after("move-cursor", self.textviews_moved)
         self.experiment_script_textview.connect("button-release-event", self.textviews_clicked)
@@ -120,72 +151,38 @@ class DamarisGUI(threading.Thread):
         self.data_handling_textview.connect("button-release-event", self.textviews_clicked)  
 
         # Misc:
-
+        self.main_window.connect("delete-event", self.quit_application)
         self.xml_gui.signal_connect("on_main_notebook_switch_page", self.main_notebook_page_changed)
         
         # / Signale --------------------------------------------------------------------------------
        
         # Sonstige inits ---------------------------------------------------------------------------
 
-        self.menu_new_item = self.xml_gui.get_widget("menu_new_file_item")
-        self.menu_open_item = self.xml_gui.get_widget("menu_open_file_item")
-        self.menu_save_item = self.xml_gui.get_widget("menu_save_file_item")
-        self.menu_save_as_item = self.xml_gui.get_widget("menu_save_file_as_item")
-        self.menu_save_all_item = self.xml_gui.get_widget("menu_save_all_files_item")
-
-        self.statusbar_label = self.xml_gui.get_widget("statusbar_label")
-        self.display_x_scaling_combobox = self.xml_gui.get_widget("display_x_scaling_combobox")
-        self.display_y_scaling_combobox = self.xml_gui.get_widget("display_y_scaling_combobox")
-        self.display_source_combobox = self.xml_gui.get_widget("display_source_combobox")
+        # Toolbar:
+        self.toolbar_stop_button.set_sensitive(False)
+        self.toolbar_new_button.set_sensitive(True)
+        self.toolbar_open_button.set_sensitive(True)
+        self.toolbar_save_button.set_sensitive(False)
+        self.toolbar_save_as_button.set_sensitive(True)
+        self.toolbar_check_scripts_button.set_sensitive(False)
+        self.toolbar_save_all_button.set_sensitive(False)
         
+        # Display:
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
         self.display_source_combobox.set_active(0)
-
-        self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
         self.display_autoscaling_checkbutton.set_active(False)
 
-        self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
-        self.toolbar_stop_button.set_sensitive(False)
-        
-        self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
+        # Sonstige:
+        self.main_window_title = "DAMARIS - %s, %s"
 
-        self.main_notebook = self.xml_gui.get_widget("main_notebook")
-
-        self.toolbar_new_button = self.xml_gui.get_widget("toolbar_new_button")
-        self.toolbar_new_button.set_sensitive(True)
-
-        self.toolbar_open_button = self.xml_gui.get_widget("toolbar_open_file_button")
-        self.toolbar_open_button.set_sensitive(True)
-
-        self.toolbar_save_button = self.xml_gui.get_widget("toolbar_save_file_button")
-        self.toolbar_save_button.set_sensitive(False)
-
-        self.toolbar_save_as_button = self.xml_gui.get_widget("toolbar_save_as_button")
-        self.toolbar_save_as_button.set_sensitive(True)
-
-        self.toolbar_check_scripts_button = self.xml_gui.get_widget("toolbar_check_scripts_button")
-        self.toolbar_check_scripts_button.set_sensitive(False)
-
-        self.toolbar_save_all_button = self.xml_gui.get_widget("toolbar_save_all_button")
-        self.toolbar_save_all_button.set_sensitive(False)
-
-        self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
-        self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
-
+        # Scripts:
         self.experiment_script_textview.modify_font(pango.FontDescription("Courier 12"))
         self.data_handling_textview.modify_font(pango.FontDescription("Courier 12"))
 
         self.experiment_script_textview.associated_filename = "Unnamed"
         self.data_handling_textview.associated_filename = "Unnamed"
 
-        # line and coumn number indicators
-        self.experiment_script_line_indicator=self.xml_gui.get_widget("experiment_script_line_textfield")
-        self.experiment_script_column_indicator=self.xml_gui.get_widget("experiment_script_column_textfield")
-        self.data_handling_line_indicator=self.xml_gui.get_widget("data_handling_line_textfield")
-        self.data_handling_column_indicator=self.xml_gui.get_widget("data_handling_column_textfield")
-
-        # For faster testing...
         if self.config.has_key("experiment_script"):
             script_file = file(self.config["experiment_script"], "r")
             self.experiment_script_textview.associated_filename = self.config["experiment_script"]
@@ -264,7 +261,7 @@ class DamarisGUI(threading.Thread):
         self.data_handling_textbuffer.set_modified(False)
         self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
 
-        # Matplot hinzufügen (Display_Table, 1. Zeile) ----------------------------------------------
+        # Matplot (Display_Table, 1. Zeile) --------------------------------------------------------
 
         # Neue Abbildung erstellen
         self.matplot_figure = Figure()
