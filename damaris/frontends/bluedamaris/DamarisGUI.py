@@ -125,8 +125,11 @@ class DamarisGUI(threading.Thread):
        
         # Sonstige inits ---------------------------------------------------------------------------
 
-        self.menu_save_file_item = self.xml_gui.get_widget("menu_save_file_item")
-        self.menu_save_all_files_item = self.xml_gui.get_widget("menu_save_all_files_item")
+        self.menu_new_item = self.xml_gui.get_widget("menu_new_file_item")
+        self.menu_open_item = self.xml_gui.get_widget("menu_open_file_item")
+        self.menu_save_item = self.xml_gui.get_widget("menu_save_file_item")
+        self.menu_save_as_item = self.xml_gui.get_widget("menu_save_file_as_item")
+        self.menu_save_all_item = self.xml_gui.get_widget("menu_save_all_files_item")
 
         self.statusbar_label = self.xml_gui.get_widget("statusbar_label")
         self.display_x_scaling_combobox = self.xml_gui.get_widget("display_x_scaling_combobox")
@@ -259,8 +262,6 @@ class DamarisGUI(threading.Thread):
         self.data_handling_textbuffer.set_modified(False)
         self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
 
-        #gobject.timeout_add(1000, self.test)
-
         # Matplot hinzufügen (Display_Table, 1. Zeile) ----------------------------------------------
 
         # Neue Abbildung erstellen
@@ -350,8 +351,21 @@ class DamarisGUI(threading.Thread):
         try:
             self.experiment_script_statusbar_label.set_text("Experiment Script: Busy...")
             self.data_handling_statusbar_label.set_text("Data Handling: Busy...")
+            
             self.toolbar_run_button.set_sensitive(False)
             # stop_button.set_sensitive(True) -> look sync_job_writer_data_handler
+            self.toolbar_new_button.set_sensitive(False)
+            self.toolbar_open_button.set_sensitive(False)
+            self.toolbar_save_button.set_sensitive(False)
+            self.toolbar_save_as_button.set_sensitive(False)
+            self.toolbar_save_all_button.set_sensitive(False)
+
+            self.menu_new_item.set_sensitive(False)
+            self.menu_open_item.set_sensitive(False)
+            self.menu_save_item.set_sensitive(False)
+            self.menu_save_as_item.set_sensitive(False)
+            self.menu_save_all_item.set_sensitive(False)
+            
 
             # Delete existing job-files
             file_list = glob.glob(os.path.join(self.job_writer.get_job_writer_path(), "job*"))
@@ -425,6 +439,16 @@ class DamarisGUI(threading.Thread):
             if not self.data_handler.is_busy() and not self.job_writer.is_busy():
                 self.toolbar_run_button.set_sensitive(True)
                 self.toolbar_stop_button.set_sensitive(False)
+                
+                self.toolbar_new_button.set_sensitive(True)
+                self.toolbar_open_button.set_sensitive(True)
+                self.toolbar_save_as_button.set_sensitive(True)
+
+                self.menu_new_item.set_sensitive(True)
+                self.menu_open_item.set_sensitive(True)
+                self.menu_save_as_item.set_sensitive(True)
+                
+                
                 self.__experiment_running = False
                 self.__rescale = True
 
@@ -658,47 +682,56 @@ class DamarisGUI(threading.Thread):
         
         if page_num == 0:
             self.toolbar_new_button.set_sensitive(True)
+            self.menu_new_item.set_sensitive(True)
             self.toolbar_open_button.set_sensitive(True)
+            self.menu_open_item.set_sensitive(True)
 
             if self.experiment_script_textbuffer.get_modified():
                 self.toolbar_save_button.set_sensitive(True)
-                self.menu_save_file_item.set_sensitive(True)
+                self.menu_save_item.set_sensitive(True)
                 
                 self.toolbar_save_all_button.set_sensitive(True)
-                self.menu_save_all_files_item.set_sensitive(True)
+                self.menu_save_all_item.set_sensitive(True)
             else:
                 self.toolbar_save_button.set_sensitive(False)
-                self.menu_save_file_item.set_sensitive(False)
+                self.menu_save_item.set_sensitive(False)
 
                 
             self.toolbar_save_as_button.set_sensitive(True)
+            self.menu_save_as_item.set_sensitive(True)
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_check_scripts_button.set_sensitive(True)
             
         elif page_num == 1:
             self.toolbar_new_button.set_sensitive(True)
+            self.menu_new_item.set_sensitive(True)
             self.toolbar_open_button.set_sensitive(True)
+            self.menu_open_item.set_sensitive(True)
             
             if self.data_handling_textbuffer.get_modified():
                 self.toolbar_save_button.set_sensitive(True)
-                self.menu_save_file_item.set_sensitive(True)
+                self.menu_save_item.set_sensitive(True)
                 
                 self.toolbar_save_all_button.set_sensitive(True)
-                self.menu_save_all_files_item.set_sensitive(True)
+                self.menu_save_all_item.set_sensitive(True)
             else:
                 self.toolbar_save_button.set_sensitive(False)
-                self.menu_save_file_item.set_sensitive(False)
+                self.menu_save_item.set_sensitive(False)
                 
             self.toolbar_save_as_button.set_sensitive(True)
+            self.menu_save_as_item.set_sensitive(True)
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_check_scripts_button.set_sensitive(True)
             
         elif page_num == 2:
-            self.toolbar_new_button.set_sensitive(True)
+            self.toolbar_new_button.set_sensitive(False)
+            self.menu_new_item.set_sensitive(False)
             self.toolbar_open_button.set_sensitive(False)
+            self.menu_open_item.set_sensitive(False)
             self.toolbar_save_button.set_sensitive(False)
-            self.menu_save_file_item.set_sensitive(False)
+            self.menu_save_item.set_sensitive(False)
             self.toolbar_save_as_button.set_sensitive(False)
+            self.menu_save_as_item.set_sensitive(False)
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_check_scripts_button.set_sensitive(True)
 
@@ -709,14 +742,14 @@ class DamarisGUI(threading.Thread):
 
         if self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
             self.toolbar_save_button.set_sensitive(True)
-            self.menu_save_file_item.set_sensitive(True)
+            self.menu_save_item.set_sensitive(True)
             self.toolbar_save_all_button.set_sensitive(True)
-            self.menu_save_all_files_item.set_sensitive(True)
+            self.menu_save_all_item.set_sensitive(True)
         else:
             self.toolbar_save_button.set_sensitive(False)
-            self.menu_save_file_item.set_sensitive(False)
+            self.menu_save_item.set_sensitive(False)
             self.toolbar_save_all_button.set_sensitive(False)
-            self.menu_save_all_files_item.set_sensitive(False)
+            self.menu_save_all_item.set_sensitive(False)
 
         return True
 

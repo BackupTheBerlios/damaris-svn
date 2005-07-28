@@ -2,7 +2,6 @@ Bis zur ersten lauff‰higen Version:
 -----------------------------------
 
 - nach verlorenen Methoden gucken, die mittlerweile nicht mehr gebraucht werden (z.b. suspend und wakeup)
-- "Successfully parsed blabla.result" und der tats‰chlich geparsten Datei stimmen nicht ¸berein (vielleicht nur bei Error-Messages?)
 - ResultReader auf mehrere Results pro File umbauen
 - Convenience-Functions verbessern, wie z.B. jobs_pending() oder get_variable()
 - mehrere Graphen implementieren
@@ -15,7 +14,6 @@ Bis zur ersten lauff‰higen Version:
 - Core in die Fehlerbehandlung einbauen (Falls Fehler im Core -> sicherer neustart)
 - im Graphen ErrorResults anzeigbar machen
 - Description und ID im Graphen anzeigen (oder beim)
-- bei Start / Stop die Buttons richtig setzen (set_sensitive)
 - Dialoge verbessern, sodaﬂ sie bei zu langem Fehlertext ( ;) ) sich selbstt‰tig vergrˆﬂern
 - bei Schliessen des Fensters nach Speicherung der Texte fragen
 - Bug: bei core_interface.stop_queue (vermutlich bewirkt das abschieﬂen manchmal, daﬂ ein Counter falsch gez‰hlt wird?)
@@ -28,8 +26,8 @@ Bis zur ersten lauff‰higen Version:
     OSError: [Errno 17] File exists
     
 - Herausfinden, wie man den Expat-Parser abbrechen kann (Problem bei Stop: bei extrem groﬂen results kann der ResultReader nachhinken
-
 - core_interface.stop_queue reentrancysicher machen
+- New-File nicht mehr auf alles, sondern nur noch auf aktuelles Tab beziehen
     
 Version 0.0.2:
 ? Console Fenster einbauen ?
@@ -82,3 +80,4 @@ Erledigt:
 - Bei vielen Fehlern verhindern, das sich hundertweise Fehlerfenster stapeln
 - Beim Save-File Dialog Warnung implementieren, falls Dateien ¸berschrieben werden
 - get_next_result umschreiben, sodaﬂ None = no Jobs pending (um periodischen Crash des while jobs_pending() zu beheben)
+- bei Start / Stop die Buttons richtig setzen (set_sensitive)
