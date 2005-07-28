@@ -18,6 +18,8 @@ import pango
 
 import numarray
 import os
+import os.path
+import sys
 import glob
 
 import NiftyGuiElements
@@ -58,7 +60,7 @@ class DamarisGUI(threading.Thread):
         
     def run(self):
         "Starting thread and GTK-mainloop"
-        self.xml_gui = gtk.glade.XML("damaris.glade")
+        self.xml_gui = gtk.glade.XML(os.path.join(sys.path[0],"damaris.glade"))
 
         self.damaris_gui_init()
 
@@ -335,8 +337,12 @@ class DamarisGUI(threading.Thread):
         self.job_writer.quit_job_writer()
         self.job_writer.join()
 
+        print threading.enumerate()
+
         self.data_handler.quit_data_handling()
         self.data_handler.join()
+
+        print threading.enumerate()
 
         gtk.main_quit()
         
