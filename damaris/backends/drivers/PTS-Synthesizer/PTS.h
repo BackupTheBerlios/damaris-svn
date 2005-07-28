@@ -96,7 +96,7 @@ class PTS: public frequgen {
 class PTS_latched: public PTS {
 
 public:
-  PTS_latched() {}
+  PTS_latched(int myid=0): PTS(myid) {}
 
   /**
      \brief exchange analogout sections with frequency and phase TTLs
