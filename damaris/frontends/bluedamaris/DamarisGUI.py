@@ -624,9 +624,9 @@ class DamarisGUI(threading.Thread):
         
         # Determining the tab which is currently open
         if self.main_notebook.get_current_page() == 0:
-            dialog = gtk.FileChooserDialog(title="Save Experiment Script As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+            dialog = gtk.FileChooserDialog(title="Save Experiment Script As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
         elif self.main_notebook.get_current_page() == 1:
-            dialog = gtk.FileChooserDialog(title="Save Data Handling As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+            dialog = gtk.FileChooserDialog(title="Save Data Handling As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
 
         dialog.set_default_response(gtk.RESPONSE_OK)
         dialog.set_select_multiple(False)
@@ -662,31 +662,37 @@ class DamarisGUI(threading.Thread):
 
     def new_file(self, widget, Data = None):
 
-        if self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
-            answer = NiftyGuiElements.show_question_dialog(self.main_window, "Unsaved changes", "Do you want to save your changes made to the scripts?")
+        if self.main_notebook.get_current_page() == 0:
+            if self.experiment_script_textbuffer.get_modified():
+                answer = NiftyGuiElements.show_question_dialog(self.main_window, "Unsaved changes in experiment script", "Do you want so save your changes?")
 
-            if answer == 0:
-                # User wants to save
-                self.save_all_files(widget)
+                if answer == 0:
+                    self.save_file(widget)
 
-            elif answer == 2:
-                # User cancels
-                return True
+                elif answer == 2:
+                    return True
 
-        # No changes made or user answered "No"
+            self.experiment_script_textbuffer.set_text("def experiment_script(input):\n    pass")
+            self.experiment_script_textview.associated_filename = "Unnamed"
+            self.experiment_script_textbuffer.set_modified(False)
 
-        self.experiment_script_textbuffer.set_text("def experiment_script(input):\n    pass")
-        self.data_handling_textbuffer.set_text("def data_handling(input):\n    pass")
-        self.experiment_script_textbuffer.set_modified(False)
-        self.data_handling_textbuffer.set_modified(False)
+        elif self.main_notebook.get_current_page() == 1:
+            if self.data_handling_textbuffer.get_modified():
+                answer = NiftyGuiElements.show_question_dialog(self.main_window, "Unsaved changes in experiment script", "Do you want so save your changes?")
 
-        self.experiment_script_textview.associated_filename = "Unnamed"
-        self.data_handling_textview.associated_filename = "Unnamed"            
+                if answer == 0:
+                    self.save_file(widget)
 
-        self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
-        
+                elif answer == 2:
+                    return True
+
+            self.data_handling_textbuffer.set_text("def data_handling(input):\n    pass")
+            self.data_handling_textview.associated_filename = "Unnamed"
+            self.data_handling_textbuffer.set_modified(False)
+
+        self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))        
         return True
-        
+       
 
     def main_notebook_page_changed(self, widget, page, page_num, data = None):
         "Make sure you can only access toolbar-buttons usable for the open notebook-tab"
