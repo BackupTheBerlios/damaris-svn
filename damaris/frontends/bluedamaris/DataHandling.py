@@ -110,7 +110,8 @@ class DataHandling(threading.Thread):
                 self.result_reader.start()
                 exec data_handling_string in locals()
                 self.event.wait(0.3)
-                data_handling(self)
+                self.data_handler = data_handling
+                self.data_handler(self)
             except Exception, e:
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
                 self.gui.show_error_dialog("Execution Error In Data Handling", "Data Handling:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
@@ -136,26 +137,19 @@ class DataHandling(threading.Thread):
 
     # Public Methods -------------------------------------------------------------------------------
     
-    def get_variable(self, name, blocking = True):
+    def get_variable(self, name):
         "Returns the value of the desired variable"
 
         # Serious updating von Nöten. Vor allem an Stop-Experiment / Quit denken!!
+
+        print self.run.__dict__
+        return 1
         
-        if blocking:
-            if self.__dict__.has_key(name):
-                return self.__dict__[name]
-            else:
-                while self.__dict__.has_key(name) is False:
-                    self.event.wait(0.1)
-
-                return self.__dict__[name]
-
-        else: # Not Blocking
-            if self.__dict__.has_key(name):
-                return self.__dict__[name]
-            else:
-                return None           
-
+##        if self.__dict__.has_key(name):
+##            return self.__dict__[name]
+##        else:
+##            return None
+      
 
     def get_next_result(self):
         "Returns the next result in queue"
