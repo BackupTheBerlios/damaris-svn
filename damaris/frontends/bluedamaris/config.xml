@@ -2,5 +2,5 @@
 <config>
 	<job_writer path="D:\cygwin\tmp\dummyspool"/>
 	<data_handling path="D:\cygwin\tmp\dummyspool"/>
-	<core exec="E:\Eigene Dateien\Projekt NMR\damaris\backends\machines\dummycore.exe" path="D:\cygwin\tmp\dummyspool"/>
+	<core exec="E:\Eigene Dateien\Projekt NMR\damaris\backends\machines\dummycore.exe" path="D:\cygwin\tmp\dummyspool" core_state="dummy core.state"/>
 </config>

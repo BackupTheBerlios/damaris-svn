@@ -31,10 +31,12 @@ class CoreInterface:
         try:
             self.core_executable=self.config["exec"]
             self.core_dir=self.config["path"]
+            self.core_state_file = self.config["core_state"]
         except KeyError, e:
             print "CoreInterface: Required config attribute not found: %s" % str(e)
             print "Excpecting: 'path' -> directory for the job-/result-files"
             print "            'exec' -> core executable"
+            print "            'core_state' -> name of the core state-file"
             raise
         except:
             raise
@@ -77,7 +79,7 @@ class CoreInterface:
         # look out for state file
         timeout=1
         # to do: how should I know core's state name????!!!!!
-        self.statefilename=os.path.join(self.core_dir,"Mobile core.state")
+        self.statefilename=os.path.join(self.core_dir,self.core_state_file)
         while not os.path.isfile(self.statefilename) and timeout>0:
             time.sleep(0.1)
             timeout-=0.1

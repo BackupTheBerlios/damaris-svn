@@ -60,6 +60,9 @@ class DataHandling(threading.Thread):
         # Used to stop an experiment
         self.__stop_experiment = False
 
+        # Data-Handling script environment
+        self.__data_handling_script_dict = { }
+
 
     # Private Methods ------------------------------------------------------------------------------
 
@@ -108,9 +111,12 @@ class DataHandling(threading.Thread):
                                 
             try:
                 self.result_reader.start()
-                exec data_handling_string in locals()
+
+                # Ich kann die internen Variablen nicht sehen...
+                exec data_handling_string in self.__data_handling_script_dict
                 self.event.wait(0.3)
-                self.data_handler = data_handling
+
+                self.data_handler = self.__data_handling_script_dict["data_handling"]
                 self.data_handler(self)
             except Exception, e:
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
@@ -142,7 +148,7 @@ class DataHandling(threading.Thread):
 
         # Serious updating von Nöten. Vor allem an Stop-Experiment / Quit denken!!
 
-        print self.run.__dict__
+        print self.__data_handling_script_dict
         return 1
         
 ##        if self.__dict__.has_key(name):
