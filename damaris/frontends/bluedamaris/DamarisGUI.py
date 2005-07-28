@@ -501,7 +501,7 @@ class DamarisGUI(threading.Thread):
         # No changes made or user answered "No"
 
         def response(self, response_id, outer_space):
-            if response_id == 1:
+            if response_id == gtk.RESPONSE_OK:
                 file_name = dialog.get_filename()
                 if file_name is None:
                     return
@@ -538,10 +538,11 @@ class DamarisGUI(threading.Thread):
         
         # Determining the tab which is currently open
         if self.main_notebook.get_current_page() == 0:
-            dialog = gtk.FileChooserDialog(title="Open Experiment Script...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons = ("Open", 1, "Cancel", 0))
+            dialog = gtk.FileChooserDialog(title="Open Experiment Script...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
         elif self.main_notebook.get_current_page() == 1:
-            dialog = gtk.FileChooserDialog(title="Open Data Handling Script...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons = ("Open", 1, "Cancel", 0))
+            dialog = gtk.FileChooserDialog(title="Open Data Handling Script...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
 
+        dialog.set_default_response(gtk.RESPONSE_OK)
         dialog.set_select_multiple(False)
 
         # Event-Handler for responce-signal (when one of the button is pressed)
@@ -585,7 +586,7 @@ class DamarisGUI(threading.Thread):
         "Callback for the save-file-as dialog"
 
         def response(self, response_id, outer_space):
-            if response_id == 1:
+            if response_id == gtk.RESPONSE_OK:
                 file_name = dialog.get_filename()
                 if file_name is None:
                     return True
@@ -620,10 +621,11 @@ class DamarisGUI(threading.Thread):
         
         # Determining the tab which is currently open
         if self.main_notebook.get_current_page() == 0:
-            dialog = gtk.FileChooserDialog(title="Save Experiment Script As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = ("Save", 1, "Cancel", 0))
+            dialog = gtk.FileChooserDialog(title="Save Experiment Script As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
         elif self.main_notebook.get_current_page() == 1:
-            dialog = gtk.FileChooserDialog(title="Save Data Handling As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = ("Save", 1, "Cancel", 0))
+            dialog = gtk.FileChooserDialog(title="Save Data Handling As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
 
+        dialog.set_default_response(gtk.RESPONSE_OK)
         dialog.set_select_multiple(False)
 
         # Event-Handler for responce-signal (when one of the button is pressed)
