@@ -57,6 +57,8 @@ class CoreInterface:
             max_logs=100
             while i<max_logs-1 and os.path.isfile(self.core_output_filename+".%02d"%i):
                 i+=1
+            if (i==max_logs-1):
+                os.remove(self.core_output_filename+".%02d"%(max_logs-1))
             for j in xrange(i):
                 os.rename(self.core_output_filename+".%02d"%(i-j-1),self.core_output_filename+".%02d"%(i-j))
             os.rename(self.core_output_filename, self.core_output_filename+".00")
@@ -75,7 +77,7 @@ class CoreInterface:
         # look out for state file
         timeout=1
         # to do: how should I know core's state name????!!!!!
-        self.statefilename=os.path.join(self.core_dir,"dummy core.state")
+        self.statefilename=os.path.join(self.core_dir,"Mobile core.state")
         while not os.path.isfile(self.statefilename) and timeout>0:
             time.sleep(0.1)
             timeout-=0.1
@@ -115,12 +117,17 @@ class CoreInterface:
 
     def stop_queue(self):
         self.send_signal("SIGQUIT")
+        # assumes success
+        self.core_pid=None
 
     def abort(self):
         # abort execution
         self.send_signal("SIGTERM")
+        # assumes success
+        self.core_pid=None
 
     def send_signal(self, sig):
+        if self.core_pid is None: return
         if sys.platform[:5]=="linux":
             os.kill(self.core_pid,signal.__dict__[sig])
         if sys.platform[:7]=="win32":
