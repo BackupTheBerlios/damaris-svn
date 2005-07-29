@@ -30,7 +30,10 @@ def show_error_dialog(calling_window, title, bodytext):
     dialog.connect("close", close)
 
     dialog.set_title(title)
-    dialog.set_size_request(400,-1)
+
+    dialog.label.set_line_wrap(True)
+    dialog.label.set_single_line_mode(False)
+    dialog.label.set_width_chars(100)
 
     dialog.run()
     dialog.destroy()
@@ -60,12 +63,14 @@ def show_question_dialog(calling_window, title, bodytext):
     dialog.connect("close", close)
 
     dialog.set_title(title)
-    dialog.set_size_request(400,-1)
 
     dialog.add_button(gtk.STOCK_YES, gtk.RESPONSE_YES)
     dialog.add_button(gtk.STOCK_NO, gtk.RESPONSE_NO)
     dialog.add_button(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
 
+    dialog.label.set_line_wrap(True)
+    dialog.label.set_single_line_mode(False)
+    
     dialog.run()
     dialog.destroy()
 
@@ -111,7 +116,9 @@ def show_question_dialog_compulsive(calling_window, title, bodytext):
     dialog.connect("close", close)
 
     dialog.set_title(title)
-    dialog.set_size_request(400,-1)
+
+    dialog.label.set_line_wrap(True)
+    dialog.label.set_single_line_mode(False)
 
     dialog.run()
     dialog.destroy()
