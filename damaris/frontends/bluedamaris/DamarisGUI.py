@@ -311,6 +311,8 @@ class DamarisGUI(threading.Thread):
     def quit_application(self, widget, Data = None):
         "Callback for everything that quits the application"
 
+        self.quit_timeout = 0.0
+
         # Contents changed? Shall we save?
 
         if self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
@@ -329,9 +331,14 @@ class DamarisGUI(threading.Thread):
 
     def quit_application_part_2(self, Data = None):
 
+        # If we got somehow stuck inside an running experiment (what doesnt need to mean we really run one...)
+        # activate a 5 second timeout, before quitting
         if self.__experiment_running:
-            return True
+            self.quit_timeout += 0.2
+            if self.quit_timeout <= 5:
+                return True
 
+        #Jobwriter will also quit core
         self.job_writer.quit_job_writer()
         self.job_writer.join()
 
