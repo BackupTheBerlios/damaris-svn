@@ -170,7 +170,7 @@ class DamarisGUI(threading.Thread):
         # Display:
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
-        self.display_source_combobox.set_active(0)
+        #self.display_source_combobox.set_active(0) moved below initialising matplotlib (prevents AttributeError)
         self.display_autoscaling_checkbutton.set_active(False)
 
         # Sonstige:
@@ -301,6 +301,7 @@ class DamarisGUI(threading.Thread):
 
         # /Mathplot --------------------------------------------------------------------------------
 
+        self.display_source_combobox.set_active(0)
 
     # /Inits der einzelnen Fenster #################################################################        
 
@@ -334,12 +335,12 @@ class DamarisGUI(threading.Thread):
         self.job_writer.quit_job_writer()
         self.job_writer.join()
 
-        print threading.enumerate()
+        #print threading.enumerate()
 
         self.data_handler.quit_data_handling()
         self.data_handler.join()
 
-        print threading.enumerate()
+        #print threading.enumerate()
 
         gtk.main_quit()
         
@@ -797,6 +798,9 @@ class DamarisGUI(threading.Thread):
 
         # Event triggers when we init the box -> Catch Channel "None"
         if channel == "None":
+            self.graphen[0].set_data([0], [0])
+            self.graphen[1].set_data([0], [0])
+            self.matplot_canvas.queue_resize()
             return True
         
         self.draw_result(self.__display_channels[channel][0])

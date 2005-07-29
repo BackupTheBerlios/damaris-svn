@@ -18,7 +18,7 @@ Bis zur ersten lauff‰higen Version:
     OSError: [Errno 17] File exists
 
 - Herausfinden, wie man den Expat-Parser abbrechen kann (Problem bei Stop: bei extrem groﬂen results kann der ResultReader nachhinken
-- bei "None"-Channel auch None anzeigen
+
 
 Datentypen-bunch (NMR-Array und Co):
   - ResultReader auf mehrere Results pro File umbauen
@@ -85,3 +85,4 @@ Erledigt:
 - DamarisGUI Signale / Inits nach Sparte ordnen & kommentieren
 - core_interface.stop_queue reentrancysicher machen
 - New-File nicht mehr auf alles, sondern nur noch auf aktuelles Tab beziehen
+- bei "None"-Channel auch None anzeigen
