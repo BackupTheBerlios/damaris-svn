@@ -115,7 +115,8 @@ class DamarisGUI(threading.Thread):
         # Sonstiges:
         self.main_window = self.xml_gui.get_widget("main_window")
         self.main_notebook = self.xml_gui.get_widget("main_notebook")
-        self.statusbar_label = self.xml_gui.get_widget("statusbar_label")        
+        self.statusbar_label = self.xml_gui.get_widget("statusbar_label")
+        self.main_clipboard = gtk.Clipboard(selection = "CLIPBOARD")
         
         # / Widgets mit Variablen verbinden --------------------------------------------------------
 
@@ -128,6 +129,10 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("on_menu_save_all_files_item_activate", self.save_all_files)
         self.xml_gui.signal_connect("on_menu_save_file_as_item_activate", self.save_file_as)
         self.xml_gui.signal_connect("on_menu_quit_item_activate", self.quit_application)
+
+        self.xml_gui.signal_connect("on_menu_edit_paste_item_activate", self.edit_paste)
+        self.xml_gui.signal_connect("on_menu_edit_copy_item_activate", self.edit_copy)
+        self.xml_gui.signal_connect("on_menu_edit_cut_item_activate", self.edit_cut)
 
         # Toolbar:
         self.xml_gui.signal_connect("on_toolbar_run_button_clicked", self.start_experiment)
@@ -829,6 +834,37 @@ class DamarisGUI(threading.Thread):
         
         return True
 
+
+    def edit_copy(self, widget, data = None):
+
+        if self.main_notebook.get_current_page() == 0:
+            self.experiment_script_textbuffer.copy_clipboard(self.main_clipboard)
+        elif self.main_notebook.get_current_page() == 1:
+            self.data_handling_textbuffer.copy_clipboard(self.main_clipboard)
+
+        return True
+
+
+    def edit_cut(self, widget, data = None):
+
+        # cut_clipboard(clipboard, textview editable?)
+        if self.main_notebook.get_current_page() == 0:
+            self.experiment_script_textbuffer.cut_clipboard(self.main_clipboard, True)
+        elif self.main_notebook.get_current_page() == 1:
+            self.data_handling_textbuffer.cut_clipboard(self.main_clipboard, True)
+
+        return True
+
+
+    def edit_paste(self, widget, data = None):
+
+        # paste_clipboard(clipboard, textpos (None = Cursor), textview editable?)
+        if self.main_notebook.get_current_page() == 0:
+            self.experiment_script_textbuffer.paste_clipboard(self.main_clipboard, None, True)
+        elif self.main_notebook.get_current_page() == 1:
+            self.data_handling_textbuffer.paste_clipboard(self.main_clipboard, None, True)
+
+        return True
     
     # / Callbacks ##################################################################################
 

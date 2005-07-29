@@ -4,7 +4,6 @@ Bis zur ersten lauffähigen Version:
 - nach verlorenen Methoden gucken, die mittlerweile nicht mehr gebraucht werden (z.b. suspend und wakeup)
 - Convenience-Functions verbessern, wie z.B. jobs_pending() oder get_variable()
 - Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln)
-- ^X ^V ^C ^S in Skript Fenstern einführen
 - Zustandsdiagramm der Threads zeichnen
 - Core in die Fehlerbehandlung einbauen (Falls Fehler im Core -> sicherer neustart)
 - Dialoge verbessern, sodaß sie bei zu langem Fehlertext ( ;) ) sich selbsttätig vergrößern
@@ -86,3 +85,4 @@ Erledigt:
 - core_interface.stop_queue reentrancysicher machen
 - New-File nicht mehr auf alles, sondern nur noch auf aktuelles Tab beziehen
 - bei "None"-Channel auch None anzeigen
+- ^X ^V ^C ^S in Skript Fenstern einführen
