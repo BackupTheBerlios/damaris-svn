@@ -5,8 +5,10 @@ Bis zur ersten lauffähigen Version:
 - Convenience-Functions verbessern, wie z.B. jobs_pending() oder get_variable()
 - Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln)
 - Zustandsdiagramm der Threads zeichnen
-- Core in die Fehlerbehandlung einbauen (Falls Fehler im Core -> sicherer neustart)
+- Core in die Fehlerbehandlung/Thread-Zustände einbauen (Falls Fehler im Core -> sicherer neustart)
 - Herausfinden, wie man den Expat-Parser abbrechen kann (Problem bei Stop: bei extrem großen results kann der ResultReader nachhinken
+- Befehle von Job-Writer und Data-Handler aufschreiben
+- Export der Daten vom Display weg -> CSV o.ä.
 
 Datentypen-bunch (NMR-Array und Co):
   - ResultReader auf mehrere Results pro File umbauen
