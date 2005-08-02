@@ -345,7 +345,7 @@
 		  <property name="max_length">6</property>
 		  <property name="text" translatable="yes">0</property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char">*</property>
+		  <property name="invisible_char" translatable="yes">*</property>
 		  <property name="activates_default">False</property>
 		</widget>
 		<packing>
@@ -369,7 +369,7 @@
 		  <property name="max_length">6</property>
 		  <property name="text" translatable="yes">0</property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char">*</property>
+		  <property name="invisible_char" translatable="yes">*</property>
 		  <property name="activates_default">False</property>
 		</widget>
 		<packing>
@@ -537,7 +537,7 @@
 		  <property name="max_length">6</property>
 		  <property name="text" translatable="yes">0</property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char">*</property>
+		  <property name="invisible_char" translatable="yes">*</property>
 		  <property name="activates_default">False</property>
 		</widget>
 		<packing>
@@ -562,7 +562,7 @@
 		  <property name="max_length">6</property>
 		  <property name="text" translatable="yes">0</property>
 		  <property name="has_frame">True</property>
-		  <property name="invisible_char">*</property>
+		  <property name="invisible_char" translatable="yes">*</property>
 		  <property name="activates_default">False</property>
 		</widget>
 		<packing>
@@ -837,8 +837,7 @@ log</property>
 			  <child>
 			    <widget class="GtkComboBox" id="display_y_scaling_combobox">
 			      <property name="visible">True</property>
-			      <property name="items" translatable="yes">lin
-log</property>
+			      <property name="items" translatable="yes">lin</property>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">3</property>
@@ -1165,9 +1164,7 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_run_button">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Start</property>
-	      <property name="use_underline">True</property>
-	      <property name="stock_id">gtk-media-forward</property>
+	      <property name="stock_id">gtk-execute</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
 	      <property name="is_important">False</property>
@@ -1275,7 +1272,7 @@ log</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
 	      <property name="wrap">False</property>
 	      <property name="selectable">False</property>
-	      <property name="xalign">0.019999999553</property>
+	      <property name="xalign">0.02</property>
 	      <property name="yalign">0.5</property>
 	      <property name="xpad">0</property>
 	      <property name="ypad">0</property>
