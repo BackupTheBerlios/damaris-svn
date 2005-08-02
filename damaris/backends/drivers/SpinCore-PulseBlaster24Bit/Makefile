@@ -5,7 +5,7 @@ CXX=g++
 all: SpinCore-PulseBlaster24Bit.o
 
 test: test.cpp SpinCore-PulseBlaster24Bit.o ../SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../SpinCore-PulseBlaster/PulseBlasterProgram.o ../../core/core.a
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -lm -lexpat
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -lm -lexpat -lxerces-c
 
 ../SpinCore-PulseBlaster/SpinCore-PulseBlaster.o: ../SpinCore-PulseBlaster/SpinCore-PulseBlaster.cpp ../SpinCore-PulseBlaster/SpinCore-PulseBlaster.h
 	$(MAKE) -C ../SpinCore-PulseBlaster SpinCore-PulseBlaster.o
