@@ -25,7 +25,7 @@ import glob
 import NiftyGuiElements
 
 # switch comments for gtk over gtkagg
-# from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
+#from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
 
 #import pylab

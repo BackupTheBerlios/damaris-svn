@@ -7,6 +7,8 @@
 #                                               #
 #################################################
 
+import sys
+sys.argv.append("--numarray")
 
 from JobWriter import *
 from DataHandling import *
@@ -14,7 +16,6 @@ from DamarisGUI import *
 from CoreInterface import *
 from Configuration import *
 
-import sys
 
 # Loading configuration (no arguments -> current working directory)
 cfg = Configuration()
