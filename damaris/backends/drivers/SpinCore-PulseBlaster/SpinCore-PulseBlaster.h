@@ -71,13 +71,24 @@ protected:
 #ifdef __linux__
   inline int write_register(int reg, int data) {
     int result=ioctl(device_file_descriptor,IOCTL_OUTB,(reg&0xff)<<8|(data&0xff));
-    if (result!=0) throw SpinCorePulseBlaster_error("write_register: ioctl returned nonzero value");
+    if (result==-1) throw SpinCorePulseBlaster_error(std::string("write_register: ioctl error \"")+strerror(errno)+"\"");
+    if (result!=0) {
+      char errorno[256];
+      snprintf(errorno, 256, "%d",result);
+      throw SpinCorePulseBlaster_error(std::string("write_register: ioctl returned nonzero value = ")+errorno);
+    }
     return result;
   }
 
   inline int write_data(const unsigned char* data, size_t size) {
     int result=write(device_file_descriptor, data, size);
-    if (result<0 || (unsigned int)result!=size) throw SpinCorePulseBlaster_error("write_data: error while writing");
+    if (result==-1) throw SpinCorePulseBlaster_error(std::string("write_data: error \"")+strerror(errno)+"\"");
+    if (result<0) {
+      char errorno[256];
+      snprintf(errorno, 256, "%d",result);
+      throw SpinCorePulseBlaster_error(std::string("write_register: ioctl returned negative value = ")+errorno);
+    }
+    if ((unsigned int)result!=size) throw SpinCorePulseBlaster_error("write_data: error while writing");
     return result;
   }
 
@@ -89,6 +100,7 @@ protected:
 
   inline int read_register(int reg) {
     int result=ioctl(device_file_descriptor,IOCTL_INB, reg&0xff);
+    if (result==-1) throw SpinCorePulseBlaster_error(std::string("write_register: ioctl error \"")+strerror(errno)+"\"");
     if (result<0) throw SpinCorePulseBlaster_error("read_register: ioctl returned nonzero value");
     return result;
   }
