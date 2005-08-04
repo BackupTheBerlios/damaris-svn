@@ -85,7 +85,8 @@ class DataHandling(threading.Thread):
             self.__error_occured = None
 
             # Import needed libraries
-            from Result import Result
+            from ADC_Result import ADC_Result
+            from Error_Result import Error_Result
             from Accumulation import Accumulation
 
             # Remove leader/trailing whitespaces
