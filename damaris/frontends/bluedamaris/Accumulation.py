@@ -78,6 +78,11 @@ class Accumulation(Errorable, Drawable):
         "Returns a tuple with (start, end) of the wanted result"
         return self.index[index]
 
+
+    def calculate_error(self):
+        pass
+        
+
     
     # Überladen von Operatoren ---------------------------------------------------------------------
 

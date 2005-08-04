@@ -18,6 +18,8 @@ class Errorable:
         self.error_color = ""
         self.bars_above = False
 
+        self.cont_changed = True
+
 
     def get_xerr(self):
         "Returns a reference to x-Error (numarray)"
@@ -26,17 +28,30 @@ class Errorable:
 
     def set_xerr(self, pos, value):
         "Sets a point in x-Error"
-        self.xerr[pos] = value
+        try:
+            self.xerr[pos] = value
+        except:
+            raise
 
 
-    def get_yerr(self):
+    def get_yerr(self, channel):
         "Returns a list of y-Errors (list of numarrays, corresponding channels)"
-        return self.yerr
+        try:
+            if self.content_changed():
+                self.calculate_error()
+                return self.yerr[channel]
+            else:
+                return self.yerr[channel]
+        except:
+            raise
 
 
     def set_yerr(self, channel, pos, value):
         "Sets a point in y-Error"
-        self.yerr[channel][pos] = value
+        try:
+            self.yerr[channel][pos] = value
+        except:
+            raise
 
 
     def get_error_color(self):
@@ -57,3 +72,12 @@ class Errorable:
     def set_bars_above(self, bars_above):
         "Sets bars-above property of errorplot"
         self.bars_above = bool(bars_above)
+
+
+    def content_changed(self):
+        return self.cont_changed
+
+
+    # Needs to be overwritten in one of the subclasses
+    def calculate_error(self):
+        pass

@@ -8,23 +8,18 @@ def experiment_script(input):
     mx = 180
     my = 270
 
-    while tau <= 5e-3:
+    while not input.get_data_handler_variable("quit_loop"):
 
-        for accu in range(10):
+        exp = Experiment()
+        print "Job %d erstellt!" % exp.get_job_id()
 
-            exp = Experiment()
-            print "Job %d erstellt!" % exp.get_job_id()
-            exp.set_description("tau", tau)
+        exp.set_frequency(100e6, 0)
 
-            exp.set_frequency(100e6, 0)
+        exp.rf_pulse(0, pi/2)
+        exp.wait(tau)
+        exp.rf_pulse(0, pi)
+        exp.wait(tau + 1e-6)
 
-            exp.rf_pulse(0, pi/2)
-            exp.wait(tau)
-            exp.rf_pulse(0, pi)
-            exp.wait(tau + 1e-6)
+        exp.record(512, 1e6)
 
-            exp.record(512, 1e6)
-
-            yield exp
-
-        tau += 1e-3
+        yield exp

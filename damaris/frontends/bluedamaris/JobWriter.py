@@ -228,19 +228,22 @@ class JobWriter(threading.Thread):
         "Returns the total number of jobs written or None if still writing"
         return self.__jobs_written
 
+
     def get_job_writer_path(self):
         return self.path
 
 
     def get_data_handler_variable(self, name):
+        "Gets a variable from the data handler"
 
-        tmp = self.data_handling.get_variable(name)
+        tmp = self.data_handling.get_next_variable(name)
 
         while tmp is None:
             self.event.wait(0.1)
             if self.__stop_experiment: break
+            if self.quit_main_loop: break
             
-            tmp = self.data_handling.get_variable(name)
+            tmp = self.data_handling.get_next_variable(name)
 
         return tmp
 

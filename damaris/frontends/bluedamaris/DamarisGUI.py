@@ -203,7 +203,7 @@ class DamarisGUI(threading.Thread):
 
         else:
                     
-            self.experiment_script_textbuffer.set_text("""def experiment_script(input):
+            self.experiment_script_textbuffer.set_text("""def experiment_script(outer_space):
 
     pi = 1e-3
 
@@ -252,10 +252,10 @@ class DamarisGUI(threading.Thread):
 
         else:
 
-            self.data_handling_textbuffer.set_text("""def data_handling(input):
+            self.data_handling_textbuffer.set_text("""def data_handling(outer_space):
 
     while 1:
-        timesignal = input.get_next_result()
+        timesignal = outer_space.get_next_result()
         if timesignal is None: break
         
         print "Drawing %d..." % timesignal.get_job_id()
@@ -683,7 +683,7 @@ class DamarisGUI(threading.Thread):
                 elif answer == 2:
                     return True
 
-            self.experiment_script_textbuffer.set_text("def experiment_script(input):\n    pass")
+            self.experiment_script_textbuffer.set_text("def experiment_script(outer_space):\n    pass")
             self.experiment_script_textview.associated_filename = "Unnamed"
             self.experiment_script_textbuffer.set_modified(False)
 
@@ -697,7 +697,7 @@ class DamarisGUI(threading.Thread):
                 elif answer == 2:
                     return True
 
-            self.data_handling_textbuffer.set_text("def data_handling(input):\n    pass")
+            self.data_handling_textbuffer.set_text("def data_handling(outer_space):\n    pass")
             self.data_handling_textview.associated_filename = "Unnamed"
             self.data_handling_textbuffer.set_modified(False)
 

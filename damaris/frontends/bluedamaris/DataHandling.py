@@ -60,8 +60,8 @@ class DataHandling(threading.Thread):
         # Used to stop an experiment
         self.__stop_experiment = False
 
-        # Data-Handling script environment
-        self.__data_handling_script_dict = { }
+        # Data-Handling exported Variables
+        self.__data_handling_exported_variables = { }
 
 
     # Private Methods ------------------------------------------------------------------------------
@@ -114,10 +114,10 @@ class DataHandling(threading.Thread):
                 self.result_reader.start()
 
                 # Ich kann die internen Variablen nicht sehen...
-                exec data_handling_string in self.__data_handling_script_dict
+                exec data_handling_string in locals()
                 self.event.wait(0.3)
 
-                self.data_handler = self.__data_handling_script_dict["data_handling"]
+                self.data_handler = data_handling
                 self.data_handler(self)
             except Exception, e:
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
@@ -140,22 +140,35 @@ class DataHandling(threading.Thread):
             return False
             
 
+    def save_var_for_exp_script(self, name, value):
+        "Saves the variables value for the use in JobWriter"
+
+        if value is None:
+            self.gui.show_error_dialog("Unallowed value", "You cant use None as a value for variable \"%s\"" % str(name))
+            self.gui.stop_experiment(None)
+            return
+        
+        if self.__data_handling_exported_variables.has_key(name):
+            self.__data_handling_exported_variables[name].append(value)
+        else:
+            self.__data_handling_exported_variables[name] = [value]
+
     # /Private Methods -----------------------------------------------------------------------------
 
     # Public Methods -------------------------------------------------------------------------------
     
-    def get_variable(self, name):
-        "Returns the value of the desired variable"
+    def get_next_variable(self, name):
+        "Returns the value of the desired variable (from datahandler)"
 
-        # Serious updating von Nöten. Vor allem an Stop-Experiment / Quit denken!!
-
-        print self.__data_handling_script_dict
-        return 1
-        
-##        if self.__dict__.has_key(name):
-##            return self.__dict__[name]
-##        else:
-##            return None
+        if self.__data_handling_exported_variables.has_key(name):
+            if len(self.__data_handling_exported_variables[name]) == 0:
+                return None
+            else:
+                tmp = self.__data_handling_exported_variables[name][0]
+                del self.__data_handling_exported_variables[name][0]
+                return tmp
+        else:
+            return None
       
 
     def get_next_result(self):
