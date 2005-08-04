@@ -77,7 +77,7 @@ class CoreInterface:
             self.core_input=os.popen("\"" + self.core_executable + "\"" + " --spool "+self.core_dir+" >"+self.core_output_filename+" 2>&1","w")
 
         # look out for state file
-        timeout=1
+        timeout=3
         # to do: how should I know core's state name????!!!!!
         self.statefilename=os.path.join(self.core_dir,self.core_state_file)
         while not os.path.isfile(self.statefilename) and timeout>0:

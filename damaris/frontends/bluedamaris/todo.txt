@@ -9,6 +9,7 @@ Bis zur ersten lauffähigen Version:
 - Herausfinden, wie man den Expat-Parser abbrechen kann (Problem bei Stop: bei extrem großen results kann der ResultReader nachhinken
 - Befehle von Job-Writer und Data-Handler aufschreiben
 - Export der Daten vom Display weg -> CSV o.ä.
+- Channel-Combobox nicht in glade, sondern per Hand erstellen (gtk.get_new_text_combobox())
 
 Datentypen-bunch (NMR-Array und Co):
   - ResultReader auf mehrere Results pro File umbauen

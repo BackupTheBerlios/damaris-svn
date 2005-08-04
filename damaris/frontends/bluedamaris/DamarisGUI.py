@@ -257,8 +257,6 @@ class DamarisGUI(threading.Thread):
     while 1:
         timesignal = input.get_next_result()
         if timesignal is None: break
-        if timesignal.is_error():
-            continue
         
         print "Drawing %d..." % timesignal.get_job_id()
         input.watch(timesignal, "Zeitsignal")""")
@@ -876,8 +874,8 @@ class DamarisGUI(threading.Thread):
             gtk.gdk.threads_enter()
 
             try:
-                self.graphen[0].set_data(in_result.get_xvalues(), in_result.get_channel(0))
-                self.graphen[1].set_data(in_result.get_xvalues(), in_result.get_channel(1))
+                self.graphen[0].set_data(in_result.get_xdata(), in_result.get_ydata(0))
+                self.graphen[1].set_data(in_result.get_xdata(), in_result.get_ydata(1))
 
                 if self.__rescale:
                     self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())

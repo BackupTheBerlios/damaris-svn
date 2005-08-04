@@ -13,10 +13,17 @@
 import threading
 import os
 import xml.parsers.expat
-from Result import *
+from datetime import datetime
+
+from ADC_Result import ADC_Result
+from Error_Result import Error_Result
+from Temp_Result import Temp_Result
+from Config_Result import Config_Result
 
 class ResultReader(threading.Thread):
 
+    CONFIG_TYPE = 3
+    TEMP_TYPE = 2
     ADCDATA_TYPE = 1
     ERROR_TYPE = 0
 
@@ -122,6 +129,9 @@ class ResultReader(threading.Thread):
         try:
             result_file = file(in_filename, "r")
             #print result_file
+
+            # get date of last modification 
+            self.result_job_date = datetime.fromtimestamp(os.stat(in_filename)[8])
             
             self.__parseFile(result_file)
 
@@ -140,9 +150,12 @@ class ResultReader(threading.Thread):
     def __parseFile(self, in_file):
         "Parses the given file, adding it to the result-queue"
 
-        self.result_description = {}
-        self.current_channel = 0
-        self.current_pos = 0
+        self.result = None
+        self.result_description = { }
+
+        self.result_job_number = None
+        # Job Date is set in __read_file()
+        self.__filetype = None
 
         # Expat XML-Parser & Binding handlers
         self.xml_parser = xml.parsers.expat.ParserCreate()
@@ -159,86 +172,115 @@ class ResultReader(threading.Thread):
     # Callback when a xml start tag is found
     def __xmlStartTagFound(self, in_name, in_attribute):
 
-        # Beginning for the adcdata-section
-        if in_name == "adcdata":
+        # General Result-Tag
+        if in_name == "result":
+            self.result_job_number = int(in_attribute["job"])
+            # Job-Date is set in __read_file()
+
+        # Description
+        elif in_name == "description":
+            self.result_description = in_attribute.copy()
+
+        # ADC_Results
+        elif in_name == "adcdata":
             self.__filetype = ResultReader.ADCDATA_TYPE
-            if in_attribute.has_key("samples"):
-                self.adcdata_samples = int(in_attribute["samples"])
 
-            else:
-                print "Error parsing result-file: Missing number of recorded samples"
-                return 
+            self.adc_result_current_channel = 0
+
+            if self.result is None:
+                self.result = ADC_Result()
+
+                # Change number of channels of your adc-card here
+                channels = 2
+                self.result.create_data_space(channels, int(in_attribute["samples"]))
                 
-            if in_attribute.has_key("rate"):
-                self.adcdata_rate = float(in_attribute["rate"])
+                self.result.set_sampling_rate(float(in_attribute["rate"]))
+                self.result.set_job_id(self.result_job_number)
+                self.result.set_job_date(self.result_job_date)
+
+                self.result.set_description_dictionary(self.result_description.copy())
+                
+                self.adc_result_sample_counter = 0
             else:
-                print "Error parsing result-file: Missing samplingrate"
-                return
-
-            # tmp-Result Objekt erstellen mit (Kanäle, Samples)
-            self.tmp_result = Result(2, self.adcdata_samples)
-            self.tmp_result.set_job_number(self.result_job_number)
-            self.tmp_result.set_sampling_rate(self.adcdata_rate)
-
-            key_list = self.result_description.keys()
-            for key in key_list:
-                self.tmp_result.add_description(key, self.result_description[key])
-
-
+                self.result.add_sample_space(int(in_attribute["samples"]))
+                
+        # Error_Results
         elif in_name == "error":
             self.__filetype = ResultReader.ERROR_TYPE
-            self.tmp_result = Result(2, 1)
-            self.tmp_result.add_description("error_msg", "")
-        
-        elif in_name == "result":
-            if in_attribute.has_key("job"):
-                self.result_job_number = int(in_attribute["job"])
-            else:
-                print "Error parsing result-file: Missing job-id"
-                return
+            
+            self.result = Error_Result()
+            self.result.set_job_id(self.result_job_number)
+            self.result.set_job_date(self.result_job_date)
 
+            self.result.set_description_dictionary(self.result_description.copy())
 
-        elif in_name == "description":
-                self.result_description = in_attribute.copy()
+        # Temp_Results
+        elif in_name == "temp":
+            self.__filetype = ResultReader.TEMP_TYPE
 
-     
+            self.result = Temp_Result()
+            self.result.set_job_id(self.result_job_number)
+            self.result.set_job_date(self.result_job_date)            
+
+        # Config_Results
+        elif in_name == "conf":
+            self.__filetype = ResultReader.CONFIG_TYPE
+
+            self.result = Config_Result()
+            self.result.set_job_id(self.result_job_number)
+            self.result.set_job_date(self.result_job_date)
+    
 
     def __xmlCharacterDataFound(self, in_cdata):
 
-        if self.__filetype == ResultReader.ERROR_TYPE:
-            tmp_str = str(self.tmp_result.get_description("error_msg"))
-            self.tmp_result.set_description("error_msg", tmp_str + in_cdata)
-
-        elif self.__filetype == ResultReader.ADCDATA_TYPE:
+        # ADC_Result
+        if self.__filetype == ResultReader.ADCDATA_TYPE:
              if not in_cdata.isspace():
                 values = map(int, in_cdata.split())
 
                 for i in values:
-                    self.tmp_result.set_value(self.current_channel, self.current_pos, i)
+                    self.result.set_ydata(self.adc_result_current_channel, self.adc_result_sample_counter, i)
                     #print "added value " + str(i) + " at: " + str(self.current_channel) + ", " + str(self.current_pos)
-                    self.current_channel = (self.current_channel + 1) % self.tmp_result.get_number_of_channels()
-                    if self.current_channel == 0:
-                        self.tmp_result.set_xvalue(self.current_pos, self.current_pos / float(self.tmp_result.get_sampling_rate()))
-                        self.current_pos += 1
+                    self.adc_result_current_channel = (self.adc_result_current_channel + 1) % self.result.get_number_of_channels()
+                    if self.adc_result_current_channel == 0:
+                        self.result.set_xdata(self.adc_result_sample_counter, self.adc_result_sample_counter / self.result.get_sampling_rate())
+                        self.adc_result_sample_counter += 1
+
+        # Error_Result
+        elif self.__filetype == ResultReader.ERROR_TYPE:
+            tmp_string = self.result.get_error_message() + in_cdata
+            self.result.set_error_message(tmp_string)
+
+        # Temp_Results
+        elif self.__filetype == ResultReader.TEMP_TYPE:
+            pass
+
+        # Config_Results
+        elif self.__filetype == ResultReader.CONFIG_TYPE:
+            pass
 
 
 
     def __xmlEndTagFound(self, in_name):
-        if in_name == "adcdata":
-            self.result_queue.append(self.tmp_result)
-            print "\nResult Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read)
-            self.current_channel = 0
-            self.current_pos = 0
-            self.result_type = -1
-            self.__file_type = None
+        if in_name == "result":
 
-        elif in_name == "error":
-            self.result_queue.append(self.tmp_result)
-            print "\nResult Reader: Error-Result parsed (%s)! Error Message: %s" % (os.path.join(self.path, self.filename % self.files_read), self.tmp_result.get_description("error_msg"))
-            self.current_channel = 0
-            self.current_pos = 0
-            self.result_type = -1
-            self.__file_type = None            
+            # ADC_Result
+            if self.__filetype == ResultReader.ADCDATA_TYPE:
+                print "\nResult Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read)
+
+            # Error_Result
+            elif self.__filetype == ResultReader.ERROR_TYPE:
+                print "\nResult Reader: Eror Result parsed! (%s)" % os.path.join(self.path, self.filename % self.files_read)
+
+            # Temp_Result
+            elif self.__filetype == ResultReader.TEMP_TYPE:
+                print "\nResultReader: Temperature Result parsed! (Whats pretty weird, cauz' its not implemented so far."
+
+            # Config_Result
+            elif self.__filetype == ResultReader.CONFIG_TYPE:
+                print "\nResultReader: Config Result parsed! (Whats pretty weird, cauz' its not implemented so far."
+
+            self.result_queue.append(self.result)   
 
 
 
