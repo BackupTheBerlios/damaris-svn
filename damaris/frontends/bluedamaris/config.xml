@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <config>
-	<job_writer path="D:\cygwin\tmp\dummyspool"/>
-	<data_handling path="D:\cygwin\tmp\dummyspool"/>
-	<core exec="E:\Eigene Dateien\Projekt NMR\damaris\backends\machines\dummycore.exe" path="D:\cygwin\tmp\dummyspool" core_state="dummy core.state"/>
+	<job_writer path="/tmp/damarisspool"/>
+	<data_handling path="/tmp/damarisspool" timeout="None"/>
+	<core exec="/home/achim/damaris/backends/machines/dummycore.exe"
+              path="/tmp/damarisspool" core_state="dummy core.state"/>
 </config>
