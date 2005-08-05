@@ -150,6 +150,11 @@ class ADC_Result(Resultable, Drawable):
             raise ValueError("ValueError: Cannot add \"%s\" to ADC-Result!") % str(other.__class__)
 
 
+    def __radd__(self, other):
+        "Redefining other + self"
+        return self.__add__(other)
+
+
     def __sub__(self, other):
         "Redefining self - other"
         if isinstance(other, IntType) or isinstance(other, FloatType):
@@ -157,6 +162,20 @@ class ADC_Result(Resultable, Drawable):
 
             for i in range(self.get_number_of_channels()):
                 tmp_y.append(numarray.array(self.y[i], type="Float64") - other)
+
+            return ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+
+        else:
+            raise ValueError("ValueError: Cannot subtract \"%s\" to ADC-Result!") % str(other.__class__)
+
+
+    def __rsub__(self, other):
+        "Redefining other - self"
+        if isinstance(other, IntType) or isinstance(other, FloatType):
+            tmp_y = []
+
+            for i in range(self.get_number_of_channels()):
+                tmp_y.append(other - numarray.array(self.y[i], type="Float64"))
 
             return ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
 
@@ -178,6 +197,25 @@ class ADC_Result(Resultable, Drawable):
             raise ValueError("ValueError: Cannot multiply \"%s\" to ADC-Result!") % str(other.__class__)    
 
 
+    def __rmul__(self, other):
+        "Redefining other * self"
+        return self.__mul__(other)
+
+
+    def __pow__(self, other):
+        "Redefining self ** other"
+        if isinstance(other, IntType) or isinstance(other, FloatType):
+            tmp_y = []
+
+            for i in range(self.get_number_of_channels()):
+                tmp_y.append(numarray.array(self.y[i], type="Float64") ** other)
+
+            return ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+
+        else:
+            raise ValueError("ValueError: Cannot multiply \"%s\" to ADC-Result!") % str(other.__class__)
+
+        
     def __div__(self, other):
         "Redefining self / other"
         if isinstance(other, IntType) or isinstance(other, FloatType):
@@ -189,4 +227,18 @@ class ADC_Result(Resultable, Drawable):
             return ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
 
         else:
-            raise ValueError("ValueError: Cannot multiply \"%s\" to ADC-Result!") % str(other.__class__)    
+            raise ValueError("ValueError: Cannot multiply \"%s\" to ADC-Result!") % str(other.__class__)
+
+
+    def __rdiv__(self, other):
+        "Redefining other / self"
+        if isinstance(other, IntType) or isinstance(other, FloatType):
+            tmp_y = []
+
+            for i in range(self.get_number_of_channels()):
+                tmp_y.append(other / numarray.array(self.y[i], type="Float64"))
+
+            return ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+
+        else:
+            raise ValueError("ValueError: Cannot multiply \"%s\" to ADC-Result!") % str(other.__class__)
