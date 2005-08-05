@@ -28,11 +28,11 @@ class Experiment:
             self.state_list.append('<ttlout value="%d"/>\n' % channel)
 
         else:
-            self.state_list.append('<state time="%f"><ttlout value="%d"/></state>\n' % (length, channel))
+            self.state_list.append('<state time="%g"><ttlout value="%d"/></state>\n' % (length, channel))
 
 
     def state_start(self, time):
-        self.state_list.append('<state time="%f">\n' % time)
+        self.state_list.append('<state time="%g">\n' % time)
 
 
     def state_end(self):
@@ -40,11 +40,14 @@ class Experiment:
 
 
     def wait(self, time):
-        self.state_list.append('<state time="%f"/>\n' % time)
+        self.state_list.append('<state time="%g"/>\n' % time)
 
 
-    def record(self, samples, frequency):
-        self.state_list.append('<state time="%f"><analogin s="%d" f="%f"/></state>\n' % (samples / float(frequency), samples, frequency))
+    def record(self, samples, frequency, timelength=None):
+        if timelength is None:
+            self.state_list.append('<state time="%g"><analogin s="%d" f="%g"/></state>\n' % (samples / float(frequency)*1.01, samples, frequency))
+        else:
+            self.state_list.append('<state time="%g"><analogin s="%d" f="%g"/></state>\n' % (timelength, samples, frequency))
 
 
     def loop_start(self, iterations):
@@ -57,7 +60,7 @@ class Experiment:
 
     def set_frequency(self, frequency, phase):
         "Sets the frequency generator to a desired frequency (Hz)"
-        self.state_list.append('<state time="1e-6"><analogout f="%f" phase="%d" /></state>\n' % (frequency, phase))
+        self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%d" /></state>\n' % (frequency, phase))
 
 
     def set_description(self, key, value):
