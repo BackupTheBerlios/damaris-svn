@@ -113,6 +113,10 @@ class ADC_Result(Resultable, Drawable):
         "Returns a tuple with (start, end) of the wanted result"
         return self.index[index]
 
+
+    def uses_statistics(self):
+        return False
+
     # Überladen von Operatoren und Built-Ins -------------------------------------------------------
 
     def __len__(self):

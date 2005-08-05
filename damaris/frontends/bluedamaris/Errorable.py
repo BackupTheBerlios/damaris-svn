@@ -13,7 +13,7 @@ class Errorable:
 
         # Will be determined in one of the subclasses
         self.xerr = []
-        self.yerr = [[]]
+        self.yerr = []
 
         self.error_color = ""
         self.bars_above = False
@@ -76,8 +76,3 @@ class Errorable:
 
     def content_changed(self):
         return self.cont_changed
-
-
-    # Needs to be overwritten in one of the subclasses
-    def calculate_error(self):
-        pass
