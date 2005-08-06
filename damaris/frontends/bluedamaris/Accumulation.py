@@ -16,16 +16,21 @@ import numarray
 from types import *
 
 class Accumulation(Errorable, Drawable):
-    def __init__(self, x = None, y = None, y_2 = None, yerr = None, index = None, sampl_freq = None, jobs_added = None, error = False):
+    def __init__(self, x = None, y = None, y_2 = None, yerr = None, n = None, index = None, sampl_freq = None, jobs_added = None, error = False):
         Errorable.__init__(self)
         Drawable.__init__(self)
 
         self.use_error = error
         
         if self.uses_statistics():
-            if (y_2 is not None) and (yerr is not None):
+            if (y_2 is not None) and (yerr is not None) and (n is not None):
                 self.yerr = yerr
                 self.y_square = y_2
+                self.n = n
+            elif (y_2 is None) and (yerr is None) and (n is None):
+                self.yerr = []
+                self.y_square = []
+                self.n = 0
             else:
                 raise ValueError("Wrong usage of __init__!")
              
@@ -73,6 +78,15 @@ class Accumulation(Errorable, Drawable):
 
     def get_accu_by_index(self, index):
         pass
+
+
+    def get_ysquare(self, channel):
+        if self.uses_statistics():
+            try:
+                return self.y_square[channel]
+            except:
+                raise
+        else: return None
     
 ##        try:
 ##            start = self.index[index][0]
@@ -129,6 +143,11 @@ class Accumulation(Errorable, Drawable):
         tmp_string += "Samples per Channel: " + str(len(self.y[0])) + "\n"
         tmp_string += "Samplingfrequency:   " + str(self.sampling_rate)
 
+        if self.uses_statistics():
+            tmp_string += "\ny_err:               " + str(self.yerr)  + "\n"
+            tmp_string += "y_square:            " + str(self.y_square) + "\n"
+            tmp_string += "n:                   " + str(self.n)
+
         return tmp_string
 
 
@@ -155,11 +174,22 @@ class Accumulation(Errorable, Drawable):
             if not self.contains_data():
 
                 tmp_y = []
+                tmp_ysquare = []
 
                 for i in range(other.get_number_of_channels()):
                     tmp_y.append(numarray.array(other.get_ydata(i), type="Float64"))
+
+                if self.uses_statistics():
+                    self.n += 1
+                    
+                    for i in range(other.get_number_of_channels()):
+                        tmp_ysquare.append(tmp_y[i] ** 2)
+
+                if self.uses_statistics():
+                    return Accumulation(x = other.x, y = tmp_y, yerr = [], y_2 = tmp_ysquare, n = self.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)
+                else:
+                    return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
                 
-                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
 
             # Other and self not empty (self + other)
             else:
@@ -174,7 +204,19 @@ class Accumulation(Errorable, Drawable):
                 for i in range(self.get_number_of_channels()):
                     tmp_y.append(self.get_ydata(i) + other.get_ydata(i))
 
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = False)
+                if self.uses_statistics():
+                    tmp_yerr = []
+                    tmp_ysquare = []
+                    self.n += 1
+                    
+                    for i in range(self.get_number_of_channels()):
+                        tmp_ysquare.append(self.get_ysquare(i) + (other.get_ydata(i) ** 2))
+                        if self.n >= 2: tmp_yerr.append(((tmp_ysquare[i] - ((tmp_y[i]**2)/self.n))/(self.n - 1))**0.5)
+
+                if self.uses_statistics():
+                    return Accumulation(x = self.x, y = tmp_y, yerr = tmp_yerr, y_2 = tmp_ysquare, n = self.n, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = True)
+                else:
+                    return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = False)
 
         # Accumulation
         elif str(other.__class__) == "Accumulation.Accumulation":

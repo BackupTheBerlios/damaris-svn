@@ -20,6 +20,8 @@ class Errorable:
 
         self.cont_changed = True
 
+        self.n = 0
+
 
     def get_xerr(self):
         "Returns a reference to x-Error (numarray)"
@@ -72,7 +74,3 @@ class Errorable:
     def set_bars_above(self, bars_above):
         "Sets bars-above property of errorplot"
         self.bars_above = bool(bars_above)
-
-
-    def content_changed(self):
-        return self.cont_changed
