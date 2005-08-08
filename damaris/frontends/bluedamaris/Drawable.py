@@ -143,8 +143,7 @@ class Drawable:
 
     def get_xmin(self):
         "Returns minimun of x"
-        return self.xmin
-
+        return self.x.min()
 
     def set_xmin(self, xmin):
         "Sets minimum of x"
@@ -153,7 +152,7 @@ class Drawable:
 
     def get_xmax(self):
         "Returns maximum of x"
-        return self.xmax
+        return self.x.max()
 
 
     def set_xmax(self, xmax):
@@ -163,7 +162,10 @@ class Drawable:
 
     def get_ymin(self):
         "Returns minimum of y"
-        return self.ymin
+        if type(self.y)==type([]):
+            return min(map(lambda l:l.min(),self.y))
+        else:
+            return self.y.min()
 
 
     def set_ymin(self, ymin):
@@ -173,7 +175,10 @@ class Drawable:
 
     def get_ymax(self):
         "Returns maximimum of y"
-        return self.ymax
+        if type(self.y)==type([]):
+            return max(map(lambda l:l.max(),self.y))
+        else:
+            return self.y.max()
 
 
     def set_ymax(self, ymax):
