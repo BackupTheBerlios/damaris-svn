@@ -53,27 +53,27 @@ class Accumulation(Errorable, Drawable):
             raise ValueError("Wrong usage of __init__!")
 
 
-    def create_data_space(self, channels, samples):
-        "Initialises the internal data-structures"
-
-        if self.contains_data():
-            print "Warning Accumulation: Tried to run \"create_data_space()\" more than once."
-            return
-        
-        if channels <= 0: raise ValueError("ValueError: You cant create an ADC-Result with less than 1 channel!")
-        if samples <= 0: raise ValueError("ValueError: You cant create an ADC-Result with less than 1 sample!")
-        
-        for i in range(channels):
-            self.y.append(numarray.array([0]*samples, type="Float64"))
-            if self.uses_statistics():
-                self.yerr.append(numarray.array([0]*samples, type="Float64"))
-                self.y_square.append(numarray.array([0]*samples, type="Float64"))
-
-        self.x = numarray.array([0]*samples, type="Float64")
-            
-
-        self.index.append((0, samples-1))
-        self.cont_data = True
+##    def create_data_space(self, channels, samples):
+##        "Initialises the internal data-structures"
+##
+##        if self.contains_data():
+##            print "Warning Accumulation: Tried to run \"create_data_space()\" more than once."
+##            return
+##        
+##        if channels <= 0: raise ValueError("ValueError: You cant create an ADC-Result with less than 1 channel!")
+##        if samples <= 0: raise ValueError("ValueError: You cant create an ADC-Result with less than 1 sample!")
+##        
+##        for i in range(channels):
+##            self.y.append(numarray.array([0]*samples, type="Float64"))
+##            if self.uses_statistics():
+##                self.yerr.append(numarray.array([0]*samples, type="Float64"))
+##                self.y_square.append(numarray.array([0]*samples, type="Float64"))
+##
+##        self.x = numarray.array([0]*samples, type="Float64")
+##            
+##
+##        self.index.append((0, samples-1))
+##        self.cont_data = True
 
 
     def get_accu_by_index(self, index):
@@ -136,17 +136,16 @@ class Accumulation(Errorable, Drawable):
 
         for i in range(self.get_number_of_channels()):
             tmp_string += ("Y(%d):                " % i) + repr(self.y[i]) + "\n"
+            if self.uses_statistics(): tmp_string += "y_square(%d):         " % i + str(self.y_square[i]) + "\n"
+            if self.uses_statistics() and self.n >= 2: tmp_string += "\ny_err(%d):            " % i + str(self.yerr[i])  + "\n"
 
         tmp_string += "Indexes:             " + str(self.index) + "\n"
         tmp_string += "Jobs added:          " + str(self.jobs_added) + "\n"
 
         tmp_string += "Samples per Channel: " + str(len(self.y[0])) + "\n"
-        tmp_string += "Samplingfrequency:   " + str(self.sampling_rate)
+        tmp_string += "Samplingfrequency:   " + str(self.sampling_rate) + "\n"
 
-        if self.uses_statistics():
-            tmp_string += "\ny_err:               " + str(self.yerr)  + "\n"
-            tmp_string += "y_square:            " + str(self.y_square) + "\n"
-            tmp_string += "n:                   " + str(self.n)
+        tmp_string += "n:                   " + str(self.n)
 
         return tmp_string
 
@@ -187,9 +186,9 @@ class Accumulation(Errorable, Drawable):
                         
 
                 if self.uses_statistics():
-                    return Accumulation(x = other.x, y = tmp_y, yerr = [], y_2 = tmp_ysquare, n = self.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)
+                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, yerr = [], y_2 = tmp_ysquare, n = self.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)
                 else:
-                    return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
+                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
                 
 
             # Other and self not empty (self + other)
@@ -201,18 +200,20 @@ class Accumulation(Errorable, Drawable):
                     if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add ADC-Results with diffrent indexing")
 
                 tmp_y = []
+                tmp_ysquare = []
 
                 for i in range(self.get_number_of_channels()):
                     tmp_y.append(self.get_ydata(i) + other.get_ydata(i))
+                    if self.uses_statistics(): tmp_ysquare.append(self.get_ysquare(i) + (numarray.array(other.get_ydata(i), type="Float64") ** 2))
 
                 if self.uses_statistics():
                     tmp_yerr = []
-                    tmp_ysquare = []
                     self.n += 1
                     
                     for i in range(self.get_number_of_channels()):
-                        tmp_ysquare.append(self.get_ysquare(i) + (other.get_ydata(i) ** 2))
-                        if self.n >= 2: tmp_yerr.append(((tmp_ysquare[i] - ((tmp_y[i]**2)/self.n))/(self.n - 1))**0.5)
+                        if self.n >= 2:
+                            # ( E(X^2) - E(X)^2 ) ** 0.5
+                            tmp_yerr.append(((tmp_ysquare[i] / self.n) - ((tmp_y[i] / self.n)**2)) ** 0.5)
 
                 if self.uses_statistics():
                     return Accumulation(x = self.x, y = tmp_y, yerr = tmp_yerr, y_2 = tmp_ysquare, n = self.n, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = True)
@@ -492,13 +493,27 @@ class Accumulation(Errorable, Drawable):
 
             # Self empty (copy)
             if not self.contains_data():
-
-                tmp_y = []
                 
+                tmp_y = []
+                tmp_yerr = []
+                tmp_ysquare = []
+
                 for i in range(other.get_number_of_channels()):
                     tmp_y.append(numarray.array(other.get_ydata(i), type="Float64"))
-                
-                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
+
+                if self.uses_statistics():
+                    self.n += 1
+                    
+                    for i in range(other.get_number_of_channels()):
+                        tmp_ysquare.append(tmp_y[i] ** 2)
+                        tmp_yerr.append(numarray.zeros((len(tmp_y[0]),), type="Float64"))
+                        
+
+                if self.uses_statistics():
+                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, yerr = tmp_yerr, y_2 = tmp_ysquare, n = self.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)
+                else:
+                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
+
 
             # Other and self not empty (self + other)
             else:
@@ -509,7 +524,16 @@ class Accumulation(Errorable, Drawable):
                     if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add ADC-Results with diffrent indexing")
 
                 for i in range(self.get_number_of_channels()):
-                   self.y[i] += other.get_ydata(i)
+                    self.y[i] += other.get_ydata(i)
+                    if self.uses_statistics(): self.y_square[i] += numarray.array(other.get_ydata(i), type="Float64") ** 2
+
+                if self.uses_statistics():
+                    self.n += 1
+                    
+                    for i in range(self.get_number_of_channels()):
+                        if self.n >= 2:
+                            # ( E(X^2) - E(X)^2 ) ** 0.5
+                            self.yerr[i] = (((self.y_square[i] / self.n) - ((self.y[i] / self.n)**2)) ** 0.5)
 
                 self.jobs_added += 1
 

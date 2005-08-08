@@ -18,8 +18,6 @@ class Errorable:
         self.error_color = ""
         self.bars_above = False
 
-        self.cont_changed = True
-
         self.n = 0
 
 
@@ -39,11 +37,7 @@ class Errorable:
     def get_yerr(self, channel):
         "Returns a list of y-Errors (list of numarrays, corresponding channels)"
         try:
-            if self.content_changed():
-                self.calculate_error()
-                return self.yerr[channel]
-            else:
-                return self.yerr[channel]
+            return self.yerr[channel]
         except:
             raise
 

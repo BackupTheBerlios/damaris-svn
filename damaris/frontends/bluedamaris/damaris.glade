@@ -901,22 +901,6 @@ log</property>
 			  </child>
 
 			  <child>
-			    <widget class="GtkComboBox" id="display_source_combobox">
-			      <property name="visible">True</property>
-			      <property name="items" translatable="yes">None</property>
-			      <signal name="changed" handler="on_display_source_combobox_changed" last_modification_time="Mon, 25 Jul 2005 14:06:23 GMT"/>
-			    </widget>
-			    <packing>
-			      <property name="left_attach">1</property>
-			      <property name="right_attach">2</property>
-			      <property name="top_attach">0</property>
-			      <property name="bottom_attach">1</property>
-			      <property name="x_options">fill</property>
-			      <property name="y_options"></property>
-			    </packing>
-			  </child>
-
-			  <child>
 			    <widget class="GtkLabel" id="display_source_label">
 			      <property name="visible">True</property>
 			      <property name="label" translatable="yes">Source: </property>
@@ -1165,6 +1149,8 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_run_button">
 	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Execute</property>
+	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-execute</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>

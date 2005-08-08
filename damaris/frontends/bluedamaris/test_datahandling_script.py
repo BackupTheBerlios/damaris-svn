@@ -1,15 +1,13 @@
-def data_handling(input):
+def data_handling(outer_space):
 
-    i = 0
+    acc = Accumulation(error = True)
 
     while 1:
-        if i > 10: input.save_var_for_exp_script("quit_loop", True)
-	else: input.save_var_for_exp_script("quit_loop", False)
-
-        timesignal = input.get_next_result()
+        timesignal = outer_space.get_next_result()
         if timesignal is None: break
         
-        print "Drawing %d..." % timesignal.get_job_id()
-        input.watch(timesignal, "Zeitsignal")
+	acc = acc + timesignal
 
-	i += 1
+        print "Drawing %d..." % timesignal.get_job_id()
+        outer_space.watch(timesignal, "Zeitsignal")
+	outer_space.watch(acc, "Akkumulation")

@@ -36,6 +36,8 @@ from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationT
 from matplotlib.axes import Subplot
 from matplotlib.figure import Figure
 
+import pylab
+
 
 class DamarisGUI(threading.Thread):
 
@@ -109,15 +111,18 @@ class DamarisGUI(threading.Thread):
         # Display:
         self.display_x_scaling_combobox = self.xml_gui.get_widget("display_x_scaling_combobox")
         self.display_y_scaling_combobox = self.xml_gui.get_widget("display_y_scaling_combobox")
-        self.display_source_combobox = self.xml_gui.get_widget("display_source_combobox")
+        self.display_source_combobox = gtk.combo_box_new_text()
         self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
+        
         self.display_statistics_checkbutton = self.xml_gui.get_widget("display_statistics_checkbutton")
+        self.display_statistics_checkbutton.set_sensitive(False)
 
         # Sonstiges:
         self.main_window = self.xml_gui.get_widget("main_window")
         self.main_notebook = self.xml_gui.get_widget("main_notebook")
         self.statusbar_label = self.xml_gui.get_widget("statusbar_label")
         self.main_clipboard = gtk.Clipboard(selection = "CLIPBOARD")
+        self.display_settings_frame = self.xml_gui.get_widget("display_settings_frame")
         
         # / Widgets mit Variablen verbinden --------------------------------------------------------
 
@@ -145,7 +150,7 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("on_toolbar_stop_button_clicked", self.stop_experiment)
 
         # Display:      
-        self.xml_gui.signal_connect("on_display_source_combobox_changed", self.display_source_changed)
+        self.display_source_combobox.connect("changed", self.display_source_changed)
         self.xml_gui.signal_connect("on_display_autoscaling_checkbutton_toggled", self.display_autoscaling_toggled)
         self.xml_gui.signal_connect("on_display_statistics_checkbutton_toggled", self.display_statistics_toggled)
 
@@ -180,6 +185,8 @@ class DamarisGUI(threading.Thread):
         #self.display_source_combobox.set_active(0) moved below initialising matplotlib (prevents AttributeError)
         self.display_autoscaling_checkbutton.set_active(False)
         self.display_statistics_checkbutton.set_active(False)
+        self.display_source_combobox.insert_text(0,"None")
+        self.display_settings_frame.attach(self.display_source_combobox, 1, 2, 0, 1,  gtk.FILL, gtk.FILL, 3, 0)
 
         # Sonstige:
         self.main_window_title = "DAMARIS - %s, %s"
@@ -218,7 +225,7 @@ class DamarisGUI(threading.Thread):
 
     while tau <= 5e-3:
 
-        for accu in range(10):
+        for accu in range(1):
 
             exp = Experiment()
             print "Job %d erstellt!" % exp.get_job_id()
@@ -257,12 +264,17 @@ class DamarisGUI(threading.Thread):
 
             self.data_handling_textbuffer.set_text("""def data_handling(outer_space):
 
+    acc = Accumulation(error = True)
+
     while 1:
         timesignal = outer_space.get_next_result()
         if timesignal is None: break
         
+	acc = acc + timesignal
+
         print "Drawing %d..." % timesignal.get_job_id()
-        outer_space.watch(timesignal, "Zeitsignal")""")
+        outer_space.watch(timesignal, "Zeitsignal")
+	outer_space.watch(acc, "Akkumulation")""")
 
         self.data_handling_textbuffer.set_modified(False)
         self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
@@ -282,10 +294,17 @@ class DamarisGUI(threading.Thread):
 
         # Ersten Plot erstellen und Referenz des ersten Eintrags im zurückgegebenen Tupel speichern
         # Voerst: graphen[0,1] = Real und Img-Kanal; [2,3] = Real-Fehler, [4,5] = Img-Fehler
-        self.graphen = self.matplot_axes.plot([0], [0], "b-", [0], [0], "r-", [0], [0], "b--", [0], [0], "b--", [0], [0], "r--", [0], [0], "r--")
+        self.graphen = []
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-"))
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-"))
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b--"))
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b--"))
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r--"))
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r--"))
 
-        self.matplot_axes.set_ylim([-8192, 8192])
-        self.matplot_axes.set_xlim([0,1])
+
+        self.matplot_axes.set_ylim([-8192.0, 8192.0])
+        self.matplot_axes.set_xlim([0.0,1.0])
 
         # Lineare y-/x-Skalierung
         self.matplot_axes.set_yscale("linear")
@@ -298,7 +317,6 @@ class DamarisGUI(threading.Thread):
         self.display_table.attach(self.matplot_canvas, 0, 5, 0, 1, gtk.EXPAND | gtk.FILL, gtk.EXPAND | gtk.FILL, 0, 0)
         self.matplot_canvas.show()
 
-
         # Matplot Toolbar hinzufügen (Display_Table, 2. Zeile) 
 
         self.matplot_toolbar = NavigationToolbar(self.matplot_canvas, self.main_window)
@@ -309,6 +327,9 @@ class DamarisGUI(threading.Thread):
         # /Mathplot --------------------------------------------------------------------------------
 
         self.display_source_combobox.set_active(0)
+
+        self.main_window.show_all()
+        
 
     # /Inits der einzelnen Fenster #################################################################        
 
@@ -832,7 +853,7 @@ class DamarisGUI(threading.Thread):
             if self.display_autoscaling_checkbutton.get_active():
                 self.matplot_axes.set_xlim(self.__display_channels[channel][0].get_xmin(), self.__display_channels[channel][0].get_xmax())
                 self.matplot_axes.set_ylim(self.__display_channels[channel][0].get_ymin(), self.__display_channels[channel][0].get_ymax())
-                self.matplot_canvas.queue_resize()
+                self.matplot_canvas.draw()
         
         return True
 
@@ -845,13 +866,14 @@ class DamarisGUI(threading.Thread):
             return True
 
         else:
-            if self.display_autoscaling_checkbutton.get_active():
+            if self.display_statistics_checkbutton.get_active():
                 self.draw_result(self.__display_channels[channel][0])
             else:
-                self.graphen[2].set_data([0],[0])
-                self.graphen[3].set_data([0],[0])
-                self.graphen[4].set_data([0],[0])
-                self.graphen[5].set_data([0],[0])
+                self.graphen[2].set_data([0.0],[0.0])
+                self.graphen[3].set_data([0.0],[0.0])
+                self.graphen[4].set_data([0.0],[0.0])
+                self.graphen[5].set_data([0.0],[0.0])
+                self.matplot_canvas.draw()
         return True
 
 
@@ -898,14 +920,16 @@ class DamarisGUI(threading.Thread):
             try:
                 self.graphen[0].set_data(in_result.get_xdata(), in_result.get_ydata(0))
                 self.graphen[1].set_data(in_result.get_xdata(), in_result.get_ydata(1))
-
+      
                 if self.__rescale:
-                    self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
+    
+                    self.matplot_axes.set_xlim(float(in_result.get_xmin()), float(in_result.get_xmax()))
                     self.__rescale = False
 
                 if self.display_autoscaling_checkbutton.get_active():
-                    self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
-                    self.matplot_axes.set_ylim(in_result.get_ymin(), in_result.get_ymax())
+    
+                    self.matplot_axes.set_xlim(float(in_result.get_xmin()), float(in_result.get_xmax()))
+                    self.matplot_axes.set_ylim(float(in_result.get_ymin()), float(in_result.get_ymax()))
 
                 if self.display_statistics_checkbutton.get_active() and in_result.uses_statistics() and in_result.ready_for_drawing_error():
                     # Real-Fehler
@@ -915,8 +939,7 @@ class DamarisGUI(threading.Thread):
                     self.graphen[4].set_data(in_result.get_xdata(), in_result.get_ydata(1) + in_result.get_yerr(1))
                     self.graphen[5].set_data(in_result.get_xdata(), in_result.get_ydata(1) - in_result.get_yerr(1))
 
-
-                self.matplot_canvas.queue_resize()
+                self.matplot_canvas.draw()
 
                 return False
 

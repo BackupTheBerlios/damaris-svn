@@ -8,7 +8,7 @@
 #################################################
 
 import sys
-sys.argv.append("--numarray")
+#sys.argv.append("--numarray")
 
 from JobWriter import *
 from DataHandling import *
