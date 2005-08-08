@@ -846,7 +846,12 @@ class DamarisGUI(threading.Thread):
 
         else:
             if self.display_autoscaling_checkbutton.get_active():
-                self.draw_result(self.__display_channels[channel][0])      
+                self.draw_result(self.__display_channels[channel][0])
+            else:
+                self.graphen[2].set_data([0],[0])
+                self.graphen[3].set_data([0],[0])
+                self.graphen[4].set_data([0],[0])
+                self.graphen[5].set_data([0],[0])
         return True
 
 
@@ -902,13 +907,13 @@ class DamarisGUI(threading.Thread):
                     self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
                     self.matplot_axes.set_ylim(in_result.get_ymin(), in_result.get_ymax())
 
-                if self.display_statistics_checkbutton.get_active() and in_result.uses_statistics():
+                if self.display_statistics_checkbutton.get_active() and in_result.uses_statistics() and in_result.ready_for_drawing_error():
                     # Real-Fehler
-                    self.graphen[2].set_data(in_result.get_xdata(), in_result.get_ydata(0) + (in_result.get_yerr(0) / 2))
-                    self.graphen[3].set_data(in_result.get_xdata(), in_result.get_ydata(0) - (in_result.get_yerr(0) / 2))
+                    self.graphen[2].set_data(in_result.get_xdata(), in_result.get_ydata(0) + in_result.get_yerr(0))
+                    self.graphen[3].set_data(in_result.get_xdata(), in_result.get_ydata(0) - in_result.get_yerr(0))
                     # Img-Fehler
-                    self.graphen[4].set_data(in_result.get_xdata(), in_result.get_ydata(1) + (in_result.get_yerr(1) / 2))
-                    self.graphen[5].set_data(in_result.get_xdata(), in_result.get_ydata(1) - (in_result.get_yerr(1) / 2))
+                    self.graphen[4].set_data(in_result.get_xdata(), in_result.get_ydata(1) + in_result.get_yerr(1))
+                    self.graphen[5].set_data(in_result.get_xdata(), in_result.get_ydata(1) - in_result.get_yerr(1))
 
 
                 self.matplot_canvas.queue_resize()

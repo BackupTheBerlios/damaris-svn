@@ -184,6 +184,7 @@ class Accumulation(Errorable, Drawable):
                     
                     for i in range(other.get_number_of_channels()):
                         tmp_ysquare.append(tmp_y[i] ** 2)
+                        
 
                 if self.uses_statistics():
                     return Accumulation(x = other.x, y = tmp_y, yerr = [], y_2 = tmp_ysquare, n = self.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)

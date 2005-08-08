@@ -74,3 +74,9 @@ class Errorable:
     def set_bars_above(self, bars_above):
         "Sets bars-above property of errorplot"
         self.bars_above = bool(bars_above)
+
+
+    def ready_for_drawing_error(self):
+        "Returns true if more than one result have been accumulated"
+        if self.n >= 2: return True
+        else: return False
