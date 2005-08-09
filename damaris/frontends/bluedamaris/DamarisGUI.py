@@ -959,7 +959,8 @@ class DamarisGUI(threading.Thread):
 
     def watch_result(self, result, channel):
         "Interface to surface for watching some data (under a certain name)"
-        gobject.idle_add(self.watch_result_idle_func, result, channel)
+     
+        gobject.idle_add(self.watch_result_idle_func, result + 0, channel + "")
 
     def watch_result_idle_func(self, result, channel):
         gtk.gdk.threads_enter()
@@ -968,11 +969,11 @@ class DamarisGUI(threading.Thread):
             # Check if channel exists or needs to be added
             if not self.__display_channels.has_key(channel):
                 self.__display_channels[channel] = [ ]
-                self.__display_channels[channel].insert(0,result + 0)
+                self.__display_channels[channel].insert(0,result)
                 self.display_source_combobox.append_text(channel)
             else:
-                self.__display_channels[channel].insert(0,result + 0)
-
+                self.__display_channels[channel].insert(0,result)  
+            
             # Getting active text in Combobox and compairing it
             if channel == self.display_source_combobox.get_active_text():
                 self.draw_result(self.__display_channels[channel][0])
