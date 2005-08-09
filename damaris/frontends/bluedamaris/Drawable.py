@@ -41,9 +41,6 @@ class Drawable:
         "Sets a point in x"
         try:
             self.x[pos] = value
-            
-            if value < self.xmin: self.xmin = value
-            if value > self.xmax: self.xmax = value
         except:
             raise
 
@@ -60,9 +57,6 @@ class Drawable:
         "Sets a point in y"
         try:
             self.y[channel][pos] = value
-            
-            if value < self.ymin: self.ymin = value
-            if value > self.ymax: self.ymax = value
         except:
             raise
 
@@ -142,7 +136,7 @@ class Drawable:
 
 
     def get_xmin(self):
-        "Returns minimun of x"
+        "Returns minimun of x"     
         return self.x.min()
 
     def set_xmin(self, xmin):

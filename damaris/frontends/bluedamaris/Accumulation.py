@@ -16,19 +16,17 @@ import numarray
 from types import *
 
 class Accumulation(Errorable, Drawable):
-    def __init__(self, x = None, y = None, y_2 = None, yerr = None, n = None, index = None, sampl_freq = None, jobs_added = None, error = False):
+    def __init__(self, x = None, y = None, y_2 = None, n = None, index = None, sampl_freq = None, jobs_added = None, error = False):
         Errorable.__init__(self)
         Drawable.__init__(self)
 
         self.use_error = error
         
         if self.uses_statistics():
-            if (y_2 is not None) and (yerr is not None) and (n is not None):
-                self.yerr = yerr
+            if (y_2 is not None) and (n is not None):
                 self.y_square = y_2
                 self.n = n
-            elif (y_2 is None) and (yerr is None) and (n is None):
-                self.yerr = []
+            elif (y_2 is None) and (n is None):
                 self.y_square = []
                 self.n = 0
             else:
@@ -40,6 +38,8 @@ class Accumulation(Errorable, Drawable):
             self.jobs_added = 0
             self.cont_data = False
             self.index = []
+            self.x = []
+            self.y = []
 
         elif (x is not None) and (y is not None) and (index is not None) and (sampl_freq is not None) and (jobs_added is not None):
             self.x = x
@@ -120,6 +120,38 @@ class Accumulation(Errorable, Drawable):
     def uses_statistics(self):
         return self.use_error
 
+    # Schnittstellen nach Auﬂen --------------------------------------------------------------------
+
+    def get_yerr(self, channel):
+
+        if not self.uses_statistics(): return None
+        if not self.contains_data(): return None
+
+        if self.n < 2: return numarray.zeros((len(self.y[0]),),type="Float64")
+
+        # ( E(X^2) - E(X)^2 )^0.5
+        try:
+            tmp_yerr = (((self.y_square[channel] / self.n) - ((self.y[channel] / self.n)**2)) ** 0.5)
+        except:
+            print "Warning Accumulation.get_yerr(channel): Channel index does not exist."
+            return numarray.zeros((len(self.y[0]),),type="Float64")
+
+        return tmp_yerr
+
+
+    def get_ydata(self, channel):
+
+        if not self.contains_data(): return None
+
+        try:
+            tmp_y = self.y[channel] / self.n
+        except:
+            print "Warning Accumulation.get_ydata(channel): Channel index does not exist."
+            return numarray.zeros((len(self.y[0]),),type="Float64")
+
+        return tmp_y
+
+    # / Schnittstellen nach Auﬂen ------------------------------------------------------------------
     
     # ‹berladen von Operatoren ---------------------------------------------------------------------
 
@@ -174,19 +206,15 @@ class Accumulation(Errorable, Drawable):
 
                 tmp_y = []
                 tmp_ysquare = []
+                self.n += 1
 
                 for i in range(other.get_number_of_channels()):
                     tmp_y.append(numarray.array(other.get_ydata(i), type="Float64"))
+                    if self.uses_statistics(): tmp_ysquare.append(tmp_y[i] ** 2)
+                 
 
                 if self.uses_statistics():
-                    self.n += 1
-                    
-                    for i in range(other.get_number_of_channels()):
-                        tmp_ysquare.append(tmp_y[i] ** 2)
-                        
-
-                if self.uses_statistics():
-                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, yerr = [], y_2 = tmp_ysquare, n = self.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)
+                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = self.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)
                 else:
                     return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
                 
@@ -201,22 +229,14 @@ class Accumulation(Errorable, Drawable):
 
                 tmp_y = []
                 tmp_ysquare = []
+                self.n += 1
 
                 for i in range(self.get_number_of_channels()):
                     tmp_y.append(self.get_ydata(i) + other.get_ydata(i))
                     if self.uses_statistics(): tmp_ysquare.append(self.get_ysquare(i) + (numarray.array(other.get_ydata(i), type="Float64") ** 2))
 
                 if self.uses_statistics():
-                    tmp_yerr = []
-                    self.n += 1
-                    
-                    for i in range(self.get_number_of_channels()):
-                        if self.n >= 2:
-                            # ( E(X^2) - E(X)^2 ) ** 0.5
-                            tmp_yerr.append(((tmp_ysquare[i] / self.n) - ((tmp_y[i] / self.n)**2)) ** 0.5)
-
-                if self.uses_statistics():
-                    return Accumulation(x = self.x, y = tmp_y, yerr = tmp_yerr, y_2 = tmp_ysquare, n = self.n, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = True)
+                    return Accumulation(x = self.x, y = tmp_y, y_2 = tmp_ysquare, n = self.n, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = True)
                 else:
                     return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = False)
 
@@ -495,22 +515,15 @@ class Accumulation(Errorable, Drawable):
             if not self.contains_data():
                 
                 tmp_y = []
-                tmp_yerr = []
                 tmp_ysquare = []
+                self.n += 1
 
                 for i in range(other.get_number_of_channels()):
                     tmp_y.append(numarray.array(other.get_ydata(i), type="Float64"))
+                    if self.uses_statistics(): tmp_ysquare.append(tmp_y[i] ** 2)
 
                 if self.uses_statistics():
-                    self.n += 1
-                    
-                    for i in range(other.get_number_of_channels()):
-                        tmp_ysquare.append(tmp_y[i] ** 2)
-                        tmp_yerr.append(numarray.zeros((len(tmp_y[0]),), type="Float64"))
-                        
-
-                if self.uses_statistics():
-                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, yerr = tmp_yerr, y_2 = tmp_ysquare, n = self.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)
+                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = self.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)
                 else:
                     return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
 

@@ -26,6 +26,8 @@ class ADC_Result(Resultable, Drawable):
             self.cont_data = False
             self.sampling_rate = 0
             self.index = []
+            self.x = []
+            self.y = []
 
         elif (x is not None) and (y is not None) and (index is not None) and (sampl_freq is not None) and (desc is not None) and (job_id is not None) and (job_date is not None):
             self.x = x

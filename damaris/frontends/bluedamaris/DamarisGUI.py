@@ -115,7 +115,7 @@ class DamarisGUI(threading.Thread):
         self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
         
         self.display_statistics_checkbutton = self.xml_gui.get_widget("display_statistics_checkbutton")
-        self.display_statistics_checkbutton.set_sensitive(False)
+        #self.display_statistics_checkbutton.set_sensitive(False)
 
         # Sonstiges:
         self.main_window = self.xml_gui.get_widget("main_window")
@@ -914,65 +914,65 @@ class DamarisGUI(threading.Thread):
 
     def draw_result(self, in_result):
         "Interface to surface for drawing results/accumulated results"
-        def idle_func():
-            gtk.gdk.threads_enter()
+        gobject.idle_add(self.draw_result_idle_func, in_result)
 
-            try:
-                self.graphen[0].set_data(in_result.get_xdata(), in_result.get_ydata(0))
-                self.graphen[1].set_data(in_result.get_xdata(), in_result.get_ydata(1))
-      
-                if self.__rescale:
-    
-                    self.matplot_axes.set_xlim(float(in_result.get_xmin()), float(in_result.get_xmax()))
-                    self.__rescale = False
 
-                if self.display_autoscaling_checkbutton.get_active():
-    
-                    self.matplot_axes.set_xlim(float(in_result.get_xmin()), float(in_result.get_xmax()))
-                    self.matplot_axes.set_ylim(float(in_result.get_ymin()), float(in_result.get_ymax()))
+    def draw_result_idle_func(self, in_result):
+        gtk.gdk.threads_enter()
 
-                if self.display_statistics_checkbutton.get_active() and in_result.uses_statistics() and in_result.ready_for_drawing_error():
-                    # Real-Fehler
-                    self.graphen[2].set_data(in_result.get_xdata(), in_result.get_ydata(0) + in_result.get_yerr(0))
-                    self.graphen[3].set_data(in_result.get_xdata(), in_result.get_ydata(0) - in_result.get_yerr(0))
-                    # Img-Fehler
-                    self.graphen[4].set_data(in_result.get_xdata(), in_result.get_ydata(1) + in_result.get_yerr(1))
-                    self.graphen[5].set_data(in_result.get_xdata(), in_result.get_ydata(1) - in_result.get_yerr(1))
+        try:
+            self.graphen[0].set_data(in_result.get_xdata(), in_result.get_ydata(0))
+            self.graphen[1].set_data(in_result.get_xdata(), in_result.get_ydata(1))
+  
+            if self.__rescale:
 
-                self.matplot_canvas.draw()
+                self.matplot_axes.set_xlim(float(in_result.get_xmin()), float(in_result.get_xmax()))
+                self.__rescale = False
 
-                return False
+            if self.display_autoscaling_checkbutton.get_active():
 
-            finally:
-                gtk.gdk.threads_leave()
+                self.matplot_axes.set_xlim(float(in_result.get_xmin()), float(in_result.get_xmax()))
+                self.matplot_axes.set_ylim(float(in_result.get_ymin()), float(in_result.get_ymax()))
 
-        gobject.idle_add(idle_func)
+            if self.display_statistics_checkbutton.get_active() and in_result.uses_statistics() and in_result.ready_for_drawing_error():
+                # Real-Fehler
+                self.graphen[2].set_data(in_result.get_xdata(), in_result.get_ydata(0) + in_result.get_yerr(0))
+                self.graphen[3].set_data(in_result.get_xdata(), in_result.get_ydata(0) - in_result.get_yerr(0))
+                # Img-Fehler
+                self.graphen[4].set_data(in_result.get_xdata(), in_result.get_ydata(1) + in_result.get_yerr(1))
+                self.graphen[5].set_data(in_result.get_xdata(), in_result.get_ydata(1) - in_result.get_yerr(1))
+
+            self.matplot_canvas.draw()
+
+            return False
+
+        finally:
+            gtk.gdk.threads_leave()
+        
 
 
     def watch_result(self, result, channel):
         "Interface to surface for watching some data (under a certain name)"
+        gobject.idle_add(self.watch_result_idle_func, result, channel)
 
-        def idle_func():
-            gtk.gdk.threads_enter()
+    def watch_result_idle_func(self, result, channel):
+        gtk.gdk.threads_enter()
 
-            try:
-                # Check if channel exists or needs to be added
-                if not self.__display_channels.has_key(channel):
-                    self.__display_channels[channel] = [ ]
-                    self.__display_channels[channel].insert(0,result)
-                    self.display_source_combobox.append_text(channel)
-                else:
-                    self.__display_channels[channel].insert(0,result)
+        try:
+            # Check if channel exists or needs to be added
+            if not self.__display_channels.has_key(channel):
+                self.__display_channels[channel] = [ ]
+                self.__display_channels[channel].insert(0,result)
+                self.display_source_combobox.append_text(channel)
+            else:
+                self.__display_channels[channel].insert(0,result)
 
-                # Getting active text in Combobox and compairing it
-                if channel == (self.display_source_combobox.get_model()).get_value(self.display_source_combobox.get_active_iter(), 0):
-                    self.draw_result(self.__display_channels[channel][0])
-                     
-            finally:
-                gtk.gdk.threads_leave()
-
-        gobject.idle_add(idle_func)
-
+            # Getting active text in Combobox and compairing it
+            if channel == (self.display_source_combobox.get_model()).get_value(self.display_source_combobox.get_active_iter(), 0):
+                self.draw_result(self.__display_channels[channel][0])
+                 
+        finally:
+            gtk.gdk.threads_leave()
 
     def get_experiment_script(self):
         "Interface for getting the content of the experiment-script textarea"
@@ -1006,19 +1006,19 @@ class DamarisGUI(threading.Thread):
             return None
 
         self.__error_dialogs_open += 1
+        gobject.idle_add(self.show_error_dialog_idle_func, title, error_message)
+
+    def show_error_dialog_idle_func(self, title, error_message):
+        try:
+            gtk.gdk.threads_enter()
+            NiftyGuiElements.show_error_dialog(self.main_window, title, error_message)
+
+            return False
+            
+        finally:
+            self.__error_dialogs_open -= 1
+            gtk.gdk.threads_leave()
         
-        def idle_func():
-            try:
-                gtk.gdk.threads_enter()
-                NiftyGuiElements.show_error_dialog(self.main_window, title, error_message)
-
-                return False
-                
-            finally:
-                self.__error_dialogs_open -= 1
-                gtk.gdk.threads_leave()
-
-        gobject.idle_add(idle_func) 
 
 ##    def flush(self):
 ##        gtk.gdk.threads_enter()
