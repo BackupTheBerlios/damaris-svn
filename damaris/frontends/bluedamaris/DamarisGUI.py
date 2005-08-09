@@ -388,11 +388,10 @@ class DamarisGUI(threading.Thread):
         self.__experiment_running = True
 
         # Remove all entries except "None"
+        self.display_source_combobox.get_model().clear()
+
+        self.display_source_combobox.insert_text(0, "None")
         self.display_source_combobox.set_active(0)
-        
-        length = len(self.__display_channels)
-        for i in range(length):
-            self.display_source_combobox.remove_text(i+1)
 
         # Deleting all history
         self.__display_channels = { }
@@ -828,8 +827,7 @@ class DamarisGUI(threading.Thread):
 
 
     def display_source_changed(self, Data = None):
-        # Getting active text
-        channel = (self.display_source_combobox.get_model()).get_value(self.display_source_combobox.get_active_iter(), 0)
+        channel = self.display_source_combobox.get_active_text()
 
         # Event triggers when we init the box -> Catch Channel "None"
         if channel == "None":
@@ -844,7 +842,7 @@ class DamarisGUI(threading.Thread):
 
     def display_autoscaling_toggled(self, widget, Data = None):
 
-        channel = (self.display_source_combobox.get_model()).get_value(self.display_source_combobox.get_active_iter(), 0)
+        channel = self.display_source_combobox.get_active_text()
 
         if channel == "None":
             return True
@@ -860,8 +858,8 @@ class DamarisGUI(threading.Thread):
 
     def display_statistics_toggled(self, widget, Data = None):
 
-        channel = (self.display_source_combobox.get_model()).get_value(self.display_source_combobox.get_active_iter(), 0)
-
+        channel = self.display_source_combobox.get_active_text()
+        
         if channel == "None":
             return True
 
@@ -968,7 +966,7 @@ class DamarisGUI(threading.Thread):
                 self.__display_channels[channel].insert(0,result)
 
             # Getting active text in Combobox and compairing it
-            if channel == (self.display_source_combobox.get_model()).get_value(self.display_source_combobox.get_active_iter(), 0):
+            if channel == self.display_source_combobox.get_active_text():
                 self.draw_result(self.__display_channels[channel][0])
                  
         finally:

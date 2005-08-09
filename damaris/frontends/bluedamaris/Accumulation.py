@@ -142,6 +142,7 @@ class Accumulation(Errorable, Drawable):
     def get_ydata(self, channel):
 
         if not self.contains_data(): return None
+        if not self.uses_statistics(): self.n = self.jobs_added
 
         try:
             tmp_y = self.y[channel] / self.n
