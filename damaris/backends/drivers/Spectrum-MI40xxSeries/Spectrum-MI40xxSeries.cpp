@@ -103,7 +103,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   double sensitivity=5.0;
   sampleno=0;
   samplefreq=0;
-
+  data_structure=NULL;
 
   state_sequent* exp_sequence=dynamic_cast<state_sequent*>(&exp);
   if (exp_sequence==NULL)
@@ -112,6 +112,11 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   // todo: cleanup before exception...
   state_iterator si(*exp_sequence);
   state* a_state=(state*)si.get_state();
+
+  // keep track of nested loops
+  std::list<state_sequent*> sequence_stack;
+  DataManagementNode* last_appended=NULL;
+
   /* loop over all states */
   while (NULL!=a_state) {
     // collect analogin sections in state
@@ -172,13 +177,64 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
 	a_state->push_back(trigger_line.copy_new());
       }
 
+      // now save the data to DataManagementNodes
+      if (data_structure==NULL) {
+	// first time saving some data
+	data_structure=new DataManagementNode();
+	data_structure->n=si.subsequence_stack.front().subsequence->repeat;
+	std::list<state_iterator::subsequence_iterator>::const_iterator level=si.subsequence_stack.begin();
+	sequence_stack.push_back(level->subsequence);
+	++level;
+	last_appended=data_structure;
+	while (level!=si.subsequence_stack.end()) {
+	  last_appended->child=new DataManagementNode(last_appended);
+	  last_appended=last_appended->child;
+	  last_appended->n=level->subsequence->repeat;
+	  sequence_stack.push_back(level->subsequence);
+	  ++level;
+	}
+	last_appended->child=new DataManagementNode(last_appended);
+	last_appended->child->n=inputs.front()->samples;
+      }
+      else {
+
+	// compare last used stack with actual one from top
+	std::list<state_iterator::subsequence_iterator>::const_iterator level=si.subsequence_stack.begin();
+	std::list<state_sequent*>::iterator level2=sequence_stack.begin();
+	last_appended=data_structure;
+	while (level!=si.subsequence_stack.end() && level2!=sequence_stack.end() && last_appended->child!=NULL && level->subsequence==*level2) {
+	  ++level; ++level2; last_appended=last_appended->child;
+	}
+	sequence_stack.erase(level2,sequence_stack.end());
+	while (last_appended->next!=NULL)
+	  last_appended=last_appended->next;
+	
+	// create new tree branch in depth
+	// to adapt...
+	while (level!=si.subsequence_stack.end()) {
+	  last_appended->child=new DataManagementNode(last_appended);
+	  last_appended=last_appended->child;
+	  last_appended->n=level->subsequence->repeat;
+	  sequence_stack.push_back(level->subsequence);
+	  ++level;
+	}
+
+	// and append new data
+	last_appended->child=new DataManagementNode(last_appended);
+	last_appended->child->n=inputs.front()->samples;
+	
+      }
+      
+
       // to do: more analogin sections per state
       while (!inputs.empty()) {delete inputs.front(); inputs.pop_front();}
+
     }
-    // send a trigger pulse
-    // todo only short trigger pulse
     a_state=(state*)si.next_state();
   }
+
+  data_structure->print(stdout);
+  delete data_structure;
 
   /* nothing to do! */
   if (sampleno==0) return;
@@ -190,8 +246,6 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
       fprintf(stderr, "Warning: Spectrum board was is running before starting data aquisition.\n");
       SpcSetParam (deviceno, SPC_COMMAND,      SPC_STOP);     // start the board
   }
-
-
 
   /* and the dirty things there...
      ----- setup board for recording -----
@@ -318,10 +372,14 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
     SpcGetData (deviceno, 0, 0, 2 * sampleno,(void*) adc_data);
 # endif
   
+    // split them in parts
+    
+
+
     the_result=new adc_result(0,sampleno,adc_data,samplefreq);
   }
   else {
-      fprintf(stderr, "fetching %u samples in fifo mode (timeout is %g)\n",sampleno,timeout);
+    fprintf(stderr, "fetching %u samples in fifo mode (timeout is %g)\n",sampleno,timeout);
     // FIFO method
     // need another thread, that stops my process
     pthread_attr_t timeout_pt_attrs;

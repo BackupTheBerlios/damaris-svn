@@ -5,7 +5,7 @@
 #
 #############################################################################
 DOXYGEN=doxygen
-PATH:=/opt/doxygen-1.4.4/bin:/opt/graphviz-2.2.1/bin:/home/achim/install/graphviz-2.0/bin:/home/achim/install/doxygen-1.3.9.1/bin:$(PATH)
+PATH:=/opt/doxygen-1.4.4/bin:/home/achim/install/graphviz-2.4/bin:/home/achim/install/doxygen-1.3.9.1/bin:$(PATH)
 
 .PHONY: all install docinstall clean doc
 

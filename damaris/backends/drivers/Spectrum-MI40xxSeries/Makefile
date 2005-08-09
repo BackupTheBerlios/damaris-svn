@@ -3,7 +3,10 @@ CXXFLAGS=-Wshadow -Wall -pedantic -O0 -g
 
 all: Spectrum-MI40xxSeries.o
 
-Spectrum-MI40xxSeries.o: Spectrum-MI40xxSeries.cpp Spectrum-MI40xxSeries.h
+Spectrum-MI40xxSeries.o: Spectrum-MI40xxSeries.cpp Spectrum-MI40xxSeries.h GatedData.h
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+GatedData.o: GatedData.cpp GatedData.h
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 test.o: test.cpp Spectrum-MI40xxSeries.h

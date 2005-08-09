@@ -5,6 +5,7 @@
 #include <vector>
 #include "core/states.h"
 #include "drivers/ADC.h"
+#include "GatedData.h"
 
 #if defined __linux__
 // ----- linux includes -----
@@ -42,6 +43,7 @@ class SpectrumMI40xxSeries: public ADC {
 
   double samplefreq;
   size_t sampleno;
+  DataManagementNode* data_structure;
   double timeout;
   size_t fifobufferno;
   size_t fifobufferlen;
