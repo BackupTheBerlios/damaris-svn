@@ -11,6 +11,7 @@ Bis zur ersten lauffähigen Version:
 - Export der Daten vom Display weg -> CSV o.ä.
 - Channel-Combobox nicht in glade, sondern per Hand erstellen (gtk.get_new_text_combobox())
 - Open-File nicht mehr global auf Veränderungen checken lassen, sondern nur noch auf der geöffneten Seite
+- beim Beenden auch "Abbrechen" als Alternative anbieten, nicht nur "Ja/Nein"
 
 Datentypen-bunch (NMR-Array und Co):
   - ResultReader auf mehrere Results pro File umbauen

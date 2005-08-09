@@ -151,6 +151,30 @@ class Accumulation(Errorable, Drawable):
 
         return tmp_y
 
+
+    def get_ymin(self):
+        tmp_min = []
+        for i in range(self.get_number_of_channels()):
+            tmp_min.append(self.get_ydata(i).min())
+
+        if self.uses_statistics() and self.ready_for_drawing_error():
+            for i in range(self.get_number_of_channels()):
+                tmp_min.append(self.get_yerr(i).min())            
+
+        return min(tmp_min)
+
+    
+    def get_ymax(self):
+        tmp_max = []
+        for i in range(self.get_number_of_channels()):
+            tmp_max.append(self.get_ydata(i).max())
+
+        if self.uses_statistics() and self.ready_for_drawing_error():
+            for i in range(self.get_number_of_channels()):
+                tmp_max.append(self.get_yerr(i).max())
+
+        return max(tmp_max)
+
     # / Schnittstellen nach Auﬂen ------------------------------------------------------------------
     
     # ‹berladen von Operatoren ---------------------------------------------------------------------
@@ -209,7 +233,7 @@ class Accumulation(Errorable, Drawable):
                 self.n += 1
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(numarray.array(other.get_ydata(i), type="Float64"))
+                    tmp_y.append(numarray.array(other.y[i], type="Float64"))
                     if self.uses_statistics(): tmp_ysquare.append(tmp_y[i] ** 2)
                  
 
@@ -232,8 +256,8 @@ class Accumulation(Errorable, Drawable):
                 self.n += 1
 
                 for i in range(self.get_number_of_channels()):
-                    tmp_y.append(self.get_ydata(i) + other.get_ydata(i))
-                    if self.uses_statistics(): tmp_ysquare.append(self.get_ysquare(i) + (numarray.array(other.get_ydata(i), type="Float64") ** 2))
+                    tmp_y.append(self.y[i] + other.y[i])
+                    if self.uses_statistics(): tmp_ysquare.append(self.y_square[i] + (numarray.array(other.y[i], type="Float64") ** 2))
 
                 if self.uses_statistics():
                     return Accumulation(x = self.x, y = tmp_y, y_2 = tmp_ysquare, n = self.n, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = True)
@@ -252,7 +276,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(other.get_ydata(i))
+                    tmp_y.append(other.y[i])
                 
                 return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
 
@@ -267,7 +291,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(self.get_number_of_channels()):
-                    tmp_y.append(self.get_ydata(i) + other.get_ydata(i))
+                    tmp_y.append(self.y[i] + other.y[i])
 
                 return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + other.jobs_added, error = False)
             
@@ -303,7 +327,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(0 - numarray.array(other.get_ydata(i), type="Float64"))
+                    tmp_y.append(0 - numarray.array(other.y[i], type="Float64"))
                 
                 return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
 
@@ -318,7 +342,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(self.get_number_of_channels()):
-                    tmp_y.append(self.get_ydata(i) - other.get_ydata(i))
+                    tmp_y.append(self.y[i] - other.y[i])
 
                 return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = False)
 
@@ -333,7 +357,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(0 - other.get_ydata(i))
+                    tmp_y.append(0 - other.y[i])
                 
                 return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
 
@@ -348,7 +372,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(self.get_number_of_channels()):
-                    tmp_y.append(self.get_ydata(i) - other.get_ydata(i))
+                    tmp_y.append(self.y[i] - other.y[i])
 
                 return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + other.jobs_added, error = False)
 
@@ -379,7 +403,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(numarray.array(other.get_ydata(i), type="Float64"))
+                    tmp_y.append(numarray.array(other.y[i], type="Float64"))
                 
                 return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
 
@@ -394,7 +418,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(self.get_number_of_channels()):
-                    tmp_y.append(other.get_ydata(i) - self.get_ydata(i))
+                    tmp_y.append(other.y[i] - self.y[i])
 
                 return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = False)
 
@@ -409,7 +433,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(other.get_ydata(i))
+                    tmp_y.append(other.y[i])
                 
                 return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
 
@@ -424,7 +448,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(self.get_number_of_channels()):
-                    tmp_y.append(other.get_ydata(i) - self.get_ydata(i))
+                    tmp_y.append(other.y[i] - self.y[i])
 
                 return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + other.jobs_added, error = False)
 
@@ -519,7 +543,7 @@ class Accumulation(Errorable, Drawable):
                 self.n += 1
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(numarray.array(other.get_ydata(i), type="Float64"))
+                    tmp_y.append(numarray.array(other.y[i], type="Float64"))
                     if self.uses_statistics(): tmp_ysquare.append(tmp_y[i] ** 2)
 
                 if self.uses_statistics():
@@ -537,8 +561,8 @@ class Accumulation(Errorable, Drawable):
                     if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add ADC-Results with diffrent indexing")
 
                 for i in range(self.get_number_of_channels()):
-                    self.y[i] += other.get_ydata(i)
-                    if self.uses_statistics(): self.y_square[i] += numarray.array(other.get_ydata(i), type="Float64") ** 2
+                    self.y[i] += other.y[i]
+                    if self.uses_statistics(): self.y_square[i] += numarray.array(other.y[i], type="Float64") ** 2
 
                 if self.uses_statistics():
                     self.n += 1
@@ -564,7 +588,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(other.get_ydata(i))
+                    tmp_y.append(other.y[i])
                 
                 return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
 
@@ -577,7 +601,7 @@ class Accumulation(Errorable, Drawable):
                     if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add accumulations with diffrent indexing")
 
                 for i in range(self.get_number_of_channels()):
-                    self.y[i] += other.get_ydata(i)
+                    self.y[i] += other.y[i]
 
                 self.jobs_added += other.jobs_added
 
@@ -607,7 +631,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
                 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(0 - numarray.array(other.get_ydata(i), type="Float64"))
+                    tmp_y.append(0 - numarray.array(other.y[i], type="Float64"))
                 
                 return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
 
@@ -620,7 +644,7 @@ class Accumulation(Errorable, Drawable):
                     if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add ADC-Results with diffrent indexing")
 
                 for i in range(self.get_number_of_channels()):
-                   self.y[i] -= other.get_ydata(i)
+                   self.y[i] -= other.y[i]
 
                 self.jobs_added += 1
 
@@ -638,7 +662,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_y = []
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(0 - other.get_ydata(i))
+                    tmp_y.append(0 - other.y[i])
                 
                 return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
 
@@ -651,7 +675,7 @@ class Accumulation(Errorable, Drawable):
                     if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add accumulations with diffrent indexing")
 
                 for i in range(self.get_number_of_channels()):
-                    self.y[i] -= other.get_ydata(i)
+                    self.y[i] -= other.y[i]
 
                 self.jobs_added += other.jobs_added
 
