@@ -213,11 +213,17 @@ class Accumulation(Errorable, Drawable):
             if not self.contains_data(): raise ValueError("Accumulation: You cant add integers/floats to an empty accumulation")
             else:
                 tmp_y = []
+                tmp_ysquare = []
 
                 for i in range(self.get_number_of_channels()):
-                    tmp_y.append(self.y[i] + other)
+                    # Dont change errors and mean value
+                    if self.uses_statistics(): tmp_ysquare.append(self.y_square[i] + ( (2*self.y[i]*other) + ((other**2)*self.n) ))
+                    tmp_y.append(self.y[i] + (other*self.n))
 
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = self.use_error)
+                if self.uses_statistics():
+                    return Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = self.n, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = self.use_error)
+                else:
+                    return Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = self.use_error)
 
         # ADC_Result
         elif str(other.__class__) == "ADC_Result.ADC_Result":
@@ -230,7 +236,6 @@ class Accumulation(Errorable, Drawable):
 
                 tmp_y = []
                 tmp_ysquare = []
-                self.n += 1
 
                 for i in range(other.get_number_of_channels()):
                     tmp_y.append(numarray.array(other.y[i], type="Float64"))
@@ -238,7 +243,7 @@ class Accumulation(Errorable, Drawable):
                  
 
                 if self.uses_statistics():
-                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = self.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)
+                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = 1, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)
                 else:
                     return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
                 
@@ -253,16 +258,15 @@ class Accumulation(Errorable, Drawable):
 
                 tmp_y = []
                 tmp_ysquare = []
-                self.n += 1
 
                 for i in range(self.get_number_of_channels()):
                     tmp_y.append(self.y[i] + other.y[i])
                     if self.uses_statistics(): tmp_ysquare.append(self.y_square[i] + (numarray.array(other.y[i], type="Float64") ** 2))
 
                 if self.uses_statistics():
-                    return Accumulation(x = self.x, y = tmp_y, y_2 = tmp_ysquare, n = self.n, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = True)
+                    return Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = self.n + 1, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = True)
                 else:
-                    return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = False)
+                    return Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = False)
 
         # Accumulation
         elif str(other.__class__) == "Accumulation.Accumulation":
@@ -274,11 +278,17 @@ class Accumulation(Errorable, Drawable):
             if not self.contains_data():
 
                 tmp_y = []
+                tmp_ysquare = []
 
                 for i in range(other.get_number_of_channels()):
                     tmp_y.append(other.y[i])
-                
-                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
+                    tmp_ysquare.append(other.y_square[i])
+
+                if self.uses_statistics():
+                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = other.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = True)
+                else:
+                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
+
 
             # Other and self not empty (self + other)
             else:
@@ -287,13 +297,20 @@ class Accumulation(Errorable, Drawable):
                 if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add accumulations with diffrent number of channels")
                 for i in range(len(self.index)):
                     if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add accumulations with diffrent indexing")
+                if self.uses_statistics() and not other.uses_statistics(): raise ValueError("Accumulation: You cant add non-error accumulations to accumulations with error")
 
                 tmp_y = []
+                tmp_ysquare = []
 
                 for i in range(self.get_number_of_channels()):
                     tmp_y.append(self.y[i] + other.y[i])
+                    tmp_ysquare.append(self.y_square[i] + other.y_square[i])
 
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + other.jobs_added, error = False)
+                if self.uses_statistics():
+                    return Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = other.n, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + other.jobs_added, error = True)
+                else:
+                    return Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + other.jobs_added, error = False)
+
             
 
     def __radd__(self, other):
@@ -524,8 +541,11 @@ class Accumulation(Errorable, Drawable):
         if isinstance(other, IntType) or isinstance(other, FloatType):
             if not self.contains_data(): raise ValueError("Accumulation: You cant add integers/floats to an empty accumulation")
             else:
+                
                 for i in range(self.get_number_of_channels()):
-                    self.y[i] += other
+                    #Dont change errors and mean value
+                    if self.uses_statistics(): self.y_square[i] += (2*self.y[i]*other) + ((other**2)*self.n)
+                    self.y[i] += other*self.n
 
                 return self
 
@@ -538,18 +558,18 @@ class Accumulation(Errorable, Drawable):
             # Self empty (copy)
             if not self.contains_data():
                 
-                tmp_y = []
-                tmp_ysquare = []
-                self.n += 1
+                if self.uses_statistics(): self.n += 1
+                self.jobs_added = 1
+                self.index = other.index[0:]
+                self.sampling_rate = other.sampling_rate
+                self.x = numarray.array(other.x, type="Float64")
+                self.cont_data = True
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(numarray.array(other.y[i], type="Float64"))
-                    if self.uses_statistics(): tmp_ysquare.append(tmp_y[i] ** 2)
+                    self.y.append(numarray.array(other.y[i], type="Float64"))
+                    if self.uses_statistics(): self.y_square.append(self.y[i] ** 2)
 
-                if self.uses_statistics():
-                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = self.n, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = True)
-                else:
-                    return Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
+                return self
 
 
             # Other and self not empty (self + other)
@@ -566,11 +586,6 @@ class Accumulation(Errorable, Drawable):
 
                 if self.uses_statistics():
                     self.n += 1
-                    
-                    for i in range(self.get_number_of_channels()):
-                        if self.n >= 2:
-                            # ( E(X^2) - E(X)^2 ) ** 0.5
-                            self.yerr[i] = (((self.y_square[i] / self.n) - ((self.y[i] / self.n)**2)) ** 0.5)
 
                 self.jobs_added += 1
 
@@ -584,14 +599,21 @@ class Accumulation(Errorable, Drawable):
 
             # Self empty (copy)
             if not self.contains_data():
+                if self.uses_statistics() and not other.uses_statistics(): raise ValueError("Accumulation: You cant add non-error accumulations to accumulations with error")
 
-                tmp_y = []
+                if self.uses_statistics(): self.n += other.n
+                self.jobs_added = other.jobs_added
+                self.index = other.index[0:]
+                self.sampling_rate = other.sampling_rate
+                self.x = numarray.array(other.x, type="Float64")
+                self.cont_data = True
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(other.y[i])
-                
-                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
+                    self.y.append(numarray.array(other.y[i], type="Float64"))
+                    if self.uses_statistics(): self.y_square.append(self.y[i] ** 2)
 
+                return self
+            
             # Other and self not empty (self + other)
             else:
                 if self.sampling_rate != other.get_sampling_rate(): raise ValueError("Accumulation: You cant add accumulations with diffrent sampling-rates")
@@ -599,11 +621,17 @@ class Accumulation(Errorable, Drawable):
                 if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add accumulations with diffrent number of channels")
                 for i in range(len(self.index)):
                     if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add accumulations with diffrent indexing")
+                if self.uses_statistics() and not other.uses_statistics(): raise ValueError("Accumulation: You cant add non-error accumulations to accumulations with error")
+
+                if self.uses_statistics():
+                    self.n += other.n
+                    
+                self.jobs_added += other.jobs_added
 
                 for i in range(self.get_number_of_channels()):
                     self.y[i] += other.y[i]
-
-                self.jobs_added += other.jobs_added
+                    if self.uses_statistics(): self.y_square[i] += other.y_square[i]
+                    
 
                 return self
 

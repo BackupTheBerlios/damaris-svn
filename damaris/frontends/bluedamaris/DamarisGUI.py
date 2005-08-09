@@ -341,7 +341,7 @@ class DamarisGUI(threading.Thread):
 
         self.quit_timeout = 0.0
 
-        # Contents changed? Shall we save?
+        # Contents changed?
 
         if self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
             answer = NiftyGuiElements.show_question_dialog_compulsive(self.main_window, "Unsaved changes", "Do you want so save your changes?")

@@ -20,6 +20,7 @@ Datentypen-bunch (NMR-Array und Co):
   - Description und ID im Graphen anzeigen (oder beim)
   - mehrere Graphen implementieren
   - DataPool Klasse implementieren (Alles was mit History/Channels und sonstiger Darstellung zu tun hat)
+  - Fehlerbalken überarbeiten bei AutoScaling/Show Statistics toggled und Displaysource-changed)
   - Mittelwert bei Accumulation zurückgeben
 
 Version 0.0.2:
