@@ -157,9 +157,11 @@ class DamarisGUI(threading.Thread):
         # Scripts:        
         self.experiment_script_textbuffer.connect("modified-changed", self.textviews_modified)
         self.experiment_script_textview.connect_after("move-cursor", self.textviews_moved)
+        self.experiment_script_textview.connect("key-press-event", self.textviews_keypress)
         self.experiment_script_textview.connect("button-release-event", self.textviews_clicked)
         self.data_handling_textbuffer.connect("modified-changed", self.textviews_modified)
         self.data_handling_textview.connect_after("move-cursor", self.textviews_moved)
+        self.data_handling_textview.connect("key-press-event", self.textviews_keypress)
         self.data_handling_textview.connect("button-release-event", self.textviews_clicked)  
 
         # Misc:
@@ -812,6 +814,77 @@ class DamarisGUI(threading.Thread):
     def textviews_clicked(self, widget, event):
         self.textviews_moved(widget)
         return False
+
+    def textviews_keypress(self, widget, event, data = None):
+        # tab keyval 0xff09
+        # backspace keyval 0xff08
+        if(event.keyval==0xFF09 or event.keyval==0xFF08):
+            textbuffer=widget.get_buffer()
+            # do not do things during selection
+            if (textbuffer.get_selection_bounds()): return 0
+            cursor_mark=textbuffer.get_insert()
+            cursor_iter=textbuffer.get_iter_at_mark(cursor_mark)
+            if (cursor_iter.starts_line()):
+                # backspace with normal function at line start
+                if (event.keyval==0xFF08): return 0
+            # now get iterator at line start
+            linestart_iter=cursor_iter.copy()
+            linestart_iter.set_line_offset(0)
+            linebegin=textbuffer.get_text(linestart_iter,cursor_iter)
+            linebegin.expandtabs()
+            if (len(linebegin)!=0 and not linebegin.isspace()):
+                # just make the spaces go away
+                textbuffer.delete(linestart_iter,cursor_iter)
+                textbuffer.insert(linestart_iter,linebegin)
+                return 0
+            # find all space at the begin
+            while(not cursor_iter.ends_line()
+                  and not cursor_iter.is_end()
+                  and cursor_iter.get_char().isspace()):
+                cursor_iter.forward_char()
+            linebegin=textbuffer.get_text(linestart_iter,cursor_iter)
+            if (event.keyval==0xFF08):
+                # backspace shortens space
+                linebegin=u' '*((len(linebegin)-1)/4)*4
+            elif (event.keyval==0xFF09):
+                # tab widens space
+                linebegin=u' '*((len(linebegin)+4)/4)*4
+ 
+            textbuffer.delete(linestart_iter,cursor_iter)
+            textbuffer.insert(linestart_iter,linebegin)
+            return 1
+        # implement convenience function for enter key
+        elif (event.keyval==0xFF0D):
+            textbuffer=widget.get_buffer()
+            # do not do things during selection
+            if (textbuffer.get_selection_bounds()): return 0
+            cursor_mark=textbuffer.get_insert()
+            cursor_iter=textbuffer.get_iter_at_mark(cursor_mark)
+            # determine this line's indent count
+            linestart_iter=cursor_iter.copy()
+            linestart_iter.set_line_offset(0)
+            spaceend_iter=linestart_iter.copy()
+            while(not spaceend_iter.ends_line()
+                  and not spaceend_iter.is_end()
+                  and spaceend_iter.get_char().isspace()):
+                spaceend_iter.forward_char()
+            linebegin=textbuffer.get_text(linestart_iter,spaceend_iter)
+            linebegin.expandtabs()
+            indent_length=len(linebegin)
+            textbuffer.delete(linestart_iter,spaceend_iter)
+            textbuffer.insert(linestart_iter,u' '*indent_length)
+            # start with the real work
+            cursor_iter=textbuffer.get_iter_at_mark(cursor_mark)
+            if (not cursor_iter.starts_line()):
+                # find last char before cursor
+                lastchar_iter=cursor_iter.copy()
+                lastchar_iter.backward_char()
+                if (lastchar_iter.get_char()==u":"): indent_length+=4
+            # now find indent of next line...
+            textbuffer.insert(cursor_iter,u'\n'+(u' '*indent_length))
+            widget.scroll_to_mark(cursor_mark,0.0,0)
+            return 1
+        return 0
 
     def textviews_moved(self, widget, text=None, count=None, ext_selection=None, data = None):
         textbuffer=widget.get_buffer()
