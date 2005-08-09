@@ -67,10 +67,10 @@ void DataManagementNode::print(FILE* f,size_t indent) {
     fprintf(f,"%s%d:\n",indent_space, n);
     child->print(f,indent+6);
   }
+  delete indent_space;
   if (next!=NULL)
     next->print(f,indent);
   
-  delete indent_space;
 }
 
 /**

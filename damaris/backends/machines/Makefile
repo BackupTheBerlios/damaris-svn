@@ -59,11 +59,13 @@ endif
 hardware.o: hardware.cpp hardware.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a:
+	$(MAKE) -C ../drivers/Spectrum-MI40xxSeries Spectrum-MI40xxSeries.a
 
-Mobilecore.exe: Mobilecore.o ../core/core.a hardware.o \
-../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.o ../drivers/PTS-Synthesizer/PTS.o \
+Mobilecore.exe: Mobilecore.o hardware.o \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o \
-../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o
+../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
 	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
 
 Mobilecore.o: Mobilecore.cpp \

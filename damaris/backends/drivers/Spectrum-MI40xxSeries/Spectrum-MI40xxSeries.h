@@ -37,24 +37,32 @@ class SpectrumMI40xxSeries_error: public ADC_exception {
 };
 
 
-// ----- main task -----
+/**
+   driver for Spectrum MI40 Series acquisition boards
+ */
 class SpectrumMI40xxSeries: public ADC {
-  int deviceno;
+    /**
+       analogin device number 
+    */
+    int deviceno;
 
-  double samplefreq;
-  size_t sampleno;
-  DataManagementNode* data_structure;
-  double timeout;
-  size_t fifobufferno;
-  size_t fifobufferlen;
-  size_t fifo_minimal_size;
-  int device_id;
-  ttlout trigger_line;
-  std::vector<short int*> fifobuffers;
+    /**
+       ttlout triggerline device id
+     */
+    int device_id;
+    /**
+       ttlout triggerline ttlmask
+     */
+    ttlout trigger_line;
 
-  // configured input impedance
-  double impedance;
-
+    /** stuff concerning fifo acquisition */
+    size_t fifobufferno;
+    /** stuff concerning fifo acquisition */
+    size_t fifobufferlen;
+    /** stuff concerning fifo acquisition */
+    size_t fifo_minimal_size;
+    /** stuff concerning fifo acquisition */
+    std::vector<short int*> fifobuffers;
 
 # if defined __linux__
   // ----- include the easy ioctl commands from the driver -----
@@ -72,12 +80,30 @@ class SpectrumMI40xxSeries: public ADC {
   define_spectrum_function(SpcInitPCIBoards, int16, int16*, int16*);
 # endif
 
+  class Configuration {
+  public:
+      /* sampling frequency */
+      double samplefreq;
+      /* acquired data description */
+      DataManagementNode* data_structure;
+      /* a timeout for acquiring data */
+      double timeout;
+      /** configured input impedance */
+      double impedance;
+      /** configured input sensitivity */
+      double sensitivity;
+  };
+
+  Configuration* effective_settings;
+
 public:
   SpectrumMI40xxSeries(const ttlout& t_line);
 
   virtual void sample_after_external_trigger(double rate, size_t samples, double sensitivity=5.0, size_t resolution=14);
 
   virtual void set_daq(state & exp);
+
+  void collect_config_recursive(state_sequent& exp, SpectrumMI40xxSeries::Configuration& settings);
 
   virtual result* get_samples(double timeout=0.0);
 

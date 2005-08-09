@@ -1,7 +1,11 @@
 CPPFLAGS=-Iinclude -I../..
 CXXFLAGS=-Wshadow -Wall -pedantic -O0 -g
+AR=ar
 
-all: Spectrum-MI40xxSeries.o
+all: Spectrum-MI40xxSeries.a
+
+Spectrum-MI40xxSeries.a: Spectrum-MI40xxSeries.o GatedData.o
+	$(AR) r $@ $^
 
 Spectrum-MI40xxSeries.o: Spectrum-MI40xxSeries.cpp Spectrum-MI40xxSeries.h GatedData.h
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<

@@ -1,16 +1,17 @@
 #include <cmath>
+#include <stack>
 #include "pthread.h"
 #include "core/stopwatch.h"
 #include "core/result.h"
+#include "core/xml_states.h"
 #include "Spectrum-MI40xxSeries.h"
 
 SpectrumMI40xxSeries::SpectrumMI40xxSeries(const ttlout& t_line) {
-  sampleno=0;
-  samplefreq=0;
   // to be configured
   device_id=0;
   trigger_line=t_line;
-  impedance=1e6; // default 1MOhm
+
+  effective_settings=NULL;
   
 #     if defined __linux__
       // ----- open driver -----
@@ -85,6 +86,129 @@ void SpectrumMI40xxSeries::sample_after_external_trigger(double rate, size_t sam
   throw SpectrumMI40xxSeries_error("SpectrumMI40xxSeries::sample_after_external_trigger is not jet implemented");  
 }
 
+
+
+void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, SpectrumMI40xxSeries::Configuration& settings) {
+
+    /* start with dummy node */
+    DataManagementNode* new_branch=new DataManagementNode(NULL);
+    DataManagementNode* where_to_append=new_branch;
+    double parent_timeout=settings.timeout;
+    settings.timeout=0.0;
+
+    /* loop over all states and sequences */
+    for (state_sequent::iterator i=exp.begin();i!=exp.end(); ++i) {
+	
+	state* a_state=dynamic_cast<state*>(*i);
+	if (a_state==NULL)
+	    throw SpectrumMI40xxSeries_error("state_atom not expected in sate_sequent");	
+	if (dynamic_cast<state_parallel*>(*i)!=NULL)
+	    throw SpectrumMI40xxSeries_error("state_parallel handling is not jet implemented");
+	state_sequent* a_sequence=dynamic_cast<state_sequent*>(a_state);
+	if (a_sequence!=NULL) {
+	    // found a sequence
+	    DataManagementNode* tmp_structure=settings.data_structure;
+	    settings.data_structure=where_to_append;
+	    collect_config_recursive(*a_sequence, settings);
+	    settings.data_structure=tmp_structure;
+	} /* end working on sequence */
+	else {
+	    // found a state, not a sequence
+	    settings.timeout+=a_state->length;
+	    // collect analogin sections in state
+	    std::list<analogin*> inputs;
+	    /* loop over all device definitions in a state */
+	    state::iterator j=a_state->begin();
+	    while (j!=a_state->end()) {
+		analogin* input=dynamic_cast<analogin*>(*j);
+		if (input!=NULL && input->id==device_id) {
+		    /* collect appropiate analogin sections, forget others */
+		    if (input->samples<=0 || input->sample_frequency<=0)
+			delete input;
+		    else
+			inputs.push_back(input);
+		    j=a_state->erase(j);
+		}
+		else
+		    ++j;
+	    }
+	    if (!inputs.empty()) {
+		/* evaluate the found analogin definitions */
+		if (inputs.size()>1) {
+		    while (!inputs.empty()) {delete inputs.front(); inputs.pop_front();}
+		    throw ADC_exception("can not handle more than one analogin section per state");
+		}
+		/* save sampling frequency */
+		if (settings.samplefreq<0)
+		    settings.samplefreq=inputs.front()->sample_frequency;
+		else if (settings.samplefreq!=inputs.front()->sample_frequency) {
+		    while (!inputs.empty()) {delete inputs.front(); inputs.pop_front();}
+		    throw ADC_exception("Sorry, but gated sampling requires same sampling frequency in all analogin sections");
+		}
+		// adapt the pulse program for gated sampling
+		if (a_state->length<1.0*inputs.front()->samples/settings.samplefreq) {
+		    throw ADC_exception("state is shorter than acquisition time");
+		}
+		else if (a_state->length > 1.0*inputs.front()->samples/settings.samplefreq) {
+		    // state is too long... create new one with proper time
+		    state* gated_sampling_pulse=new state(*a_state);
+		    double new_length=(inputs.front()->samples+3)/settings.samplefreq;
+		    // align to lower 10ns step
+		    new_length=floor(1e8*new_length)/1e8;
+		    gated_sampling_pulse->length=new_length;
+		    gated_sampling_pulse->push_back(trigger_line.copy_new());
+		    // insert after me
+		    exp.insert(i,(state_atom*)gated_sampling_pulse);
+		    // shorten this state
+		    a_state->length-=new_length;
+		}
+		else {
+		    // state has proper length
+		    a_state->push_back(trigger_line.copy_new());
+		}
+
+		/* save sampleno */
+		DataManagementNode* new_one=new DataManagementNode(new_branch);
+		new_one->n=inputs.front()->samples;
+		new_one->child=NULL;
+		new_one->next=where_to_append->next;
+		where_to_append->next=new_one;
+		where_to_append=new_one;
+		while (!inputs.empty()) {delete inputs.front(); inputs.pop_front();}
+	    } /* !inputs.empty() */
+	
+
+	} /* end working on state */
+
+
+    } /* i */
+    
+    /* something happened? */
+    if (new_branch->next!=NULL) {
+	/* make dummy node to a loop */
+	new_branch->n=exp.repeat;
+	new_branch->child=new_branch->next;
+
+	/* if possible, append it */
+	if (settings.data_structure!=NULL) {
+	    new_branch->parent=settings.data_structure->parent;
+	    new_branch->next=settings.data_structure->next;
+	    settings.data_structure->next=new_branch;
+	}
+	else {
+	    new_branch->parent=NULL;
+	    new_branch->next=NULL;
+	    settings.data_structure=new_branch;
+	}
+    }
+    else
+	delete new_branch;
+
+    settings.timeout*=exp.repeat;
+    settings.timeout+=parent_timeout;
+    return;
+}
+
 void SpectrumMI40xxSeries::set_daq(state & exp) {
 
   // cleanup?!
@@ -98,146 +222,31 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   int features;
   SpcGetParam(deviceno,SPC_PCIFEATURES,&features);
 
-  /* find out what to do */
-
-  double sensitivity=5.0;
-  sampleno=0;
-  samplefreq=0;
-  data_structure=NULL;
-
   state_sequent* exp_sequence=dynamic_cast<state_sequent*>(&exp);
   if (exp_sequence==NULL)
     throw ADC_exception("Spectrum-MI40xxSeries: only working on sequences");
+ 
+  /* find out what to do */
+  Configuration* conf=new Configuration;
+  conf->samplefreq=-1; // not set
+  conf->data_structure=NULL;
+  conf->impedance=1e6; // Ohm
+  conf->sensitivity=5; // Volts
+  collect_config_recursive(*exp_sequence, *conf);
 
-  // todo: cleanup before exception...
-  state_iterator si(*exp_sequence);
-  state* a_state=(state*)si.get_state();
-
-  // keep track of nested loops
-  std::list<state_sequent*> sequence_stack;
-  DataManagementNode* last_appended=NULL;
-
-  /* loop over all states */
-  while (NULL!=a_state) {
-    // collect analogin sections in state
-    std::list<analogin*> inputs;
-    /* loop over all device definitions in a state */
-    state::iterator i=a_state->begin();
-    while (i!=a_state->end()) {
-      analogin* input=dynamic_cast<analogin*>(*i);
-      if (input!=NULL && input->id==device_id) {
-	/* collect appropiate analogin sections, forget others */
-	if (input->samples<=0 || input->sample_frequency<=0)
-	  delete input;
-	else
-	  inputs.push_back(input);
-	i=a_state->erase(i);
-      }
-      else
-	++i;
-    }
-    if (!inputs.empty()) {
-      /* evaluate the found analogin definitions */
-      if (inputs.size()>1) {
-	while (!inputs.empty()) {delete inputs.front(); inputs.pop_front();}
-	throw ADC_exception("can not handle more than one analogin section per state");
-      }
-      if (sampleno==0) {
-	sampleno=inputs.front()->samples*si.get_count();
-	samplefreq=inputs.front()->sample_frequency;
-      }
-      else if (samplefreq==inputs.front()->sample_frequency) {
-        sampleno+=inputs.front()->samples*si.get_count();
-      }
-      else {
-	while (!inputs.empty()) {delete inputs.front(); inputs.pop_front();}
-	throw ADC_exception("Sorry, but gated sampling requires same sampling frequency in all analogin sections");
-      }
-      // adapt the pulse program for gated sampling
-      if (a_state->length<1.0*inputs.front()->samples/samplefreq) {
-	throw ADC_exception("state is shorter than acquisition time");
-      }
-      if (a_state->length>1.0*inputs.front()->samples/samplefreq) {
-	// state is too long... create new one with proper time
-	state* gated_sampling_pulse=new state(*a_state);
-	double new_length=(inputs.front()->samples+3)/samplefreq;
-	// align to lower 10ns step
-	new_length=floor(1e8*new_length)/1e8;
-	gated_sampling_pulse->length=new_length;
-	gated_sampling_pulse->push_back(trigger_line.copy_new());
-	// insert after me... well we have a const iterator, so we have to do a workaround...
-	state_sequent* sseq=(state_sequent*)si.subsequence_stack.back().subsequence;
-	state_sequent::iterator sseqi=si.subsequence_stack.back().subsequence_pos;
-	sseq->insert(sseqi,(state_atom*)gated_sampling_pulse);
-	// shorten this state
-	a_state->length-=new_length;
-      }
-      else {
-	// state has proper length
-	a_state->push_back(trigger_line.copy_new());
-      }
-
-      // now save the data to DataManagementNodes
-      if (data_structure==NULL) {
-	// first time saving some data
-	data_structure=new DataManagementNode();
-	data_structure->n=si.subsequence_stack.front().subsequence->repeat;
-	std::list<state_iterator::subsequence_iterator>::const_iterator level=si.subsequence_stack.begin();
-	sequence_stack.push_back(level->subsequence);
-	++level;
-	last_appended=data_structure;
-	while (level!=si.subsequence_stack.end()) {
-	  last_appended->child=new DataManagementNode(last_appended);
-	  last_appended=last_appended->child;
-	  last_appended->n=level->subsequence->repeat;
-	  sequence_stack.push_back(level->subsequence);
-	  ++level;
-	}
-	last_appended->child=new DataManagementNode(last_appended);
-	last_appended->child->n=inputs.front()->samples;
-      }
-      else {
-
-	// compare last used stack with actual one from top
-	std::list<state_iterator::subsequence_iterator>::const_iterator level=si.subsequence_stack.begin();
-	std::list<state_sequent*>::iterator level2=sequence_stack.begin();
-	last_appended=data_structure;
-	while (level!=si.subsequence_stack.end() && level2!=sequence_stack.end() && last_appended->child!=NULL && level->subsequence==*level2) {
-	  ++level; ++level2; last_appended=last_appended->child;
-	}
-	sequence_stack.erase(level2,sequence_stack.end());
-	while (last_appended->next!=NULL)
-	  last_appended=last_appended->next;
-	
-	// create new tree branch in depth
-	// to adapt...
-	while (level!=si.subsequence_stack.end()) {
-	  last_appended->child=new DataManagementNode(last_appended);
-	  last_appended=last_appended->child;
-	  last_appended->n=level->subsequence->repeat;
-	  sequence_stack.push_back(level->subsequence);
-	  ++level;
-	}
-
-	// and append new data
-	last_appended->child=new DataManagementNode(last_appended);
-	last_appended->child->n=inputs.front()->samples;
-	
-      }
-      
-
-      // to do: more analogin sections per state
-      while (!inputs.empty()) {delete inputs.front(); inputs.pop_front();}
-
-    }
-    a_state=(state*)si.next_state();
-  }
-
-  data_structure->print(stdout);
-  delete data_structure;
+  size_t sampleno=(conf->data_structure==NULL)?0:conf->data_structure->size();
 
   /* nothing to do! */
-  if (sampleno==0) return;
+  if (sampleno==0) {
+      delete conf;
+      effective_settings=NULL;
+      return;
+  }
+
+  conf->data_structure->print(stderr);
+  fflush(stderr);
+
+  effective_settings=conf;
 
   /* make a check, whether spectrum board is running */
   int actual_status=0;
@@ -252,12 +261,12 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   */
   size_t nChannels = 2;
   for (unsigned int j=0; j<nChannels; j++) {
-    SpcSetParam (deviceno, SPC_AMP0 + 100*j,    (int)floor(sensitivity*1000));          // +/- 5V input range
-    SpcSetParam (deviceno, SPC_50OHM0 + 100*j,  ((impedance==50.0)?1:0));             // 1 = 50 Ohm input impedance, 0 = 1MOhm input impedance
+    SpcSetParam (deviceno, SPC_AMP0 + 100*j,    (int)floor(effective_settings->sensitivity*1000));          // +/- 5V input range
+    SpcSetParam (deviceno, SPC_50OHM0 + 100*j,  ((effective_settings->impedance==50.0)?1:0));             // 1 = 50 Ohm input impedance, 0 = 1MOhm input impedance
   }
 
   SpcSetParam (deviceno, SPC_CHENABLE,            CHANNEL0 | CHANNEL1); // Enable channels for recording
-  SpcSetParam (deviceno, SPC_SAMPLERATE,          (int)floor(samplefreq));      // Samplerate: 20 MHz
+  SpcSetParam (deviceno, SPC_SAMPLERATE,          (int)floor(effective_settings->samplefreq));      // Samplerate: 20 MHz
 
   // decide for aquisition mode and start it
   int16 nErr=ERR_OK;
@@ -326,59 +335,122 @@ int SpectrumMI40xxSeries::TimeoutThread() {
     SpcGetParam (deviceno, SPC_STATUS,      &lStatus);    
     pthread_testcancel();
     if (lStatus == SPC_READY) return 0;
-  } while (timer.elapsed()<timeout);
+  } while (timer.elapsed()<effective_settings->timeout);
   SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
   return 1;
 }
 
 result* SpectrumMI40xxSeries::get_samples(double _timeout) {
-
+    
+    if (effective_settings==NULL) return new adc_result(1,0,NULL);
+    size_t sampleno=(effective_settings->data_structure==NULL)?0:effective_settings->data_structure->size();
     if (sampleno==0) return new adc_result(1,0,NULL);
-  timeout=_timeout;
-  result* the_result=NULL;
-  // allocate a lot of space
-  short int* adc_data=(short int*)malloc(sampleno*sizeof(short int)*2);
-  if (adc_data==NULL) {
-    for (std::vector<short int*>::iterator i=fifobuffers.begin(); i!=fifobuffers.end(); ++i) free(*i);
-    fifobuffers.clear();
-    throw SpectrumMI40xxSeries_error("could not allocate adc data memory");
-  }
+    double timeout=_timeout;
+    // allocate a lot of space
+    short int* adc_data=(short int*)malloc(sampleno*sizeof(short int)*2);
+    if (adc_data==NULL) {
+	for (std::vector<short int*>::iterator i=fifobuffers.begin(); i!=fifobuffers.end(); ++i) free(*i);
+	fifobuffers.clear();
+	throw SpectrumMI40xxSeries_error("could not allocate adc data memory");
+    }
 
-  if (fifobuffers.empty()) {
-    // simple version: standard acquisition, wait and get...
+    if (fifobuffers.empty()) {
+	// simple version: standard acquisition, wait and get...
 #if 0
-      fprintf(stderr, "fetching %u samples in normal mode (timeout is %g)\n",sampleno,timeout);
+	fprintf(stderr, "fetching %u samples in normal mode (timeout is %g)\n",sampleno,timeout);
 #endif
-    stopwatch adc_timer;
-    adc_timer.start();
-    int adc_status;
-    do {
-      timespec sleeptime;
-      sleeptime.tv_nsec=100000000;
-      sleeptime.tv_sec=0;
-      nanosleep(&sleeptime,NULL);
-      SpcGetParam(deviceno, SPC_STATUS, &adc_status);
-    }
-    while (adc_status!=SPC_READY && adc_timer.elapsed()<timeout);
-    if (adc_status!=SPC_READY) {
-      SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
-      free(adc_data);
-      throw SpectrumMI40xxSeries_error("timout occured while collecting data");
-    }
+	stopwatch adc_timer;
+	adc_timer.start();
+	int adc_status;
+	do {
+	    timespec sleeptime;
+	    sleeptime.tv_nsec=100000000;
+	    sleeptime.tv_sec=0;
+	    nanosleep(&sleeptime,NULL);
+	    SpcGetParam(deviceno, SPC_STATUS, &adc_status);
+	}
+	while (adc_status!=SPC_READY && adc_timer.elapsed()<timeout);
+	if (adc_status!=SPC_READY) {
+	    SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
+	    free(adc_data);
+	    throw SpectrumMI40xxSeries_error("timout occured while collecting data");
+	}
     
 # if defined __linux__
-    SpcGetData (deviceno, 0, 0, 2 * sampleno, 2, (dataptr) adc_data);
+	SpcGetData (deviceno, 0, 0, 2 * sampleno, 2, (dataptr) adc_data);
 # elif defined __CYGWIN__
-    SpcGetData (deviceno, 0, 0, 2 * sampleno,(void*) adc_data);
+	SpcGetData (deviceno, 0, 0, 2 * sampleno,(void*) adc_data);
 # endif
-  
-    // split them in parts
-    
+	adc_result* the_res=new adc_result(0,sampleno,adc_data,effective_settings->samplefreq);
+	return the_res;
 
+	// split results in parts
+	// navigation through nested loops of data_structure
+	std::stack<int> loop_counts;
+	DataManagementNode* node_position=effective_settings->data_structure;
+	// current position in adc data array
+	short int* data_position=adc_data;
+	// produced results
+	adc_results* the_results=new adc_results(0);
+	while (node_position!=NULL) {
+	    if (node_position->child==NULL) {
+		// simple case: do real work
+		if (node_position->n!=0) {
+		    // append data
+		    // todo: Channel selection
+		    short int* datachunk=(short int*)malloc(sizeof(short int)*node_position->n*2);
+		    if (datachunk==NULL) {
+			delete the_results;
+			delete effective_settings;
+			free(adc_data);
+			throw SpectrumMI40xxSeries_error("not enough memory to create results");
+		    }
+		    // todo: error checking
+		    memcpy(datachunk, data_position, sizeof(short int)*node_position->n*2);
+		    data_position+=node_position->n;
+		    adc_result* the_result=new adc_result(0,node_position->n,datachunk,effective_settings->samplefreq);
+		    the_results->push_back(the_result);
+		}
+	    }
+	    else {
+		// more difficult: step down
+		loop_counts.push(node_position->n);
+		node_position=node_position->child;
+		continue;
+	    }
+	    
+	    if (node_position->next!=NULL) {
+		// step forward if possible
+		node_position=node_position->next;
+		continue;
+	    }
+	    while (node_position!=NULL && node_position->next==NULL) {
+		// look on stack and go to next loop
+		if (loop_counts.empty()) node_position=NULL;
+		else 
+		    if (loop_counts.top()<1) {
+			// step one up
+			node_position=node_position->parent;
+			loop_counts.pop();
+		    }
+		    else {
+			--loop_counts.top();
+			if (node_position->parent!=NULL)
+			    node_position=node_position->parent->child;
+			else
+			    node_position=effective_settings->data_structure->child;
+		    }
 
-    the_result=new adc_result(0,sampleno,adc_data,samplefreq);
+	    }
+	}
+
+	free(adc_data);
+	delete effective_settings;
+	effective_settings=NULL;
+	return the_results;
   }
   else {
+    adc_result* the_result=NULL;
     fprintf(stderr, "fetching %u samples in fifo mode (timeout is %g)\n",sampleno,timeout);
     // FIFO method
     // need another thread, that stops my process
@@ -423,13 +495,13 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
     /* wait for timeout thread */
     pthread_cancel(timeout_pt);
     pthread_join(timeout_pt,NULL);
-    the_result=new adc_result(0,sampleno,adc_data,samplefreq);
+    the_result=new adc_result(0,sampleno,adc_data,effective_settings->samplefreq);
     pthread_attr_destroy(&timeout_pt_attrs);
     
     for (std::vector<short int*>::iterator i=fifobuffers.begin(); i!=fifobuffers.end(); ++i) free(*i);
     fifobuffers.clear();
+    return the_result;
   }
-  return the_result;
 }
 
 SpectrumMI40xxSeries::~SpectrumMI40xxSeries() {
