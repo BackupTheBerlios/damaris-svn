@@ -192,7 +192,6 @@ class JobWriter(threading.Thread):
 
     def start_writing(self, ready_to_start):
         "Sets internal flag to true/false, depending if errors occured in other threads (internally used)"
-        print "Start Writing called! (%s)" % str(ready_to_start)
         self.__ok_to_start = ready_to_start
 
 

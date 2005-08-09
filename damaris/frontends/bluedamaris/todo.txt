@@ -12,6 +12,7 @@ Bis zur ersten lauffähigen Version:
 - Channel-Combobox nicht in glade, sondern per Hand erstellen (gtk.get_new_text_combobox())
 - Open-File nicht mehr global auf Veränderungen checken lassen, sondern nur noch auf der geöffneten Seite
 - beim Beenden auch "Abbrechen" als Alternative anbieten, nicht nur "Ja/Nein"
+- Autoscaling toleranter machen -> skaliert sich erst bei 10% veränderung neu (oder so ähnlich)
 
 Datentypen-bunch (NMR-Array und Co):
   - ResultReader auf mehrere Results pro File umbauen

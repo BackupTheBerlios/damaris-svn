@@ -614,6 +614,7 @@
 	      <child>
 		<widget class="GtkButton" id="display_history_rewind">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="can_focus">True</property>
 		  <property name="label" translatable="yes"> &lt; </property>
 		  <property name="use_underline">True</property>
@@ -633,6 +634,7 @@
 	      <child>
 		<widget class="GtkButton" id="display_history_forward">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="can_focus">True</property>
 		  <property name="label" translatable="yes"> &gt; </property>
 		  <property name="use_underline">True</property>
@@ -652,6 +654,7 @@
 	      <child>
 		<widget class="GtkLabel" id="display_history_label">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="label" translatable="yes">1 / 20</property>
 		  <property name="use_underline">False</property>
 		  <property name="use_markup">False</property>
@@ -677,6 +680,7 @@
 	      <child>
 		<widget class="GtkLabel" id="display_history_label2">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="label" translatable="yes"> History: </property>
 		  <property name="use_underline">False</property>
 		  <property name="use_markup">False</property>

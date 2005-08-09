@@ -11,3 +11,6 @@ def data_handling(outer_space):
         print "Drawing %d..." % timesignal.get_job_id()
         outer_space.watch(timesignal, "Zeitsignal")
 	outer_space.watch(acc, "Akkumulation")
+
+    acc -= 1024
+    outer_space.watch(acc, "Akkumulation 2")

@@ -295,12 +295,12 @@ class DamarisGUI(threading.Thread):
         # Ersten Plot erstellen und Referenz des ersten Eintrags im zurückgegebenen Tupel speichern
         # Voerst: graphen[0,1] = Real und Img-Kanal; [2,3] = Real-Fehler, [4,5] = Img-Fehler
         self.graphen = []
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-"))
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-"))
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b--"))
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b--"))
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r--"))
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r--"))
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 2))
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 2))
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
+        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
 
 
         self.matplot_axes.set_ylim([-8192.0, 8192.0])
@@ -833,9 +833,9 @@ class DamarisGUI(threading.Thread):
         if channel == "None":
             self.graphen[0].set_data([0], [0])
             self.graphen[1].set_data([0], [0])
-            self.matplot_canvas.queue_resize()
+            self.matplot_canvas.draw()
             return True
-        
+            
         self.draw_result(self.__display_channels[channel][0])
         return True
 
@@ -939,6 +939,14 @@ class DamarisGUI(threading.Thread):
                 # Img-Fehler
                 self.graphen[4].set_data(in_result.get_xdata(), in_result.get_ydata(1) + in_result.get_yerr(1))
                 self.graphen[5].set_data(in_result.get_xdata(), in_result.get_ydata(1) - in_result.get_yerr(1))
+            else:
+                # Maybe theres a better place for deleting the error-lines
+                # Real-Fehler
+                self.graphen[2].set_data([0.0],[0.0])
+                self.graphen[3].set_data([0.0],[0.0])
+                # Img-Fehler
+                self.graphen[4].set_data([0.0],[0.0])
+                self.graphen[5].set_data([0.0],[0.0])
 
             self.matplot_canvas.draw()
 
@@ -960,10 +968,10 @@ class DamarisGUI(threading.Thread):
             # Check if channel exists or needs to be added
             if not self.__display_channels.has_key(channel):
                 self.__display_channels[channel] = [ ]
-                self.__display_channels[channel].insert(0,result)
+                self.__display_channels[channel].insert(0,result + 0)
                 self.display_source_combobox.append_text(channel)
             else:
-                self.__display_channels[channel].insert(0,result)
+                self.__display_channels[channel].insert(0,result + 0)
 
             # Getting active text in Combobox and compairing it
             if channel == self.display_source_combobox.get_active_text():

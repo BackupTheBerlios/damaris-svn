@@ -124,8 +124,8 @@ class Accumulation(Errorable, Drawable):
 
     def get_yerr(self, channel):
 
-        if not self.uses_statistics(): return None
-        if not self.contains_data(): return None
+        if not self.uses_statistics(): return []
+        if not self.contains_data(): return []
 
         if self.n < 2: return numarray.zeros((len(self.y[0]),),type="Float64")
 
@@ -141,7 +141,7 @@ class Accumulation(Errorable, Drawable):
 
     def get_ydata(self, channel):
 
-        if not self.contains_data(): return None
+        if not self.contains_data(): return []
         if not self.uses_statistics(): self.n = self.jobs_added
 
         try:
@@ -154,25 +154,31 @@ class Accumulation(Errorable, Drawable):
 
 
     def get_ymin(self):
+
+        if not self.contains_data(): return 0
+        
         tmp_min = []
         for i in range(self.get_number_of_channels()):
             tmp_min.append(self.get_ydata(i).min())
 
         if self.uses_statistics() and self.ready_for_drawing_error():
             for i in range(self.get_number_of_channels()):
-                tmp_min.append(self.get_yerr(i).min())            
+                tmp_min.append((self.get_ydata(i) - self.get_yerr(i)).min())            
 
         return min(tmp_min)
 
     
     def get_ymax(self):
+
+        if not self.contains_data(): return 0
+        
         tmp_max = []
         for i in range(self.get_number_of_channels()):
             tmp_max.append(self.get_ydata(i).max())
 
         if self.uses_statistics() and self.ready_for_drawing_error():
             for i in range(self.get_number_of_channels()):
-                tmp_max.append(self.get_yerr(i).max())
+                tmp_max.append((self.get_ydata(i) + self.get_yerr(i)).max())
 
         return max(tmp_max)
 
@@ -321,219 +327,12 @@ class Accumulation(Errorable, Drawable):
 
     def __sub__(self, other):
         "Redefining self - other"
-
-        # Ints or Floats
-        if isinstance(other, IntType) or isinstance(other, FloatType):
-            if not self.contains_data(): raise ValueError("Accumulation: You cant add integers/floats to an empty accumulation")
-            else:
-                tmp_y = []
-
-                for i in range(self.get_number_of_channels()):
-                    tmp_y.append(self.y[i] - other)
-
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = self.use_error)
-
-        # ADC-Results
-        elif str(other.__class__) == "ADC_Result.ADC_Result":
-
-            # Other empty (return)
-            if not other.contains_data(): return
-
-            # Self empty (self = 0 - other)
-            if not self.contains_data():
-
-                tmp_y = []
-
-                for i in range(other.get_number_of_channels()):
-                    tmp_y.append(0 - numarray.array(other.y[i], type="Float64"))
-                
-                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
-
-            # Self and other not empty (self - other)
-            else:
-                if self.sampling_rate != other.get_sampling_rate(): raise ValueError("Accumulation: You cant add ADC-Results with diffrent sampling-rates")
-                if len(self.y[0]) != len(other): raise ValueError("Accumulation: You cant add ADC-Results with diffrent number of samples")
-                if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add ADC-Results with diffrent number of channels")
-                for i in range(len(self.index)):
-                    if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add ADC-Results with diffrent indexing")
-
-                tmp_y = []
-
-                for i in range(self.get_number_of_channels()):
-                    tmp_y.append(self.y[i] - other.y[i])
-
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = False)
-
-        # Accumulation
-        elif str(other.__class__) == "Accumulation.Accumulation":
-            # Other empty (return)
-            if not other.contains_data(): return
-
-            # Self empty (self = 0 - other)
-            if not self.contains_data():
-
-                tmp_y = []
-
-                for i in range(other.get_number_of_channels()):
-                    tmp_y.append(0 - other.y[i])
-                
-                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
-
-            # Other and self not empty (self - other)
-            else:
-                if self.sampling_rate != other.get_sampling_rate(): raise ValueError("Accumulation: You cant add accumulations with diffrent sampling-rates")
-                if len(self.y[0]) != len(other): raise ValueError("Accumulation: You cant add accumulations with diffrent number of samples")
-                if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add accumulations with diffrent number of channels")
-                for i in range(len(self.index)):
-                    if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add accumulations with diffrent indexing")
-
-                tmp_y = []
-
-                for i in range(self.get_number_of_channels()):
-                    tmp_y.append(self.y[i] - other.y[i])
-
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + other.jobs_added, error = False)
-
+        return self.__add__(-other)
+            
 
     def __rsub__(self, other):
         "Redefining other - self"
-
-        # Ints or Floats
-        if isinstance(other, IntType) or isinstance(other, FloatType):
-            if not self.contains_data(): raise ValueError("Accumulation: You cant add integers/floats to an empty accumulation")
-            else:
-                tmp_y = []
-
-                for i in range(self.get_number_of_channels()):
-                    tmp_y.append(other - self.y[i])
-
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = self.use_error)
-
-        # ADC-Results
-        elif str(other.__class__) == "ADC_Result.ADC_Result":
-
-            # Other empty (return)
-            if not other.contains_data(): return
-
-            # Self empty (self = other - 0)
-            if not self.contains_data():
-
-                tmp_y = []
-
-                for i in range(other.get_number_of_channels()):
-                    tmp_y.append(numarray.array(other.y[i], type="Float64"))
-                
-                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
-
-            # Self and other not empty (other - self)
-            else:
-                if self.sampling_rate != other.get_sampling_rate(): raise ValueError("Accumulation: You cant add ADC-Results with diffrent sampling-rates")
-                if len(self.y[0]) != len(other): raise ValueError("Accumulation: You cant add ADC-Results with diffrent number of samples")
-                if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add ADC-Results with diffrent number of channels")
-                for i in range(len(self.index)):
-                    if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add ADC-Results with diffrent indexing")
-
-                tmp_y = []
-
-                for i in range(self.get_number_of_channels()):
-                    tmp_y.append(other.y[i] - self.y[i])
-
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = False)
-
-        # Accumulation
-        elif str(other.__class__) == "Accumulation.Accumulation":
-            # Other empty (return)
-            if not other.contains_data(): return
-
-            # Self empty (self = other - 0)
-            if not self.contains_data():
-
-                tmp_y = []
-
-                for i in range(other.get_number_of_channels()):
-                    tmp_y.append(other.y[i])
-                
-                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
-
-            # Other and self not empty (self - other)
-            else:
-                if self.sampling_rate != other.get_sampling_rate(): raise ValueError("Accumulation: You cant add accumulations with diffrent sampling-rates")
-                if len(self.y[0]) != len(other): raise ValueError("Accumulation: You cant add accumulations with diffrent number of samples")
-                if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add accumulations with diffrent number of channels")
-                for i in range(len(self.index)):
-                    if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add accumulations with diffrent indexing")
-
-                tmp_y = []
-
-                for i in range(self.get_number_of_channels()):
-                    tmp_y.append(other.y[i] - self.y[i])
-
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + other.jobs_added, error = False)
-
-
-    def __mul__(self, other):
-        "Redefining self * other"
-
-        # Ints or Floats
-        if isinstance(other, IntType) or isinstance(other, FloatType):
-            if not self.contains_data(): raise ValueError("Accumulation: You cant multiply integers/floats to an empty accumulation")
-            else:
-                tmp_y = []
-
-                for i in range(self.get_number_of_channels()):
-                    tmp_y.append(self.y[i] * other)
-
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = self.use_error)
-
-
-    def __rmul__(self, other):
-        "Redefining other * self"
-        return self.__mul__(other)
-
-
-    def __pow__(self, other):
-        "Redefining self ** other"
-        
-         # Ints or Floats
-        if isinstance(other, IntType) or isinstance(other, FloatType):
-            if not self.contains_data(): raise ValueError("Accumulation: You cant multiply integers/floats to an empty accumulation")
-            else:
-                tmp_y = []
-
-                for i in range(self.get_number_of_channels()):
-                    tmp_y.append(self.y[i] ** other)
-
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = self.use_error)
-       
-
-    def __div__(self, other):
-        "Redefining self / other"
-
-        # Ints or Floats
-        if isinstance(other, IntType) or isinstance(other, FloatType):
-            if not self.contains_data(): raise ValueError("Accumulation: You cant multiply integers/floats to an empty accumulation")
-            else:
-                tmp_y = []
-
-                for i in range(self.get_number_of_channels()):
-                    tmp_y.append(self.y[i] / other)
-
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = self.use_error)
-
-
-    def __rdiv__(self, other):
-        "Redefining other / self"
-
-        # Ints or Floats
-        if isinstance(other, IntType) or isinstance(other, FloatType):
-            if not self.contains_data(): raise ValueError("Accumulation: You cant multiply integers/floats to an empty accumulation")
-            else:
-                tmp_y = []
-
-                for i in range(self.get_number_of_channels()):
-                    tmp_y.append(other / self.y[i])
-
-                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = self.use_error)
+        return self.__neg__(self.__add__(other))
 
 
     def __iadd__(self, other):
@@ -639,135 +438,85 @@ class Accumulation(Errorable, Drawable):
 
     def __isub__(self, other):
         "Redefining self -= other"
-        # Float or int
-        if isinstance(other, IntType) or isinstance(other, FloatType):
-            if not self.contains_data(): raise ValueError("Accumulation: You cant add integers/floats to an empty accumulation")
-            else:
-                for i in range(self.get_number_of_channels()):
-                    self.y[i] -= other
+        return self.__iadd__(-other)
+        
 
-                return self
+    def __neg__(self):
+        "Redefining -self"
 
-        # ADC_Result
-        elif str(other.__class__) == "ADC_Result.ADC_Result":
+        if not self.contains_data(): return
 
-            # Other empty (return)
-            if not other.contains_data(): return
+        tmp_y = []
 
-            # Self empty (self = 0 - other)
-            if not self.contains_data():
+        for i in range(self.get_number_of_channels()):
+            tmp_y.append(numarray.array(-self.y[i], type="Float64"))
 
-                tmp_y = []
-                
-                for i in range(other.get_number_of_channels()):
-                    tmp_y.append(0 - numarray.array(other.y[i], type="Float64"))
-                
-                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
+        if self.uses_statistics():
+            return Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, y_2 = numarray.array(self.y_square), n = self.n, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = True)
+        else:
+            return Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = False)
 
-            # Other and self not empty (self -= other)
-            else:
-                if self.sampling_rate != other.get_sampling_rate(): raise ValueError("Accumulation: You cant add ADC-Results with diffrent sampling-rates")
-                if len(self.y[0]) != len(other): raise ValueError("Accumulation: You cant add ADC-Results with diffrent number of samples")
-                if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add ADC-Results with diffrent number of channels")
-                for i in range(len(self.index)):
-                    if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add ADC-Results with diffrent indexing")
 
-                for i in range(self.get_number_of_channels()):
-                   self.y[i] -= other.y[i]
-
-                self.jobs_added += 1
-
-                return self
-
-        # Accumulation
-        elif str(other.__class__) == "Accumulation.Accumulation":
-
-            # Other empty (return)
-            if not other.contains_data(): return
-
-            # Self empty (self = 0 - other)
-            if not self.contains_data():
-
-                tmp_y = []
-
-                for i in range(other.get_number_of_channels()):
-                    tmp_y.append(0 - other.y[i])
-                
-                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
-
-            # Other and self not empty (self + other)
-            else:
-                if self.sampling_rate != other.get_sampling_rate(): raise ValueError("Accumulation: You cant add accumulations with diffrent sampling-rates")
-                if len(self.y[0]) != len(other): raise ValueError("Accumulation: You cant add accumulations with diffrent number of samples")
-                if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add accumulations with diffrent number of channels")
-                for i in range(len(self.index)):
-                    if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add accumulations with diffrent indexing")
-
-                for i in range(self.get_number_of_channels()):
-                    self.y[i] -= other.y[i]
-
-                self.jobs_added += other.jobs_added
-
-                return self
-
-# Bedarf genauerer Betrachtung (Multiplizieren von ADC / Accu)
-##        # ADC-Results
-##        elif str(other.__class__) == "ADC_Result.ADC_Result":
+##    def __mul__(self, other):
+##        "Redefining self * other"
 ##
-##            # Other empty (return)
-##            if not other.contains_data(): return
-##
-##            # Self empty (self = 0 * other)
-##            if not self.contains_data():
-##
-##                tmp_y = []
-##
-##                for i in range(other.get_number_of_channels()):
-##                    tmp_y.append(0 * numarray.array(other.get_ydata(i), type="Float64"))
-##                
-##                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = 1, error = False)
-##
-##            # Self and other not empty (self - other)
+##        # Ints or Floats
+##        if isinstance(other, IntType) or isinstance(other, FloatType):
+##            if not self.contains_data(): raise ValueError("Accumulation: You cant multiply integers/floats to an empty accumulation")
 ##            else:
-##                if self.sampling_rate != other.get_sampling_rate(): raise ValueError("Accumulation: You cant add ADC-Results with diffrent sampling-rates")
-##                if len(self.y[0]) != len(other): raise ValueError("Accumulation: You cant add ADC-Results with diffrent number of samples")
-##                if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add ADC-Results with diffrent number of channels")
-##                for i in range(len(self.index)):
-##                    if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add ADC-Results with diffrent indexing")
-##
 ##                tmp_y = []
 ##
 ##                for i in range(self.get_number_of_channels()):
-##                    tmp_y.append(self.get_ydata(i) * other.get_ydata(i))
+##                    tmp_y.append(self.y[i] * other)
 ##
-##                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + 1, error = False)
+##                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = False)
 ##
-##        # Accumulation
-##        elif str(other.__class__) == "Accumulation.Accumulation":
-##            # Other empty (return)
-##            if not other.contains_data(): return
 ##
-##            # Self empty (self = 0 - other)
-##            if not self.contains_data():
+##    def __rmul__(self, other):
+##        "Redefining other * self"
+##        return self.__mul__(other)
 ##
-##                tmp_y = []
 ##
-##                for i in range(other.get_number_of_channels()):
-##                    tmp_y.append(0 - numarray.array(other.get_ydata(i), type="Float64"))
-##                
-##                return Accumulation(x = other.x, y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, jobs_added = other.jobs_added, error = False)
-##
-##            # Other and self not empty (self - other)
+##    def __pow__(self, other):
+##        "Redefining self ** other"
+##        
+##         # Ints or Floats
+##        if isinstance(other, IntType) or isinstance(other, FloatType):
+##            if not self.contains_data(): raise ValueError("Accumulation: You cant multiply integers/floats to an empty accumulation")
 ##            else:
-##                if self.sampling_rate != other.get_sampling_rate(): raise ValueError("Accumulation: You cant add accumulations with diffrent sampling-rates")
-##                if len(self.y[0]) != len(other): raise ValueError("Accumulation: You cant add accumulations with diffrent number of samples")
-##                if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add accumulations with diffrent number of channels")
-##                for i in range(len(self.index)):
-##                    if self.index[i] != other.get_index_bounds(i): raise ValueError("Accumulation: You cant add accumulations with diffrent indexing")
-##
 ##                tmp_y = []
 ##
 ##                for i in range(self.get_number_of_channels()):
-##                    tmp_y.append(self.get_ydata(i) - other.get_ydata(i))
+##                    tmp_y.append(self.y[i] ** other)
 ##
-##                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added + other.jobs_added, error = False)
+##                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = False)
+##       
+##
+##    def __div__(self, other):
+##        "Redefining self / other"
+##
+##        # Ints or Floats
+##        if isinstance(other, IntType) or isinstance(other, FloatType):
+##            if not self.contains_data(): raise ValueError("Accumulation: You cant multiply integers/floats to an empty accumulation")
+##            else:
+##                tmp_y = []
+##
+##                for i in range(self.get_number_of_channels()):
+##                    tmp_y.append(self.y[i] / other)
+##
+##                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = False)
+##
+##
+##    def __rdiv__(self, other):
+##        "Redefining other / self"
+##
+##        # Ints or Floats
+##        if isinstance(other, IntType) or isinstance(other, FloatType):
+##            if not self.contains_data(): raise ValueError("Accumulation: You cant multiply integers/floats to an empty accumulation")
+##            else:
+##                tmp_y = []
+##
+##                for i in range(self.get_number_of_channels()):
+##                    tmp_y.append(other / self.y[i])
+##
+##                return Accumulation(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, jobs_added = self.jobs_added, error = False)
