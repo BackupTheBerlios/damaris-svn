@@ -34,7 +34,7 @@ class Error_Result(Resultable, Drawable):
 
     def set_error_message(self, error_msg):
         self.set_title("Error-Result: %s" % error_msg)
-        self.error_message = err_msg
+        self.error_message = error_msg
 
 
     def uses_statistics(self):

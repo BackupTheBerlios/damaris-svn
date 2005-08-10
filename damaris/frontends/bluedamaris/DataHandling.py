@@ -187,7 +187,7 @@ class DataHandling(threading.Thread):
             tmp = self.result_reader.get_next_result()
 
         if str(tmp.__class__) == "Error_Result.Error_Result":
-            self.gui.show_error_dialog("Error Result Read!", tmp.get_description("error_msg"))
+            self.gui.show_error_dialog("Error Result Read!", tmp.get_error_message())
 
         return tmp
 
