@@ -336,7 +336,6 @@ class DamarisGUI(threading.Thread):
 
         self.main_window.show_all()
         
-
     # /Inits der einzelnen Fenster #################################################################        
 
 
@@ -850,8 +849,7 @@ class DamarisGUI(threading.Thread):
             # now get iterator at line start
             linestart_iter=cursor_iter.copy()
             linestart_iter.set_line_offset(0)
-            linebegin=textbuffer.get_text(linestart_iter,cursor_iter)
-            linebegin.expandtabs()
+            linebegin=textbuffer.get_text(linestart_iter,cursor_iter).expandtabs()
             if (len(linebegin)!=0 and not linebegin.isspace()):
                 # just make the spaces go away
                 textbuffer.delete(linestart_iter,cursor_iter)
@@ -862,7 +860,7 @@ class DamarisGUI(threading.Thread):
                   and not cursor_iter.is_end()
                   and cursor_iter.get_char().isspace()):
                 cursor_iter.forward_char()
-            linebegin=textbuffer.get_text(linestart_iter,cursor_iter)
+            linebegin=textbuffer.get_text(linestart_iter,cursor_iter).expandtabs()
             if (event.keyval==0xFF08):
                 # backspace shortens space
                 linebegin=u' '*((len(linebegin)-1)/4)*4
@@ -888,8 +886,7 @@ class DamarisGUI(threading.Thread):
                   and not spaceend_iter.is_end()
                   and spaceend_iter.get_char().isspace()):
                 spaceend_iter.forward_char()
-            linebegin=textbuffer.get_text(linestart_iter,spaceend_iter)
-            linebegin.expandtabs()
+            linebegin=textbuffer.get_text(linestart_iter,spaceend_iter).expandtabs()
             indent_length=len(linebegin)
             textbuffer.delete(linestart_iter,spaceend_iter)
             textbuffer.insert(linestart_iter,u' '*indent_length)
@@ -932,7 +929,8 @@ class DamarisGUI(threading.Thread):
             # Img-Fehler
             self.graphen[4].set_data([0.0],[0.0])
             self.graphen[5].set_data([0.0],[0.0])
-            self.matplot_canvas.draw()
+            self.matplot_canvas.queue_resize()
+            # self.matplot_canvas.draw()
             return True
 
         if not self.__display_channels[channel][0].uses_statistics():
