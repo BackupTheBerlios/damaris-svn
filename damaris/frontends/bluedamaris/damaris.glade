@@ -734,6 +734,7 @@
 			  <child>
 			    <widget class="GtkCheckButton" id="display_statistics_checkbutton">
 			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">Plot error-bars if result to plot uses statistic</property>
 			      <property name="can_focus">True</property>
 			      <property name="label" translatable="yes">Show Statistics</property>
 			      <property name="use_underline">True</property>
@@ -757,6 +758,7 @@
 			  <child>
 			    <widget class="GtkCheckButton" id="display_autoscaling_checkbutton">
 			      <property name="visible">True</property>
+			      <property name="tooltip" translatable="yes">Rescale graph if new ymax is larger than the old one or shrinked more than 20%</property>
 			      <property name="can_focus">True</property>
 			      <property name="label" translatable="yes">Auto-Scaling</property>
 			      <property name="use_underline">True</property>

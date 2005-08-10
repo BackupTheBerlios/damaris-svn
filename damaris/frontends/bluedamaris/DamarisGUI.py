@@ -59,6 +59,10 @@ class DamarisGUI(threading.Thread):
         # Number of currently open error-dialogs
         self.__error_dialogs_open = 0
 
+        # Saving the old extrema
+        self.__old_ymax = 0
+        self.__old_ymin = 0
+
         
     def run(self):
         "Starting thread and GTK-mainloop"
@@ -1032,9 +1036,19 @@ class DamarisGUI(threading.Thread):
                 self.__rescale = False
 
             if self.display_autoscaling_checkbutton.get_active():
-
                 self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
-                self.matplot_axes.set_ylim(in_result.get_ymin(), in_result.get_ymax())
+                
+                ymax = in_result.get_ymax()
+
+                # Rescale if new max is larger than old_max
+                if self.__old_ymax < ymax:                  
+                    self.matplot_axes.set_ylim(in_result.get_ymin(), ymax)
+                    self.__old_ymax = ymax
+
+                # Rescale if graph shrinked more than 20%
+                elif ymax < (self.__old_ymax * 0.8):
+                    self.matplot_axes.set_ylim(in_result.get_ymin(), ymax)
+                    self.__old_ymax = ymax                    
 
             if self.display_statistics_checkbutton.get_active() and in_result.uses_statistics() and in_result.ready_for_drawing_error():
                 # Real-Fehler
