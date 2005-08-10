@@ -156,7 +156,9 @@ class DamarisGUI(threading.Thread):
         self.display_source_combobox.connect("changed", self.display_source_changed)
         self.xml_gui.signal_connect("on_display_autoscaling_checkbutton_toggled", self.display_autoscaling_toggled)
         self.xml_gui.signal_connect("on_display_statistics_checkbutton_toggled", self.display_statistics_toggled)
-
+        self.xml_gui.signal_connect("on_display_x_scaling_combobox_changed", self.display_x_scaling_changed)
+        self.xml_gui.signal_connect("on_display_y_scaling_combobox_changed", self.display_y_scaling_changed)
+        
         # Scripts:        
         self.experiment_script_textbuffer.connect("modified-changed", self.textviews_modified)
         self.experiment_script_textview.connect_after("move-cursor", self.textviews_moved)
@@ -185,8 +187,8 @@ class DamarisGUI(threading.Thread):
         self.toolbar_save_all_button.set_sensitive(False)
         
         # Display:
-        self.display_x_scaling_combobox.set_active(0)
-        self.display_y_scaling_combobox.set_active(0)
+        #self.display_x_scaling_combobox.set_active(0) moved below initialising matplotlib (prevents AttributeError)
+        #self.display_y_scaling_combobox.set_active(0) moved below initialising matplotlib (prevents AttributeError)
         #self.display_source_combobox.set_active(0) moved below initialising matplotlib (prevents AttributeError)
         self.display_autoscaling_checkbutton.set_active(False)
         self.display_statistics_checkbutton.set_active(False)
@@ -329,6 +331,10 @@ class DamarisGUI(threading.Thread):
         # /Mathplot --------------------------------------------------------------------------------
 
         self.display_source_combobox.set_active(0)
+        self.display_x_scaling_combobox.set_active(0)
+        self.display_y_scaling_combobox.set_active(0)
+        self.display_x_scaling_combobox.set_sensitive(False)
+        self.display_y_scaling_combobox.set_sensitive(False)
 
         self.main_window.show_all()
         
@@ -435,14 +441,21 @@ class DamarisGUI(threading.Thread):
             except IOError, e:
                 self.gui.show_error_dialog("File Error", "IOError: Cannot delete Job-Files" + str(e))
                 return True
+            except Exception, e:
+                self.gui.show_error_dialog("Error", "Exception: Cannot delete Job-Files" + str(e))
+                return True                
 
             # Waking both threads up
             try:
                 self.core_interface.clear_job(0)
                 print "(re)starting core"
                 self.core_interface.start()
+            except EnvironmentError, env_e:
+                self.show_error_dialog("Core Exception (clear_job / start)", str(env_e) + "\n\n(Maybe there is still a (dummy)core process active)")
+                self.check_job_writer_data_handler_finished()
+                return True
             except Exception, e:
-                self.show_error_dialog("Core Exception (clear_job / start)", str(e) + "\n\n(maybe there is another core still running?)")
+                self.show_error_dialog("Core Exception (clear_job / start)", str(e) + "\n\n(Maybe there is still a (dummy)core process active)")
                 self.check_job_writer_data_handler_finished()
                 return True
             
@@ -886,7 +899,8 @@ class DamarisGUI(threading.Thread):
             # now get iterator at line start
             linestart_iter=cursor_iter.copy()
             linestart_iter.set_line_offset(0)
-            linebegin=textbuffer.get_text(linestart_iter,cursor_iter).expandtabs()
+            linebegin=textbuffer.get_text(linestart_iter,cursor_iter)
+            linebegin.expandtabs()
             if (len(linebegin)!=0 and not linebegin.isspace()):
                 # just make the spaces go away
                 textbuffer.delete(linestart_iter,cursor_iter)
@@ -923,7 +937,8 @@ class DamarisGUI(threading.Thread):
                   and not spaceend_iter.is_end()
                   and spaceend_iter.get_char().isspace()):
                 spaceend_iter.forward_char()
-            linebegin=textbuffer.get_text(linestart_iter,spaceend_iter).expandtabs()
+            linebegin=textbuffer.get_text(linestart_iter,spaceend_iter)
+            linebegin.expandtabs()
             indent_length=len(linebegin)
             textbuffer.delete(linestart_iter,spaceend_iter)
             textbuffer.insert(linestart_iter,u' '*indent_length)
@@ -1022,6 +1037,36 @@ class DamarisGUI(threading.Thread):
         return True
 
 
+    def display_x_scaling_changed(self, data = None):
+        scaling = self.display_x_scaling_combobox.get_active_text()
+        
+        if scaling == "lin":
+            self.matplot_axes.set_xscale("linear")
+
+        elif scaling == "log":
+            self.matplot_axes.set_xscale("log")
+
+        else:
+            return True
+
+        self.matplot_canvas.draw()
+        
+
+    def display_y_scaling_changed(self, data = None):
+        scaling = self.display_y_scaling_combobox.get_active_text()
+        
+        if scaling == "lin":
+            self.matplot_axes.set_yscale("linear")
+
+        elif scaling == "log":
+            self.matplot_axes.set_yscale("log")
+
+        else:
+            return True
+
+        self.matplot_canvas.draw()
+
+
     def edit_copy(self, widget, data = None):
 
         if self.main_notebook.get_current_page() == 0:
@@ -1069,27 +1114,42 @@ class DamarisGUI(threading.Thread):
             self.graphen[0].set_data(in_result.get_xdata(), in_result.get_ydata(0))
             self.graphen[1].set_data(in_result.get_xdata(), in_result.get_ydata(1))
 
+            xmin = in_result.get_xmin()
+            xmax = in_result.get_xmax()
+            ymin = in_result.get_ymin()
+            ymax = in_result.get_ymax()
+
+            # Check for log-scale
+            if xmin <= 0 or xmax <= 0:
+                self.display_x_scaling_combobox.set_sensitive(False)
+            else:
+                self.display_x_scaling_combobox.set_sensitive(True)
+
+            if ymin <= 0 or ymax <= 0:
+                self.display_y_scaling_combobox.set_sensitive(False)
+            else:
+                self.display_y_scaling_combobox.set_sensitive(True)   
+
+
             # Initial rescaling needed?
             if self.__rescale:
 
-                self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
-                self.matplot_axes.set_ylim(in_result.get_ymin(), in_result.get_ymax())
+                self.matplot_axes.set_xlim(xmin, xmax)
+                self.matplot_axes.set_ylim(ymin, ymax)
                 self.__rescale = False
 
             # Autoscaling activated?
             if self.display_autoscaling_checkbutton.get_active():
-                self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
-                
-                ymax = in_result.get_ymax()
+                self.matplot_axes.set_xlim(xmin, xmax)
 
                 # Rescale if new max is larger than old_max
                 if self.__old_ymax < ymax:                  
-                    self.matplot_axes.set_ylim(in_result.get_ymin(), ymax)
+                    self.matplot_axes.set_ylim(ymin, ymax)
                     self.__old_ymax = ymax
 
                 # Rescale if graph shrinked more than 20%
                 elif ymax < (self.__old_ymax * 0.8):
-                    self.matplot_axes.set_ylim(in_result.get_ymin(), ymax)
+                    self.matplot_axes.set_ylim(ymin, ymax)
                     self.__old_ymax = ymax                    
 
             # Statistics activated?

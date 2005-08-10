@@ -830,6 +830,7 @@
 			      <property name="visible">True</property>
 			      <property name="items" translatable="yes">lin
 log</property>
+			      <signal name="changed" handler="on_display_x_scaling_combobox_changed" last_modification_time="Wed, 10 Aug 2005 14:38:39 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">3</property>
@@ -844,7 +845,9 @@ log</property>
 			  <child>
 			    <widget class="GtkComboBox" id="display_y_scaling_combobox">
 			      <property name="visible">True</property>
-			      <property name="items" translatable="yes">lin</property>
+			      <property name="items" translatable="yes">lin
+log</property>
+			      <signal name="changed" handler="on_display_y_scaling_combobox_changed" last_modification_time="Wed, 10 Aug 2005 14:38:46 GMT"/>
 			    </widget>
 			    <packing>
 			      <property name="left_attach">3</property>
