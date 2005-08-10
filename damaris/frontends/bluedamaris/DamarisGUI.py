@@ -568,6 +568,10 @@ class DamarisGUI(threading.Thread):
                 if file_name is None:
                     return
 
+                if not os.access(file_name, os.R_OK):
+                    outer_space.show_error_dialog("File I/O Error","Cannot read from file %s" % file_name)
+                    return True
+
                 script_file = file(file_name, "r")
                 
                 if outer_space.main_notebook.get_current_page() == 0:
@@ -596,7 +600,7 @@ class DamarisGUI(threading.Thread):
                     
                 
             else:
-                return
+                return True
         
         # Determining the tab which is currently open
         if self.main_notebook.get_current_page() == 0:
@@ -625,6 +629,10 @@ class DamarisGUI(threading.Thread):
             if self.experiment_script_textview.associated_filename == "Unnamed":
                 self.save_file_as(widget)
             else:
+                if not os.access(self.experiment_script_textview.associated_filename, os.W_OK):
+                    self.show_error_dialog("File I/O Error", "Cannot save to file %s" % self.experiment_script_textview.associated_filename)
+                    return True
+
                 script_file = file(self.experiment_script_textview.associated_filename, "w")
                 script_file.write(self.experiment_script_textbuffer.get_text(self.experiment_script_textbuffer.get_start_iter(), self.experiment_script_textbuffer.get_end_iter()))
                 script_file.close()
@@ -634,6 +642,10 @@ class DamarisGUI(threading.Thread):
             if self.data_handling_textview.associated_filename == "Unnamed":
                 self.save_file_as(widget)
             else:
+                if not os.access(self.data_handling_textview.associated_filename, os.W_OK):
+                    self.show_error_dialog("File I/O Error", "Cannot save to file %s" % self.data_handling_textview.associated_filename)
+                    return True
+
                 script_file = file(self.data_handling_textview.associated_filename, "w")
                 script_file.write(self.data_handling_textbuffer.get_text(self.data_handling_textbuffer.get_start_iter(), self.data_handling_textbuffer.get_end_iter()))
                 script_file.close()
@@ -660,8 +672,16 @@ class DamarisGUI(threading.Thread):
 
                     if answer == 1:
                         return True
-                
-                script_file = file(file_name, "w")
+
+                if os.access(file_name, os.F_OK) and not os.access(file_name, os.W_OK):
+                    outer_space.show_error_dialog("File I/O Error", "Cannot save file to %s" % file_name)
+                    return True
+
+                try:
+                    script_file = file(file_name, "w")
+                except:
+                    outer_space.show_error_dialog("File I/O Error", "Cannot save file to %s" % file_name)
+                    return True
 
                 if outer_space.main_notebook.get_current_page() == 0:
                     script_file.write(outer_space.experiment_script_textbuffer.get_text(outer_space.experiment_script_textbuffer.get_start_iter(), outer_space.experiment_script_textbuffer.get_end_iter()))
