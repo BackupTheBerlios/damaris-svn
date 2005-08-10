@@ -165,10 +165,12 @@ class ResultReader(threading.Thread):
 
         # Parsing all cdata as one block
         self.xml_parser.buffer_text = True
-        buffersize=1<<14
+        buffersize=self.xml_parser.buffer_size*2
         databuffer=in_file.read(buffersize)
         while databuffer!="":
             self.xml_parser.Parse(databuffer,False)
+            # check for quit condition
+            # todo
             databuffer=in_file.read(buffersize)
 
         self.xml_parser.Parse("",True)
@@ -190,6 +192,7 @@ class ResultReader(threading.Thread):
             self.__filetype = ResultReader.ADCDATA_TYPE
 
             self.adc_result_current_channel = 0
+            self.adc_result_trailing_chars = ""
 
             if self.result is None:
                 self.result = ADC_Result()
@@ -239,16 +242,19 @@ class ResultReader(threading.Thread):
 
         # ADC_Result
         if self.__filetype == ResultReader.ADCDATA_TYPE:
-             if not in_cdata.isspace():
-                values = map(int, in_cdata.split())
+            values=(self.adc_result_trailing_chars+in_cdata).split()
+            if not in_cdata[-1].isspace():
+                self.adc_result_trailing_chars=values.pop()
+            else:
+                self.adc_result_trailing_chars=""
 
-                for i in values:
-                    self.result.set_ydata(self.adc_result_current_channel, self.adc_result_sample_counter, i)
-                    #print "added value " + str(i) + " at: " + str(self.current_channel) + ", " + str(self.current_pos)
-                    self.adc_result_current_channel = (self.adc_result_current_channel + 1) % self.result.get_number_of_channels()
-                    if self.adc_result_current_channel == 0:
-                        self.result.set_xdata(self.adc_result_sample_counter, self.adc_result_sample_counter / self.result.get_sampling_rate())
-                        self.adc_result_sample_counter += 1
+            for i in values:
+                self.result.set_ydata(self.adc_result_current_channel, self.adc_result_sample_counter, int(i))
+                #print "added value " + str(i) + " at: " + str(self.current_channel) + ", " + str(self.current_pos)
+                self.adc_result_current_channel = (self.adc_result_current_channel + 1) % self.result.get_number_of_channels()
+                if self.adc_result_current_channel == 0:
+                    self.result.set_xdata(self.adc_result_sample_counter, self.adc_result_sample_counter / self.result.get_sampling_rate())
+                    self.adc_result_sample_counter += 1
 
         # Error_Result
         elif self.__filetype == ResultReader.ERROR_TYPE:
@@ -273,6 +279,8 @@ class ResultReader(threading.Thread):
 
             # ADC_Result
             if self.__filetype == ResultReader.ADCDATA_TYPE:
+                if self.adc_result_trailing_chars!="":
+                    self.__xmlCharacterDataFound(" ")
                 print "\nResult Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read)
                 self.result.set_title("ADC-Result: job-id = %d, desc = %s" % (self.result.get_job_id(), str(self.result.get_description_dictionary())))
 
