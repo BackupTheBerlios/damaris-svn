@@ -346,12 +346,15 @@ class DamarisGUI(threading.Thread):
         # Contents changed?
 
         if self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
-            answer = NiftyGuiElements.show_question_dialog_compulsive(self.main_window, "Unsaved changes", "Do you want so save your changes?")
-            
+            answer = NiftyGuiElements.show_question_dialog(self.main_window, "Unsaved changes", "Do you want so save your changes?")
+
+            # Answer yes
             if answer == 0:
                 self.save_all_files(None)
-            elif answer == 2:
-                self.save_all_files(None)
+
+            # Cancel / Exit-Window clicked
+            elif answer == 2 or answer == -1:
+                return True
 
         if self.__experiment_running:
             self.stop_experiment(widget)
@@ -527,19 +530,31 @@ class DamarisGUI(threading.Thread):
         "Callback for the open-file dialog"
 
         # Save changes made...
-        if self.experiment_script_textbuffer.get_modified() or self.data_handling_textbuffer.get_modified():
-            answer = NiftyGuiElements.show_question_dialog(self.main_window, "Unsaved changes", "Do you want to save your changes made to the scripts?")
+        if self.main_notebook.get_current_page() == 0:
+            if self.experiment_script_textbuffer.get_modified():
+                answer = NiftyGuiElements.show_question_dialog(self.main_window, "Unsaved changes in Experiment Script", "Do you want to save your changes made to the script?")
 
-            if answer == 0:
-                # User wants to save
-                self.save_all_files(widget)
+                if answer == 0:
+                    # User wants to save
+                    self.save_file(widget)
 
-            elif answer == 2:
-                # User cancels
-                return True
+                elif answer == 2:
+                    # User cancels
+                    return True
+        elif self.main_notebook.get_current_page() == 1:
+            if self.data_handling_textbuffer.get_modified():
+                answer = NiftyGuiElements.show_question_dialog(self.main_window, "Unsaved changes in Data Handling Script", "Do you want to save your changes made to the script?")
 
-        # No changes made or user answered "No"
+                if answer == 0:
+                    # User wants to save
+                    self.save_file(widget)
 
+                elif answer == 2:
+                    # User cancels
+                    return True
+            
+
+        # No changes made or user answers no:
         def response(self, response_id, outer_space):
             if response_id == gtk.RESPONSE_OK:
                 file_name = dialog.get_filename()
@@ -906,8 +921,23 @@ class DamarisGUI(threading.Thread):
         if channel == "None":
             self.graphen[0].set_data([0], [0])
             self.graphen[1].set_data([0], [0])
+            # Real-Fehler
+            self.graphen[2].set_data([0.0],[0.0])
+            self.graphen[3].set_data([0.0],[0.0])
+            # Img-Fehler
+            self.graphen[4].set_data([0.0],[0.0])
+            self.graphen[5].set_data([0.0],[0.0])
             self.matplot_canvas.draw()
             return True
+
+        if not self.__display_channels[channel][0].uses_statistics():
+        # Maybe theres a better place for deleting the error-lines
+            # Real-Fehler
+            self.graphen[2].set_data([0.0],[0.0])
+            self.graphen[3].set_data([0.0],[0.0])
+            # Img-Fehler
+            self.graphen[4].set_data([0.0],[0.0])
+            self.graphen[5].set_data([0.0],[0.0])
             
         self.draw_result(self.__display_channels[channel][0])
         return True
@@ -997,13 +1027,13 @@ class DamarisGUI(threading.Thread):
   
             if self.__rescale:
 
-                self.matplot_axes.set_xlim(float(in_result.get_xmin()), float(in_result.get_xmax()))
+                self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
                 self.__rescale = False
 
             if self.display_autoscaling_checkbutton.get_active():
 
-                self.matplot_axes.set_xlim(float(in_result.get_xmin()), float(in_result.get_xmax()))
-                self.matplot_axes.set_ylim(float(in_result.get_ymin()), float(in_result.get_ymax()))
+                self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
+                self.matplot_axes.set_ylim(in_result.get_ymin(), in_result.get_ymax())
 
             if self.display_statistics_checkbutton.get_active() and in_result.uses_statistics() and in_result.ready_for_drawing_error():
                 # Real-Fehler
@@ -1012,14 +1042,6 @@ class DamarisGUI(threading.Thread):
                 # Img-Fehler
                 self.graphen[4].set_data(in_result.get_xdata(), in_result.get_ydata(1) + in_result.get_yerr(1))
                 self.graphen[5].set_data(in_result.get_xdata(), in_result.get_ydata(1) - in_result.get_yerr(1))
-            else:
-                # Maybe theres a better place for deleting the error-lines
-                # Real-Fehler
-                self.graphen[2].set_data([0.0],[0.0])
-                self.graphen[3].set_data([0.0],[0.0])
-                # Img-Fehler
-                self.graphen[4].set_data([0.0],[0.0])
-                self.graphen[5].set_data([0.0],[0.0])
 
             self.matplot_canvas.draw()
 
@@ -1086,7 +1108,7 @@ class DamarisGUI(threading.Thread):
             return None
 
         self.__error_dialogs_open += 1
-        gobject.idle_add(self.show_error_dialog_idle_func, title, error_message)
+        gobject.idle_add(self.show_error_dialog_idle_func, title + "", error_message + "")
 
     def show_error_dialog_idle_func(self, title, error_message):
         try:

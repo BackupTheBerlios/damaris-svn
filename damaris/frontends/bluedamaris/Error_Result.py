@@ -12,11 +12,11 @@ from Resultable import Resultable
 #############################################################################
 
 class Error_Result(Resultable):
-    def __init__(self, error_msg = None, desc = None, job_id = None, job_date = None):
+    def __init__(self, error_msg = "", desc = { }, job_id = None, job_date = None):
         Resultable.__init__(self)    
 
         self.error_message = error_msg
-        if desc is None: self.description = { }
+        self.description = desc
         self.job_id = job_id
         self.job_date = job_date
 

@@ -2,27 +2,27 @@ Bis zur ersten lauffähigen Version:
 -----------------------------------
 
 - nach verlorenen Methoden gucken, die mittlerweile nicht mehr gebraucht werden (z.b. suspend und wakeup)
-- Convenience-Functions verbessern, wie z.B. jobs_pending() oder get_variable()
-- Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln)
-- Zustandsdiagramm der Threads zeichnen
+- Fehlersicher machen (alles in Try/Catch Blöcke einschließen und angemessen handeln -> Diagramm von User-Veränderlichen
+  erstellen und angemessen behandeln)
+- Zustandsdiagramm der Threads zeichnen / evtl. vereinfachen (da stop_experiment nun vorhanden)
 - Core in die Fehlerbehandlung/Thread-Zustände einbauen (Falls Fehler im Core -> sicherer neustart)
 - Herausfinden, wie man den Expat-Parser abbrechen kann (Problem bei Stop: bei extrem großen results kann der ResultReader nachhinken
-- Befehle von Job-Writer und Data-Handler aufschreiben
+- Bei laufendem Experiment "Stop" mit Shortcut ESC belegen?
 - Export der Daten vom Display weg -> CSV o.ä.
-- Channel-Combobox nicht in glade, sondern per Hand erstellen (gtk.get_new_text_combobox())
-- Open-File nicht mehr global auf Veränderungen checken lassen, sondern nur noch auf der geöffneten Seite
-- beim Beenden auch "Abbrechen" als Alternative anbieten, nicht nur "Ja/Nein"
 - Autoscaling toleranter machen -> skaliert sich erst bei 10% veränderung neu (oder so ähnlich)
+- Core-Interface nicht mehr abstürzen lassen, wenn logdata.99 erreicht ist
+- Achims Custom-Funktionen sinnvoll in Datentypen einbauen
 
 Datentypen-bunch (NMR-Array und Co):
-  - ResultReader auf mehrere Results pro File umbauen
-  - in Accumulation mitführen, wieviel Results akkumuliert wurden
+  Done: ResultReader auf mehrere Results pro File umbauen
+  Done: in Accumulation mitführen, wieviel Results akkumuliert wurden
+  - In Akkumulation überlegen, ob self.n nicht ausreicht
   - im Graphen ErrorResults anzeigbar machen
   - Description und ID im Graphen anzeigen (oder beim)
   - mehrere Graphen implementieren
   - DataPool Klasse implementieren (Alles was mit History/Channels und sonstiger Darstellung zu tun hat)
   - Fehlerbalken überarbeiten bei AutoScaling/Show Statistics toggled und Displaysource-changed)
-  - Mittelwert bei Accumulation zurückgeben
+  Done: Mittelwert bei Accumulation zurückgeben
 
 Version 0.0.2:
 ? Console Fenster einbauen ?
@@ -92,3 +92,7 @@ Erledigt:
       File "E:\Eigene Dateien\Projekt NMR\damaris\frontends\bluedamaris\CoreInterface.py", line 61, in start
         os.rename(self.core_output_filename+".%02d"%(i-j-1),self.core_output_filename+".%02d"%(i-j))
     OSError: [Errno 17] File exists
+- Convenience-Functions verbessern, wie z.B. jobs_pending() oder get_variable()
+- Channel-Combobox nicht in glade, sondern per Hand erstellen (gtk.get_new_text_combobox())
+- beim Beenden auch "Abbrechen" als Alternative anbieten, nicht nur "Ja/Nein"
+- Open-File nicht mehr global auf Veränderungen checken lassen, sondern nur noch auf der geöffneten Seite
