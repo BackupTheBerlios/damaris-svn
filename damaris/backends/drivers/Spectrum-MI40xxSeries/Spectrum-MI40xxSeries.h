@@ -96,6 +96,10 @@ class SpectrumMI40xxSeries: public ADC {
 
   Configuration* effective_settings;
 
+  short int* split_adcdata_recursive(short int* data, const DataManagementNode& structure, adc_results& result_splitted);
+
+  void collect_config_recursive(state_sequent& exp, SpectrumMI40xxSeries::Configuration& settings);
+
 public:
   SpectrumMI40xxSeries(const ttlout& t_line);
 
@@ -103,7 +107,6 @@ public:
 
   virtual void set_daq(state & exp);
 
-  void collect_config_recursive(state_sequent& exp, SpectrumMI40xxSeries::Configuration& settings);
 
   virtual result* get_samples(double timeout=0.0);
 

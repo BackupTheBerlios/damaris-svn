@@ -340,6 +340,31 @@ int SpectrumMI40xxSeries::TimeoutThread() {
   return 1;
 }
 
+short int* SpectrumMI40xxSeries::split_adcdata_recursive(short int* data, const DataManagementNode& structure, adc_results& result_splitted) {
+
+  if (structure.child==NULL) {
+    // simple case: do real work
+    // todo: Channel selection
+    short int* datachunk=(short int*)malloc(sizeof(short int)*structure.n*2);
+    if (datachunk==NULL) {
+      throw SpectrumMI40xxSeries_error("not enough memory to create results");
+    }
+    // todo: error checking
+    memcpy(datachunk, data, sizeof(short int)*structure.n*2);
+    data+=structure.n*2;
+    adc_result* the_result=new adc_result(0, structure.n, datachunk, effective_settings->samplefreq);
+    result_splitted.push_back(the_result);
+    if (structure.next!=NULL)
+      data=split_adcdata_recursive(data, *(structure.next), result_splitted);
+  }
+  else
+    for (size_t i=0; i<structure.n; ++i) {
+      data=split_adcdata_recursive(data, *(structure.child), result_splitted);
+    }
+  return data;
+
+}
+
 result* SpectrumMI40xxSeries::get_samples(double _timeout) {
     
     if (effective_settings==NULL) return new adc_result(1,0,NULL);
@@ -381,69 +406,15 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 # elif defined __CYGWIN__
 	SpcGetData (deviceno, 0, 0, 2 * sampleno,(void*) adc_data);
 # endif
-	adc_result* the_res=new adc_result(0,sampleno,adc_data,effective_settings->samplefreq);
-	return the_res;
-
-	// split results in parts
-	// navigation through nested loops of data_structure
-	std::stack<int> loop_counts;
-	DataManagementNode* node_position=effective_settings->data_structure;
 	// current position in adc data array
 	short int* data_position=adc_data;
 	// produced results
 	adc_results* the_results=new adc_results(0);
-	while (node_position!=NULL) {
-	    if (node_position->child==NULL) {
-		// simple case: do real work
-		if (node_position->n!=0) {
-		    // append data
-		    // todo: Channel selection
-		    short int* datachunk=(short int*)malloc(sizeof(short int)*node_position->n*2);
-		    if (datachunk==NULL) {
-			delete the_results;
-			delete effective_settings;
-			free(adc_data);
-			throw SpectrumMI40xxSeries_error("not enough memory to create results");
-		    }
-		    // todo: error checking
-		    memcpy(datachunk, data_position, sizeof(short int)*node_position->n*2);
-		    data_position+=node_position->n;
-		    adc_result* the_result=new adc_result(0,node_position->n,datachunk,effective_settings->samplefreq);
-		    the_results->push_back(the_result);
-		}
-	    }
-	    else {
-		// more difficult: step down
-		loop_counts.push(node_position->n);
-		node_position=node_position->child;
-		continue;
-	    }
-	    
-	    if (node_position->next!=NULL) {
-		// step forward if possible
-		node_position=node_position->next;
-		continue;
-	    }
-	    while (node_position!=NULL && node_position->next==NULL) {
-		// look on stack and go to next loop
-		if (loop_counts.empty()) node_position=NULL;
-		else 
-		    if (loop_counts.top()<1) {
-			// step one up
-			node_position=node_position->parent;
-			loop_counts.pop();
-		    }
-		    else {
-			--loop_counts.top();
-			if (node_position->parent!=NULL)
-			    node_position=node_position->parent->child;
-			else
-			    node_position=effective_settings->data_structure->child;
-		    }
-
-	    }
+	
+	data_position=split_adcdata_recursive(data_position, *(effective_settings->data_structure), *the_results);
+	if (data_position==0 || (size_t)(data_position-adc_data)!=(sampleno*2)) {
+	  fprintf(stderr,"something went wrong while spliting data");
 	}
-
 	free(adc_data);
 	delete effective_settings;
 	effective_settings=NULL;
