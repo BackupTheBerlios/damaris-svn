@@ -117,9 +117,8 @@ class DamarisGUI(threading.Thread):
         self.display_y_scaling_combobox = self.xml_gui.get_widget("display_y_scaling_combobox")
         self.display_source_combobox = gtk.combo_box_new_text()
         self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
-        
         self.display_statistics_checkbutton = self.xml_gui.get_widget("display_statistics_checkbutton")
-        #self.display_statistics_checkbutton.set_sensitive(False)
+
 
         # Sonstiges:
         self.main_window = self.xml_gui.get_widget("main_window")
@@ -438,12 +437,19 @@ class DamarisGUI(threading.Thread):
                 return True
 
             # Waking both threads up
-            self.core_interface.clear_job(0)
-            print "Waking jw up"
+            try:
+                self.core_interface.clear_job(0)
+                print "(re)starting core"
+                self.core_interface.start()
+            except Exception, e:
+                self.show_error_dialog("Core Exception (clear_job / start)", str(e) + "\n\n(maybe there is another core still running?)")
+                self.check_job_writer_data_handler_finished()
+                return True
+            
+            print "Waking JobWriter up"
             self.job_writer.wake_up()
-            print "(re)starting core"
-            self.core_interface.start()
-            print "Waking dh up"
+
+            print "Waking DataHandler up"
             self.data_handler.wake_up()
 
             gobject.timeout_add(100, self.sync_job_writer_data_handler)
@@ -526,9 +532,14 @@ class DamarisGUI(threading.Thread):
         "Sends all Threads the stop-commando"
         print "\nStopping Experiment... (Waiting for components to stop safely)\n"       
 
-        self.core_interface.stop_queue()
+        try:
+            self.core_interface.stop_queue()
+        except Exception, e:
+            self.show_error_dialog("Core Exception (Stop_Queue)", str(e) + "\n(for more information look into the logfile)")
+        
         self.job_writer.stop_experiment()
         self.data_handler.stop_experiment()
+        
 
         return True
 
@@ -1064,6 +1075,7 @@ class DamarisGUI(threading.Thread):
             if self.__rescale:
 
                 self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
+                self.matplot_axes.set_ylim(in_result.get_ymin(), in_result.get_ymax())
                 self.__rescale = False
 
             # Autoscaling activated?
