@@ -12,7 +12,7 @@ from Resultable import Resultable
 #############################################################################
 
 class Error_Result(Resultable):
-    def __init__(self, error_msg = "", desc = { }, job_id = None, job_date = None):
+    def __init__(self, error_msg = None, desc = {}, job_id = None, job_date = None):
         Resultable.__init__(self)    
 
         self.error_message = error_msg

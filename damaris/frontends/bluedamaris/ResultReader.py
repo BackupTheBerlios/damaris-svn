@@ -248,7 +248,10 @@ class ResultReader(threading.Thread):
 
         # Error_Result
         elif self.__filetype == ResultReader.ERROR_TYPE:
-            tmp_string = self.result.get_error_message() + in_cdata
+            tmp_string = self.result.get_error_message()
+            if tmp_string is None: tmp_string = ""
+
+            tmp_string += in_cdata
             self.result.set_error_message(tmp_string)
 
         # Temp_Results
