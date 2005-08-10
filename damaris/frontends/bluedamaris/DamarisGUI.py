@@ -517,6 +517,7 @@ class DamarisGUI(threading.Thread):
 
 
     def stop_experiment(self, widget, data = None):
+        "Sends all Threads the stop-commando"
         print "\nStopping Experiment... (Waiting for components to stop safely)\n"       
 
         self.core_interface.stop_queue()
@@ -524,7 +525,7 @@ class DamarisGUI(threading.Thread):
         self.data_handler.stop_experiment()
 
         return True
-    
+
 
     def open_file(self, widget, Data = None):
         "Callback for the open-file dialog"

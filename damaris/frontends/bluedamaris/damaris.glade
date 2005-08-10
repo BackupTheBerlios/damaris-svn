@@ -1055,6 +1055,7 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_new_button">
 	      <property name="visible">True</property>
+	      <property name="tooltip" translatable="yes">Creates an empty script</property>
 	      <property name="label" translatable="yes">New</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-new</property>
@@ -1072,6 +1073,7 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_open_file_button">
 	      <property name="visible">True</property>
+	      <property name="tooltip" translatable="yes">Opens a script</property>
 	      <property name="label" translatable="yes">Open</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-open</property>
@@ -1089,6 +1091,7 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_save_file_button">
 	      <property name="visible">True</property>
+	      <property name="tooltip" translatable="yes">Saves a script</property>
 	      <property name="label" translatable="yes">Save</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-save</property>
@@ -1106,6 +1109,7 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_save_as_button">
 	      <property name="visible">True</property>
+	      <property name="tooltip" translatable="yes">Saves a script in a new file</property>
 	      <property name="label" translatable="yes">Save AS</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-save-as</property>
@@ -1123,6 +1127,7 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_save_all_button">
 	      <property name="visible">True</property>
+	      <property name="tooltip" translatable="yes">Saves all scripts</property>
 	      <property name="label" translatable="yes">Save All</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-copy</property>
@@ -1153,6 +1158,7 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_run_button">
 	      <property name="visible">True</property>
+	      <property name="tooltip" translatable="yes">Executes the scripts</property>
 	      <property name="label" translatable="yes">Execute</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-execute</property>
@@ -1171,6 +1177,7 @@ log</property>
 	    <widget class="GtkToolButton" id="toolbar_stop_button">
 	      <property name="visible">True</property>
 	      <property name="sensitive">False</property>
+	      <property name="tooltip" translatable="yes">Stops running experiment</property>
 	      <property name="label" translatable="yes">Stop</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-stop</property>
@@ -1201,6 +1208,7 @@ log</property>
 	  <child>
 	    <widget class="GtkToolButton" id="toolbar_check_scripts_button">
 	      <property name="visible">True</property>
+	      <property name="tooltip" translatable="yes">Checks scripts with simulated hardware</property>
 	      <property name="label" translatable="yes">Check</property>
 	      <property name="use_underline">True</property>
 	      <property name="stock_id">gtk-ok</property>
