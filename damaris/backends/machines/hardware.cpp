@@ -39,6 +39,9 @@ result* hardware::experiment(const state& exp) {
       else
 	r=new adc_result(1,0,NULL);
     }
+    catch (frequ_exception e) {
+	r=new error_result(1,"frequ_exception: "+e);
+    }
     catch (ADC_exception e) {
       if (e!="ran into timeout!" || tries>=100)
 	r=new error_result(1,"ADC_exception: "+e);
