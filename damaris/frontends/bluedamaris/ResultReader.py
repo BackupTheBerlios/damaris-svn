@@ -165,9 +165,13 @@ class ResultReader(threading.Thread):
 
         # Parsing all cdata as one block
         self.xml_parser.buffer_text = True
-        self.xml_parser.ParseFile(in_file)
+        buffersize=1<<14
+        databuffer=in_file.read(buffersize)
+        while databuffer!="":
+            self.xml_parser.Parse(databuffer,False)
+            databuffer=in_file.read(buffersize)
 
-
+        self.xml_parser.Parse("",True)
 
     # Callback when a xml start tag is found
     def __xmlStartTagFound(self, in_name, in_attribute):
