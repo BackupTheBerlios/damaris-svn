@@ -21,6 +21,14 @@ class ADC_Result(Resultable, Drawable):
         Resultable.__init__(self)
         Drawable.__init__(self)
      
+        # Title of this accumulation: set Values: Job-ID and Description (plotted in GUI -> look Drawable)
+        # Is set in ResultReader.py (or in copy-construktor)
+        self.__title_pattern = "ADC-Result: job_id = %d, desc = %s, samples = %d, sampl-rate = %f Hz"
+
+        # Axis-Labels (inherited from Drawable)
+        self.xlabel = "Time (s)"
+        self.ylabel = "Samples [Digits]"
+
 
         if (x is None) and (y is None) and (index is None) and (sampl_freq is None) and (desc is None) and (job_id is None) and (job_date is None):
             self.cont_data = False
@@ -38,6 +46,7 @@ class ADC_Result(Resultable, Drawable):
             self.description = desc
             self.job_id = job_id
             self.job_date = job_date
+            self.set_title(self.__title_pattern % (self.job_id, str(self.description), len(self.y[0]), self.sampling_rate))
 
         else:
             raise ValueError("Wrong usage of __init__!")
@@ -108,7 +117,7 @@ class ADC_Result(Resultable, Drawable):
 
     def set_sampling_rate(self, hz):
         "Sets the samplingfrequency in hz"
-        self.sampling_rate = float(hz)
+        self.sampling_rate = float(hz)    
 
 
     def get_index_bounds(self, index):

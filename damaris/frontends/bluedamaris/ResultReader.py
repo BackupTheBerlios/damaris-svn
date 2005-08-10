@@ -274,6 +274,7 @@ class ResultReader(threading.Thread):
             # ADC_Result
             if self.__filetype == ResultReader.ADCDATA_TYPE:
                 print "\nResult Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read)
+                self.result.set_title("ADC-Result: job-id = %d, desc = %s" % (self.result.get_job_id(), str(self.result.get_description_dictionary())))
 
             # Error_Result
             elif self.__filetype == ResultReader.ERROR_TYPE:

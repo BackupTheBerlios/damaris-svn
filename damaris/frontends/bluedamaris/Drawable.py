@@ -17,14 +17,14 @@ class Drawable:
 
         self.styles = { }
 
-        self.xlabel = ""
-        self.ylabel = ""
+        self.xlabel = None
+        self.ylabel = None
 
-        self.title = ""
+        self.title = None
 
         self.legend = { }
 
-        self.labels = { }
+        self.text = {}
 
         self.xmin = 0
         self.xmax = 0
@@ -99,17 +99,16 @@ class Drawable:
         self.ylabel = str(label)
 
 
-    def get_labels(self):
-        "Returns labels to be plotted (Dictionary)"
-        return self.labels
+    def get_text(self, index):
+        "Returns labels to be plotted (List)"
+        if self.text.has_key(index):
+            return self.text[index]
+        else: return None
 
 
-    def set_lables(self, x, y, value):
+    def set_text(self, index, text):
         "Sets labels to be plotted "
-        if self.labels.has_key((x, y)):
-            print "Drawable Warning: Label key \"%s\" will be overwritten with \"%s\"" % (str(key), str(value))
-
-        self.labels[(x,y)] = str(value)
+        self.text[index] = str(text)
 
 
     def get_title(self):

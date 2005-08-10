@@ -1,16 +1,18 @@
 def data_handling(outer_space):
 
-    acc = Accumulation(error = True)
+    akk = { }
 
     while 1:
         timesignal = outer_space.get_next_result()
         if timesignal is None: break
         
-	acc = acc + timesignal
-
-        print "Drawing %d..." % timesignal.get_job_id()
         outer_space.watch(timesignal, "Zeitsignal")
-	outer_space.watch(acc, "Akkumulation")
-
-    acc -= 1024
-    outer_space.watch(acc, "Akkumulation 2")
+        
+        if akk.has_key(timesignal.get_description("tau")):
+            akk[timesignal.get_description("tau")] += timesignal
+            outer_space.watch(akk[timesignal.get_description("tau")], "Akku " + str(timesignal.get_description("tau")))
+        else:
+            akk[timesignal.get_description("tau")] = Accumulation(error = True) + timesignal
+            outer_space.watch(akk[timesignal.get_description("tau")], "Akku " + str(timesignal.get_description("tau")))
+        
+        print "Drawing %d..." % timesignal.get_job_id()

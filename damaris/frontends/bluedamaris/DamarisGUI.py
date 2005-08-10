@@ -294,8 +294,6 @@ class DamarisGUI(threading.Thread):
         self.matplot_axes = self.matplot_figure.add_subplot(111)
 
         # Achsen beschriften & Gitternetzlinien sichtbar machen
-        self.matplot_axes.set_xlabel("Time (s)")
-        self.matplot_axes.set_ylabel("Samples (14-Bit)")
         self.matplot_axes.grid(True)
 
         # Ersten Plot erstellen und Referenz des ersten Eintrags im zurückgegebenen Tupel speichern
@@ -308,8 +306,7 @@ class DamarisGUI(threading.Thread):
         self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
         self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
 
-
-        self.matplot_axes.set_ylim([-8192.0, 8192.0])
+        self.matplot_axes.set_ylim([0.0,1.0])
         self.matplot_axes.set_xlim([0.0,1.0])
 
         # Lineare y-/x-Skalierung
@@ -336,6 +333,7 @@ class DamarisGUI(threading.Thread):
 
         self.main_window.show_all()
         
+
     # /Inits der einzelnen Fenster #################################################################        
 
 
@@ -421,6 +419,9 @@ class DamarisGUI(threading.Thread):
             self.menu_save_item.set_sensitive(False)
             self.menu_save_as_item.set_sensitive(False)
             self.menu_save_all_item.set_sensitive(False)
+
+            self.experiment_script_textview.set_sensitive(False)
+            self.data_handling_textview.set_sensitive(False)
             
 
             # Delete existing job-files
@@ -503,7 +504,9 @@ class DamarisGUI(threading.Thread):
                 self.menu_new_item.set_sensitive(True)
                 self.menu_open_item.set_sensitive(True)
                 self.menu_save_as_item.set_sensitive(True)
-                
+
+                self.experiment_script_textview.set_sensitive(True)
+                self.data_handling_textview.set_sensitive(True)               
                 
                 self.__experiment_running = False
                 self.__rescale = True
@@ -637,7 +640,9 @@ class DamarisGUI(threading.Thread):
                 self.data_handling_textbuffer.set_modified(False)
         else:
             pass
-        
+
+        self.toolbar_save_button.set_sensitive(False)
+       
         return True
 
 
@@ -695,6 +700,7 @@ class DamarisGUI(threading.Thread):
 
         self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
 
+        self.toolbar_save_button.set_sensitive(False)
         return True
 
 
@@ -849,7 +855,8 @@ class DamarisGUI(threading.Thread):
             # now get iterator at line start
             linestart_iter=cursor_iter.copy()
             linestart_iter.set_line_offset(0)
-            linebegin=textbuffer.get_text(linestart_iter,cursor_iter).expandtabs()
+            linebegin=textbuffer.get_text(linestart_iter,cursor_iter)
+            linebegin.expandtabs()
             if (len(linebegin)!=0 and not linebegin.isspace()):
                 # just make the spaces go away
                 textbuffer.delete(linestart_iter,cursor_iter)
@@ -860,7 +867,7 @@ class DamarisGUI(threading.Thread):
                   and not cursor_iter.is_end()
                   and cursor_iter.get_char().isspace()):
                 cursor_iter.forward_char()
-            linebegin=textbuffer.get_text(linestart_iter,cursor_iter).expandtabs()
+            linebegin=textbuffer.get_text(linestart_iter,cursor_iter)
             if (event.keyval==0xFF08):
                 # backspace shortens space
                 linebegin=u' '*((len(linebegin)-1)/4)*4
@@ -886,7 +893,8 @@ class DamarisGUI(threading.Thread):
                   and not spaceend_iter.is_end()
                   and spaceend_iter.get_char().isspace()):
                 spaceend_iter.forward_char()
-            linebegin=textbuffer.get_text(linestart_iter,spaceend_iter).expandtabs()
+            linebegin=textbuffer.get_text(linestart_iter,spaceend_iter)
+            linebegin.expandtabs()
             indent_length=len(linebegin)
             textbuffer.delete(linestart_iter,spaceend_iter)
             textbuffer.insert(linestart_iter,u' '*indent_length)
@@ -929,8 +937,12 @@ class DamarisGUI(threading.Thread):
             # Img-Fehler
             self.graphen[4].set_data([0.0],[0.0])
             self.graphen[5].set_data([0.0],[0.0])
-            self.matplot_canvas.queue_resize()
-            # self.matplot_canvas.draw()
+
+            self.matplot_axes.set_title("")
+            self.matplot_axes.set_ylabel("")
+            self.matplot_axes.set_xlabel("")                                
+            
+            self.matplot_canvas.draw()
             return True
 
         if not self.__display_channels[channel][0].uses_statistics():
@@ -1027,12 +1039,14 @@ class DamarisGUI(threading.Thread):
         try:
             self.graphen[0].set_data(in_result.get_xdata(), in_result.get_ydata(0))
             self.graphen[1].set_data(in_result.get_xdata(), in_result.get_ydata(1))
-  
+
+            # Initial rescaling needed?
             if self.__rescale:
 
                 self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
                 self.__rescale = False
 
+            # Autoscaling activated?
             if self.display_autoscaling_checkbutton.get_active():
                 self.matplot_axes.set_xlim(in_result.get_xmin(), in_result.get_xmax())
                 
@@ -1048,6 +1062,7 @@ class DamarisGUI(threading.Thread):
                     self.matplot_axes.set_ylim(in_result.get_ymin(), ymax)
                     self.__old_ymax = ymax                    
 
+            # Statistics activated?
             if self.display_statistics_checkbutton.get_active() and in_result.uses_statistics() and in_result.ready_for_drawing_error():
                 # Real-Fehler
                 self.graphen[2].set_data(in_result.get_xdata(), in_result.get_ydata(0) + in_result.get_yerr(0))
@@ -1056,6 +1071,24 @@ class DamarisGUI(threading.Thread):
                 self.graphen[4].set_data(in_result.get_xdata(), in_result.get_ydata(1) + in_result.get_yerr(1))
                 self.graphen[5].set_data(in_result.get_xdata(), in_result.get_ydata(1) - in_result.get_yerr(1))
 
+            # Any title to be set?
+            if in_result.get_title() is not None:
+                self.matplot_axes.set_title(in_result.get_title())
+            else:
+                self.matplot_axes.set_title("")
+
+            # Any labels to be set?
+            if in_result.get_xlabel() is not None:
+                self.matplot_axes.set_xlabel(in_result.get_xlabel())
+            else:
+                self.matplot_axes.set_xlabel("")
+
+            if in_result.get_ylabel() is not None:
+                self.matplot_axes.set_ylabel(in_result.get_ylabel())
+            else:
+                self.matplot_axes.set_ylabel("")
+                
+            # Draw it!
             self.matplot_canvas.draw()
 
             return False
@@ -1068,7 +1101,7 @@ class DamarisGUI(threading.Thread):
     def watch_result(self, result, channel):
         "Interface to surface for watching some data (under a certain name)"
      
-        gobject.idle_add(self.watch_result_idle_func, result + 0, channel + "")
+        gobject.idle_add(self.watch_result_idle_func, result, channel + "")
 
     def watch_result_idle_func(self, result, channel):
         gtk.gdk.threads_enter()
@@ -1077,10 +1110,10 @@ class DamarisGUI(threading.Thread):
             # Check if channel exists or needs to be added
             if not self.__display_channels.has_key(channel):
                 self.__display_channels[channel] = [ ]
-                self.__display_channels[channel].insert(0,result)
+                self.__display_channels[channel].insert(0,result) #insert inserts a copy
                 self.display_source_combobox.append_text(channel)
             else:
-                self.__display_channels[channel].insert(0,result)  
+                self.__display_channels[channel].insert(0,result) #insert inserts a copy
             
             # Getting active text in Combobox and compairing it
             if channel == self.display_source_combobox.get_active_text():

@@ -9,9 +9,26 @@ Bis zur ersten lauffähigen Version:
 - Herausfinden, wie man den Expat-Parser abbrechen kann (Problem bei Stop: bei extrem großen results kann der ResultReader nachhinken
 - Bei laufendem Experiment "Stop" mit Shortcut ESC belegen?
 - Export der Daten vom Display weg -> CSV o.ä.
-- Autoscaling toleranter machen -> skaliert sich erst bei 10% veränderung neu (oder so ähnlich)
 - Core-Interface nicht mehr abstürzen lassen, wenn logdata.99 erreicht ist
 - Achims Custom-Funktionen sinnvoll in Datentypen einbauen
+
+
+
+- Tab-Convenience verrutscht bei Return manchmal (scheint bei neuen Files zu passieren, wenn folgendes vorliegt:
+	(...)
+
+	Befehl<-- Return hier
+
+	(...)
+ergibt:
+	(...)
+
+ Befehl
+ |<-- Cursor hier
+
+ 	(...)
+)
+
 
 Datentypen-bunch (NMR-Array und Co):
   Done: ResultReader auf mehrere Results pro File umbauen
@@ -96,3 +113,4 @@ Erledigt:
 - Channel-Combobox nicht in glade, sondern per Hand erstellen (gtk.get_new_text_combobox())
 - beim Beenden auch "Abbrechen" als Alternative anbieten, nicht nur "Ja/Nein"
 - Open-File nicht mehr global auf Veränderungen checken lassen, sondern nur noch auf der geöffneten Seite
+- Autoscaling toleranter machen -> skaliert sich erst bei 10% veränderung neu (oder so ähnlich)

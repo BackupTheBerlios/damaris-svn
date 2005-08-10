@@ -2,6 +2,8 @@ def experiment_script(outer_space):
 
     pi = 1e-3
 
+    import time
+
     tau = 1e-3
     px = 0
     py = 90
@@ -10,7 +12,7 @@ def experiment_script(outer_space):
 
     while tau <= 5e-3:
 
-        for accu in range(1):
+        for accu in range(10):
 
             exp = Experiment()
             print "Job %d erstellt!" % exp.get_job_id()
@@ -24,7 +26,7 @@ def experiment_script(outer_space):
             exp.wait(tau + 1e-6)
 
             exp.record(512, 1e6)
-
+            time.sleep(1)
             yield exp
 
         tau += 1e-3

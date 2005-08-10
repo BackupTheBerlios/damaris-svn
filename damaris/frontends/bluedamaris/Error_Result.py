@@ -1,6 +1,7 @@
 # -*- coding: iso-8859-1 -*-
 
 from Resultable import Resultable
+from Drawable import Drawable
 
 #############################################################################
 #                                                                           #
@@ -11,11 +12,16 @@ from Resultable import Resultable
 #                                                                           #
 #############################################################################
 
-class Error_Result(Resultable):
+class Error_Result(Resultable, Drawable):
     def __init__(self, error_msg = None, desc = {}, job_id = None, job_date = None):
-        Resultable.__init__(self)    
+        Resultable.__init__(self)
+        Drawable.__init__(self)
 
-        self.error_message = error_msg
+        if error_msg is not None:
+            self.error_message = error_msg
+            self.set_title("Error-Result: %s" % error_msg)
+        else:
+            self.error_message = error_msg
         self.description = desc
         self.job_id = job_id
         self.job_date = job_date
@@ -27,8 +33,20 @@ class Error_Result(Resultable):
 
 
     def set_error_message(self, error_msg):
+        self.set_title("Error-Result: %s" % error_msg)
         self.error_message = err_msg
-        
+
+
+    def uses_statistics(self):
+        return False
+
+
+    def get_ydata(self):
+        return [0.0]
+
+
+    def get_xdata(self):
+        return [0.0]
 
     # Überladen von Operatoren und Built-Ins -------------------------------------------------------
 
