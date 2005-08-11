@@ -1127,11 +1127,13 @@ class DamarisGUI(threading.Thread):
             # Check for log-scale
             if xmin <= 0 or xmax <= 0:
                 self.display_x_scaling_combobox.set_sensitive(False)
+                self.display_x_scaling_combobox.set_active(0)
             else:
                 self.display_x_scaling_combobox.set_sensitive(True)
 
             if ymin <= 0 or ymax <= 0:
                 self.display_y_scaling_combobox.set_sensitive(False)
+                self.display_y_scaling_combobox.set_active(0)
             else:
                 self.display_y_scaling_combobox.set_sensitive(True)   
 
