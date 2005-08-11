@@ -1177,6 +1177,18 @@ class DamarisGUI(threading.Thread):
             else:
                 self.matplot_axes.set_title("")
 
+
+            # Any labels to be set?
+            if in_result.get_xlabel() is not None:
+                self.matplot_axes.set_xlabel(in_result.get_xlabel())
+            else:
+                self.matplot_axes.set_xlabel("")
+
+            if in_result.get_ylabel() is not None:
+                self.matplot_axes.set_ylabel(in_result.get_ylabel())
+            else:
+                self.matplot_axes.set_ylabel("")
+                
                
             # Draw it!
             self.matplot_canvas.draw()
