@@ -1179,6 +1179,23 @@ log</property>
 	  </child>
 
 	  <child>
+	    <widget class="GtkToggleToolButton" id="toolbar_synchronised_execution_togglebutton">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Sync Execute</property>
+	      <property name="use_underline">True</property>
+	      <property name="stock_id">gtk-sort-ascending</property>
+	      <property name="visible_horizontal">True</property>
+	      <property name="visible_vertical">True</property>
+	      <property name="is_important">False</property>
+	      <property name="active">False</property>
+	    </widget>
+	    <packing>
+	      <property name="expand">False</property>
+	      <property name="homogeneous">True</property>
+	    </packing>
+	  </child>
+
+	  <child>
 	    <widget class="GtkToolButton" id="toolbar_stop_button">
 	      <property name="visible">True</property>
 	      <property name="sensitive">False</property>
@@ -1225,10 +1242,6 @@ log</property>
 	      <property name="expand">False</property>
 	      <property name="homogeneous">True</property>
 	    </packing>
-	  </child>
-
-	  <child>
-	    <placeholder/>
 	  </child>
 
 	  <child>

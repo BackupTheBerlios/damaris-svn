@@ -63,6 +63,10 @@ class DamarisGUI(threading.Thread):
         self.__old_ymax = 0
         self.__old_ymin = 0
 
+        # Flag which determines if the GUI is busy with plotting a result
+        self.__drawing_busy = False # False: Surface idle (concerns plotting)
+                                   # True: Surface busy drawing
+
         
     def run(self):
         "Starting thread and GTK-mainloop"
@@ -99,6 +103,7 @@ class DamarisGUI(threading.Thread):
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
         self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
         self.toolbar_check_scripts_button = self.xml_gui.get_widget("toolbar_check_scripts_button")
+        self.toolbar_sync_exec_togglebutton = self.xml_gui.get_widget("toolbar_synchronised_execution_togglebutton")
 
         # Scripts:
         self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
@@ -398,6 +403,9 @@ class DamarisGUI(threading.Thread):
 
         self.__experiment_running = True
 
+        self.job_writer.write_jobs_synchronous(self.toolbar_sync_exec_togglebutton.get_active())
+        self.data_handler.read_jobs_synchronous(self.toolbar_sync_exec_togglebutton.get_active())
+        
         # Remove all entries except "None"
         self.display_source_combobox.get_model().clear()
 
@@ -1203,8 +1211,10 @@ class DamarisGUI(threading.Thread):
     def watch_result(self, result, channel):
         "Interface to surface for watching some data (under a certain name)"
         # Copy result and channel
+        self.__drawing_busy = True
+        
         gobject.idle_add(self.watch_result_idle_func, result + 0, channel + "")
-
+        
 
     def watch_result_idle_func(self, result, channel):
         gtk.gdk.threads_enter()
@@ -1224,6 +1234,8 @@ class DamarisGUI(threading.Thread):
             # Getting active text in Combobox and compairing it
             if channel == self.display_source_combobox.get_active_text():
                 self.draw_result(self.__display_channels[channel][0])
+
+            self.__drawing_busy = False
                  
         finally:
             gtk.gdk.threads_leave()
@@ -1272,7 +1284,16 @@ class DamarisGUI(threading.Thread):
         finally:
             self.__error_dialogs_open -= 1
             gtk.gdk.threads_leave()
-        
+
+
+    def get_selected_channel(self):
+        "Returns the currently selected channel"
+        return self.display_source_combobox.get_active_text()
+
+
+    def busy_with_drawing(self):
+        "Returns True if the surface is busy with drawing"
+        return self.__drawing_busy
 
 ##    def flush(self):
 ##        gtk.gdk.threads_enter()

@@ -75,6 +75,11 @@ class JobWriter(threading.Thread):
         # Used to stop an experiment
         self.__stop_experiment = False
 
+        # Used to determine, if a synchronous experiment should be run
+        self.__write_jobs_synchronously = False
+        self.__write_another_job = False # Command for writing another job
+        self.__job_id_written_last = -1 # Last job-id written to disc
+
 
 
     # Private Methods ------------------------------------------------------------------------------
@@ -143,6 +148,17 @@ class JobWriter(threading.Thread):
                     job_file.write(exp.write_xml_string())
                     job_file.close()
                     os.rename(os.path.join(self.path, "job.tmp"), os.path.join(self.path, self.filename % exp.get_job_id()))
+
+                    self.__job_id_written_last = exp.get_job_id()
+
+                    # Experiment started with sync-flag?
+                    if self.__write_jobs_synchronously:
+                        while not self.__write_another_job:
+                            self.event.wait(0.1)
+                            if self.__stop_experiment: break
+
+                        self.__write_another_job = False
+                        
 
                     # Stop Experiment?
                     if self.__stop_experiment: break
@@ -217,7 +233,16 @@ class JobWriter(threading.Thread):
 
     def stop_experiment(self):
         self.__stop_experiment = True
-    
+
+        
+    def write_next_job(self):
+        "Opens the lock to write next job"        
+        self.__write_another_job = True
+
+
+    def write_jobs_synchronous(self, value):
+        self.__write_jobs_synchronously = value
+        
     # /Public Methods (internally used) ------------------------------------------------------------
 
 
@@ -245,5 +270,10 @@ class JobWriter(threading.Thread):
             tmp = self.data_handling.get_next_variable(name)
 
         return tmp
+
+
+    def job_id_written_last(self):
+        return self.__job_id_written_last
+
 
     # /Public Methods ------------------------------------------------------------------------------

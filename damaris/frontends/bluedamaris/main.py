@@ -23,18 +23,14 @@ cfg = Configuration()
 experiment_script_filename = ""
 datahandling_script_filename = ""
 
-for cmd in sys.argv[1:]:
-    if cmd=="--help":
-        print "%s --help|[[--experiment-script=file] [--datahndling-script=file]]"%sys.argv[0]
-        sys.exit(1)
-    elif cmd.find("--experiment-script=") != -1:
+for cmd in sys.argv:
+    if cmd.find("--experiment-script=") != -1:
         experiment_script_filename = cmd[20:len(cmd)]
         cfg.add_config("gui", "experiment_script", experiment_script_filename)
         
     elif cmd.find("--datahandling-script=") != -1:
         datahandling_script_filename = cmd[22:len(cmd)]
         cfg.add_config("gui", "datahandling_script", datahandling_script_filename)
-
 
 # creating instances of all components
 jw = JobWriter(config_object = cfg)
@@ -56,5 +52,5 @@ gui.connect_core(core)
 gui.start()
 jw.start()
 dh.start()
-
+    
 gui.join()

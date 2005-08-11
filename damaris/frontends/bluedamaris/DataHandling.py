@@ -63,6 +63,11 @@ class DataHandling(threading.Thread):
         # Data-Handling exported Variables
         self.__data_handling_exported_variables = { }
 
+        # Variables used for synchronising datahandling with other threads
+        self.__expecting_job = 0
+        self.__job_recieved = 0
+        self.__read_jobs_synchronously = False
+
 
     # Private Methods ------------------------------------------------------------------------------
 
@@ -79,6 +84,8 @@ class DataHandling(threading.Thread):
             # Quit thread?
             if self.quit_main_loop: break
 
+            self.__expecting_job = 0
+            self.__job_recieved = 0
             self.__busy = True
 
             # Telling other threads DataHandling is still parsing
@@ -173,33 +180,48 @@ class DataHandling(threading.Thread):
 
     def get_next_result(self):
         "Returns the next result in queue"
-
+        
         if self.__stop_experiment:
             return None
 
-        tmp = self.result_reader.get_next_result()
+        tmp = None
+
+        # Checks if a new job needs to be written
+        if self.__read_jobs_synchronously:
+            if self.__job_recieved != self.__expecting_job:
+                self.job_writer.write_next_job()
         
         while tmp is None:
 
             if not self.jobs_pending() or self.__stop_experiment:
                 return None
+            
             self.event.wait(0.1)
             tmp = self.result_reader.get_next_result()
 
         if str(tmp.__class__) == "Error_Result.Error_Result":
             self.gui.show_error_dialog("Error Result Read!", tmp.get_error_message())
 
+        self.__job_recieved = tmp.get_job_id()
+        self.__expecting_job += 1
+        
         return tmp
 
 
-    def draw(self, result):
-        "Displays a result immideately on the GUI"
-        self.gui.draw_result(result)
-
-
     def watch(self, result, channel):
-        "Watches a result (creates a history, makes it selectable etc.)"
+        "Hands a 'result' towards the GUI"
+
+        # Checks wether the GUI is still busy with drawing
+        if self.__read_jobs_synchronously:
+            while self.gui.busy_with_drawing():
+                self.event.wait(0.05)
+
         self.gui.watch_result(result, channel)
+
+        # Checks wether the GUI is still busy with drawing
+        if self.__read_jobs_synchronously:
+            while self.gui.busy_with_drawing():
+                self.event.wait(0.05)  
         
 
     def jobs_pending(self):
@@ -261,5 +283,9 @@ class DataHandling(threading.Thread):
     def stop_experiment(self):
         self.result_reader.reset()
         self.__stop_experiment = True
+
+
+    def read_jobs_synchronous(self, value):
+        self.__read_jobs_synchronously = value
 
     # /Public Methods (Internally used) ------------------------------------------------------------

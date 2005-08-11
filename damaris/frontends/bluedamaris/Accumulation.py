@@ -169,6 +169,10 @@ class Accumulation(Errorable, Drawable):
 
         return max(tmp_max)
 
+
+    def get_job_id(self):
+        return None
+
     # / Schnittstellen nach Auﬂen ------------------------------------------------------------------
     
     # ‹berladen von Operatoren ---------------------------------------------------------------------
