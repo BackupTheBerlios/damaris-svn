@@ -250,6 +250,7 @@ class DataHandling(threading.Thread):
 
     def quit_data_handling(self):
         if self.result_reader.isAlive():
+            self.result_reader.reset()
             self.result_reader.quit_result_reader()
             self.result_reader.join()
 
@@ -258,6 +259,7 @@ class DataHandling(threading.Thread):
 
 
     def stop_experiment(self):
+        self.result_reader.reset()
         self.__stop_experiment = True
 
     # /Public Methods (Internally used) ------------------------------------------------------------

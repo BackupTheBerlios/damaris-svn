@@ -168,9 +168,12 @@ class ResultReader(threading.Thread):
         buffersize=self.xml_parser.buffer_size*2
         databuffer=in_file.read(buffersize)
         while databuffer!="":
+            if self.__reset:
+                self.event_lock.clear()
+                self.__do_reset()
+                return
+
             self.xml_parser.Parse(databuffer,False)
-            # check for quit condition
-            # todo
             databuffer=in_file.read(buffersize)
 
         self.xml_parser.Parse("",True)

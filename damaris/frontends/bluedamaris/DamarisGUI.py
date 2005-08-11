@@ -546,9 +546,9 @@ class DamarisGUI(threading.Thread):
         print "\nStopping Experiment... (Waiting for components to stop safely)\n"       
 
         try:
-            self.core_interface.stop_queue()
+            self.core_interface.abort()
         except Exception, e:
-            self.show_error_dialog("Core Exception (Stop_Queue)", str(e) + "\n(for more information look into the logfile)")
+            self.show_error_dialog("Core Exception (Abort)", str(e) + "\n(for more information look into the logfile)")
         
         self.job_writer.stop_experiment()
         self.data_handler.stop_experiment()
@@ -1204,6 +1204,9 @@ class DamarisGUI(threading.Thread):
                 self.display_source_combobox.append_text(channel)
             else:
                 self.__display_channels[channel].insert(0,result) #insert inserts a copy
+
+                # Save at max 5 results per channel (implemented for History; "Watchpoint-managing class" should be implemented in future versions"
+                if len(self.__display_channels[channel]) > 5: del self.__display_channels[channel][-1]
             
             # Getting active text in Combobox and compairing it
             if channel == self.display_source_combobox.get_active_text():
