@@ -908,8 +908,7 @@ class DamarisGUI(threading.Thread):
             # now get iterator at line start
             linestart_iter=cursor_iter.copy()
             linestart_iter.set_line_offset(0)
-            linebegin=textbuffer.get_text(linestart_iter,cursor_iter)
-            linebegin.expandtabs()
+            linebegin=textbuffer.get_text(linestart_iter,cursor_iter).expandtabs()
             if (len(linebegin)!=0 and not linebegin.isspace()):
                 # just make the spaces go away
                 textbuffer.delete(linestart_iter,cursor_iter)
@@ -946,8 +945,7 @@ class DamarisGUI(threading.Thread):
                   and not spaceend_iter.is_end()
                   and spaceend_iter.get_char().isspace()):
                 spaceend_iter.forward_char()
-            linebegin=textbuffer.get_text(linestart_iter,spaceend_iter)
-            linebegin.expandtabs()
+            linebegin=textbuffer.get_text(linestart_iter,spaceend_iter).expandtabs()
             indent_length=len(linebegin)
             textbuffer.delete(linestart_iter,spaceend_iter)
             textbuffer.insert(linestart_iter,u' '*indent_length)
