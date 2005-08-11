@@ -57,13 +57,14 @@ class CoreInterface:
         if os.path.isfile(self.core_output_filename):
             i=0
             max_logs=100
-            while i<max_logs-1 and os.path.isfile(self.core_output_filename+".%02d"%i):
+            while os.path.isfile(self.core_output_filename+".%02d"%i):
                 i+=1
-            if (i==max_logs-1):
-                os.remove(self.core_output_filename+".%02d"%(max_logs-1))
+            while (i>=max_logs):
+                i-=1
+                os.remove(self.core_output_filename+".%02d"%i)
             for j in xrange(i):
                 os.rename(self.core_output_filename+".%02d"%(i-j-1),self.core_output_filename+".%02d"%(i-j))
-            os.rename(self.core_output_filename, self.core_output_filename+".00")
+            os.rename(self.core_output_filename, self.core_output_filename+".%02d"%0)
         # create logfile
         file(self.core_output_filename,"w")
         
