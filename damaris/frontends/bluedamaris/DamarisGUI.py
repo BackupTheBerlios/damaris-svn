@@ -452,6 +452,10 @@ class DamarisGUI(threading.Thread):
 
             # Waking both threads up
             try:
+                if len(glob.glob.(os.path.join(self.job_writer.get_job_writer_path(), "*.state"))) != 0:
+                    print "GUI Warning: Found another core already started. Trying to abort..."
+                    self.core_interface.abort()
+                                
                 self.core_interface.clear_job(0)
                 print "(re)starting core"
                 self.core_interface.start()
