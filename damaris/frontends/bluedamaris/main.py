@@ -23,8 +23,11 @@ cfg = Configuration()
 experiment_script_filename = ""
 datahandling_script_filename = ""
 
-for cmd in sys.argv:
-    if cmd.find("--experiment-script=") != -1:
+for cmd in sys.argv[1:]:
+    if cmd=="--help":
+        print "%s --help|[[--experiment-script=file] [--datahndling-script=file]]"%sys.argv[0]
+        sys.exit(1)
+    elif cmd.find("--experiment-script=") != -1:
         experiment_script_filename = cmd[20:len(cmd)]
         cfg.add_config("gui", "experiment_script", experiment_script_filename)
         
