@@ -23,8 +23,8 @@ class ADC_Result(Resultable, Drawable):
      
         # Title of this accumulation: set Values: Job-ID and Description (plotted in GUI -> look Drawable)
         # Is set in ResultReader.py (or in copy-construktor)
-        self.__title_pattern = "ADC-Result: job_id = %d, desc = %s, samples = %d, sampl-rate = %f Hz"
-
+        self.__title_pattern = "ADC-Result: job_id = %s, desc = %s"
+        
         # Axis-Labels (inherited from Drawable)
         self.xlabel = "Time (s)"
         self.ylabel = "Samples [Digits]"
@@ -46,7 +46,7 @@ class ADC_Result(Resultable, Drawable):
             self.description = desc
             self.job_id = job_id
             self.job_date = job_date
-            self.set_title(self.__title_pattern % (self.job_id, str(self.description), len(self.y[0]), self.sampling_rate))
+            self.set_title(self.__title_pattern % (str(self.job_id), str(self.description)))
 
         else:
             raise ValueError("Wrong usage of __init__!")
