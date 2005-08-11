@@ -406,6 +406,11 @@ class DamarisGUI(threading.Thread):
 
         # Deleting all history
         self.__display_channels = { }
+
+        self.display_x_scaling_combobox.set_active(0)
+        self.display_y_scaling_combobox.set_active(0)
+        self.display_x_scaling_combobox.set_sensitive(False)
+        self.display_y_scaling_combobox.set_sensitive(False)
         
         try:
             self.experiment_script_statusbar_label.set_text("Experiment Script: Busy...")
@@ -470,7 +475,7 @@ class DamarisGUI(threading.Thread):
             
             return True
         except:
-            # todo: stop successfully started threads
+            self.stop_experiment(None)
             self.__experiment_running = False
             raise
         
@@ -1190,8 +1195,9 @@ class DamarisGUI(threading.Thread):
 
     def watch_result(self, result, channel):
         "Interface to surface for watching some data (under a certain name)"
-     
-        gobject.idle_add(self.watch_result_idle_func, result, channel + "")
+        # Copy result and channel
+        gobject.idle_add(self.watch_result_idle_func, result + 0, channel + "")
+
 
     def watch_result_idle_func(self, result, channel):
         gtk.gdk.threads_enter()
@@ -1200,14 +1206,14 @@ class DamarisGUI(threading.Thread):
             # Check if channel exists or needs to be added
             if not self.__display_channels.has_key(channel):
                 self.__display_channels[channel] = [ ]
-                self.__display_channels[channel].insert(0,result) #insert inserts a copy
+                self.__display_channels[channel].insert(0,result) # inserts a refernce 
                 self.display_source_combobox.append_text(channel)
             else:
-                self.__display_channels[channel].insert(0,result) #insert inserts a copy
+                self.__display_channels[channel].insert(0,result) # inserts a refernce
 
                 # Save at max 5 results per channel (implemented for History; "Watchpoint-managing class" should be implemented in future versions"
                 if len(self.__display_channels[channel]) > 5: del self.__display_channels[channel][-1]
-            
+
             # Getting active text in Combobox and compairing it
             if channel == self.display_source_combobox.get_active_text():
                 self.draw_result(self.__display_channels[channel][0])

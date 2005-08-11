@@ -37,14 +37,15 @@ class Error_Result(Resultable, Drawable):
         self.error_message = error_msg
 
 
+    # No statistics
     def uses_statistics(self):
         return False
 
-
+    # Nothing to plot
     def get_ydata(self):
         return [0.0]
 
-
+    # Nothing to plot
     def get_xdata(self):
         return [0.0]
 
@@ -58,5 +59,10 @@ class Error_Result(Resultable, Drawable):
 
     def __str__(self):
         return self.error_message
+
+
+    # Preventing an error when adding something to an error-result (needed for plotting error-results)
+    def __add__(self, other):
+        return self
 
 

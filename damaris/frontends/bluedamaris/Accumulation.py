@@ -190,7 +190,6 @@ class Accumulation(Errorable, Drawable):
             if self.uses_statistics() and self.n >= 2: tmp_string += "\ny_err(%d):            " % i + str(self.yerr[i])  + "\n"
 
         tmp_string += "Indexes:             " + str(self.index) + "\n"
-        tmp_string += "Jobs added:          " + str(self.jobs_added) + "\n"
 
         tmp_string += "Samples per Channel: " + str(len(self.y[0])) + "\n"
         tmp_string += "Samplingfrequency:   " + str(self.sampling_rate) + "\n"
