@@ -56,6 +56,9 @@ class Error_Result(Resultable, Drawable):
 
         return tmp_string
 
+    def __len__(self):
+        return len(self.error_message)
+    
 
     def __str__(self):
         return self.error_message
