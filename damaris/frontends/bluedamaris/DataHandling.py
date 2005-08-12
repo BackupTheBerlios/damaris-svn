@@ -64,8 +64,8 @@ class DataHandling(threading.Thread):
         self.__data_handling_exported_variables = { }
 
         # Variables used for synchronising datahandling with other threads
-        self.__expecting_job = 0
-        self.__job_recieved = -1
+        #self.__expecting_job = 0 look into run()
+        #self.__job_recieved = -1 look into run()
         self.__read_jobs_synchronously = False
 
 
@@ -85,7 +85,7 @@ class DataHandling(threading.Thread):
             if self.quit_main_loop: break
 
             self.__expecting_job = 0
-            self.__job_recieved = 0
+            self.__job_recieved = -1
             self.__busy = True
 
             # Telling other threads DataHandling is still parsing
@@ -191,6 +191,7 @@ class DataHandling(threading.Thread):
             if self.__job_recieved >= self.__expecting_job:
                 # Can be called various times, each time will write the next job (ie. calling it three times will write three jobs)
                 self.job_writer.write_next_job()
+                #pass
         
         while tmp is None:
 
@@ -212,17 +213,18 @@ class DataHandling(threading.Thread):
     def watch(self, result, channel):
         "Hands a 'result' towards the GUI"
 
-        # Checks wether the GUI is still busy with drawing
+        # Checks wether the GUI is still busy with drawing (we need to check here, because sometimes
+        # the other thread will be interrupted by this thread, before he could set the busy-variable to true)
         if self.__read_jobs_synchronously:
             while self.gui.busy_with_drawing():
-                self.event.wait(0.05)
+                self.event.wait(0.1)
 
         self.gui.watch_result(result, channel)
 
         # Checks wether the GUI is still busy with drawing
         if self.__read_jobs_synchronously:
             while self.gui.busy_with_drawing():
-                self.event.wait(0.05)  
+                self.event.wait(0.1)  
         
 
     def jobs_pending(self):

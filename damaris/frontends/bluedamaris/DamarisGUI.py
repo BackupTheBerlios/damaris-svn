@@ -103,7 +103,7 @@ class DamarisGUI(threading.Thread):
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
         self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
         self.toolbar_check_scripts_button = self.xml_gui.get_widget("toolbar_check_scripts_button")
-        self.toolbar_sync_exec_togglebutton = self.xml_gui.get_widget("toolbar_synchronised_execution_togglebutton")
+        self.toolbar_exec_with_options_togglebutton = self.xml_gui.get_widget("toolbar_execute_with_options_button")
 
         # Scripts:
         self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
@@ -124,6 +124,13 @@ class DamarisGUI(threading.Thread):
         self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
         self.display_statistics_checkbutton = self.xml_gui.get_widget("display_statistics_checkbutton")
 
+        # Execute with options pop-up window
+        self.execute_with_options_window = self.xml_gui.get_widget("execute_with_options_window")
+        self.execute_with_options_path_label = self.xml_gui.get_widget("execute_with_options_path_label")
+        self.execute_with_options_es_checkbutton = self.xml_gui.get_widget("execute_with_options_experiment_script_checkbutton")
+        self.execute_with_options_dh_checkbutton = self.xml_gui.get_widget("execute_with_options_datahandling_checkbutton")
+        self.execute_with_options_backend_checkbutton = self.xml_gui.get_widget("execute_with_options_backend_checkbutton")
+        self.execute_with_options_sync_checkbutton = self.xml_gui.get_widget("execute_with_options_sync_run_checkbutton")
 
         # Sonstiges:
         self.main_window = self.xml_gui.get_widget("main_window")
@@ -131,6 +138,7 @@ class DamarisGUI(threading.Thread):
         self.statusbar_label = self.xml_gui.get_widget("statusbar_label")
         self.main_clipboard = gtk.Clipboard(selection = "CLIPBOARD")
         self.display_settings_frame = self.xml_gui.get_widget("display_settings_frame")
+        
         
         # / Widgets mit Variablen verbinden --------------------------------------------------------
 
@@ -156,6 +164,7 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("on_toolbar_save_file_button_clicked", self.save_file)
         self.xml_gui.signal_connect("on_toolbar_save_all_button_clicked", self.save_all_files)
         self.xml_gui.signal_connect("on_toolbar_stop_button_clicked", self.stop_experiment)
+        self.xml_gui.signal_connect("on_toolbar_execute_with_options_button_clicked", self.start_experiment_with_options)
 
         # Display:      
         self.display_source_combobox.connect("changed", self.display_source_changed)
@@ -172,12 +181,16 @@ class DamarisGUI(threading.Thread):
         self.data_handling_textbuffer.connect("modified-changed", self.textviews_modified)
         self.data_handling_textview.connect_after("move-cursor", self.textviews_moved)
         self.data_handling_textview.connect("key-press-event", self.textviews_keypress)
-        self.data_handling_textview.connect("button-release-event", self.textviews_clicked)  
+        self.data_handling_textview.connect("button-release-event", self.textviews_clicked)
+
+        # Execute-with-options window
+        self.xml_gui.signal_connect("on_execute_with_options_sync_run_checkbutton_toggled", self.execute_with_options_sync_toggled)
+        self.xml_gui.signal_connect("on_execute_with_options_run_button_clicked", self.execute_with_options_button_clicked)
 
         # Misc:
         self.main_window.connect("delete-event", self.quit_application)
         self.xml_gui.signal_connect("on_main_notebook_switch_page", self.main_notebook_page_changed)
-        
+                
         # / Signale --------------------------------------------------------------------------------
        
         # Sonstige inits ---------------------------------------------------------------------------
@@ -237,7 +250,7 @@ class DamarisGUI(threading.Thread):
 
     while tau <= 5e-3:
 
-        for accu in range(1):
+        for accu in range(2):
 
             exp = Experiment()
             print "Job %d erstellt!" % exp.get_job_id()
@@ -286,7 +299,9 @@ class DamarisGUI(threading.Thread):
 
         print "Drawing %d..." % timesignal.get_job_id()
         outer_space.watch(timesignal, "Zeitsignal")
-	outer_space.watch(acc, "Akkumulation")""")
+	outer_space.watch(acc, "Akkumulation")
+	print "Finished Drawing!"
+	""")
 
         self.data_handling_textbuffer.set_modified(False)
         self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
@@ -398,14 +413,44 @@ class DamarisGUI(threading.Thread):
         return False
 
 
+    def start_experiment_with_options(self, widget, data = None):
+
+        self.execute_with_options_path_label.set_text("Path: " + self.job_writer.get_job_writer_path())
+        self.execute_with_options_window.show_all()
+
+    def execute_with_options_button_clicked(self, widget, data = None):
+        self.execute_with_options_window.hide_all()
+        self.start_experiment(widget)
+
+
+    def execute_with_options_sync_toggled(self, data = None):
+        if self.execute_with_options_sync_checkbutton.get_active():
+            self.execute_with_options_es_checkbutton.set_active(True)
+            self.execute_with_options_dh_checkbutton.set_active(True)
+            self.execute_with_options_backend_checkbutton.set_active(True)
+            self.execute_with_options_backend_checkbutton.set_sensitive(False)
+            self.execute_with_options_dh_checkbutton.set_sensitive(False)
+            self.execute_with_options_es_checkbutton.set_sensitive(False)
+
+            # Setting synchronous run to true
+            self.job_writer.write_jobs_synchronous(True)
+            self.data_handler.read_jobs_synchronous(True)
+            print "Set to True!"
+        else:
+            self.execute_with_options_es_checkbutton.set_sensitive(True)
+            self.execute_with_options_dh_checkbutton.set_sensitive(True)
+            self.execute_with_options_backend_checkbutton.set_sensitive(True)
+
+            # Setting synchronous run to false
+            self.job_writer.write_jobs_synchronous(False)
+            self.data_handler.read_jobs_synchronous(False)
+        
+
     def start_experiment(self, widget, Data = None):
         """Callback for the "Start-Experiment" button"""
 
         self.__experiment_running = True
-
-        self.job_writer.write_jobs_synchronous(self.toolbar_sync_exec_togglebutton.get_active())
-        self.data_handler.read_jobs_synchronous(self.toolbar_sync_exec_togglebutton.get_active())
-        
+       
         # Remove all entries except "None"
         self.display_source_combobox.get_model().clear()
 
@@ -425,13 +470,14 @@ class DamarisGUI(threading.Thread):
             self.data_handling_statusbar_label.set_text("Data Handling: Busy...")
             
             self.toolbar_run_button.set_sensitive(False)
+            self.toolbar_exec_with_options_togglebutton.set_sensitive(False)
             # stop_button.set_sensitive(True) -> look sync_job_writer_data_handler
             self.toolbar_new_button.set_sensitive(False)
             self.toolbar_open_button.set_sensitive(False)
             self.toolbar_save_button.set_sensitive(False)
             self.toolbar_save_as_button.set_sensitive(False)
             self.toolbar_save_all_button.set_sensitive(False)
-
+            
             self.menu_new_item.set_sensitive(False)
             self.menu_open_item.set_sensitive(False)
             self.menu_save_item.set_sensitive(False)
@@ -531,6 +577,7 @@ class DamarisGUI(threading.Thread):
 
             if not self.data_handler.is_busy() and not self.job_writer.is_busy():
                 self.toolbar_run_button.set_sensitive(True)
+                self.toolbar_exec_with_options_togglebutton.set_sensitive(True)
                 self.toolbar_stop_button.set_sensitive(False)
                 
                 self.toolbar_new_button.set_sensitive(True)
