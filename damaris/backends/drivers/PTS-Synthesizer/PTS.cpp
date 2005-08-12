@@ -234,12 +234,12 @@ void PTS_latched::set_frequency_recursive(state_sequent& the_sequence, state::it
       }
       if (1) {
 	/* first entry for phase */      
-	register_ttls->ttls=((phase_int/100)%16)<<8|9<<12;
+	register_ttls->ttls=((phase_int/100)%16)<<4|9<<12;
 	the_sequence.insert(the_state,register_state->copy_new());
 	register_ttls->ttls&=0x7fff;
 	the_sequence.insert(the_state,register_state->copy_new());
 	/* second entry for phase */
-	register_ttls->ttls=(phase_int%10)<<4|((phase_int/10)%10)<<8|10<<12;
+	register_ttls->ttls=(phase_int%10)<<8|((phase_int/10)%10)<<4|10<<12;
 	the_sequence.insert(the_state,register_state->copy_new());
 	register_ttls->ttls&=0x7fff;
 	the_sequence.insert(the_state,register_state->copy_new());
