@@ -4,6 +4,7 @@ import os.path
 import sys
 import time
 import re
+import glob
 
 
 if sys.platform[:5]=="linux":
@@ -146,6 +147,15 @@ class CoreInterface:
             self.abort()
         except OSError:
             pass
+
+
+    def is_busy(self):
+        "Checks for a *.state file in core_path"
+        file_list = glob.glob(os.path.join(self.core_dir, "*.state"))
+        if len(file_list) != 0:
+            return True
+        else:
+            return False
         
 if __name__=="__main__":
     # for test purposes only

@@ -91,17 +91,16 @@ class JobWriter(threading.Thread):
             # Idling...
             self.__busy = False
             self.event_lock.wait()
+            self.__busy = True
 
+            # Telling other threads we are still parsing
+            self.__error_occured = None
             self.__stop_experiment = False
 
             # Quit thread?
             if self.quit_main_loop: break
 
-            self.__busy = True
             self.__jobs_written = None
-
-            # Telling other threads we are still parsing
-            self.__error_occured = None
 
             # Import needed libraries
             from Experiment import Experiment
@@ -119,14 +118,17 @@ class JobWriter(threading.Thread):
 
             # Waiting for GUI & other Threads
             while self.__ok_to_start is None:
+                if self.quit_main_loop: return
+                if self.__stop_experiment: break
                 self.event.wait(0.2)
+
+            if self.__stop_experiment: break
 
             # Error occured -> __ok_to_start will be set False (from the GUI)
             if not self.__ok_to_start:
                 self.__ok_to_start = None
                 self.event_lock.clear()
                 continue
-
 
             # Bind script to self
             try:
@@ -136,7 +138,6 @@ class JobWriter(threading.Thread):
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
                 self.gui.show_error_dialog("Experiment Script Execution Error", "Experiment Script:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
                 self.event_lock.clear()
-                self.__error_occured = None
                 self.__ok_to_start = None
                 continue
 
@@ -178,7 +179,6 @@ class JobWriter(threading.Thread):
             # Cleanup
             self.event_lock.clear()
             self.__jobs_written = Experiment.job_id + 0
-            self.__error_occured = None
             self.__ok_to_start = None
 
 
@@ -208,7 +208,10 @@ class JobWriter(threading.Thread):
 
     def start_writing(self, ready_to_start):
         "Sets internal flag to true/false, depending if errors occured in other threads (internally used)"
-        self.__ok_to_start = ready_to_start
+
+        if self.__busy:
+            self.__ok_to_start = ready_to_start
+        else: return
 
 
     def quit_job_writer(self):

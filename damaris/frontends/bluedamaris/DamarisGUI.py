@@ -138,6 +138,7 @@ class DamarisGUI(threading.Thread):
         self.statusbar_label = self.xml_gui.get_widget("statusbar_label")
         self.main_clipboard = gtk.Clipboard(selection = "CLIPBOARD")
         self.display_settings_frame = self.xml_gui.get_widget("display_settings_frame")
+        self.backend_statusbar_label = self.xml_gui.get_widget("statusbar_core_label")
         
         
         # / Widgets mit Variablen verbinden --------------------------------------------------------
@@ -189,6 +190,7 @@ class DamarisGUI(threading.Thread):
 
         # Misc:
         self.main_window.connect("delete-event", self.quit_application)
+        self.execute_with_options_window.connect("delete-event", self.execute_with_options_hide)
         self.xml_gui.signal_connect("on_main_notebook_switch_page", self.main_notebook_page_changed)
                 
         # / Signale --------------------------------------------------------------------------------
@@ -412,15 +414,22 @@ class DamarisGUI(threading.Thread):
         
         return False
 
+    def execute_with_options_hide(self, widget, data = None):
+        self.execute_with_options_window.hide_all()
+        return True
+
 
     def start_experiment_with_options(self, widget, data = None):
-
         self.execute_with_options_path_label.set_text("Path: " + self.job_writer.get_job_writer_path())
         self.execute_with_options_window.show_all()
+        return True
 
     def execute_with_options_button_clicked(self, widget, data = None):
+        # (JW, BE, DH)
+        self.execute_with_options_choice = ((int(self.execute_with_options_es_checkbutton.get_active()))<<2) + ((int(self.execute_with_options_backend_checkbutton.get_active()))<<1) + ((int(self.execute_with_options_dh_checkbutton.get_active()))<<0)
         self.execute_with_options_window.hide_all()
-        self.start_experiment(widget)
+        self.start_experiment(widget, self.execute_with_options_choice)
+        return True
 
 
     def execute_with_options_sync_toggled(self, data = None):
@@ -435,7 +444,7 @@ class DamarisGUI(threading.Thread):
             # Setting synchronous run to true
             self.job_writer.write_jobs_synchronous(True)
             self.data_handler.read_jobs_synchronous(True)
-            print "Set to True!"
+
         else:
             self.execute_with_options_es_checkbutton.set_sensitive(True)
             self.execute_with_options_dh_checkbutton.set_sensitive(True)
@@ -444,10 +453,23 @@ class DamarisGUI(threading.Thread):
             # Setting synchronous run to false
             self.job_writer.write_jobs_synchronous(False)
             self.data_handler.read_jobs_synchronous(False)
+
+        return True
         
 
-    def start_experiment(self, widget, Data = None):
+    def start_experiment(self, widget, data = None):
         """Callback for the "Start-Experiment" button"""
+
+        if data is None:
+            choice = 7
+        else:
+            choice = data
+            if choice == 0:
+                print "Done."
+                return True
+            elif choice == 5:
+                print "Warning: Running experiment- and datahandling script without backend is not allowed! (prevents lockup)"
+                return True
 
         self.__experiment_running = True
        
@@ -466,8 +488,6 @@ class DamarisGUI(threading.Thread):
         self.display_y_scaling_combobox.set_sensitive(False)
         
         try:
-            self.experiment_script_statusbar_label.set_text("Experiment Script: Busy...")
-            self.data_handling_statusbar_label.set_text("Data Handling: Busy...")
             
             self.toolbar_run_button.set_sensitive(False)
             self.toolbar_exec_with_options_togglebutton.set_sensitive(False)
@@ -487,46 +507,66 @@ class DamarisGUI(threading.Thread):
             self.experiment_script_textview.set_sensitive(False)
             self.data_handling_textview.set_sensitive(False)
             
-
             # Delete existing job-files
-            file_list = glob.glob(os.path.join(self.job_writer.get_job_writer_path(), "job*"))
-            try:
-                for job_file in file_list:
-                    if job_file.find(".state") != -1:
-                        continue
-                    os.remove(job_file)
+            if bool(choice & 4):
+                file_list = glob.glob(os.path.join(self.job_writer.get_job_writer_path(), "job.[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]"))
+                try:
+                    for job_file in file_list:
+                        os.remove(job_file)
 
-                print "\nWarning: Deleted %d job/result files" % len(file_list)
-            except IOError, e:
-                self.gui.show_error_dialog("File Error", "IOError: Cannot delete Job-Files" + str(e))
-                return True
-            except Exception, e:
-                self.gui.show_error_dialog("Error", "Exception: Cannot delete Job-Files" + str(e))
-                return True                
+                    print "\nWarning: Deleted %d job-files" % len(file_list)
+                except IOError, e:
+                    self.gui.show_error_dialog("File Error", "IOError: Cannot delete Job-Files" + str(e))
+                    return True
+                except Exception, e:
+                    self.gui.show_error_dialog("Error", "Exception: Cannot delete Job-Files" + str(e))
+                    return True
 
-            # Waking both threads up
-            try:
-                if len(glob.glob(os.path.join(self.job_writer.get_job_writer_path(), "*.state"))) != 0:
-                    print "GUI Warning: Found another core already started. Trying to abort..."
-                    self.core_interface.abort()
-                                
-                self.core_interface.clear_job(0)
-                print "(re)starting core"
-                self.core_interface.start()
-            except EnvironmentError, env_e:
-                self.show_error_dialog("Core Exception (clear_job / start)", str(env_e) + "\n\n(Maybe there is still a (dummy)core process active)")
-                self.check_job_writer_data_handler_finished()
-                return True
-            except Exception, e:
-                self.show_error_dialog("Core Exception (clear_job / start)", str(e) + "\n\n(Maybe there is still a (dummy)core process active)")
-                self.check_job_writer_data_handler_finished()
-                return True
+            # Delete existing result-files
+            if bool(choice & 2):
+                file_list = glob.glob(os.path.join(self.job_writer.get_job_writer_path(), "*.result"))
+                try:
+                    for job_file in file_list:
+                        os.remove(job_file)
+
+                    print "\nWarning: Deleted %d result-files" % len(file_list)
+                except IOError, e:
+                    self.gui.show_error_dialog("File Error", "IOError: Cannot delete Job-Files" + str(e))
+                    return True
+                except Exception, e:
+                    self.gui.show_error_dialog("Error", "Exception: Cannot delete Job-Files" + str(e))
+                    return True  
+
+            # Depending on execute_with_options run threads
+            if bool(choice & 2):
+                try:
+                    self.backend_statusbar_label.set_text("Backend: Busy...")
+                    if len(glob.glob(os.path.join(self.job_writer.get_job_writer_path(), "*.state"))) != 0:
+                        print "GUI Warning: Found another core already started. Trying to abort..."
+                        self.core_interface.abort()
+                                    
+                    self.core_interface.clear_job(0)
+                    print "(re)starting core (%s)" % str(bool(choice & 2))
+                    self.core_interface.start()
+                except EnvironmentError, env_e:
+                    self.show_error_dialog("Core Exception (clear_job / start)", str(env_e) + "\n\n(Maybe there is still a (dummy)core process active)")
+                    self.check_job_writer_data_handler_finished()
+                    return True
+                except Exception, e:
+                    self.show_error_dialog("Core Exception (clear_job / start)", str(e) + "\n\n(Maybe there is still a (dummy)core process active)")
+                    self.check_job_writer_data_handler_finished()
+                    return True
             
-            print "Waking JobWriter up"
-            self.job_writer.wake_up()
-
-            print "Waking DataHandler up"
-            self.data_handler.wake_up()
+            if bool(choice & 4):
+                print "Waking JobWriter up (%s)" % str(bool(choice & 4))
+                self.experiment_script_statusbar_label.set_text("Experiment Script: Busy...")
+                self.job_writer.wake_up()
+            
+            
+            if bool(choice & 1):
+                print "Waking DataHandler up (%s)" % str(bool(choice & 1))
+                self.data_handling_statusbar_label.set_text("Data Handling: Busy...")
+                self.data_handler.wake_up()
 
             gobject.timeout_add(100, self.sync_job_writer_data_handler)
             gobject.timeout_add(500, self.check_job_writer_data_handler_finished)
@@ -543,10 +583,12 @@ class DamarisGUI(threading.Thread):
         try:
             gtk.gdk.threads_enter()
             # Check if still parsing
-            if self.job_writer.error_occured() == None:
+            if (self.job_writer.error_occured()) == None and (self.job_writer.is_busy() == True):
+                print "Still parsin (JW)"
                 return True
 
-            if self.data_handler.error_occured() == None:
+            if self.data_handler.error_occured() == None and (self.data_handler.is_busy() == True):
+                print "Still parsin (DH)"
                 return True
 
             # Check if an error occured
@@ -575,7 +617,10 @@ class DamarisGUI(threading.Thread):
             if not self.data_handler.is_busy():
                 self.data_handling_statusbar_label.set_text("Data Handling: Idle.")
 
-            if not self.data_handler.is_busy() and not self.job_writer.is_busy():
+            if not self.core_interface.is_busy():
+                self.backend_statusbar_label.set_text("Backend: Idle.")
+
+            if not self.data_handler.is_busy() and not self.job_writer.is_busy() and not self.core_interface.is_busy():
                 self.toolbar_run_button.set_sensitive(True)
                 self.toolbar_exec_with_options_togglebutton.set_sensitive(True)
                 self.toolbar_stop_button.set_sensitive(False)

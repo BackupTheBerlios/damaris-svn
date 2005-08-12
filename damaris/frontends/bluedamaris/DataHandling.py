@@ -78,6 +78,10 @@ class DataHandling(threading.Thread):
             # Idling...
             self.__busy = False
             self.event_lock.wait()
+            self.__busy = True
+
+            # Telling other threads DataHandling is still parsing
+            self.__error_occured = None
 
             self.__stop_experiment = False
 
@@ -86,10 +90,6 @@ class DataHandling(threading.Thread):
 
             self.__expecting_job = 0
             self.__job_recieved = -1
-            self.__busy = True
-
-            # Telling other threads DataHandling is still parsing
-            self.__error_occured = None
 
             # Import needed libraries
             from ADC_Result import ADC_Result
@@ -109,7 +109,11 @@ class DataHandling(threading.Thread):
 
             # Waiting for GUI and other Threads
             while self.__ok_to_start is None:
+                if self.quit_main_loop: return
+                if self.__stop_experiment: break
                 self.event.wait(0.2)
+
+            if self.__stop_experiment: break
 
             # Error occured -> __ok_to_start will be set to False (from the GUI)
             if not self.__ok_to_start:
@@ -257,10 +261,11 @@ class DataHandling(threading.Thread):
         return self.__busy
 
 
-
     def start_handling(self, ready_for_start):
         "Sets an internal flag true/false if handling can start and no errors occured in this or other threads (only used internally)"
-        self.__ok_to_start = ready_for_start
+        if self.__busy:
+            self.__ok_to_start = ready_for_start
+        else: return
 
 
     def wake_up(self):

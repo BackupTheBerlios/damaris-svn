@@ -1274,10 +1274,72 @@ log</property>
 	<widget class="GtkTable" id="statusbar_table">
 	  <property name="visible">True</property>
 	  <property name="n_rows">1</property>
-	  <property name="n_columns">6</property>
+	  <property name="n_columns">8</property>
 	  <property name="homogeneous">False</property>
 	  <property name="row_spacing">0</property>
 	  <property name="column_spacing">0</property>
+
+	  <child>
+	    <widget class="GtkVSeparator" id="statusbar_separator1">
+	      <property name="visible">True</property>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">0</property>
+	      <property name="right_attach">1</property>
+	      <property name="top_attach">0</property>
+	      <property name="bottom_attach">1</property>
+	      <property name="x_padding">3</property>
+	      <property name="x_options">fill</property>
+	      <property name="y_options">fill</property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkLabel" id="label33">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes"> </property>
+	      <property name="use_underline">False</property>
+	      <property name="use_markup">False</property>
+	      <property name="justify">GTK_JUSTIFY_LEFT</property>
+	      <property name="wrap">False</property>
+	      <property name="selectable">False</property>
+	      <property name="xalign">0</property>
+	      <property name="yalign">0.5</property>
+	      <property name="xpad">0</property>
+	      <property name="ypad">0</property>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">7</property>
+	      <property name="right_attach">8</property>
+	      <property name="top_attach">0</property>
+	      <property name="bottom_attach">1</property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkLabel" id="statusbar_data_handling_label">
+	      <property name="visible">True</property>
+	      <property name="label" translatable="yes">Data Handling: Idle.</property>
+	      <property name="use_underline">False</property>
+	      <property name="use_markup">False</property>
+	      <property name="justify">GTK_JUSTIFY_LEFT</property>
+	      <property name="wrap">False</property>
+	      <property name="selectable">False</property>
+	      <property name="xalign">0.5</property>
+	      <property name="yalign">0.5</property>
+	      <property name="xpad">0</property>
+	      <property name="ypad">0</property>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">5</property>
+	      <property name="right_attach">6</property>
+	      <property name="top_attach">0</property>
+	      <property name="bottom_attach">1</property>
+	      <property name="x_options">fill</property>
+	      <property name="y_options"></property>
+	    </packing>
+	  </child>
 
 	  <child>
 	    <widget class="GtkLabel" id="statusbar_experiment_script_label">
@@ -1289,7 +1351,7 @@ log</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
 	      <property name="wrap">False</property>
 	      <property name="selectable">False</property>
-	      <property name="xalign">0.019999999553</property>
+	      <property name="xalign">0.5</property>
 	      <property name="yalign">0.5</property>
 	      <property name="xpad">0</property>
 	      <property name="ypad">0</property>
@@ -1305,9 +1367,9 @@ log</property>
 	  </child>
 
 	  <child>
-	    <widget class="GtkLabel" id="statusbar_data_handling_label">
+	    <widget class="GtkLabel" id="statusbar_core_label">
 	      <property name="visible">True</property>
-	      <property name="label" translatable="yes">Data Handling: Idle.</property>
+	      <property name="label" translatable="yes">Backend: Idle.</property>
 	      <property name="use_underline">False</property>
 	      <property name="use_markup">False</property>
 	      <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -1329,44 +1391,6 @@ log</property>
 	  </child>
 
 	  <child>
-	    <widget class="GtkLabel" id="label33">
-	      <property name="visible">True</property>
-	      <property name="label" translatable="yes"> </property>
-	      <property name="use_underline">False</property>
-	      <property name="use_markup">False</property>
-	      <property name="justify">GTK_JUSTIFY_LEFT</property>
-	      <property name="wrap">False</property>
-	      <property name="selectable">False</property>
-	      <property name="xalign">0</property>
-	      <property name="yalign">0.5</property>
-	      <property name="xpad">0</property>
-	      <property name="ypad">0</property>
-	    </widget>
-	    <packing>
-	      <property name="left_attach">5</property>
-	      <property name="right_attach">6</property>
-	      <property name="top_attach">0</property>
-	      <property name="bottom_attach">1</property>
-	      <property name="y_options"></property>
-	    </packing>
-	  </child>
-
-	  <child>
-	    <widget class="GtkVSeparator" id="statusbar_separator1">
-	      <property name="visible">True</property>
-	    </widget>
-	    <packing>
-	      <property name="left_attach">0</property>
-	      <property name="right_attach">1</property>
-	      <property name="top_attach">0</property>
-	      <property name="bottom_attach">1</property>
-	      <property name="x_padding">3</property>
-	      <property name="x_options">fill</property>
-	      <property name="y_options">fill</property>
-	    </packing>
-	  </child>
-
-	  <child>
 	    <widget class="GtkVSeparator" id="statusbar_separator2">
 	      <property name="visible">True</property>
 	    </widget>
@@ -1382,12 +1406,27 @@ log</property>
 	  </child>
 
 	  <child>
-	    <widget class="GtkVSeparator" id="vseparator1">
+	    <widget class="GtkVSeparator" id="vseparator2">
 	      <property name="visible">True</property>
 	    </widget>
 	    <packing>
 	      <property name="left_attach">4</property>
 	      <property name="right_attach">5</property>
+	      <property name="top_attach">0</property>
+	      <property name="bottom_attach">1</property>
+	      <property name="x_padding">5</property>
+	      <property name="x_options">fill</property>
+	      <property name="y_options">fill</property>
+	    </packing>
+	  </child>
+
+	  <child>
+	    <widget class="GtkVSeparator" id="vseparator1">
+	      <property name="visible">True</property>
+	    </widget>
+	    <packing>
+	      <property name="left_attach">6</property>
+	      <property name="right_attach">7</property>
 	      <property name="top_attach">0</property>
 	      <property name="bottom_attach">1</property>
 	      <property name="x_padding">5</property>
