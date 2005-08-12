@@ -65,7 +65,7 @@ class DataHandling(threading.Thread):
 
         # Variables used for synchronising datahandling with other threads
         self.__expecting_job = 0
-        self.__job_recieved = 0
+        self.__job_recieved = -1
         self.__read_jobs_synchronously = False
 
 
@@ -188,7 +188,8 @@ class DataHandling(threading.Thread):
 
         # Checks if a new job needs to be written
         if self.__read_jobs_synchronously:
-            if self.__job_recieved != self.__expecting_job:
+            if self.__job_recieved >= self.__expecting_job:
+                # Can be called various times, each time will write the next job (ie. calling it three times will write three jobs)
                 self.job_writer.write_next_job()
         
         while tmp is None:
@@ -203,7 +204,7 @@ class DataHandling(threading.Thread):
             self.gui.show_error_dialog("Error Result Read!", tmp.get_error_message())
 
         self.__job_recieved = tmp.get_job_id()
-        self.__expecting_job += 1
+        self.__expecting_job = self.job_writer.job_id_written_last()
         
         return tmp
 

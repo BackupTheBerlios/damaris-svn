@@ -77,7 +77,7 @@ class JobWriter(threading.Thread):
 
         # Used to determine, if a synchronous experiment should be run
         self.__write_jobs_synchronously = False
-        self.__write_another_job = False # Command for writing another job
+        self.__write_another_job = 0 # Command for writing another job (or X jobs)
         self.__job_id_written_last = -1 # Last job-id written to disc
 
 
@@ -153,11 +153,11 @@ class JobWriter(threading.Thread):
 
                     # Experiment started with sync-flag?
                     if self.__write_jobs_synchronously:
-                        while not self.__write_another_job:
+                        while not bool(self.__write_another_job):
                             self.event.wait(0.1)
                             if self.__stop_experiment: break
 
-                        self.__write_another_job = False
+                        self.__write_another_job -= 1
                         
 
                     # Stop Experiment?
@@ -237,7 +237,7 @@ class JobWriter(threading.Thread):
         
     def write_next_job(self):
         "Opens the lock to write next job"        
-        self.__write_another_job = True
+        self.__write_another_job += 1
 
 
     def write_jobs_synchronous(self, value):
