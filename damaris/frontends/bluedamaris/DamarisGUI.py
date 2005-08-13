@@ -594,7 +594,8 @@ class DamarisGUI(threading.Thread):
             # Check if an error occured
             if self.job_writer.error_occured() == True or self.data_handler.error_occured() == True:
                 self.job_writer.start_writing(False)
-                self.data_handler.start_handling(False)            
+                self.data_handler.start_handling(False)
+                self.core_interface.stop_queue()
                 return False
             else:
                 self.job_writer.start_writing(True)

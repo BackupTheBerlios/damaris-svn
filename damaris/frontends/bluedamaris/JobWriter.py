@@ -134,6 +134,7 @@ class JobWriter(threading.Thread):
             try:
                 exec experiment_script_string in locals()
                 self.experiment_script = experiment_script
+
             except Exception, e:
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
                 self.gui.show_error_dialog("Experiment Script Execution Error", "Experiment Script:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
