@@ -173,6 +173,7 @@ class DamarisGUI(threading.Thread):
         self.xml_gui.signal_connect("on_display_statistics_checkbutton_toggled", self.display_statistics_toggled)
         self.xml_gui.signal_connect("on_display_x_scaling_combobox_changed", self.display_x_scaling_changed)
         self.xml_gui.signal_connect("on_display_y_scaling_combobox_changed", self.display_y_scaling_changed)
+        self.xml_gui.signal_connect("on_display_save_data_as_text_button_clicked", self.save_display_data_as_text)
         
         # Scripts:        
         self.experiment_script_textbuffer.connect("modified-changed", self.textviews_modified)
@@ -340,7 +341,7 @@ class DamarisGUI(threading.Thread):
         self.matplot_canvas = FigureCanvas(self.matplot_figure)
 
         self.display_table = self.xml_gui.get_widget("display_table")
-        self.display_table.attach(self.matplot_canvas, 0, 5, 0, 1, gtk.EXPAND | gtk.FILL, gtk.EXPAND | gtk.FILL, 0, 0)
+        self.display_table.attach(self.matplot_canvas, 0, 6, 0, 1, gtk.EXPAND | gtk.FILL, gtk.EXPAND | gtk.FILL, 0, 0)
         self.matplot_canvas.show()
 
         # Matplot Toolbar hinzufügen (Display_Table, 2. Zeile) 
@@ -908,8 +909,118 @@ class DamarisGUI(threading.Thread):
 
         self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))        
         return True
-       
 
+
+    def save_display_data_as_text(self, widget, data = None):
+        "Saves the currently active figure as textdata"
+
+        def response(self, response_id, outer_space):
+            if response_id == gtk.RESPONSE_OK:
+
+                file_name = dialog.get_filename()
+                if file_name is None:
+                    return True
+
+                if os.access(file_name, os.F_OK):
+                    answer = NiftyGuiElements.show_question_dialog_compulsive(outer_space.main_window, "File Exists", "Do you want to overwrite the existing file %s?" % file_name)
+
+                    if answer == 1:
+                        return True
+
+                if os.access(file_name, os.F_OK) and not os.access(file_name, os.W_OK):
+                    outer_space.show_error_dialog("File I/O Error", "Cannot save file to %s" % file_name)
+                    return True
+
+                try:
+                    text_file = file(file_name, "w")
+                except:
+                    outer_space.show_error_dialog("File I/O Error", "Cannot save file to %s" % file_name)
+                    return True
+
+
+                x_re = outer_space.graphen[0].get_xdata()
+                y_re = outer_space.graphen[0].get_ydata()
+                x_im = outer_space.graphen[1].get_xdata()
+                y_im = outer_space.graphen[1].get_ydata()
+
+                y_re_err_p = outer_space.graphen[2].get_ydata()
+                y_re_err_m = outer_space.graphen[3].get_ydata()
+                y_im_err_p = outer_space.graphen[4].get_ydata()
+                y_im_err_m = outer_space.graphen[5].get_ydata()
+
+                text_file.write("X_RE,Y_RE,Y_RE_ERR+,Y_RE_ERR-,X_IM,Y_IM,Y_IM_ERR+,Y_IM_ERR-\n")
+
+                tmp_string = []
+
+                max_of_all = max([len(x_re), len(y_re), len(x_im), len(y_im), len(y_re_err_p), len(y_re_err_m), len(y_im_err_p), len(y_im_err_m)])
+
+                # Creating space for the largest array
+                for i in range(max_of_all):
+                    tmp_string.append("")
+
+                    if len(x_re) > i:
+                        tmp_string[i] += str(x_re[i])
+                    else:
+                        tmp_string[i] += ","
+
+                    if len(y_re) > i:
+                        tmp_string[i] += "," + str(y_re[i])
+                    else:
+                        tmp_string[i] += ","
+                    
+                    if len(y_re_err_p) > i:
+                        tmp_string[i] += "," + str(y_re_err_p[i])
+                    else:
+                        tmp_string[i] += ",0.0"
+
+                    if len(y_re_err_m) > i:
+                        tmp_string[i] += "," + str(y_re_err_m[i])
+                    else:
+                        tmp_string[i] += ",0.0"
+
+                    if len(x_im) > i:
+                        tmp_string[i] += "," + str(x_im[i])
+                    else:
+                        tmp_string[i] += ","
+
+                    if len(y_im) > i:
+                        tmp_string[i] += "," + str(y_im[i])
+                    else:
+                        tmp_string[i] += ","
+                    
+                    if len(y_im_err_p) > i:
+                        tmp_string[i] += "," + str(y_im_err_p[i])
+                    else:
+                        tmp_string[i] += ",0.0"
+
+                    if len(y_im_err_m) > i:
+                        tmp_string[i] += "," + str(y_im_err_m[i])
+                    else:
+                        tmp_string[i] += ",0.0"
+
+                    tmp_string[i] += "\n"
+                        
+                text_file.writelines(tmp_string)
+                text_file.close()
+
+            else:
+                return True
+        
+
+        dialog = gtk.FileChooserDialog(title="Save figure as text...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+
+        dialog.set_default_response(gtk.RESPONSE_OK)
+        dialog.set_select_multiple(False)
+
+        # Event-Handler for responce-signal (when one of the button is pressed)
+        dialog.connect("response", response, self)
+
+        dialog.run()
+        dialog.destroy()
+
+        return True
+
+        
     def main_notebook_page_changed(self, widget, page, page_num, data = None):
         "Make sure you can only access toolbar-buttons usable for the open notebook-tab"
 
