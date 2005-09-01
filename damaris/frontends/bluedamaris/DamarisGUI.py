@@ -21,8 +21,10 @@ import os
 import os.path
 import sys
 import glob
+import time
 
 import NiftyGuiElements
+import MeasurementResult
 
 # switch comments for gtk over gtkagg
 #from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
@@ -242,35 +244,8 @@ class DamarisGUI(threading.Thread):
         else:
                     
             self.experiment_script_textbuffer.set_text("""def experiment_script(outer_space):
-
-    pi = 1e-3
-
-    tau = 1e-3
-    px = 0
-    py = 90
-    mx = 180
-    my = 270
-
-    while tau <= 5e-3:
-
-        for accu in range(2):
-
-            exp = Experiment()
-            print "Job %d erstellt!" % exp.get_job_id()
-            exp.set_description("tau", tau)
-
-            exp.set_frequency(100e6, 0)
-
-            exp.rf_pulse(0, pi/2)
-            exp.wait(tau)
-            exp.rf_pulse(0, pi)
-            exp.wait(tau + 1e-6)
-
-            exp.record(512, 1e6)
-
-            yield exp
-
-        tau += 1e-3""")
+    pass
+""")
 
         self.experiment_script_textbuffer.set_modified(False)
 
@@ -291,20 +266,8 @@ class DamarisGUI(threading.Thread):
         else:
 
             self.data_handling_textbuffer.set_text("""def data_handling(outer_space):
-
-    acc = Accumulation(error = True)
-
-    while 1:
-        timesignal = outer_space.get_next_result()
-        if timesignal is None: break
-        
-	acc = acc + timesignal
-
-        print "Drawing %d..." % timesignal.get_job_id()
-        outer_space.watch(timesignal, "Zeitsignal")
-	outer_space.watch(acc, "Akkumulation")
-	print "Finished Drawing!"
-	""")
+    pass
+""")
 
         self.data_handling_textbuffer.set_modified(False)
         self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
@@ -323,12 +286,7 @@ class DamarisGUI(threading.Thread):
         # Ersten Plot erstellen und Referenz des ersten Eintrags im zurückgegebenen Tupel speichern
         # Voerst: graphen[0,1] = Real und Img-Kanal; [2,3] = Real-Fehler, [4,5] = Img-Fehler
         self.graphen = []
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 2))
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 2))
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
-        self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
+        self.measurementresultgraph=None
 
         self.matplot_axes.set_ylim([0.0,1.0])
         self.matplot_axes.set_xlim([0.0,1.0])
@@ -922,7 +880,9 @@ class DamarisGUI(threading.Thread):
                     return True
 
                 if os.access(file_name, os.F_OK):
-                    answer = NiftyGuiElements.show_question_dialog_compulsive(outer_space.main_window, "File Exists", "Do you want to overwrite the existing file %s?" % file_name)
+                    answer = NiftyGuiElements.show_question_dialog_compulsive(outer_space.main_window,
+                                                                              "File Exists",
+                                                                               "Do you want to overwrite the existing file %s?" % file_name)
 
                     if answer == 1:
                         return True
@@ -937,71 +897,78 @@ class DamarisGUI(threading.Thread):
                     outer_space.show_error_dialog("File I/O Error", "Cannot save file to %s" % file_name)
                     return True
 
+                # get information what to save
+                channel = outer_space.display_source_combobox.get_active_text()
+                data=outer_space.__display_channels[channel][0]
+                # decide how to save
+                if (isinstance(data,MeasurementResult.MeasurementResult)):
+                    text_file.write("# \"%s\" saved from display at %s\n"%(channel,time.ctime()))
+                    data.write_as_csv(text_file)
+                else:
+                    x_re = outer_space.graphen[0].get_xdata()
+                    y_re = outer_space.graphen[0].get_ydata()
+                    x_im = outer_space.graphen[1].get_xdata()
+                    y_im = outer_space.graphen[1].get_ydata()
 
-                x_re = outer_space.graphen[0].get_xdata()
-                y_re = outer_space.graphen[0].get_ydata()
-                x_im = outer_space.graphen[1].get_xdata()
-                y_im = outer_space.graphen[1].get_ydata()
+                    y_re_err_p = outer_space.graphen[2].get_ydata()
+                    y_re_err_m = outer_space.graphen[3].get_ydata()
+                    y_im_err_p = outer_space.graphen[4].get_ydata()
+                    y_im_err_m = outer_space.graphen[5].get_ydata()
 
-                y_re_err_p = outer_space.graphen[2].get_ydata()
-                y_re_err_m = outer_space.graphen[3].get_ydata()
-                y_im_err_p = outer_space.graphen[4].get_ydata()
-                y_im_err_m = outer_space.graphen[5].get_ydata()
+                    text_file.write("X_RE,Y_RE,Y_RE_ERR+,Y_RE_ERR-,X_IM,Y_IM,Y_IM_ERR+,Y_IM_ERR-\n")
 
-                text_file.write("X_RE,Y_RE,Y_RE_ERR+,Y_RE_ERR-,X_IM,Y_IM,Y_IM_ERR+,Y_IM_ERR-\n")
+                    tmp_string = []
 
-                tmp_string = []
+                    max_of_all = max([len(x_re), len(y_re), len(x_im), len(y_im), len(y_re_err_p), len(y_re_err_m), len(y_im_err_p), len(y_im_err_m)])
 
-                max_of_all = max([len(x_re), len(y_re), len(x_im), len(y_im), len(y_re_err_p), len(y_re_err_m), len(y_im_err_p), len(y_im_err_m)])
+                    # Creating space for the largest array
+                    for i in range(max_of_all):
+                        tmp_string.append("")
 
-                # Creating space for the largest array
-                for i in range(max_of_all):
-                    tmp_string.append("")
+                        if len(x_re) > i:
+                            tmp_string[i] += str(x_re[i])
+                        else:
+                            tmp_string[i] += ","
 
-                    if len(x_re) > i:
-                        tmp_string[i] += str(x_re[i])
-                    else:
-                        tmp_string[i] += ","
-
-                    if len(y_re) > i:
-                        tmp_string[i] += "," + str(y_re[i])
-                    else:
-                        tmp_string[i] += ","
+                        if len(y_re) > i:
+                            tmp_string[i] += "," + str(y_re[i])
+                        else:
+                            tmp_string[i] += ","
                     
-                    if len(y_re_err_p) > i:
-                        tmp_string[i] += "," + str(y_re_err_p[i])
-                    else:
-                        tmp_string[i] += ",0.0"
+                        if len(y_re_err_p) > i:
+                            tmp_string[i] += "," + str(y_re_err_p[i])
+                        else:
+                            tmp_string[i] += ",0.0"
 
-                    if len(y_re_err_m) > i:
-                        tmp_string[i] += "," + str(y_re_err_m[i])
-                    else:
-                        tmp_string[i] += ",0.0"
+                        if len(y_re_err_m) > i:
+                            tmp_string[i] += "," + str(y_re_err_m[i])
+                        else:
+                            tmp_string[i] += ",0.0"
 
-                    if len(x_im) > i:
-                        tmp_string[i] += "," + str(x_im[i])
-                    else:
-                        tmp_string[i] += ","
+                        if len(x_im) > i:
+                            tmp_string[i] += "," + str(x_im[i])
+                        else:
+                            tmp_string[i] += ","
 
-                    if len(y_im) > i:
-                        tmp_string[i] += "," + str(y_im[i])
-                    else:
-                        tmp_string[i] += ","
+                        if len(y_im) > i:
+                            tmp_string[i] += "," + str(y_im[i])
+                        else:
+                            tmp_string[i] += ","
                     
-                    if len(y_im_err_p) > i:
-                        tmp_string[i] += "," + str(y_im_err_p[i])
-                    else:
-                        tmp_string[i] += ",0.0"
+                        if len(y_im_err_p) > i:
+                            tmp_string[i] += "," + str(y_im_err_p[i])
+                        else:
+                            tmp_string[i] += ",0.0"
 
-                    if len(y_im_err_m) > i:
-                        tmp_string[i] += "," + str(y_im_err_m[i])
-                    else:
-                        tmp_string[i] += ",0.0"
+                        if len(y_im_err_m) > i:
+                            tmp_string[i] += "," + str(y_im_err_m[i])
+                        else:
+                            tmp_string[i] += ",0.0"
 
-                    tmp_string[i] += "\n"
+                        tmp_string[i] += "\n"
                         
-                text_file.writelines(tmp_string)
-                text_file.close()
+                    text_file.writelines(tmp_string)
+                    text_file.close()
 
             else:
                 return True
@@ -1192,30 +1159,10 @@ class DamarisGUI(threading.Thread):
 
         # Event triggers when we init the box -> Catch Channel "None"
         if channel == "None":
-            self.graphen[0].set_data([0], [0])
-            self.graphen[1].set_data([0], [0])
-            # Real-Fehler
-            self.graphen[2].set_data([0.0],[0.0])
-            self.graphen[3].set_data([0.0],[0.0])
-            # Img-Fehler
-            self.graphen[4].set_data([0.0],[0.0])
-            self.graphen[5].set_data([0.0],[0.0])
-
-            self.matplot_axes.set_title("")
-            self.matplot_axes.set_ylabel("")
-            self.matplot_axes.set_xlabel("")                                
-            
+            self.matplot_axes.clear()
+            self.matplot_axes.grid(True)
             self.matplot_canvas.draw()
             return True
-
-        if not self.__display_channels[channel][0].uses_statistics():
-        # Maybe theres a better place for deleting the error-lines
-            # Real-Fehler
-            self.graphen[2].set_data([0.0],[0.0])
-            self.graphen[3].set_data([0.0],[0.0])
-            # Img-Fehler
-            self.graphen[4].set_data([0.0],[0.0])
-            self.graphen[5].set_data([0.0],[0.0])
             
         self.draw_result(self.__display_channels[channel][0])
         return True
@@ -1227,13 +1174,14 @@ class DamarisGUI(threading.Thread):
 
         if channel == "None":
             return True
-
+        elif isinstance(self.__display_channels[channel][0],MeasurementResult.MeasurementResult):
+            # do nothing
+            pass
         else:
             if self.display_autoscaling_checkbutton.get_active():
                 self.matplot_axes.set_xlim(self.__display_channels[channel][0].get_xmin(), self.__display_channels[channel][0].get_xmax())
                 self.matplot_axes.set_ylim(self.__display_channels[channel][0].get_ymin(), self.__display_channels[channel][0].get_ymax())
                 self.matplot_canvas.draw()
-        
         return True
 
 
@@ -1327,6 +1275,67 @@ class DamarisGUI(threading.Thread):
 
 
     def draw_result_idle_func(self, in_result):
+        if isinstance(in_result,MeasurementResult.MeasurementResult):
+            self.graphen=[]
+            # clear errorbars before
+            self.matplot_axes.clear()
+            self.matplot_axes.grid(True)
+            return self.draw_result_idle_func_achim(in_result)
+        else:
+            if self.measurementresultgraph is not None:
+                self.matplot_axes.clear()
+                self.matplot_axes.grid(True)
+                self.measurementresultgraph=None
+            if len(self.graphen)==0:
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 2))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 2))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
+            if not in_result.uses_statistics():
+                # Maybe theres a better place for deleting the error-lines
+                # Real-Fehler
+                self.graphen[2].set_data([0.0],[0.0])
+                self.graphen[3].set_data([0.0],[0.0])
+                # Img-Fehler
+                self.graphen[4].set_data([0.0],[0.0])
+                self.graphen[5].set_data([0.0],[0.0])
+            return self.draw_result_idle_func_orig(in_result)
+
+    def draw_result_idle_func_achim(self, in_result):
+        gtk.gdk.threads_enter()
+
+        try:
+            # Initial rescaling needed?
+            [k,v,e]=in_result.get_errorplotdata()
+            xmin=min(k)
+            xmax=max(k)
+            ymin=min(map(lambda i:v[i]-e[i],xrange(len(v))))
+            ymax=max(map(lambda i:v[i]+e[i],xrange(len(v))))
+            if self.__rescale:
+                self.matplot_axes.set_xlim(xmin, xmax)
+                self.matplot_axes.set_ylim(ymin, ymax)
+                self.__rescale = False
+
+            # add error bars
+            [k,v,e]=in_result.get_errorplotdata()
+            self.measurementresultgraph=self.matplot_axes.errorbar(x=k, y=v, yerr=e, fmt="b+")
+
+            # Any title to be set?
+            if in_result.get_title() is not None:
+                self.matplot_axes.set_title(in_result.get_title())
+            else:
+                self.matplot_axes.set_title("")
+
+            self.matplot_canvas.draw()
+            return False
+        
+        finally:
+            gtk.gdk.threads_leave()
+            
+
+    def draw_result_idle_func_orig(self, in_result):
         gtk.gdk.threads_enter()
 
         try:
