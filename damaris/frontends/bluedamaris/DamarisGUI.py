@@ -22,6 +22,7 @@ import os.path
 import sys
 import glob
 import time
+import datetime
 
 import NiftyGuiElements
 import MeasurementResult
@@ -126,6 +127,12 @@ class DamarisGUI(threading.Thread):
         self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
         self.display_statistics_checkbutton = self.xml_gui.get_widget("display_statistics_checkbutton")
 
+        # Log-Messages
+        self.log_messages_textview = self.xml_gui.get_widget("messages_textview")
+        self.log_messages_textbuffer = self.log_messages_textview.get_buffer()
+        self.log_messages_tab_label = self.xml_gui.get_widget("log_messages_tab_label")
+        self.log_messages_lines_label = self.xml_gui.get_widget("log_messages_lines_label")
+
         # Execute with options pop-up window
         self.execute_with_options_window = self.xml_gui.get_widget("execute_with_options_window")
         self.execute_with_options_path_label = self.xml_gui.get_widget("execute_with_options_path_label")
@@ -141,7 +148,7 @@ class DamarisGUI(threading.Thread):
         self.main_clipboard = gtk.Clipboard(selection = "CLIPBOARD")
         self.display_settings_frame = self.xml_gui.get_widget("display_settings_frame")
         self.backend_statusbar_label = self.xml_gui.get_widget("statusbar_core_label")
-        
+ 
         
         # / Widgets mit Variablen verbinden --------------------------------------------------------
 
@@ -186,6 +193,9 @@ class DamarisGUI(threading.Thread):
         self.data_handling_textview.connect_after("move-cursor", self.textviews_moved)
         self.data_handling_textview.connect("key-press-event", self.textviews_keypress)
         self.data_handling_textview.connect("button-release-event", self.textviews_clicked)
+
+        #Log-Messages
+        self.xml_gui.signal_connect("on_log_messages_clear_button_clicked", self.clear_log_messages)
 
         # Execute-with-options window
         self.xml_gui.signal_connect("on_execute_with_options_sync_run_checkbutton_toggled", self.execute_with_options_sync_toggled)
@@ -271,6 +281,28 @@ class DamarisGUI(threading.Thread):
 
         self.data_handling_textbuffer.set_modified(False)
         self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
+
+        # Log-Messages Window
+        self.log_messages_textview.modify_font(pango.FontDescription("Courier 10"))
+        
+        self.log_messages_textview_tag_table = self.log_messages_textview.get_buffer().get_tag_table()
+        gui_tag = gtk.TextTag("GUI")
+        core_tag = gtk.TextTag("CORE")
+        es_tag = gtk.TextTag("ES")
+        dh_tag = gtk.TextTag("DH")
+        norm_tag = gtk.TextTag("NORMAL")
+
+        gui_tag.set_property("foreground", "#F5D000")   #Yellowish
+        core_tag.set_property("foreground", "#05D400")  #Greenish
+        es_tag.set_property("foreground", "#0090C4")    #Blueish
+        dh_tag.set_property("foreground", "#E72100")    #Redish
+        norm_tag.set_property("foreground", "#000000")  #Black
+
+        self.log_messages_textview_tag_table.add(gui_tag)
+        self.log_messages_textview_tag_table.add(core_tag)
+        self.log_messages_textview_tag_table.add(es_tag)
+        self.log_messages_textview_tag_table.add(dh_tag)
+        self.log_messages_textview_tag_table.add(norm_tag)
 
         # Matplot (Display_Table, 1. Zeile) --------------------------------------------------------
 
@@ -424,10 +456,10 @@ class DamarisGUI(threading.Thread):
         else:
             choice = data
             if choice == 0:
-                print "Done."
+                self.new_log_message("Experiment done.", "GUI")
                 return True
             elif choice == 5:
-                print "Warning: Running experiment- and datahandling script without backend is not allowed! (prevents lockup)"
+                self.new_log_message("Warning: Running experiment- and datahandling script without backend is not allowed yet! (prevents lockup)", "GUI")
                 return True
 
         self.__experiment_running = True
@@ -473,12 +505,15 @@ class DamarisGUI(threading.Thread):
                     for job_file in file_list:
                         os.remove(job_file)
 
-                    print "\nWarning: Deleted %d job-files" % len(file_list)
+                    if not len(file_list) == 0:
+                        self.new_log_message("Warning: Deleted %d job-files" % len(file_list), "GUI")
                 except IOError, e:
-                    self.gui.show_error_dialog("File Error", "IOError: Cannot delete Job-Files" + str(e))
+                    self.gui.show_error_dialog("File Error", "IOError: Cannot delete job-files" + str(e))
+                    self.new_log_message("IOError occurred: Unable to delete job-files (%s)" % str(e), "GUI")
                     return True
                 except Exception, e:
-                    self.gui.show_error_dialog("Error", "Exception: Cannot delete Job-Files" + str(e))
+                    self.gui.show_error_dialog("Error", "Exception: Unable to delete job-files" + str(e))
+                    self.new_log_message("Exception occurred: Unable to delete Job-Files (%s)" % str(e), "GUI")
                     return True
 
             # Delete existing result-files
@@ -488,12 +523,15 @@ class DamarisGUI(threading.Thread):
                     for job_file in file_list:
                         os.remove(job_file)
 
-                    print "\nWarning: Deleted %d result-files" % len(file_list)
+                    if not len(file_list) == 0:
+                        self.new_log_message("Warning: Deleted %d result-files" % len(file_list), "GUI")
                 except IOError, e:
-                    self.gui.show_error_dialog("File Error", "IOError: Cannot delete Job-Files" + str(e))
+                    self.gui.show_error_dialog("File Error", "IOError: Cannot delete result-files" + str(e))
+                    self.new_log_message("IOError occurred: Unable to delete result-files (%s)" % str(e), "GUI")
                     return True
                 except Exception, e:
-                    self.gui.show_error_dialog("Error", "Exception: Cannot delete Job-Files" + str(e))
+                    self.gui.show_error_dialog("Error", "Exception: Cannot delete result-files" + str(e))
+                    self.new_log_message("Exception occurred: Unable to delete result-files (%s)" % str(e), "GUI")
                     return True  
 
             # Depending on execute_with_options run threads
@@ -501,29 +539,31 @@ class DamarisGUI(threading.Thread):
                 try:
                     self.backend_statusbar_label.set_text("Backend: Busy...")
                     if len(glob.glob(os.path.join(self.job_writer.get_job_writer_path(), "*.state"))) != 0:
-                        print "GUI Warning: Found another core already started. Trying to abort..."
+                        self.new_log_message("Warning: Found another core already started. Trying to abort...", "GUI")
                         self.core_interface.abort()
                                     
                     self.core_interface.clear_job(0)
-                    print "(re)starting core (%s)" % str(bool(choice & 2))
+                    self.new_log_message("(Re)Starting backend...", "GUI")
                     self.core_interface.start()
                 except EnvironmentError, env_e:
                     self.show_error_dialog("Core Exception (clear_job / start)", str(env_e) + "\n\n(Maybe there is still a (dummy)core process active)")
+                    self.new_log_message("Environment Error (Start): %s" % str(env_e), "CORE")
                     self.check_job_writer_data_handler_finished()
                     return True
                 except Exception, e:
                     self.show_error_dialog("Core Exception (clear_job / start)", str(e) + "\n\n(Maybe there is still a (dummy)core process active)")
+                    self.new_log_message("Exception (Start): %s" % str(e), "CORE")
                     self.check_job_writer_data_handler_finished()
                     return True
             
             if bool(choice & 4):
-                print "Waking JobWriter up (%s)" % str(bool(choice & 4))
+                self.new_log_message("Executing Experiment Script...", "GUI")
                 self.experiment_script_statusbar_label.set_text("Experiment Script: Busy...")
                 self.job_writer.wake_up()
             
             
             if bool(choice & 1):
-                print "Waking DataHandler up (%s)" % str(bool(choice & 1))
+                self.new_log_message("Executing Data Handling Script...", "GUI")
                 self.data_handling_statusbar_label.set_text("Data Handling: Busy...")
                 self.data_handler.wake_up()
 
@@ -543,11 +583,9 @@ class DamarisGUI(threading.Thread):
             gtk.gdk.threads_enter()
             # Check if still parsing
             if (self.job_writer.error_occured()) == None and (self.job_writer.is_busy() == True):
-                print "Still parsin (JW)"
                 return True
 
             if self.data_handler.error_occured() == None and (self.data_handler.is_busy() == True):
-                print "Still parsin (DH)"
                 return True
 
             # Check if an error occured
@@ -599,7 +637,7 @@ class DamarisGUI(threading.Thread):
                 self.__experiment_running = False
                 self.__rescale = True
 
-                print "\n\nDone."
+                self.new_log_message("Experiment Done.", "GUI")
                 
                 return False
 
@@ -612,12 +650,13 @@ class DamarisGUI(threading.Thread):
 
     def stop_experiment(self, widget, data = None):
         "Sends all Threads the stop-commando"
-        print "\nStopping Experiment... (Waiting for components to stop safely)\n"       
+        self.new_log_message("Stopping Experiment... (Waiting for components to stop safely)", "GUI")       
 
         try:
             self.core_interface.abort()
         except Exception, e:
             self.show_error_dialog("Core Exception (Abort)", str(e) + "\n(for more information look into the logfile)")
+            self.new_log_message("Exception (Abort): %s" % str(e), "CORE")
         
         self.job_writer.stop_experiment()
         self.data_handler.stop_experiment()
@@ -1050,6 +1089,19 @@ class DamarisGUI(threading.Thread):
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_check_scripts_button.set_sensitive(True)
 
+        elif page_num == 3:
+            self.toolbar_new_button.set_sensitive(False)
+            self.menu_new_item.set_sensitive(False)
+            self.toolbar_open_button.set_sensitive(False)
+            self.menu_open_item.set_sensitive(False)
+            self.toolbar_save_button.set_sensitive(False)
+            self.menu_save_item.set_sensitive(False)
+            self.toolbar_save_as_button.set_sensitive(False)
+            self.menu_save_as_item.set_sensitive(False)
+            self.toolbar_run_button.set_sensitive(True)
+            self.toolbar_check_scripts_button.set_sensitive(True)
+            self.log_messages_tab_label.set_markup("Log")
+
         return True
 
 
@@ -1453,6 +1505,61 @@ class DamarisGUI(threading.Thread):
         finally:
             gtk.gdk.threads_leave()
 
+
+    def new_log_message(self, text, source):
+        "Adds a new line to the log-window"
+
+        if not (str(source) == "ES" or str(source) == "DH" or str(source) == "GUI" or str(source) == "CORE"):
+            print "Error DamarisGui.py (new_log_message(text, source)): Source \"%s\" unknown. Valid values: DH, ES, CORE, GUI\n" % str(source)
+        else:
+            gobject.idle_add(self.new_log_message_idle_func, text, source)
+
+
+    def new_log_message_idle_func(self, text, source):
+        gtk.gdk.threads_enter()
+
+        try:
+            (sob, eob) = self.log_messages_textbuffer.get_bounds()
+            if source == "ES":
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, "[%s] " % str(datetime.datetime.now()), "NORMAL")
+                (sob, eob) = self.log_messages_textbuffer.get_bounds()
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, "Experiment Script:\n", "ES")
+                (sob, eob) = self.log_messages_textbuffer.get_bounds()
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, text + "\n\n", "NORMAL")
+            elif source == "DH":
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, "[%s] " % str(datetime.datetime.now()), "NORMAL")
+                (sob, eob) = self.log_messages_textbuffer.get_bounds()
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, "Data Handling Script:\n", "DH")
+                (sob, eob) = self.log_messages_textbuffer.get_bounds()
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, text + "\n\n", "NORMAL")             
+            elif source == "CORE":
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, "[%s] " % str(datetime.datetime.now()), "NORMAL")
+                (sob, eob) = self.log_messages_textbuffer.get_bounds()
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, "Backend:\n", "CORE")
+                (sob, eob) = self.log_messages_textbuffer.get_bounds()
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, text + "\n\n", "NORMAL")
+            elif source == "GUI":
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, "[%s] " % str(datetime.datetime.now()), "NORMAL")
+                (sob, eob) = self.log_messages_textbuffer.get_bounds()
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, "GUI:\n", "GUI")
+                (sob, eob) = self.log_messages_textbuffer.get_bounds()
+                self.log_messages_textbuffer.insert_with_tags_by_name(eob, text + "\n\n", "NORMAL")
+
+            self.log_messages_tab_label.set_markup("<b>Log</b>")
+            self.log_messages_lines_label.set_text("Lines in Buffer: %d" % self.log_messages_textbuffer.get_line_count())
+
+            return False
+                
+        finally:
+            gtk.gdk.threads_leave()
+    
+
+    def clear_log_messages(self, widget, data = None):
+        (sob, eob) = self.log_messages_textbuffer.get_bounds()
+        self.log_messages_textbuffer.delete(sob, eob)
+        self.log_messages_lines_label.set_text("Lines in Buffer: 0")
+        return True
+
     def get_experiment_script(self):
         "Interface for getting the content of the experiment-script textarea"
         return self.experiment_script_textbuffer.get_text(self.experiment_script_textbuffer.get_start_iter(), self.experiment_script_textbuffer.get_end_iter())
@@ -1481,7 +1588,7 @@ class DamarisGUI(threading.Thread):
         "Displays an error dialog"
 
         if self.__error_dialogs_open > 2:
-            print "\nWarning: Dropped error-dialog due too many opened windows.\nError Title: %s\nError Message: %s" % (title, error_message)
+            self.new_log_message("Warning: Dropped error-dialog due too many opened windows.\nError Title: %s\nError Message: %s" % (title, error_message), "GUI")
             return None
 
         self.__error_dialogs_open += 1

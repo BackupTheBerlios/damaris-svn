@@ -8,7 +8,7 @@
 #################################################
 
 import sys
-#sys.argv.append("--numarray")
+sys.argv.append("--numarray")
 
 from JobWriter import *
 from DataHandling import *
@@ -44,6 +44,7 @@ dh.connect_job_writer(jw)
 jw.connect_data_handler(dh)
 dh.connect_gui(gui)
 jw.connect_gui(gui)
+core.connect_gui(gui)
 gui.connect_job_writer(jw)
 gui.connect_data_handler(dh)
 gui.connect_core(core)

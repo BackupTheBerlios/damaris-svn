@@ -138,6 +138,7 @@ class JobWriter(threading.Thread):
             except Exception, e:
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
                 self.gui.show_error_dialog("Experiment Script Execution Error", "Experiment Script:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
+                self.gui.new_log_message("Execution Error: Error during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e), "ES")
                 self.event_lock.clear()
                 self.__ok_to_start = None
                 continue
@@ -175,6 +176,7 @@ class JobWriter(threading.Thread):
             except Exception, e:
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
                 self.gui.show_error_dialog("Execution Error In Experiment Script", "Experiment Script:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
+                self.gui.new_log_message("Execution Error: Error during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e), "ES")
                 self.gui.stop_experiment(None)
 
             # Cleanup
@@ -190,6 +192,7 @@ class JobWriter(threading.Thread):
             return True
         except Exception, e:
             self.gui.show_error_dialog("Syntax Error In Experiment Script", "Experiment Script: " + str(e))
+            self.gui.new_log_message("Syntax Error: " + str(e), "ES")
             return False
 
 

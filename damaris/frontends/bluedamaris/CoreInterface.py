@@ -69,7 +69,8 @@ class CoreInterface:
         # create logfile
         file(self.core_output_filename,"w")
         
-        print "starting core %s ..."%self.core_executable,
+        self.gui.new_log_message("Starting backend %s..."% self.core_executable, "CORE")
+        
         if sys.platform[:5]=="linux":
             self.core_input=os.popen(self.core_executable+" --spool "+self.core_dir+" >"+self.core_output_filename+" 2>&1","w")
         if sys.platform=="win32":
@@ -100,7 +101,7 @@ class CoreInterface:
 
         # now open output file
         self.core_output=file(self.core_output_filename,"r")
-        print "done (pid=%d)"%self.core_pid
+        self.gui.new_log_message("Done (pid=%d)."%self.core_pid, "CORE")
 
     def clear_job(self,no):
         jobfilename=os.path.join(self.core_dir,"job.%09d")
@@ -156,7 +157,13 @@ class CoreInterface:
             return True
         else:
             return False
-        
+
+
+    def connect_gui(self, gui):
+        "Connects the graphical user interface"
+        self.gui = gui
+
+    
 if __name__=="__main__":
     # for test purposes only
     conf=Configuration.Configuration(".")

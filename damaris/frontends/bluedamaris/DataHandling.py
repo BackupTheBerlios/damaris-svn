@@ -133,6 +133,7 @@ class DataHandling(threading.Thread):
             except Exception, e:
                 tb_infos=traceback.extract_tb(sys.exc_info()[2])
                 self.gui.show_error_dialog("Execution Error In Data Handling", "Data Handling:\nerror during execution in line %d (function %s):\n"%tb_infos[-1][1:3]+str(e))
+                self.gui.new_log_message("Execution Error: Error during execution in line %d (function %s):\n" % tb_infos[-1][1:3] + str(e), "DH")
                 self.gui.stop_experiment(None)
 
             # Cleanup
@@ -148,6 +149,7 @@ class DataHandling(threading.Thread):
             return True
         except Exception, e:
             self.gui.show_error_dialog("Syntax Error in Data Handling", str(e))
+            self.gui.new_log_message("Syntax Error: " + str(e), "DH")
             return False
             
 
@@ -155,7 +157,8 @@ class DataHandling(threading.Thread):
         "Saves the variables value for the use in JobWriter"
 
         if value is None:
-            self.gui.show_error_dialog("Unallowed value", "You cant use None as a value for variable \"%s\"" % str(name))
+            self.gui.show_error_dialog("Unallowed value", "Exported variable \"%s\" is \"None\" (reserved keyword)." % str(name))
+            self.gui.new_log_message("Unallowed value: Exported variable \"%s\" is \"None\" (reserved keyword)." % str(name), "DH")
             self.gui.stop_experiment(None)
             return
         
@@ -207,6 +210,7 @@ class DataHandling(threading.Thread):
 
         if str(tmp.__class__) == "Error_Result.Error_Result":
             self.gui.show_error_dialog("Error Result Read!", tmp.get_error_message())
+            self.gui.new_log_message("Error result read (job-id: %d): " % (tmp.get_job_id()) + tmp.get_error_message(), "DH")
 
         self.__job_recieved = tmp.get_job_id()
         self.__expecting_job = self.job_writer.job_id_written_last()
