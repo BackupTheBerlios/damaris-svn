@@ -132,6 +132,7 @@ class DamarisGUI(threading.Thread):
         self.log_messages_textbuffer = self.log_messages_textview.get_buffer()
         self.log_messages_tab_label = self.xml_gui.get_widget("log_messages_tab_label")
         self.log_messages_lines_label = self.xml_gui.get_widget("log_messages_lines_label")
+        self.log_messages_filename_label = self.xml_gui.get_widget("log_messages_filename_label")
 
         # Execute with options pop-up window
         self.execute_with_options_window = self.xml_gui.get_widget("execute_with_options_window")
@@ -195,7 +196,7 @@ class DamarisGUI(threading.Thread):
         self.data_handling_textview.connect("button-release-event", self.textviews_clicked)
 
         #Log-Messages
-        self.xml_gui.signal_connect("on_log_messages_clear_button_clicked", self.clear_log_messages)
+        self.log_messages_textbuffer.connect("modified-changed", self.textviews_modified)
 
         # Execute-with-options window
         self.xml_gui.signal_connect("on_execute_with_options_sync_run_checkbutton_toggled", self.execute_with_options_sync_toggled)
@@ -259,7 +260,6 @@ class DamarisGUI(threading.Thread):
 
         self.experiment_script_textbuffer.set_modified(False)
 
-        # For faster testing...
         if self.config.has_key("datahandling_script"):
             script_file = file(self.config["datahandling_script"], "r")
             self.data_handling_textview.associated_filename = self.config["datahandling_script"]
@@ -303,6 +303,9 @@ class DamarisGUI(threading.Thread):
         self.log_messages_textview_tag_table.add(es_tag)
         self.log_messages_textview_tag_table.add(dh_tag)
         self.log_messages_textview_tag_table.add(norm_tag)
+
+        self.log_messages_textbuffer.set_modified(False)
+        self.log_messages_textview.associated_filename = "Unnamed"
 
         # Matplot (Display_Table, 1. Zeile) --------------------------------------------------------
 
@@ -782,6 +785,20 @@ class DamarisGUI(threading.Thread):
                 script_file.write(self.data_handling_textbuffer.get_text(self.data_handling_textbuffer.get_start_iter(), self.data_handling_textbuffer.get_end_iter()))
                 script_file.close()
                 self.data_handling_textbuffer.set_modified(False)
+
+        elif self.main_notebook.get_current_page() == 3:
+            if self.log_messages_textview.associated_filename == "Unnamed":
+                self.save_file_as(widget)
+            else:
+                if not os.access(self.log_messages_textview.associated_filename, os.W_OK):
+                    self.show_error_dialog("File I/O Error", "Cannot save to file %s" % self.log_messages_textview.associated_filename)
+                    return True
+
+                log_file = file(self.log_messages_textview.associated_filename, "w")
+                log_file.write(self.log_messages_textbuffer.get_text(self.log_messages_textbuffer.get_start_iter(), self.log_messages_textbuffer.get_end_iter()))
+                log_file.close()
+                self.log_messages_textbuffer.set_modified(False)
+                
         else:
             pass
 
@@ -830,6 +847,15 @@ class DamarisGUI(threading.Thread):
 
                     outer_space.data_handling_textbuffer.set_modified(False)
                     outer_space.data_handling_textview.associated_filename = file_name
+
+                elif outer_space.main_notebook.get_current_page() == 3:
+                    script_file.write(outer_space.log_messages_textbuffer.get_text(outer_space.log_messages_textbuffer.get_start_iter(), outer_space.log_messages_textbuffer.get_end_iter()))
+
+                    script_file.close()
+
+                    outer_space.log_messages_textbuffer.set_modified(False)
+                    outer_space.log_messages_textbuffer.associated_filename = file_name
+                    outer_space.log_messages_filename_label.set_text("File: " + file_name)
                     
                 
             else:
@@ -840,6 +866,9 @@ class DamarisGUI(threading.Thread):
             dialog = gtk.FileChooserDialog(title="Save Experiment Script As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
         elif self.main_notebook.get_current_page() == 1:
             dialog = gtk.FileChooserDialog(title="Save Data Handling As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+        elif self.main_notebook.get_current_page() == 3:
+            dialog = gtk.FileChooserDialog(title="Save Log Window As...", parent=self.main_window, action=gtk.FILE_CHOOSER_ACTION_SAVE, buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+        
 
         dialog.set_default_response(gtk.RESPONSE_OK)
         dialog.set_select_multiple(False)
@@ -903,6 +932,21 @@ class DamarisGUI(threading.Thread):
             self.data_handling_textbuffer.set_text("def data_handling(outer_space):\n    pass")
             self.data_handling_textview.associated_filename = "Unnamed"
             self.data_handling_textbuffer.set_modified(False)
+
+        elif self.main_notebook.get_current_page() == 3:
+            if self.log_messages_textbuffer.get_modified():
+                answer = NiftyGuiElements.show_question_dialog(self.main_window, "Unsaved changes in log-window", "Do you want so save changes?")
+
+                if answer == 0:
+                    self.save_file(widget)
+
+                elif answer == 2:
+                    return True
+
+            self.log_messages_textbuffer.set_text("")
+            self.log_messages_textview.associated_filename = "Unnamed"
+            self.log_messages_filename_label.set_text("File: " + self.log_messages_textview.associated_filename)
+            self.log_messages_textbuffer.set_modified(False)
 
         self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))        
         return True
@@ -1090,14 +1134,23 @@ class DamarisGUI(threading.Thread):
             self.toolbar_check_scripts_button.set_sensitive(True)
 
         elif page_num == 3:
-            self.toolbar_new_button.set_sensitive(False)
-            self.menu_new_item.set_sensitive(False)
+            self.toolbar_new_button.set_sensitive(True)
+            self.menu_new_item.set_sensitive(True)
             self.toolbar_open_button.set_sensitive(False)
             self.menu_open_item.set_sensitive(False)
-            self.toolbar_save_button.set_sensitive(False)
-            self.menu_save_item.set_sensitive(False)
-            self.toolbar_save_as_button.set_sensitive(False)
-            self.menu_save_as_item.set_sensitive(False)
+            self.menu_save_all_item.set_sensitive(False)
+            self.toolbar_save_all_button.set_sensitive(False)
+            
+            if self.log_messages_textbuffer.get_modified():
+                self.toolbar_save_button.set_sensitive(True)
+                self.menu_save_item.set_sensitive(True)
+
+            else:
+                self.toolbar_save_button.set_sensitive(False)
+                self.menu_save_item.set_sensitive(False)
+                
+            self.toolbar_save_as_button.set_sensitive(True)
+            self.menu_save_as_item.set_sensitive(True)
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_check_scripts_button.set_sensitive(True)
             self.log_messages_tab_label.set_markup("Log")
@@ -1117,6 +1170,12 @@ class DamarisGUI(threading.Thread):
             self.menu_save_item.set_sensitive(False)
             self.toolbar_save_all_button.set_sensitive(False)
             self.menu_save_all_item.set_sensitive(False)
+
+        if self.log_messages_textbuffer.get_modified():
+            self.toolbar_save_button.set_sensitive(True)
+            self.menu_save_item.set_sensitive(True)
+            self.toolbar_open_button.set_sensitive(False)
+            self.menu_open_item.set_sensitive(False)
 
         return True
 
@@ -1512,7 +1571,8 @@ class DamarisGUI(threading.Thread):
         if not (str(source) == "ES" or str(source) == "DH" or str(source) == "GUI" or str(source) == "CORE"):
             print "Error DamarisGui.py (new_log_message(text, source)): Source \"%s\" unknown. Valid values: DH, ES, CORE, GUI\n" % str(source)
         else:
-            gobject.idle_add(self.new_log_message_idle_func, text, source)
+            #self.log_messages_textbuffer.set_modified(True)
+            gobject.idle_add(self.new_log_message_idle_func, str(text), source)
 
 
     def new_log_message_idle_func(self, text, source):
@@ -1552,13 +1612,7 @@ class DamarisGUI(threading.Thread):
                 
         finally:
             gtk.gdk.threads_leave()
-    
 
-    def clear_log_messages(self, widget, data = None):
-        (sob, eob) = self.log_messages_textbuffer.get_bounds()
-        self.log_messages_textbuffer.delete(sob, eob)
-        self.log_messages_lines_label.set_text("Lines in Buffer: 0")
-        return True
 
     def get_experiment_script(self):
         "Interface for getting the content of the experiment-script textarea"
