@@ -15,6 +15,7 @@ import traceback
 import sys
 
 from Experiment import *
+from ScriptPreprocessor import ScriptPreprocessor
 
 import time
 
@@ -87,6 +88,8 @@ class JobWriter(threading.Thread):
     def run(self):
         "Represents threads acitivity: working through the experiment script and writing job-files"
 
+        script_preprocessor = ScriptPreprocessor("ES")
+
         while 1:
             # Idling...
             self.__busy = False
@@ -106,8 +109,12 @@ class JobWriter(threading.Thread):
             from Experiment import Experiment
             reset()
 
-            # Remove leader/trailing whitespaces
-            experiment_script_string = self.gui.get_experiment_script().strip()
+            # Remove leading/trailing whitespaces and substituting print with self.gui.new_log_message(text, "ES")
+            experiment_script_string = script_preprocessor.substitute_print(self.gui.get_experiment_script().strip())
+
+            # Running Preprocessor
+            #preprocessor = ScriptPreprocessor("ES")
+            #preprocessor.substitute_print(experiment_script_string)
 
             # Syntax ok? If not, tell other threads an error occured
             if self.check_syntax(experiment_script_string):

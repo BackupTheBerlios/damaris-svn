@@ -14,6 +14,7 @@ import compiler
 import sys
 import traceback
 from ResultReader import *
+from ScriptPreprocessor import ScriptPreprocessor
 
 
 class DataHandling(threading.Thread):
@@ -74,6 +75,8 @@ class DataHandling(threading.Thread):
     def run(self):
         "Threads activity, trying to parse a data-handling script and idling again if it finished"
 
+        script_preprocessor = ScriptPreprocessor("DH")
+
         while 1:
             # Idling...
             self.__busy = False
@@ -96,8 +99,9 @@ class DataHandling(threading.Thread):
             from Error_Result import Error_Result
             from Accumulation import Accumulation
 
-            # Remove leader/trailing whitespaces
-            data_handling_string = self.gui.get_data_handling_script().strip()
+            # Remove leading/trailing whitespaces and substitute print with self.gui.new_log_message(text, "DH")
+            data_handling_string = script_preprocessor.substitute_print(self.gui.get_data_handling_script().strip())
+            
             #print data_handling_string
 
             # Syntax ok?
