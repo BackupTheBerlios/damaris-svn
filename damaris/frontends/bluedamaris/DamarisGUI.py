@@ -280,7 +280,8 @@ class DamarisGUI(threading.Thread):
 """)
 
         self.data_handling_textbuffer.set_modified(False)
-        self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
+        self.main_window.set_title(self.main_window_title % (os.path.basename(self.experiment_script_textview.associated_filename),
+                                                             os.path.basename(self.data_handling_textview.associated_filename)))
 
         # Log-Messages Window
         self.log_messages_textview.modify_font(pango.FontDescription("Courier 10"))
@@ -751,7 +752,8 @@ class DamarisGUI(threading.Thread):
         dialog.run()
         dialog.destroy()
 
-        self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
+        self.main_window.set_title(self.main_window_title % (os.path.basename(self.experiment_script_textview.associated_filename),
+                                                             os.path.basename(self.data_handling_textview.associated_filename)))
 
         return True
 
@@ -878,7 +880,8 @@ class DamarisGUI(threading.Thread):
         dialog.run()
         dialog.destroy()
 
-        self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))
+        self.main_window.set_title(self.main_window_title % (os.path.basename(self.experiment_script_textview.associated_filename),
+                                                             os.path.basename(self.data_handling_textview.associated_filename)))
 
         self.toolbar_save_button.set_sensitive(False)
         return True
@@ -947,7 +950,8 @@ class DamarisGUI(threading.Thread):
             self.log_messages_filename_label.set_text("File: " + self.log_messages_textview.associated_filename)
             self.log_messages_textbuffer.set_modified(False)
 
-        self.main_window.set_title(self.main_window_title % (self.experiment_script_textview.associated_filename, self.data_handling_textview.associated_filename))        
+        self.main_window.set_title(self.main_window_title % (os.path.basename(self.experiment_script_textview.associated_filename),
+                                                             os.path.basename(self.data_handling_textview.associated_filename)))
         return True
 
 
@@ -1390,6 +1394,7 @@ class DamarisGUI(threading.Thread):
             self.matplot_axes.clear()
             self.matplot_axes.grid(True)
             self.matplot_canvas.draw()
+            self.graphen=[]
             gtk.gdk.threads_leave()
             return False
         if isinstance(in_result,MeasurementResult.MeasurementResult):
