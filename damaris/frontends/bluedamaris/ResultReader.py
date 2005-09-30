@@ -139,7 +139,7 @@ class ResultReader(threading.Thread):
             result_file.close()
             
         except IOError:
-            self.gui.new_log_message("ResultReader: File \"" + in_filename + "\" could not be opened.", "DH")
+            self.__gui.new_log_message("ResultReader: File \"" + in_filename + "\" could not be opened.", "DH")
 
         except:
             result_file.close()
@@ -284,20 +284,20 @@ class ResultReader(threading.Thread):
             if self.__filetype == ResultReader.ADCDATA_TYPE:
                 if self.adc_result_trailing_chars!="":
                     self.__xmlCharacterDataFound(" ")
-                self.gui.new_log_message("Result Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read), "DH")
+                self.__gui.new_log_message("Result Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read), "DH")
                 self.result.set_title("ADC-Result: job-id = %d, desc = %s" % (self.result.get_job_id(), str(self.result.get_description_dictionary())))
 
             # Error_Result
             elif self.__filetype == ResultReader.ERROR_TYPE:
-                self.gui.new_log_message("Result Reader: Error Result parsed! (%s)" % os.path.join(self.path, self.filename % self.files_read), "DH")
+                self.__gui.new_log_message("Result Reader: Error Result parsed! (%s)" % os.path.join(self.path, self.filename % self.files_read), "DH")
 
             # Temp_Result
             elif self.__filetype == ResultReader.TEMP_TYPE:
-                self.gui.new_log_message("ResultReader: Temperature Result parsed!", "DH")
+                self.__gui.new_log_message("ResultReader: Temperature Result parsed!", "DH")
 
             # Config_Result
             elif self.__filetype == ResultReader.CONFIG_TYPE:
-                self.gui.new_log_message("ResultReader: Config Result parsed!", "DH")
+                self.__gui.new_log_message("ResultReader: Config Result parsed!", "DH")
 
             self.result_queue.append(self.result)   
 
@@ -306,7 +306,7 @@ class ResultReader(threading.Thread):
     def __do_reset(self):
 
         if len(self.result_queue) != 0:
-            self.gui.new_log_message("ResultReader Warning: Deleting %d results due reset-request!" % len(self.result_queue), "DH")
+            self.__gui.new_log_message("ResultReader Warning: Deleting %d results due reset-request!" % len(self.result_queue), "DH")
         
         # The result-queue
         self.result_queue = []

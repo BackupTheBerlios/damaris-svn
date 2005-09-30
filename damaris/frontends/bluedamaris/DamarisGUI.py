@@ -354,7 +354,6 @@ class DamarisGUI(threading.Thread):
 
         self.main_window.show_all()
         
-
     # /Inits der einzelnen Fenster #################################################################        
 
 
@@ -1266,13 +1265,13 @@ class DamarisGUI(threading.Thread):
 
 
     def display_source_changed(self, Data = None):
+        if self.main_notebook.get_current_page()!=2:
+            return
         channel = self.display_source_combobox.get_active_text()
 
         # Event triggers when we init the box -> Catch Channel "None"
         if channel == "None":
-            self.matplot_axes.clear()
-            self.matplot_axes.grid(True)
-            self.matplot_canvas.draw()
+            self.draw_result(None)
             return True
             
         self.draw_result(self.__display_channels[channel][0])
@@ -1386,6 +1385,13 @@ class DamarisGUI(threading.Thread):
 
 
     def draw_result_idle_func(self, in_result):
+        if in_result is None:
+            gtk.gdk.threads_enter()
+            self.matplot_axes.clear()
+            self.matplot_axes.grid(True)
+            self.matplot_canvas.draw()
+            gtk.gdk.threads_leave()
+            return False
         if isinstance(in_result,MeasurementResult.MeasurementResult):
             self.graphen=[]
             # clear errorbars before
@@ -1440,6 +1446,7 @@ class DamarisGUI(threading.Thread):
                 self.matplot_axes.set_title("")
 
             self.matplot_canvas.draw()
+            gtk.gdk.threads_leave()
             return False
         
         finally:
@@ -1525,6 +1532,7 @@ class DamarisGUI(threading.Thread):
             # Draw it!
             self.matplot_canvas.draw()
 
+            gtk.gdk.threads_leave()
             return False
 
         finally:
