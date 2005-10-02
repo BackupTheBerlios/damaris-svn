@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <cerrno>
 #include <unistd.h>
 #include <core/stopwatch.h>
 #include <drivers/pulsegen.h>
