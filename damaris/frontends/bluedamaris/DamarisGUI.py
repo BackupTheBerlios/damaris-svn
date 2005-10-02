@@ -326,7 +326,8 @@ class DamarisGUI(threading.Thread):
 
         self.matplot_axes.set_ylim([0.0,1.0])
         self.matplot_axes.set_xlim([0.0,1.0])
-
+        self.matplot_axes.set_autoscale_on(self.display_autoscaling_checkbutton.get_active())
+        
         # Lineare y-/x-Skalierung
         self.matplot_axes.set_yscale("linear")
         self.matplot_axes.set_xscale("linear")
@@ -348,6 +349,7 @@ class DamarisGUI(threading.Thread):
         # /Mathplot --------------------------------------------------------------------------------
 
         self.display_source_combobox.set_active(0)
+        self.display_source_combobox.set_add_tearoffs(1)
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
         self.display_x_scaling_combobox.set_sensitive(False)
@@ -465,22 +467,23 @@ class DamarisGUI(threading.Thread):
                 self.new_log_message("Warning: Running experiment- and datahandling script without backend is not allowed yet! (prevents lockup)", "GUI")
                 return True
 
-        self.__experiment_running = True
        
         # Remove all entries except "None"
-        self.display_source_combobox.get_model().clear()
-
-        self.display_source_combobox.insert_text(0, "None")
         self.display_source_combobox.set_active(0)
+        for i in xrange(len(self.__display_channels)):
+            self.display_source_combobox.remove_text(1)
 
         # Deleting all history
         self.__display_channels = { }
+        self.__rescale = True
 
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
         self.display_x_scaling_combobox.set_sensitive(False)
         self.display_y_scaling_combobox.set_sensitive(False)
         
+        self.__experiment_running = True
+
         try:
             
             self.toolbar_run_button.set_sensitive(False)
@@ -638,7 +641,6 @@ class DamarisGUI(threading.Thread):
                 self.data_handling_textview.set_sensitive(True)               
                 
                 self.__experiment_running = False
-                self.__rescale = True
 
                 self.new_log_message("Experiment Done.", "GUI")
                 
@@ -1285,19 +1287,13 @@ class DamarisGUI(threading.Thread):
     def display_autoscaling_toggled(self, widget, Data = None):
 
         channel = self.display_source_combobox.get_active_text()
+        self.matplot_axes.set_autoscale_on(self.display_autoscaling_checkbutton.get_active())
 
         if channel == "None":
+            self.draw_result(None)
             return True
-        elif isinstance(self.__display_channels[channel][0],MeasurementResult.MeasurementResult):
-            # do nothing
-            pass
-        else:
-            if self.display_autoscaling_checkbutton.get_active():
-                self.matplot_axes.set_xlim(self.__display_channels[channel][0].get_xmin(), self.__display_channels[channel][0].get_xmax())
-                self.matplot_axes.set_ylim(self.__display_channels[channel][0].get_ymin(), self.__display_channels[channel][0].get_ymax())
-                self.matplot_canvas.draw()
+        self.draw_result(self.__display_channels[channel][0])
         return True
-
 
     def display_statistics_toggled(self, widget, Data = None):
 
@@ -1395,18 +1391,27 @@ class DamarisGUI(threading.Thread):
             self.matplot_axes.grid(True)
             self.matplot_canvas.draw()
             self.graphen=[]
+            self.measurementresultgraph=None
             gtk.gdk.threads_leave()
             return False
         if isinstance(in_result,MeasurementResult.MeasurementResult):
-            self.graphen=[]
-            # clear errorbars before
-            self.matplot_axes.clear()
-            self.matplot_axes.grid(True)
+            if self.graphen:
+                for l in self.graphen:
+                    self.matplot_axes.lines.remove(l)
+                self.graphen=[]
+            if self.measurementresultgraph is not None:
+                # clear errorbars before redrawing
+                self.matplot_axes.lines.remove(self.measurementresultgraph[0])
+                for l in self.measurementresultgraph[1]:
+                    self.matplot_axes.lines.remove(l)
+                self.measurementresultgraph=None
             return self.draw_result_idle_func_achim(in_result)
         else:
             if self.measurementresultgraph is not None:
-                self.matplot_axes.clear()
-                self.matplot_axes.grid(True)
+                # clear errorbars
+                self.matplot_axes.lines.remove(self.measurementresultgraph[0])
+                for l in self.measurementresultgraph[1]:
+                    self.matplot_axes.lines.remove(l)
                 self.measurementresultgraph=None
             if len(self.graphen)==0:
                 self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 2))
@@ -1431,22 +1436,22 @@ class DamarisGUI(threading.Thread):
         try:
             # Initial rescaling needed?
             [k,v,e]=in_result.get_errorplotdata()
-            xmin=min(k)
-            xmax=max(k)
-            ymin=min(map(lambda i:v[i]-e[i],xrange(len(v))))
-            ymax=max(map(lambda i:v[i]+e[i],xrange(len(v))))
-            if self.__rescale:
+            if self.__rescale or self.display_autoscaling_checkbutton.get_active():
+                xmin=min(k)
+                xmax=max(k)
+                ymin=min(map(lambda i:v[i]-e[i],xrange(len(v))))
+                ymax=max(map(lambda i:v[i]+e[i],xrange(len(v))))
                 self.matplot_axes.set_xlim(xmin, xmax)
                 self.matplot_axes.set_ylim(ymin, ymax)
                 self.__rescale = False
 
             # add error bars
-            [k,v,e]=in_result.get_errorplotdata()
             self.measurementresultgraph=self.matplot_axes.errorbar(x=k, y=v, yerr=e, fmt="b+")
 
             # Any title to be set?
-            if in_result.get_title() is not None:
-                self.matplot_axes.set_title(in_result.get_title())
+            title=in_result.get_title()
+            if title is not None:
+                self.matplot_axes.set_title(title)
             else:
                 self.matplot_axes.set_title("")
 
@@ -1486,25 +1491,22 @@ class DamarisGUI(threading.Thread):
 
             # Initial rescaling needed?
             if self.__rescale:
-
                 self.matplot_axes.set_xlim(xmin, xmax)
                 self.matplot_axes.set_ylim(ymin, ymax)
                 self.__rescale = False
 
             # Autoscaling activated?
-            if self.display_autoscaling_checkbutton.get_active():
+            elif self.display_autoscaling_checkbutton.get_active():
                 if [xmin, xmax] != self.matplot_axes.get_xlim():
                     self.matplot_axes.set_xlim(xmin, xmax)
 
-                # Rescale if new max is larger than old_max
-                if self.__old_ymax < ymax:                  
+                # Rescale if new max is larger than old_ymax, simialar rules apply to ymin
+                [self.__old_ymin, self.__old_ymax] = self.matplot_axes.get_ylim()
+                ydiff=ymax-ymin
+                if (self.__old_ymax < ymax or self.__old_ymin > ymin or
+                    self.__old_ymax > ymax+0.2*ydiff or self.__old_ymin < ymin-0.2*ydiff):
                     self.matplot_axes.set_ylim(ymin, ymax)
-                    self.__old_ymax = ymax
 
-                # Rescale if graph shrinked more than 20%
-                elif ymax < (self.__old_ymax * 0.8):
-                    self.matplot_axes.set_ylim(ymin, ymax)
-                    self.__old_ymax = ymax                    
 
             # Statistics activated?
             if self.display_statistics_checkbutton.get_active() and in_result.uses_statistics() and in_result.ready_for_drawing_error():

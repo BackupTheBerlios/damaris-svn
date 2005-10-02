@@ -285,7 +285,6 @@ class ResultReader(threading.Thread):
                 if self.adc_result_trailing_chars!="":
                     self.__xmlCharacterDataFound(" ")
                 self.__gui.new_log_message("Result Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read), "DH")
-                self.result.set_title("ADC-Result: job-id = %d, desc = %s" % (self.result.get_job_id(), str(self.result.get_description_dictionary())))
 
             # Error_Result
             elif self.__filetype == ResultReader.ERROR_TYPE:

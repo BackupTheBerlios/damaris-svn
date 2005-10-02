@@ -46,7 +46,11 @@ class ADC_Result(Resultable, Drawable):
             self.description = desc
             self.job_id = job_id
             self.job_date = job_date
-            self.set_title(self.__title_pattern % (str(self.job_id), str(self.description)))
+            title="ADC-Result: job-id = %d"%int(self.job_id)
+            if len(self.description)>0:
+                for k,v in self.description.iteritems():
+                    title+=", %s=%s"%(k,v)
+            self.set_title(title)
 
         else:
             raise ValueError("Wrong usage of __init__!")
