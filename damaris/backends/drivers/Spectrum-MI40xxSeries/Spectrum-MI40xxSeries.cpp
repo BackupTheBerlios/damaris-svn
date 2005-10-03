@@ -145,6 +145,18 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 		    while (!inputs.empty()) {delete inputs.front(); inputs.pop_front();}
 		    throw ADC_exception("Sorry, but gated sampling requires same sampling frequency in all analogin sections");
 		}
+                /* save sensitvity and impedance (todo) */
+                if (settings.sensitivity!=0) {
+                     if (settings.sensitivity!=inputs.front()->sensitivity) {
+                         fprintf(stderr, "Warning! different sensitvity specified (here %f, elsewhere %f), choosing higher voltage\n",
+                                 settings.sensitivity,
+                                 inputs.front()->sensitivity);
+                         if (settings.sensitivity<inputs.front()->sensitivity) settings.sensitivity=inputs.front()->sensitivity;
+                     }
+                }
+                else
+                    settings.sensitivity=inputs.front()->sensitivity;
+
 		// adapt the pulse program for gated sampling
 		if (a_state->length<1.0*inputs.front()->samples/settings.samplefreq) {
 		    throw ADC_exception("state is shorter than acquisition time");
@@ -230,8 +242,8 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   Configuration* conf=new Configuration;
   conf->samplefreq=-1; // not set
   conf->data_structure=NULL;
-  conf->impedance=1e6; // Ohm
-  conf->sensitivity=5; // Volts
+  conf->impedance=50; // Ohm
+  conf->sensitivity=0; // Volts
   collect_config_recursive(*exp_sequence, *conf);
 
   size_t sampleno=(conf->data_structure==NULL)?0:conf->data_structure->size();
@@ -243,7 +255,14 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
       return;
   }
 
+  if (conf->sensitivity==0) {
+     if (conf->impedance==50.0)
+         conf->sensitivity=5.0; // set sensitvity to minimum (maximum voltage)
+     else
+         conf->sensitivity=10.0; // dto.
+  }
   conf->data_structure->print(stderr);
+  xml_state_writer().write_states(stderr,*exp_sequence);
   fflush(stderr);
 
   effective_settings=conf;
@@ -263,6 +282,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   for (unsigned int j=0; j<nChannels; j++) {
     SpcSetParam (deviceno, SPC_AMP0 + 100*j,    (int)floor(effective_settings->sensitivity*1000));          // +/- 5V input range
     SpcSetParam (deviceno, SPC_50OHM0 + 100*j,  ((effective_settings->impedance==50.0)?1:0));             // 1 = 50 Ohm input impedance, 0 = 1MOhm input impedance
+    SpcSetParam (deviceno, SPC_OFFS0 +  100*j, 0); // set offset to zero
   }
 
   SpcSetParam (deviceno, SPC_CHENABLE,            CHANNEL0 | CHANNEL1); // Enable channels for recording
@@ -366,9 +386,8 @@ short int* SpectrumMI40xxSeries::split_adcdata_recursive(short int* data, const 
 }
 
 result* SpectrumMI40xxSeries::get_samples(double _timeout) {
-    
-    if (effective_settings==NULL) return new adc_result(1,0,NULL);
-    size_t sampleno=(effective_settings->data_structure==NULL)?0:effective_settings->data_structure->size();
+
+    size_t sampleno=(effective_settings==NULL || effective_settings->data_structure==NULL)?0:effective_settings->data_structure->size();
     if (sampleno==0) return new adc_result(1,0,NULL);
     double timeout=_timeout;
     // allocate a lot of space
