@@ -22,11 +22,11 @@ core_config::core_config(const char** argv, int argc) {
     for (int i=1; i<argc; ++i) {
 	if (strncmp(argv[i],"--spool",7)==0) {
 	    if (argv[i][7]==0) {
-		if (i==argc || argv[i+1]==NULL) throw core_exception("spool directory not specified after --spool argument");
+		if (i>=argc || argv[i+1]==NULL) throw core_exception("spool directory not specified after --spool argument");
 		++i;
 		spool_directory=argv[i];
 	    } else if (argv[i][7]=='=') {
-		spool_directory=(argv[i+1]+8);
+		spool_directory=(argv[i]+8);
 	    }
 	    else
 		throw core_exception("spool directory not specified after --spool argument");
