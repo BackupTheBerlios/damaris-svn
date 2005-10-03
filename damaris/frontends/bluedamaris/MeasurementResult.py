@@ -154,12 +154,13 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         else:
             raise Exception("sorry destination %s is not valid"%(repr(destination)))
 
+        the_destination.write("# quantity:"+str(self.quantity_name))
         the_destination.write("# x y ysigma n\n")
         for x in self.get_xdata():
             y=UserDict.UserDict.__getitem__(self,x)
             if type(y) is types.FloatType:
                 the_destination.write("%g %g 0 1\n"%(x,y))                
             else:
-                the_destination.write("%g %g %g %d\n"%(x,y.mean(),y.sigma(),y.n))
+                the_destination.write("%g %g %g %d\n"%(x,y.mean(),y.mean_sigma(),y.n))
 
         the_destination=None
