@@ -60,9 +60,17 @@ class AccumulatedValue:
     
     def sigma(self):
         if self.n>1:
-            return math.sqrt(((self.y2)-(self.y*self.y)/self.n)/(self.n-1))
+            return math.sqrt(((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0))
         elif self.n==1:
-            return self.y
+            return 0
+        else:
+            return None
+
+    def mean_sigma(self):
+        if self.n>1:
+            return math.sqrt(((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0)/float(self.n))
+        elif self.n==1:
+            return 0
         else:
             return None
 
@@ -122,7 +130,7 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
                  k)
         k.sort()
         v=map(lambda key: UserDict.UserDict.__getitem__(self,key).mean(),k)
-        e=map(lambda key: UserDict.UserDict.__getitem__(self,key).sigma(),k)
+        e=map(lambda key: UserDict.UserDict.__getitem__(self,key).mean_sigma(),k)
         return [k,v,e]
 
     def uses_statistics(self):

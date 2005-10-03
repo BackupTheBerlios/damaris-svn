@@ -124,24 +124,29 @@ class CoreInterface:
         self.send_signal("SIGQUIT")
         # assumes success
         self.core_pid=None
+        self.core_input=None
 
     def abort(self):
         # abort execution
         self.send_signal("SIGTERM")
         # assumes success
         self.core_pid=None
+        self.core_input=None
 
     def send_signal(self, sig):
         if self.core_pid is None: return
-        if sys.platform[:5]=="linux":
-            os.kill(self.core_pid,signal.__dict__[sig])
-        if sys.platform[:7]=="win32":
-            # reg_handle=_winreg.ConnectRegistry(None,_winreg.HKEY_LOCAL_MACHINE)
-            cygwin_root_key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/")
-            cygwin_path=_winreg.QueryValueEx(cygwin_root_key,"native")[0]
-            kill_command=os.path.join(cygwin_path,"bin","kill.exe")
-            os.popen("%s -%s %d"%(kill_command,sig,self.core_pid))
-                    
+        try:
+            if sys.platform[:5]=="linux":
+                os.kill(self.core_pid,signal.__dict__[sig])
+            if sys.platform[:7]=="win32":
+                # reg_handle=_winreg.ConnectRegistry(None,_winreg.HKEY_LOCAL_MACHINE)
+                cygwin_root_key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/")
+                cygwin_path=_winreg.QueryValueEx(cygwin_root_key,"native")[0]
+                kill_command=os.path.join(cygwin_path,"bin","kill.exe")
+                os.popen("%s -%s %d"%(kill_command,sig,self.core_pid))
+        except OSError:
+            print str(OSError)
+            
     def __del__(self):
         # stop core and wait for it
         try:

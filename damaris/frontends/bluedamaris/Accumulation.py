@@ -118,7 +118,7 @@ class Accumulation(Errorable, Drawable):
 
         # ( E(X^2) - E(X)^2 )^0.5
         try:
-            tmp_yerr = (((self.y_square[channel] / self.n) - ((self.y[channel] / self.n)**2)) ** 0.5)
+            tmp_yerr = (((self.y_square[channel] / self.n) - ((self.y[channel] / self.n)**2))/self.n) ** 0.5
         except:
             print "Warning Accumulation.get_yerr(channel): Channel index does not exist."
             return numarray.zeros((len(self.y[0]),),type="Float64")

@@ -1674,6 +1674,24 @@ class DamarisGUI(threading.Thread):
             self.__error_dialogs_open -= 1
             gtk.gdk.threads_leave()
 
+    def blocking_user_dialog(self, title, text):
+        """
+        show a blocking user dialog
+        title and text can be specified
+        """
+        dialog_lock=threading.Lock()
+        dialog_lock.acquire()
+        gobject.idle_add(self.blocking_user_dialog_idlefunc, title + "", text + "",dialog_lock)
+        dialog_lock.acquire()
+
+    def blocking_user_dialog_idlefunc(self, title, text, lock):
+        try:
+            gtk.gdk.threads_enter()
+            NiftyGuiElements.show_error_dialog(self.main_window, title, text)
+        finally:
+            lock.release()
+            gtk.gdk.threads_leave()
+
 
     def get_selected_channel(self):
         "Returns the currently selected channel"

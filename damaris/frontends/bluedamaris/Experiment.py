@@ -31,6 +31,12 @@ class Experiment:
             self.state_list.append('<state time="%g"><ttlout value="%d"/></state>\n' % (length, channel))
 
 
+    def ttl_pulse(self, length, channel = None, value = None):
+        the_value=0+value
+        if channel is not None and value is None:
+            the_value=1<<channel
+        self.state_list.append('<state time="%g"><ttlout value="%d"/></state>\n' % (length, the_value))
+
     def state_start(self, time):
         self.state_list.append('<state time="%g">\n' % time)
 
@@ -120,3 +126,33 @@ class Experiment:
 def reset():
     "Resets the internal id-inkrementer to 0"
     Experiment.job_id = 0
+
+
+def lin_range(start,stop, step):
+    this_one=float(start)+0.0
+    while (this_one<=float(stop)):
+	yield this_one
+	this_one+=float(step)
+
+def log_range(start, stop, stepno):
+    if (start<=0 or stop<=0 or stepno<1):
+        raise Exception.Exception("start, stop must be positive and stepno must be >=1")
+    if int(stepno)==1:
+        factor=1.0
+    else:
+        factor=(stop/start)**(1.0/int(stepno-1))
+    for i in xrange(int(stepno)):
+        yield start*(factor**i)
+
+def staggered_range(some_range):
+    # do one, drop one
+    left_out=[]
+    try:
+        yield some_range.next()
+        left_out.append(some_range.next())
+    except StopIteration:
+        pass
+    
+    # now do the droped ones
+    for i in left_out:
+        yield i
