@@ -514,12 +514,14 @@ class DamarisGUI(threading.Thread):
                     if not len(file_list) == 0:
                         self.new_log_message("Warning: Deleted %d job-files" % len(file_list), "GUI")
                 except IOError, e:
-                    self.gui.show_error_dialog("File Error", "IOError: Cannot delete job-files" + str(e))
+                    self.show_error_dialog("File Error", "IOError: Cannot delete job-files" + str(e))
                     self.new_log_message("IOError occurred: Unable to delete job-files (%s)" % str(e), "GUI")
+                    self.__experiment_running = False
                     return True
                 except Exception, e:
-                    self.gui.show_error_dialog("Error", "Exception: Unable to delete job-files" + str(e))
+                    self.show_error_dialog("Error", "Exception: Unable to delete job-files" + str(e))
                     self.new_log_message("Exception occurred: Unable to delete Job-Files (%s)" % str(e), "GUI")
+                    self.__experiment_running = False
                     return True
 
             # Delete existing result-files
@@ -532,12 +534,14 @@ class DamarisGUI(threading.Thread):
                     if not len(file_list) == 0:
                         self.new_log_message("Warning: Deleted %d result-files" % len(file_list), "GUI")
                 except IOError, e:
-                    self.gui.show_error_dialog("File Error", "IOError: Cannot delete result-files" + str(e))
+                    self.show_error_dialog("File Error", "IOError: Cannot delete result-files" + str(e))
                     self.new_log_message("IOError occurred: Unable to delete result-files (%s)" % str(e), "GUI")
+                    self.__experiment_running = False
                     return True
                 except Exception, e:
-                    self.gui.show_error_dialog("Error", "Exception: Cannot delete result-files" + str(e))
+                    self.show_error_dialog("Error", "Exception: Cannot delete result-files" + str(e))
                     self.new_log_message("Exception occurred: Unable to delete result-files (%s)" % str(e), "GUI")
+                    self.__experiment_running = False
                     return True  
 
             # Depending on execute_with_options run threads
@@ -581,7 +585,7 @@ class DamarisGUI(threading.Thread):
             self.stop_experiment(None)
             self.__experiment_running = False
             raise
-        
+
 
     def sync_job_writer_data_handler(self):
         "Timeout-Callback for synchronising Job-Writer and Data-Handler (for example restarting everthing if an error occured)"
@@ -1278,10 +1282,10 @@ class DamarisGUI(threading.Thread):
         # Event triggers when we init the box -> Catch Channel "None"
         if channel == "None":
             self.draw_result(None)
-            return True
+            return False
             
         self.draw_result(self.__display_channels[channel][0])
-        return True
+        return False
 
 
     def display_autoscaling_toggled(self, widget, Data = None):
