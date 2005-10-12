@@ -49,11 +49,14 @@ class Experiment:
         self.state_list.append('<state time="%g"/>\n' % time)
 
 
-    def record(self, samples, frequency, timelength=None):
+    def record(self, samples, frequency, timelength=None, sensitivity=None):
+        attributes='s="%d" f="%g"'%(samples,frequency)
+        if sensitivity is not None:
+            attributes+=' sensitivity="%f"'%sensitivity
         if timelength is None:
-            self.state_list.append('<state time="%g"><analogin s="%d" f="%g"/></state>\n' % (samples / float(frequency)*1.01, samples, frequency))
+            self.state_list.append('<state time="%g"><analogin %s/></state>\n' % (samples / float(frequency)*1.01, attributes))
         else:
-            self.state_list.append('<state time="%g"><analogin s="%d" f="%g"/></state>\n' % (timelength, samples, frequency))
+            self.state_list.append('<state time="%g"><analogin %s/></state>\n' %(timelength, attributes))
 
 
     def loop_start(self, iterations):
