@@ -285,4 +285,8 @@ class JobWriter(threading.Thread):
         return self.__job_id_written_last
 
 
+    def sync_with_reader(self):
+        while self.__job_id_written_last>=self.data_handling.result_reader.get_number_of_results_read() and not self.__stop_experiment:
+            time.sleep(0.05)
+
     # /Public Methods ------------------------------------------------------------------------------

@@ -24,9 +24,9 @@ class AccumulatedValue:
             self.n=1
             self.y2=mean*mean
         else:
-            self.y=float(y*n)
-            self.y2=float(n*(sigma*sigma+mean*mean))
             self.n=int(n)
+            self.y=float(mean*self.n)
+            self.y2=float(self.n*(sigma*sigma+mean*mean))
 
     def __add__(self,y):
 

@@ -144,8 +144,8 @@ class CoreInterface:
                 cygwin_path=_winreg.QueryValueEx(cygwin_root_key,"native")[0]
                 kill_command=os.path.join(cygwin_path,"bin","kill.exe")
                 os.popen("%s -%s %d"%(kill_command,sig,self.core_pid))
-        except OSError:
-            print str(OSError)
+        except OSError, e:
+            print "could not send signal %d to core: %s"%(sig, str(e))
             
     def __del__(self):
         # stop core and wait for it
