@@ -286,7 +286,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   }
 
   SpcSetParam (deviceno, SPC_CHENABLE,            CHANNEL0 | CHANNEL1); // Enable channels for recording
-  SpcSetParam (deviceno, SPC_SAMPLERATE,          (int)floor(effective_settings->samplefreq));      // Samplerate: 20 MHz
+  SpcSetParam (deviceno, SPC_SAMPLERATE,          (int)floor(effective_settings->samplefreq));      // Samplerate
 
   // decide for aquisition mode and start it
   int16 nErr=ERR_OK;
