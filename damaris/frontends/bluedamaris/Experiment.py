@@ -133,9 +133,15 @@ def reset():
 
 def lin_range(start,stop, step):
     this_one=float(start)+0.0
-    while (this_one<=float(stop)):
-	yield this_one
-	this_one+=float(step)
+    if step>0:
+        while (this_one<=float(stop)):
+            yield this_one
+            this_one+=float(step)
+    else:
+        while (this_one>=float(stop)):
+            yield this_one
+            this_one+=float(step)
+        
 
 def log_range(start, stop, stepno):
     if (start<=0 or stop<=0 or stepno<1):
