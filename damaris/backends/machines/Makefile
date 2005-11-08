@@ -50,6 +50,15 @@ endif
 ../drivers/PTS-Synthesizer/PTS.o:
 	$(MAKE) -C ../drivers/PTS-Synthesizer PTS.o
 
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a:
+	$(MAKE) -C ../drivers/Spectrum-MI40xxSeries Spectrum-MI40xxSeries.a
+
+../drivers/Eurotherm-2000Series/Eurotherm-2000Series.o:
+	$(MAKE) -C ../drivers/Eurotherm-2000Series Eurotherm-2000Series.o
+
+../drivers/tempcont.o:
+	$(MAKE) -C ../drivers tempcont.o
+
 ../drivers/dummy/dummy.o:
 	$(MAKE) -C ../drivers/dummy dummy.o
 
@@ -59,8 +68,6 @@ endif
 hardware.o: hardware.cpp hardware.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a:
-	$(MAKE) -C ../drivers/Spectrum-MI40xxSeries Spectrum-MI40xxSeries.a
 
 Mobilecore.exe: Mobilecore.o hardware.o \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
@@ -73,6 +80,17 @@ Mobilecore.o: Mobilecore.cpp \
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+magnexgrad_backend: magnexgrad_backend.o hardware.o \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o ../drivers/Eurotherm-2000Series/Eurotherm-2000Series.o ../drivers/tempcont.o \
+../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
+	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
+
+magnexgrad_backend.o: magnexgrad_backend.cpp \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
 dummycore.o: dummycore.cpp ../drivers/dummy/dummy.o
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
@@ -81,7 +99,7 @@ dummycore.exe: dummycore.o ../core/core.a ../drivers/dummy/dummy.o hardware.o ..
 
 clean: ../tools/add_endline.exe
 	for f in *.cpp *.h; do ../tools/add_endline.exe $$f;done; \
-rm -f *~ *.o NQRcore.exe Mobilecore.exe dummycore.exe *.stackdump
+rm -f *~ *.o NQRcore.exe Mobilecore.exe dummycore.exe *.stackdump magnexgrad_backend
 
 install: $(MACHINE)core.exe
 	install $(MACHINE)core.exe $(PREFIX)
