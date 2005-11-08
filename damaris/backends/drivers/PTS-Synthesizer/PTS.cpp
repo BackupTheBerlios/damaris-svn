@@ -8,6 +8,7 @@
 #include "PTS.h"
 #include <cstdio>
 #include <cmath>
+#include "core/xml_states.h"
 
 PTS::PTS(int myid): id(myid) {
   frequency=0;
@@ -147,6 +148,7 @@ void PTS_latched::set_frequency(state& experiment) {
     for(state_sequent::iterator child_state=exp_sequence->begin(); child_state!=exp_sequence->end(); ++child_state)
       set_frequency_recursive(*exp_sequence, child_state);
   }
+  xml_state_writer().write_states(stderr, experiment);
 }
 
 void PTS_latched::set_frequency_recursive(state_sequent& the_sequence, state::iterator& the_state) {
@@ -225,12 +227,15 @@ void PTS_latched::set_frequency_recursive(state_sequent& the_sequence, state::it
 	register_ttls->ttls&=0x7fff;
 	the_sequence.insert(the_state,register_state->copy_new());
 	/* 1Hz and 0.1Hz (not used for all models) */
+	//register_state->length=0.5e-6;
 	register_ttls->ttls=(frequency_int/10)%10<<8|((frequency_int)%10)<<4|11<<12;
 	the_sequence.insert(the_state,register_state->copy_new());
 	register_ttls->ttls&=0x7fff;
 	the_sequence.insert(the_state,register_state->copy_new());
+	//register_state->length=9e-8;
 	/* and shorten the remaining state */
 	this_state->length-=9e-8*12;
+	//this_state->length-=9e-8*11+0.5e-6;
       }
       if (1) {
 	/* first entry for phase */      
