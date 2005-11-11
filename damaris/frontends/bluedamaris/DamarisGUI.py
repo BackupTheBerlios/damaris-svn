@@ -73,7 +73,8 @@ class DamarisGUI(threading.Thread):
         
     def run(self):
         "Starting thread and GTK-mainloop"
-        self.xml_gui = gtk.glade.XML(os.path.join(sys.path[0],"damaris.glade"))
+        # find the damaris glade file
+        self.xml_gui = gtk.glade.XML(os.path.join(os.path.dirname(__file__),"damaris.glade"))
 
         self.damaris_gui_init()
 
@@ -1276,7 +1277,7 @@ class DamarisGUI(threading.Thread):
 
     def display_source_changed(self, Data = None):
         if self.main_notebook.get_current_page()!=2:
-            return
+            return False
         channel = self.display_source_combobox.get_active_text()
 
         # Event triggers when we init the box -> Catch Channel "None"
@@ -1286,7 +1287,6 @@ class DamarisGUI(threading.Thread):
             
         self.draw_result(self.__display_channels[channel][0])
         return False
-
 
     def display_autoscaling_toggled(self, widget, Data = None):
 
@@ -1399,6 +1399,7 @@ class DamarisGUI(threading.Thread):
             gtk.gdk.threads_leave()
             return False
         if isinstance(in_result,MeasurementResult.MeasurementResult):
+            gtk.gdk.threads_enter()
             if self.graphen:
                 for l in self.graphen:
                     self.matplot_axes.lines.remove(l)
@@ -1409,8 +1410,10 @@ class DamarisGUI(threading.Thread):
                 for l in self.measurementresultgraph[1]:
                     self.matplot_axes.lines.remove(l)
                 self.measurementresultgraph=None
+            gtk.gdk.threads_leave()
             return self.draw_result_idle_func_achim(in_result)
         else:
+            gtk.gdk.threads_enter()
             if self.measurementresultgraph is not None:
                 # clear errorbars
                 self.matplot_axes.lines.remove(self.measurementresultgraph[0])
@@ -1432,6 +1435,7 @@ class DamarisGUI(threading.Thread):
                 # Img-Fehler
                 self.graphen[4].set_data([0.0],[0.0])
                 self.graphen[5].set_data([0.0],[0.0])
+            gtk.gdk.threads_leave()
             return self.draw_result_idle_func_orig(in_result)
 
     def draw_result_idle_func_achim(self, in_result):
@@ -1460,7 +1464,6 @@ class DamarisGUI(threading.Thread):
                 self.matplot_axes.set_title("")
 
             self.matplot_canvas.draw()
-            gtk.gdk.threads_leave()
             return False
         
         finally:
@@ -1542,13 +1545,10 @@ class DamarisGUI(threading.Thread):
                
             # Draw it!
             self.matplot_canvas.draw()
-
-            gtk.gdk.threads_leave()
-            return False
+            return False        
 
         finally:
             gtk.gdk.threads_leave()
-        
 
 
     def watch_result(self, result, channel):

@@ -153,12 +153,15 @@ def log_range(start, stop, stepno):
     for i in xrange(int(stepno)):
         yield start*(factor**i)
 
-def staggered_range(some_range):
+def staggered_range(some_range, size = 1):
     # do one, drop one
     left_out=[]
     try:
-        yield some_range.next()
-        left_out.append(some_range.next())
+        while True:
+            for i in xrange(size):
+                yield some_range.next()
+            for i in xrange(size):
+                left_out.append(some_range.next())
     except StopIteration:
         pass
     
