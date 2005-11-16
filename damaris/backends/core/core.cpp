@@ -69,6 +69,9 @@ core::core(const core_config& configuration) {
   the_configuration.spool_directory=cwd_buffer;
   free(cwd_buffer);
 
+  // allocate job parser
+  job_parser=new job_receiver("");
+
   // reset counter
   job_counter=0;
 
@@ -96,16 +99,6 @@ core::core(const core_config& configuration) {
   signal(SIGQUIT,quit_signal_handler);
   signal(SIGTERM,term_signal_handler);
   signal(SIGINT,term_signal_handler);
-
-  try {
-    XERCES_CPP_NAMESPACE_QUALIFIER XMLPlatformUtils::Initialize();
-  }
-  catch (const XERCES_CPP_NAMESPACE_QUALIFIER XMLException& toCatch) {
-    char* ini_error=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(toCatch.getMessage());
-    core_exception new_exception(std::string("xerces initialisation error: ")+ini_error);
-    XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&ini_error);
-    throw new_exception;
-  }
 
 }
 
@@ -136,6 +129,7 @@ int core::run() {
   write_state();
 
   quit_mainloop=0;
+
   while (!quit_mainloop && term_signal==0 && quit_signal==0) {
       // wait for a job to run...
       job * this_job=NULL;
@@ -160,7 +154,6 @@ int core::run() {
 	      break;
 	  }
       }
-      this_job=new do_nothing_job(job_counter);
       if (this_result==NULL) {
 	  this_result=new error_result(job_counter,"unexpected: did not get any result");
       }
@@ -203,7 +196,7 @@ job* core::wait_for_input() {
 	int file_access=access(job_filename.c_str(),F_OK);
 	if (0==file_access) {
 	    // job_reciever creates a job
-	    job* new_job=job_receiver("").receive(job_filename);
+	    job* new_job=job_parser->receive(job_filename);
 	    if (new_job->no()!=job_counter) {
 		new_job->job_no=job_counter;
 		fprintf(stderr,"%s : corrected job number\n", job_filename.c_str());
@@ -229,13 +222,15 @@ result* core::do_the_job(job& the_job) {
   // look for main loop commands, like quit, wait or nop
   control* cjob=dynamic_cast<control*>(&the_job);
   if (cjob!=NULL) {
-    return cjob->do_it(this);
+      return cjob->do_it(this);
+
   }
 
   // experiments
   experiment* ejob=dynamic_cast<experiment*>(&the_job);
   if (ejob!=NULL) {
-    return ejob->do_it(the_hardware);
+      result* r=ejob->do_it(the_hardware);
+      return r;
   }
 
   // execute everything else without parameter ...
@@ -277,7 +272,5 @@ core::~core() {
   // todo: send termination message
   // release hardware
   if (the_hardware!=NULL) delete the_hardware;
-
-  XERCES_CPP_NAMESPACE_QUALIFIER XMLPlatformUtils::Terminate();
-
+  if (job_parser!=NULL) delete job_parser;
 }

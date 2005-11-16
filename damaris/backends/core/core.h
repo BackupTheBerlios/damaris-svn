@@ -7,10 +7,11 @@
 #ifndef CORE_H
 #define CORE_H
 
-#include "job.h"
-#include "result.h"
-#include "core_exception.h"
-#include "core_config.h"
+#include "core/job.h"
+#include "core/result.h"
+#include "core/job_receiver.h"
+#include "core/core_exception.h"
+#include "core/core_config.h"
 #include "machines/hardware.h"
 #include <string>
 #include <time.h>
@@ -111,6 +112,11 @@ class core {
     counting starts from 0
   */
   size_t job_counter;
+
+  /**
+     keeps the parser on standby
+   */
+  job_receiver* job_parser;
 
   /**
      polls for the job files
