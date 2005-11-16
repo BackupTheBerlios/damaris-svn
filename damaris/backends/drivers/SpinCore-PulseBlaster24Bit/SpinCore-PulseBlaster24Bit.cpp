@@ -4,6 +4,7 @@
  Created: March 2005
 
 ****************************************************************************/
+#include "core/core.h"
 #include "SpinCore-PulseBlaster24Bit.h"
 #include <cmath>
 #include <typeinfo>
@@ -251,4 +252,45 @@ void SpinCorePulseBlaster24Bit::run_pulse_program(const PulseBlasterProgram& p) 
 	throw SpinCorePulseBlaster_error("found wrong program class in SpinCorePulseBlaster24Bit method");
     write_to_device(*prog);
     start();
+}
+
+void SpinCorePulseBlaster24Bit::wait_till_end() {
+    /* well.... a very bad implementation */
+    double waittime=duration-time_running.elapsed();
+#if 0
+    fprintf(stderr,"waiting while pulseprogram running...");
+#endif
+    // Bit zero is stopped; bit one is reset; bit two is running; bit three is waiting.
+    int status=get_status();
+#if 0
+    fprintf(stderr,"read status: %d\n",status);
+#endif
+    while (waittime>0.0 && core::term_signal==0 && !(status&0x1)) {
+      if (waittime<1e-4)
+	waittime=1e-4;
+      else
+	waittime*=0.9;
+#if 0
+      fprintf(stderr,"sleeping for %g seconds...",waittime);
+      fflush(stderr);
+#endif
+      timespec nanosleep_time;
+      nanosleep_time.tv_sec=(time_t)floor(waittime);
+      nanosleep_time.tv_nsec=(long)ceil((waittime-nanosleep_time.tv_sec)*1e9);
+      nanosleep(&nanosleep_time,NULL);
+      waittime=duration-time_running.elapsed();
+      status=get_status();
+#if 0
+      fprintf(stderr,"read status: %d\n",status);
+      fflush(stderr);
+#endif
+    }
+    if (core::term_signal!=0) {
+      //reset pulseblaster
+      stop();
+      reset_flags(0);
+    }
+#if 0
+    fprintf(stderr,"done\n");
+#endif
 }

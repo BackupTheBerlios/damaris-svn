@@ -7,7 +7,7 @@ obj-m += pulseblaster.o
 
 else
 
-KERNELSRC=/usr/src/linux
+KERNELSRC=/lib/modules/$(shell uname -r)/build
 THISDIR=$(shell cd . >/dev/null; pwd)
 LIBS=-lm
 CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic

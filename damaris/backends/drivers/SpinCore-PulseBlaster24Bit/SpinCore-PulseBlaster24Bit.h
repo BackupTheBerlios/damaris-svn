@@ -126,6 +126,11 @@ class SpinCorePulseBlaster24Bit: public SpinCorePulseBlaster {
   virtual void write_to_device(const PulseBlaster24BitProgram& p);
 
   /**
+     wait till end of pulseprogram
+   */
+  virtual void wait_till_end();
+
+  /**
      destructor (close device)
   */
   virtual ~SpinCorePulseBlaster24Bit() {}
