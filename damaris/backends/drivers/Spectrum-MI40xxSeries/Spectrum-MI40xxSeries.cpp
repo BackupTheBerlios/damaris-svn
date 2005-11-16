@@ -261,9 +261,6 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
      else
          conf->sensitivity=10.0; // dto.
   }
-  conf->data_structure->print(stderr);
-  xml_state_writer().write_states(stderr,*exp_sequence);
-  fflush(stderr);
 
   effective_settings=conf;
 
@@ -414,22 +411,25 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 	    SpcGetParam(deviceno, SPC_STATUS, &adc_status);
 	}
 	while (adc_status!=SPC_READY && adc_timer.elapsed()<timeout);
+	SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
 	if (adc_status!=SPC_READY) {
-	    SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
 	    free(adc_data);
 	    throw SpectrumMI40xxSeries_error("timout occured while collecting data");
 	}
     
 # if defined __linux__
-	SpcGetData (deviceno, 0, 0, 2 * sampleno, 2, (dataptr) adc_data);
+	size_t data_length=SpcGetData (deviceno, 0, 0, 2 * sampleno, 2, (dataptr) adc_data);
 # elif defined __CYGWIN__
-	SpcGetData (deviceno, 0, 0, 2 * sampleno,(void*) adc_data);
+	size_t data_length=SpcGetData (deviceno, 0, 0, 2 * sampleno,(void*) adc_data);
 # endif
+	if (2*sizeof(short int)*sampleno!=data_length) {
+	    free(adc_data);
+	    throw SpectrumMI40xxSeries_error("wrong amount of data from adc card");
+	}
 	// current position in adc data array
 	short int* data_position=adc_data;
 	// produced results
 	adc_results* the_results=new adc_results(0);
-	
 	data_position=split_adcdata_recursive(data_position, *(effective_settings->data_structure), *the_results);
 	if (data_position==0 || (size_t)(data_position-adc_data)!=(sampleno*2)) {
 	  fprintf(stderr,"something went wrong while spliting data");

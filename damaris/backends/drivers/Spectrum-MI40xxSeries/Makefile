@@ -7,7 +7,7 @@ all: Spectrum-MI40xxSeries.a
 Spectrum-MI40xxSeries.a: Spectrum-MI40xxSeries.o GatedData.o
 	$(AR) r $@ $^
 
-Spectrum-MI40xxSeries.o: Spectrum-MI40xxSeries.cpp Spectrum-MI40xxSeries.h GatedData.h
+Spectrum-MI40xxSeries.o: Spectrum-MI40xxSeries.cpp Spectrum-MI40xxSeries.h GatedData.h include/spcioctl.inc
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
 GatedData.o: GatedData.cpp GatedData.h
