@@ -182,6 +182,12 @@ static char amcc_inb(unsigned int address) {
 
   unsigned int Temp_Data = 0;
 
+ if (base_address==0) {
+      printk("%s: reg %02x)=0 (guessed)\n",DEVICE_NAME, 0xff&address);
+      return 0;
+  }
+
+
   // CHEK FOR 1 in MD1
 
   amcc_outb(address, 8);
@@ -345,9 +351,9 @@ int device_ioctl(struct inode *inode,	/* see include/linux/fs.h */
   if (ioctl_num==IOCTL_INB) {
     unsigned char reg=ioctl_param&0xFF;
     unsigned char val;
-    printk("%s: reading register number %02x\n",DEVICE_NAME,0x0ff&reg);
+    //printk("%s: reading register number %02x\n",DEVICE_NAME,0x0ff&reg);
     val=amcc_inb(reg);
-    printk("%s: found %02x=%02x\n", DEVICE_NAME, 0x0ff&reg, 0x0ff&val);
+    //printk("%s: found %02x=%02x\n", DEVICE_NAME, 0x0ff&reg, 0x0ff&val);
     return val;
   }
   
