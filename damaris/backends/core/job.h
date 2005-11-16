@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <string>
 #include <map>
-#include "result.h"
+#include "core/result.h"
 #include "machines/hardware.h"
 
 
@@ -160,7 +160,7 @@ class experiment: public job {
   /// holds the experiments states
   state* experiment_states;
   /// contains teh description of this experiment
-  XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument* description;
+  std::string description;
 
   /// initialise the experiment data
   experiment(size_t n, XERCES_CPP_NAMESPACE_QUALIFIER DOMElement* exp_data=NULL );
@@ -169,7 +169,6 @@ class experiment: public job {
 
   virtual ~experiment() {
     if (experiment_states!=NULL) delete experiment_states;
-    if (description!=NULL) description->release();
   }
 };
 

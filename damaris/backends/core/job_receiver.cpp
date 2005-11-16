@@ -11,6 +11,16 @@
 #include <xercesc/dom/DOMException.hpp>
 
 job_receiver::job_receiver(std::string the_jobfilenamepattern) {
+  try {
+    XERCES_CPP_NAMESPACE_QUALIFIER XMLPlatformUtils::Initialize();
+  }
+  catch (const XERCES_CPP_NAMESPACE_QUALIFIER XMLException& toCatch) {
+    char* ini_error=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(toCatch.getMessage());
+    job_exception new_exception(std::string("xerces initialisation error: ")+ini_error);
+    XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&ini_error);
+    throw new_exception;
+  }
+
   jobfilename=NULL;
   setFilenamePattern(the_jobfilenamepattern);
   parser=new XERCES_CPP_NAMESPACE_QUALIFIER XercesDOMParser();
@@ -41,12 +51,13 @@ job* job_receiver::receive(size_t no) {
 }
 
 job* job_receiver::receive(const std::string& filename) {
+
   try {
     parser->parse(filename.c_str());
   }
   catch(const XERCES_CPP_NAMESPACE_QUALIFIER XMLException& toCatch) {
     char* message = XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(toCatch.getMessage());
-    job_exception je(std::string("XML error: ")+message); 
+    job_exception je(std::string("XML error: ")+message);
     XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&message);
     throw je;
   }
@@ -137,7 +148,9 @@ job* job_receiver::receive(const std::string& filename) {
 
   XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&docname);
   parser->reset();
+  parser->resetDocument();
   parser->resetDocumentPool();
+
   return this_job;
 }
 
@@ -146,4 +159,5 @@ job_receiver::~job_receiver() {
   delete jobfilename;
   delete errHandler;
   delete parser;
+  XERCES_CPP_NAMESPACE_QUALIFIER XMLPlatformUtils::Terminate();
 }

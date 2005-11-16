@@ -14,10 +14,10 @@
 #include <xercesc/util/XercesDefs.hpp>
 #include <xercesc/dom/DOMWriter.hpp>
 #include <xercesc/framework/MemBufFormatTarget.hpp>
-#include "job.h"
-#include "core.h"
-#include "stopwatch.h"
-#include "xml_states.h"
+#include "core/job.h"
+#include "core/core.h"
+#include "core/stopwatch.h"
+#include "core/xml_states.h"
 
 result* quit_job::do_it(core* c) {
   c->quit_mainloop=1;
@@ -90,37 +90,53 @@ single_pulse_experiment::single_pulse_experiment(size_t n,const XERCES_CPP_NAMES
 
 experiment::experiment(size_t n, XERCES_CPP_NAMESPACE_QUALIFIER DOMElement* exp_data ): job(n){
   // create result-document
-  XMLCh* core_impl_name=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("core");  
+  XMLCh* core_impl_name=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("core");
   XMLCh* doc_name=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("description");
   XERCES_CPP_NAMESPACE_QUALIFIER DOMImplementation* impl=XERCES_CPP_NAMESPACE_QUALIFIER DOMImplementationRegistry::getDOMImplementation(core_impl_name);
   XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&core_impl_name);
-  description=impl->createDocument(NULL,doc_name,NULL);
+  XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument* description_tags;
+  description_tags=impl->createDocument();//NULL, doc_name, NULL);
   XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&doc_name);
-  int found_description=0;
 
   // get description by name
   XMLCh* description_name=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("description");
   XERCES_CPP_NAMESPACE_QUALIFIER DOMNode* one_child=exp_data->getFirstChild();
+
+  int found_description=0;
   while (one_child!=NULL) {
     XERCES_CPP_NAMESPACE_QUALIFIER DOMNode* next_child=one_child->getNextSibling();
     if (one_child->getNodeType()==XERCES_CPP_NAMESPACE_QUALIFIER DOMNode::ELEMENT_NODE &&
 	XERCES_CPP_NAMESPACE_QUALIFIER XMLString::compareIString(one_child->getNodeName(),description_name)==0) {
       // remove this one from list
       if (found_description==0) {
-	XERCES_CPP_NAMESPACE_QUALIFIER DOMNode* new_child=description->importNode(one_child,1);
-	XERCES_CPP_NAMESPACE_QUALIFIER DOMNode* old_node=description->replaceChild(new_child,description->getDocumentElement());
-	old_node->release();
+	  XERCES_CPP_NAMESPACE_QUALIFIER DOMNode* new_child=description_tags->importNode(one_child, 1);
+	  description_tags->appendChild(new_child);
+	  //XERCES_CPP_NAMESPACE_QUALIFIER DOMNode* old_node=description->replaceChild(new_child, description->getDocumentElement());
+	  //old_node->release();
+	  found_description=1;
       }
       else {
-	fprintf(stderr,"experiment: found more than one description section\n");
+	fprintf(stderr,"experiment: found more than one description section, ignoring\n");
       }
       exp_data->removeChild(one_child);
       one_child->release();
     }
     one_child=next_child;
   }
-  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&description_name);  
-
+  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&description_name);
+  if (description_tags->getDocumentElement()!=NULL) {
+      XMLCh tempStr[100];
+      XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("LS", tempStr, 99);
+      XERCES_CPP_NAMESPACE_QUALIFIER DOMImplementation *impl2=XERCES_CPP_NAMESPACE_QUALIFIER DOMImplementationRegistry::getDOMImplementation(tempStr);
+      XERCES_CPP_NAMESPACE_QUALIFIER DOMWriter *theSerializer=((XERCES_CPP_NAMESPACE_QUALIFIER  DOMImplementationLS*)impl2)->createDOMWriter();  
+      XERCES_CPP_NAMESPACE_QUALIFIER MemBufFormatTarget mem;
+      theSerializer->writeNode(&mem,*(description_tags->getDocumentElement()));
+      theSerializer->release();
+      description=std::string((char*)mem.getRawBuffer(),mem.getLen());
+      mem.reset();
+  }
+  if (description_tags!=NULL) {description_tags->release();}
+  
   // create state tree from rest of dom
   one_child=exp_data->getFirstChild();
   std::list<state*> found_states;
@@ -379,18 +395,8 @@ result* experiment::do_it(hardware* hw) {
   fprintf(stderr,"finished experiment job no %u\n\n",job_no);
   if (data==NULL)
     return new error_result(job_no,"did not get a result from method result* hardware::experiment(const state&) ");
+  data->description=description;
   data->job_no=job_no;
-
-  XMLCh tempStr[100];
-  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("LS", tempStr, 99);
-  XERCES_CPP_NAMESPACE_QUALIFIER DOMImplementation *impl=XERCES_CPP_NAMESPACE_QUALIFIER DOMImplementationRegistry::getDOMImplementation(tempStr);
-  XERCES_CPP_NAMESPACE_QUALIFIER DOMWriter *theSerializer=((XERCES_CPP_NAMESPACE_QUALIFIER  DOMImplementationLS*)impl)->createDOMWriter();
-  
-  XERCES_CPP_NAMESPACE_QUALIFIER MemBufFormatTarget mem;
-  theSerializer->writeNode(&mem,*(description->getDocumentElement()));
-  delete theSerializer;
-  //todo: turn into string
-  data->description=std::string((char*)mem.getRawBuffer(),mem.getLen());
-  
+    
   return data;
 }
