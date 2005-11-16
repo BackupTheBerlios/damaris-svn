@@ -148,7 +148,6 @@ void PTS_latched::set_frequency(state& experiment) {
     for(state_sequent::iterator child_state=exp_sequence->begin(); child_state!=exp_sequence->end(); ++child_state)
       set_frequency_recursive(*exp_sequence, child_state);
   }
-  xml_state_writer().write_states(stderr, experiment);
 }
 
 void PTS_latched::set_frequency_recursive(state_sequent& the_sequence, state::iterator& the_state) {
