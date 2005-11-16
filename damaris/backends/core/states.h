@@ -80,11 +80,11 @@ class ttlout: public state_atom {
     ttls=orig.ttls;
   }
 
-  
-  
   virtual state_atom* copy_new() const {
     return new ttlout(*this);
   }
+
+  virtual ~ttlout() {}
 };
 
 /**
@@ -119,6 +119,8 @@ class analogout: public state_atom {
   virtual state_atom* copy_new() const {
     return new analogout(*this);
   }
+
+  virtual ~analogout() {}
 };
 
 
@@ -162,6 +164,8 @@ class analogin: public state_atom {
   virtual state_atom* copy_new() const {
     return new analogin(*this);
   }
+
+  virtual ~analogin() {}
 
 };
 
@@ -262,7 +266,12 @@ class state_sequent: public state {
 
   virtual state* copy_flat(size_t enroll=4) const;
 
-  virtual ~state_sequent() {}
+  virtual ~state_sequent() {
+      while (!empty()) {
+	  if (back()!=NULL) delete (back());
+	  pop_back();
+      }
+  }
 };
 
 /**
