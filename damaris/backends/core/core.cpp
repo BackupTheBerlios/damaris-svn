@@ -154,6 +154,8 @@ int core::run() {
 	      break;
 	  }
       }
+      else
+	this_job=new job(job_counter);
       if (this_result==NULL) {
 	  this_result=new error_result(job_counter,"unexpected: did not get any result");
       }
