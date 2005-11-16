@@ -403,14 +403,14 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 	stopwatch adc_timer;
 	adc_timer.start();
 	int adc_status;
-	do {
-	    timespec sleeptime;
-	    sleeptime.tv_nsec=100000000;
-	    sleeptime.tv_sec=0;
-	    nanosleep(&sleeptime,NULL);
-	    SpcGetParam(deviceno, SPC_STATUS, &adc_status);
+	SpcGetParam(deviceno, SPC_STATUS, &adc_status);
+ 	while (adc_status!=SPC_READY && adc_timer.elapsed()<timeout){
+	  timespec sleeptime;
+	  sleeptime.tv_nsec=10*1000*1000;
+	  sleeptime.tv_sec=0;
+	  nanosleep(&sleeptime,NULL);
+	  SpcGetParam(deviceno, SPC_STATUS, &adc_status);
 	}
-	while (adc_status!=SPC_READY && adc_timer.elapsed()<timeout);
 	SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
 	if (adc_status!=SPC_READY) {
 	    free(adc_data);
