@@ -8,7 +8,7 @@
 
 CXX=g++
 CXXFLAGS=-g -O0 -I. -I.. -Wshadow -Wall
-LIBS=-lexpat
+LIBS=-lexpat -lxerces-c
 
 .PHONY: all clean install
 
