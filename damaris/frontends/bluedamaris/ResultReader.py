@@ -41,7 +41,7 @@ class ResultReader(threading.Thread):
         self.result_queue = []
 
         # Maximum Number of Results in Queue (if reached, ResultReader will sleep until results are read)
-        self.max_result_queue_length = 1000
+        self.max_result_queue_length = 100
         
         # Filename stuff
         self.filename = "job.%09d.result"
@@ -177,6 +177,7 @@ class ResultReader(threading.Thread):
             databuffer=in_file.read(buffersize)
 
         self.xml_parser.Parse("",True)
+        self.xml_parser = None
 
     # Callback when a xml start tag is found
     def __xmlStartTagFound(self, in_name, in_attribute):
@@ -354,7 +355,7 @@ class ResultReader(threading.Thread):
             del self.result_queue[0]
             
             if self.get_number_of_results_pending() < self.max_result_queue_length and not self.event_lock.isSet():
-                self.event_lock.set()                
+                self.event_lock.set()
             
             return out_result
 

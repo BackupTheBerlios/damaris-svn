@@ -477,11 +477,15 @@ class DamarisGUI(threading.Thread):
         # Deleting all history
         self.__display_channels = { }
         self.__rescale = True
+        self.pending_draw_requests=0
 
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
         self.display_x_scaling_combobox.set_sensitive(False)
         self.display_y_scaling_combobox.set_sensitive(False)
+
+        self.log_messages_textbuffer.delete(self.log_messages_textbuffer.get_start_iter(),
+                                            self.log_messages_textbuffer.get_end_iter())
         
         self.__experiment_running = True
 
@@ -1389,6 +1393,9 @@ class DamarisGUI(threading.Thread):
 
 
     def draw_result_idle_func(self, in_result):
+        self.pending_draw_requests-=1
+        if self.pending_draw_requests>2:
+            print "ignoring this draw request (%d still pending)"%self.pending_draw_requests
         if in_result is None:
             gtk.gdk.threads_enter()
             self.matplot_axes.clear()
@@ -1571,11 +1578,12 @@ class DamarisGUI(threading.Thread):
             else:
                 self.__display_channels[channel].insert(0,result) # inserts a refernce
 
-                # Save at max 5 results per channel (implemented for History; "Watchpoint-managing class" should be implemented in future versions"
-                if len(self.__display_channels[channel]) > 5: del self.__display_channels[channel][-1]
+                # Save at max 1 results per channel (implemented for History; "Watchpoint-managing class" should be implemented in future versions"
+                if len(self.__display_channels[channel]) > 1: del self.__display_channels[channel][-1]
 
             # Getting active text in Combobox and compairing it
             if channel == self.display_source_combobox.get_active_text():
+                self.pending_draw_requests+=1
                 self.draw_result(self.__display_channels[channel][0])
 
             self.__drawing_busy = False
