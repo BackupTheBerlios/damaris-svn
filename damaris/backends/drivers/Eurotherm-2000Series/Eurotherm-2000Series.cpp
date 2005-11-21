@@ -172,7 +172,14 @@ int Eurotherm2000Series::set_value(const std::string& param_name, const std::str
   // calculate bcc byte
   unsigned char bcc=message[6];
   for (size_t i=7;i<message.size();++i) bcc^=message[i];
-  message+=bcc; //BCC
+  message+=(unsigned char)bcc; //BCC
+
+#if 0
+  printf("param: %s, value: %s: ",param_name.c_str(),value.c_str());
+  for (size_t i=0; i<message.size();i++)
+    printf("%02x ",(unsigned char)message[i]);
+  printf("\n");
+#endif
 
   pthread_mutex_lock(&device_lock);
   write(serial_dev,message.c_str(),message.size());
@@ -207,7 +214,7 @@ double Eurotherm2000Series::get_temperature() const {
   int summary_status=get_summary_status();
   if (failure_mask&summary_status) {
     char message_buffer[10];
-    snprintf(message_buffer,10,"%4x",summary_status);
+    snprintf(message_buffer,10,"0x%04x",summary_status);
     throw Eurotherm2000Series_error(std::string("sensor/heater/temperature range fault: ")+message_buffer);
   }
   std::string answer;
@@ -217,9 +224,9 @@ double Eurotherm2000Series::get_temperature() const {
 
 double Eurotherm2000Series::set_setpoint(double ct) {
   const char* value;
-  char buffer[6];
-  snprintf(buffer,6,fp_format.c_str(),ct);
-  set_value("SL",value);
+  char buffer[8];
+  snprintf(buffer,8,fp_format.c_str(),ct);
+  set_value("SL",buffer);
   // extra wait, until the get_setpoint function returns the same value
   timespec write_latency;
   write_latency.tv_sec=0; write_latency.tv_nsec=50000000;
