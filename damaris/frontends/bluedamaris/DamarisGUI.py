@@ -1396,6 +1396,7 @@ class DamarisGUI(threading.Thread):
         self.pending_draw_requests-=1
         if self.pending_draw_requests>2:
             print "ignoring this draw request (%d still pending)"%self.pending_draw_requests
+            return False
         if in_result is None:
             gtk.gdk.threads_enter()
             self.matplot_axes.clear()
@@ -1411,6 +1412,8 @@ class DamarisGUI(threading.Thread):
                 for l in self.graphen:
                     self.matplot_axes.lines.remove(l)
                 self.graphen=[]
+                self.matplot_axes.clear()
+                self.matplot_axes.grid(True)
             if self.measurementresultgraph is not None:
                 # clear errorbars before redrawing
                 self.matplot_axes.lines.remove(self.measurementresultgraph[0])
@@ -1427,6 +1430,8 @@ class DamarisGUI(threading.Thread):
                 for l in self.measurementresultgraph[1]:
                     self.matplot_axes.lines.remove(l)
                 self.measurementresultgraph=None
+                self.matplot_axes.clear()
+                self.matplot_axes.grid(True)
             if len(self.graphen)==0:
                 self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 2))
                 self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 2))
@@ -1434,14 +1439,6 @@ class DamarisGUI(threading.Thread):
                 self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
                 self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
                 self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
-            if not in_result.uses_statistics():
-                # Maybe theres a better place for deleting the error-lines
-                # Real-Fehler
-                self.graphen[2].set_data([0.0],[0.0])
-                self.graphen[3].set_data([0.0],[0.0])
-                # Img-Fehler
-                self.graphen[4].set_data([0.0],[0.0])
-                self.graphen[5].set_data([0.0],[0.0])
             gtk.gdk.threads_leave()
             return self.draw_result_idle_func_orig(in_result)
 
@@ -1462,9 +1459,10 @@ class DamarisGUI(threading.Thread):
 
             # add error bars
             self.measurementresultgraph=self.matplot_axes.errorbar(x=k, y=v, yerr=e, fmt="b+")
+            k=v=e=None
 
             # Any title to be set?
-            title=in_result.get_title()
+            title=in_result.get_title()+""
             if title is not None:
                 self.matplot_axes.set_title(title)
             else:
@@ -1481,8 +1479,6 @@ class DamarisGUI(threading.Thread):
         gtk.gdk.threads_enter()
 
         try:
-            self.graphen[0].set_data(in_result.get_xdata(), in_result.get_ydata(0))
-            self.graphen[1].set_data(in_result.get_xdata(), in_result.get_ydata(1))
 
             xmin = in_result.get_xmin()
             xmax = in_result.get_xmax()
@@ -1521,15 +1517,29 @@ class DamarisGUI(threading.Thread):
                     self.__old_ymax > ymax+0.2*ydiff or self.__old_ymin < ymin-0.2*ydiff):
                     self.matplot_axes.set_ylim(ymin, ymax)
 
+            xdata=in_result.get_xdata()
+            ydata0=in_result.get_ydata(0)
+            ydata1=in_result.get_ydata(1)
+            self.graphen[0].set_data(xdata, ydata0)
+            self.graphen[1].set_data(xdata, ydata1)
 
             # Statistics activated?
             if self.display_statistics_checkbutton.get_active() and in_result.uses_statistics() and in_result.ready_for_drawing_error():
                 # Real-Fehler
-                self.graphen[2].set_data(in_result.get_xdata(), in_result.get_ydata(0) + in_result.get_yerr(0))
-                self.graphen[3].set_data(in_result.get_xdata(), in_result.get_ydata(0) - in_result.get_yerr(0))
+                self.graphen[2].set_data(xdata, ydata0 + in_result.get_yerr(0))
+                self.graphen[3].set_data(xdata, ydata0 - in_result.get_yerr(0))
                 # Img-Fehler
-                self.graphen[4].set_data(in_result.get_xdata(), in_result.get_ydata(1) + in_result.get_yerr(1))
-                self.graphen[5].set_data(in_result.get_xdata(), in_result.get_ydata(1) - in_result.get_yerr(1))
+                self.graphen[4].set_data(xdata, ydata1 + in_result.get_yerr(1))
+                self.graphen[5].set_data(xdata, ydata1 - in_result.get_yerr(1))
+            else:
+                # Maybe theres a better place for deleting the error-lines
+                # Real-Fehler
+                self.graphen[2].set_data([0.0],[0.0])
+                self.graphen[3].set_data([0.0],[0.0])
+                # Img-Fehler
+                self.graphen[4].set_data([0.0],[0.0])
+                self.graphen[5].set_data([0.0],[0.0])
+            xdata=ydata0=ydata1=None
 
             # Any title to be set?
             if in_result.get_title() is not None:
@@ -1548,8 +1558,7 @@ class DamarisGUI(threading.Thread):
                 self.matplot_axes.set_ylabel(in_result.get_ylabel())
             else:
                 self.matplot_axes.set_ylabel("")
-                
-               
+
             # Draw it!
             self.matplot_canvas.draw()
             return False        
@@ -1562,7 +1571,13 @@ class DamarisGUI(threading.Thread):
         "Interface to surface for watching some data (under a certain name)"
         # Copy result and channel
         self.__drawing_busy = True
-        
+        # give event queue chance to shorten
+        # todo unlocked read access to self.pending_draw_results
+        while self.pending_draw_requests>20:
+            time.sleep(0.1)
+        if self.pending_draw_requests>10:
+            time.sleep(0.05)
+
         gobject.idle_add(self.watch_result_idle_func, result + 0, channel + "")
         
 
