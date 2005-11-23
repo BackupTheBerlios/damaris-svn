@@ -28,17 +28,17 @@ class Experiment:
             self.state_list.append('<ttlout value="%d"/>\n' % channel)
 
         else:
-            self.state_list.append('<state time="%g"><ttlout value="%d"/></state>\n' % (length, channel))
+            self.state_list.append('<state time="%s"><ttlout value="%d"/></state>\n' % (repr(length), channel))
 
 
     def ttl_pulse(self, length, channel = None, value = None):
         the_value=0+value
         if channel is not None and value is None:
             the_value=1<<channel
-        self.state_list.append('<state time="%g"><ttlout value="%d"/></state>\n' % (length, the_value))
+        self.state_list.append('<state time="%s"><ttlout value="%d"/></state>\n' % (repr(length), the_value))
 
     def state_start(self, time):
-        self.state_list.append('<state time="%g">\n' % time)
+        self.state_list.append('<state time="%s">\n' % repr(time))
 
 
     def state_end(self):
@@ -46,7 +46,7 @@ class Experiment:
 
 
     def wait(self, time):
-        self.state_list.append('<state time="%g"/>\n' % time)
+        self.state_list.append('<state time="%s"/>\n' % repr(time))
 
 
     def record(self, samples, frequency, timelength=None, sensitivity=None):
@@ -54,9 +54,9 @@ class Experiment:
         if sensitivity is not None:
             attributes+=' sensitivity="%f"'%sensitivity
         if timelength is None:
-            self.state_list.append('<state time="%g"><analogin %s/></state>\n' % (samples / float(frequency)*1.01, attributes))
+            self.state_list.append('<state time="%s"><analogin %s/></state>\n' % (repr(samples / float(frequency)*1.01), attributes))
         else:
-            self.state_list.append('<state time="%g"><analogin %s/></state>\n' %(timelength, attributes))
+            self.state_list.append('<state time="%s"><analogin %s/></state>\n' %(repr(timelength), attributes))
 
 
     def loop_start(self, iterations):
