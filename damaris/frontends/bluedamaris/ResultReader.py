@@ -250,7 +250,7 @@ class ResultReader(threading.Thread):
 
         # ADC_Result
         if self.__filetype == ResultReader.ADCDATA_TYPE:
-            if self.try_base64:
+            if self.try_base64 is True:
                 self.adc_result_trailing_chars+=in_cdata
             else:
                 try:
@@ -260,13 +260,13 @@ class ResultReader(threading.Thread):
                     else:
                         self.adc_result_trailing_chars=""
 
-                        for i in values:
-                            self.result.set_ydata(self.adc_result_current_channel, self.adc_result_sample_counter, int(i))
-                            # print "added value " + str(i) + " at: " + str(self.current_channel) + ", " + str(self.current_pos)
-                            self.adc_result_current_channel = (self.adc_result_current_channel + 1) % self.result.get_number_of_channels()
-                            if self.adc_result_current_channel == 0:
-                                self.result.set_xdata(self.adc_result_sample_counter, self.adc_result_sample_counter / self.result.get_sampling_rate())
-                                self.adc_result_sample_counter += 1
+                    for i in values:
+                        self.result.set_ydata(self.adc_result_current_channel, self.adc_result_sample_counter, int(i))
+                        # print "added value " + str(i) + " at: " + str(self.current_channel) + ", " + str(self.current_pos)
+                        self.adc_result_current_channel = (self.adc_result_current_channel + 1) % self.result.get_number_of_channels()
+                        if self.adc_result_current_channel == 0:
+                            self.result.set_xdata(self.adc_result_sample_counter, self.adc_result_sample_counter / self.result.get_sampling_rate())
+                            self.adc_result_sample_counter += 1
                 except ValueError:
                     self.try_base64=True
                     self.adc_result_trailing_chars=in_cdata
@@ -296,14 +296,25 @@ class ResultReader(threading.Thread):
             if self.__filetype == ResultReader.ADCDATA_TYPE:
                 if self.try_base64:
                     tmp_string=base64.standard_b64decode(self.adc_result_trailing_chars)
-                    self.adc_result_trailing_chars=""
-                    tmp=numarray.fromstring(tmp_string, numarray.Int16,(len(tmp_string)/2))
+                    self.adc_result_trailing_chars = ""
+                    tmp=numarray.fromstring(tmp_string, numarray.Int16)
                     del tmp_string
-                    sys.stdout.flush()
-                    self.result.x[self.adc_result_sample_counter:]=(numarray.arange(tmp.size()/2)+self.adc_result_sample_counter)/self.result.get_sampling_rate()
-                    self.result.y[0][self.adc_result_sample_counter:]=tmp[::2]
-                    self.result.y[1][self.adc_result_sample_counter:]=tmp[1::2]
-                    self.adc_result_sample_counter+=tmp.size()/2
+                    
+                    expected_samples=self.result.index[-1][1]-self.result.index[-1][0]+1
+                    if len(tmp)/2 != expected_samples:
+                        self.__gui.new_log_message("ResultReader Warning: size missmatch %d!=%d samples"%(len(tmp)/2, expected_samples), "DH")
+
+                    size_used=min(expected_samples,len(tmp)/2)
+                    self.result.x[self.adc_result_sample_counter:]=(numarray.arange(expected_samples)+self.adc_result_sample_counter)/self.result.get_sampling_rate()
+                    self.result.y[0][self.adc_result_sample_counter:self.adc_result_sample_counter+size_used]=tmp[0:size_used*2:2]
+                    self.result.y[1][self.adc_result_sample_counter:self.adc_result_sample_counter+size_used]=tmp[1:size_used*2:2]
+                    del tmp
+                    if size_used<expected_samples:
+                        # zero padding...
+                        self.result.y[0][self.adc_result_sample_counter+size_used:self.adc_result_sample_counter+samples_expected]=numarray.zeros((samples_expected-size_used,))
+                        self.result.y[1][self.adc_result_sample_counter+size_used:self.adc_result_sample_counter+samples_expected]=numarray.zeros((samples_expected-size_used,))
+                    self.adc_result_sample_counter+=expected_samples
+                        
                 else:
                     if self.adc_result_trailing_chars!="":
                         self.__xmlCharacterDataFound(" ")
