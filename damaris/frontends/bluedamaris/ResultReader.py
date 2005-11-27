@@ -12,6 +12,9 @@
 
 import threading
 import os
+import sys
+import base64
+import numarray
 import xml.parsers.expat
 from datetime import datetime
 
@@ -197,6 +200,7 @@ class ResultReader(threading.Thread):
 
             self.adc_result_current_channel = 0
             self.adc_result_trailing_chars = ""
+            self.try_base64 = False
 
             if self.result is None:
                 self.result = ADC_Result()
@@ -246,19 +250,26 @@ class ResultReader(threading.Thread):
 
         # ADC_Result
         if self.__filetype == ResultReader.ADCDATA_TYPE:
-            values=(self.adc_result_trailing_chars+in_cdata).split()
-            if not in_cdata[-1].isspace():
-                self.adc_result_trailing_chars=values.pop()
+            if self.try_base64:
+                self.adc_result_trailing_chars+=in_cdata
             else:
-                self.adc_result_trailing_chars=""
+                try:
+                    values=(self.adc_result_trailing_chars+in_cdata).split()
+                    if not in_cdata[-1].isspace():
+                        self.adc_result_trailing_chars=values.pop()
+                    else:
+                        self.adc_result_trailing_chars=""
 
-            for i in values:
-                self.result.set_ydata(self.adc_result_current_channel, self.adc_result_sample_counter, int(i))
-                #print "added value " + str(i) + " at: " + str(self.current_channel) + ", " + str(self.current_pos)
-                self.adc_result_current_channel = (self.adc_result_current_channel + 1) % self.result.get_number_of_channels()
-                if self.adc_result_current_channel == 0:
-                    self.result.set_xdata(self.adc_result_sample_counter, self.adc_result_sample_counter / self.result.get_sampling_rate())
-                    self.adc_result_sample_counter += 1
+                        for i in values:
+                            self.result.set_ydata(self.adc_result_current_channel, self.adc_result_sample_counter, int(i))
+                            # print "added value " + str(i) + " at: " + str(self.current_channel) + ", " + str(self.current_pos)
+                            self.adc_result_current_channel = (self.adc_result_current_channel + 1) % self.result.get_number_of_channels()
+                            if self.adc_result_current_channel == 0:
+                                self.result.set_xdata(self.adc_result_sample_counter, self.adc_result_sample_counter / self.result.get_sampling_rate())
+                                self.adc_result_sample_counter += 1
+                except ValueError:
+                    self.try_base64=True
+                    self.adc_result_trailing_chars=in_cdata
 
         # Error_Result
         elif self.__filetype == ResultReader.ERROR_TYPE:
@@ -279,29 +290,42 @@ class ResultReader(threading.Thread):
 
 
     def __xmlEndTagFound(self, in_name):
-        if in_name == "result":
+        if in_name == "adcdata":
 
             # ADC_Result
             if self.__filetype == ResultReader.ADCDATA_TYPE:
-                if self.adc_result_trailing_chars!="":
-                    self.__xmlCharacterDataFound(" ")
-                self.__gui.new_log_message("Result Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read), "DH")
+                if self.try_base64:
+                    tmp_string=base64.standard_b64decode(self.adc_result_trailing_chars)
+                    self.adc_result_trailing_chars=""
+                    tmp=numarray.fromstring(tmp_string, numarray.Int16,(len(tmp_string)/2))
+                    del tmp_string
+                    sys.stdout.flush()
+                    self.result.x[self.adc_result_sample_counter:]=(numarray.arange(tmp.size()/2)+self.adc_result_sample_counter)/self.result.get_sampling_rate()
+                    self.result.y[0][self.adc_result_sample_counter:]=tmp[::2]
+                    self.result.y[1][self.adc_result_sample_counter:]=tmp[1::2]
+                    self.adc_result_sample_counter+=tmp.size()/2
+                else:
+                    if self.adc_result_trailing_chars!="":
+                        self.__xmlCharacterDataFound(" ")
+            return
 
-            # Error_Result
-            elif self.__filetype == ResultReader.ERROR_TYPE:
-                self.__gui.new_log_message("Result Reader: Error Result parsed! (%s)" % os.path.join(self.path, self.filename % self.files_read), "DH")
+        elif in_name == "result":
+            self.__gui.new_log_message("Result Reader: Successfully parsed and saved %s" % os.path.join(self.path, self.filename % self.files_read), "DH")
 
-            # Temp_Result
-            elif self.__filetype == ResultReader.TEMP_TYPE:
-                self.__gui.new_log_message("ResultReader: Temperature Result parsed!", "DH")
+        # Error_Result
+        elif self.__filetype == ResultReader.ERROR_TYPE:
+            self.__gui.new_log_message("Result Reader: Error Result parsed! (%s)" % os.path.join(self.path, self.filename % self.files_read), "DH")
 
-            # Config_Result
-            elif self.__filetype == ResultReader.CONFIG_TYPE:
-                self.__gui.new_log_message("ResultReader: Config Result parsed!", "DH")
+        # Temp_Result
+        elif self.__filetype == ResultReader.TEMP_TYPE:
+            self.__gui.new_log_message("ResultReader: Temperature Result parsed!", "DH")
 
-            self.result_queue.append(self.result)   
+        # Config_Result
+        elif self.__filetype == ResultReader.CONFIG_TYPE:
+            self.__gui.new_log_message("ResultReader: Config Result parsed!", "DH")
 
-
+        self.result_queue.append(self.result)   
+        self.result=None
 
     def __do_reset(self):
 
