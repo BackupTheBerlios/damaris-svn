@@ -192,7 +192,6 @@ class DataHandling(threading.Thread):
         if self.__stop_experiment:
             return None
 
-        tmp = None
 
         # Checks if a new job needs to be written
         if self.__read_jobs_synchronously:
@@ -201,6 +200,7 @@ class DataHandling(threading.Thread):
                 self.job_writer.write_next_job()
                 #pass
         
+        tmp = self.result_reader.get_next_result()
         while tmp is None:
 
             if not self.jobs_pending() or self.__stop_experiment:

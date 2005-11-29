@@ -478,6 +478,7 @@ class DamarisGUI(threading.Thread):
         self.__display_channels = { }
         self.__rescale = True
         self.pending_draw_requests=0
+        self.pending_watch_requests=0
 
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
@@ -1391,7 +1392,6 @@ class DamarisGUI(threading.Thread):
         "Interface to surface for drawing results/accumulated results"
         gobject.idle_add(self.draw_result_idle_func, in_result)
 
-
     def draw_result_idle_func(self, in_result):
         self.pending_draw_requests-=1
         if self.pending_draw_requests>2:
@@ -1573,16 +1573,18 @@ class DamarisGUI(threading.Thread):
         self.__drawing_busy = True
         # give event queue chance to shorten
         # todo unlocked read access to self.pending_draw_results
-        while self.pending_draw_requests>20:
+        while self.pending_draw_requests>20 or self.pending_watch_requests>20:
             time.sleep(0.1)
-        if self.pending_draw_requests>10:
-            time.sleep(0.05)
+        gtk.gdk.threads_enter()
+        self.pending_watch_requests+=1
+        gtk.gdk.threads_leave()
 
         gobject.idle_add(self.watch_result_idle_func, result + 0, channel + "")
         
 
     def watch_result_idle_func(self, result, channel):
         gtk.gdk.threads_enter()
+        self.pending_watch_requests-=1
 
         try:
             # Check if channel exists or needs to be added
@@ -1594,7 +1596,7 @@ class DamarisGUI(threading.Thread):
                 self.__display_channels[channel].insert(0,result) # inserts a refernce
 
                 # Save at max 1 results per channel (implemented for History; "Watchpoint-managing class" should be implemented in future versions"
-                if len(self.__display_channels[channel]) > 1: del self.__display_channels[channel][-1]
+                while len(self.__display_channels[channel]) > 1: del self.__display_channels[channel][-1]
 
             # Getting active text in Combobox and compairing it
             if channel == self.display_source_combobox.get_active_text():
