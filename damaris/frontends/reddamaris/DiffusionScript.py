@@ -11,11 +11,12 @@ from Experiment import *
 def get_mean(timesignal, start, end):
     r_start=max(0,int((start-timesignal.x[0])*timesignal.get_sampling_rate()))
     r_end=min(int((end-timesignal.x[0])*timesignal.get_sampling_rate()), len(timesignal))
-    
+
     channels=len(timesignal.y)
     means=[0.0,]*channels
-    for i in xrange(channels):
-        means[i]=timesignal.get_ydata(i)[r_start:r_end].mean()
+    if r_start!=r_end:
+        for i in xrange(channels):
+            means[i]=timesignal.get_ydata(i)[r_start:r_end].mean()
     return means
 
 def baseline_correction(timesignal, start, end):
@@ -153,7 +154,7 @@ def result():
             if p2 is not None:
                 m2=get_mean(accu_val2[this_val], p2-0.2e-6, p2+0.2e-6)[0]
             else:
-                p1 = m2 = 0
+                p2 = m2 = 0
             print p1, m1, p2, m2
             # overview[this_val]+=math.sqrt(magnetization[0]**2+magnetization[1]**2)
             # [0] ist blau, [1] ist rot
