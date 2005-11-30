@@ -1,5 +1,6 @@
 import threading
 import traceback
+import sys
 import Experiment
 
 class ExperimentHandling(threading.Thread):
@@ -19,15 +20,21 @@ class ExperimentHandling(threading.Thread):
         dataspace["data"]=self.data
         self.raised_exception = None
         self.location = None
+        exp_iterator=None
         try:
             exec self.script in dataspace
-            exp_iterator=dataspace["experiment"]()
         except Exception, e:
             self.raised_exception=e
             self.location=traceback.extract_tb(sys.exc_info()[2])[-1][1:3]
             return
-        if self.quit_flag.isSet(): return
-        if "experiment" not in dataspace: return
+        if "experiment" in dataspace:
+            try:
+                exp_iterator=dataspace["experiment"]()
+            except Exception, e:
+                self.raised_exception=e
+                self.location=traceback.extract_tb(sys.exc_info()[2])[-1][1:3]
+                return
+        if exp_iterator is None or self.quit_flag.isSet(): return
         while not self.quit_flag.isSet():
             # get next experiment from script 
             try:

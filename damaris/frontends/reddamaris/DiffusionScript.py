@@ -1,6 +1,6 @@
 from Accumulation import Accumulation
 from ADC_Result import ADC_Result
-from MeasurementResult import MeasurementResult
+from MeasurementResult import MeasurementResult, AccumulatedValue
 
 import numarray
 import math
@@ -66,13 +66,60 @@ def rotate_signal(timesignal, angle):
                       sin_angle*timesignal.y[0]+cos_angle*timesignal.y[1]]
 
 
+def pick_peak(accu, expected_range, channel=0):
+    """
+    pick a peak in a certain region
+    """
+    xdata=accu.get_xdata()
+    ydata=accu.get_ydata(channel)
+    yerrdata=accu.get_yerr(channel)
+    accu_deriv=[]
+    for i in xrange(len(xdata)-1):
+        deriv=((ydata[i+1]-ydata[i])/(xdata[i+1]-xdata[i]),
+               math.sqrt((yerrdata[i+1]**2+yerrdata[i]**2)/(xdata[i+1]-xdata[i])**2))
+        accu_deriv.append(deriv)
+
+    trend_range=expected_range[:]
+
+    repeat=3
+    expand_range=0
+    
+    while repeat>0:
+        deriv_xsum = deriv_ysum = deriv_xysum = deriv_x2sum = deriv_y2sum = 0.0
+        deriv_n = 0.0
+        for i in xrange(len(accu_deriv)-1):
+            if xdata[i]>trend_range[0] and xdata[i]<trend_range[1]:
+                deriv_xsum+=xdata[i]
+                deriv_x2sum+=xdata[i]**2
+                deriv_ysum+=accu_deriv[i][0]
+                deriv_y2sum+=accu_deriv[i][0]**2
+                deriv_xysum+=xdata[i]*accu_deriv[i][0]
+                deriv_n+=1.0
+
+        try:
+            deriv_trend_b=(deriv_n*deriv_xysum-deriv_xsum*deriv_ysum)/(deriv_n*deriv_x2sum-(deriv_xsum)**2)
+            deriv_trend_a=(deriv_ysum-deriv_trend_b*deriv_xsum)/deriv_n
+            expected_maximum_pos=-deriv_trend_a/deriv_trend_b
+            trend_range=[expected_maximum_pos-0.5e-6,expected_maximum_pos+0.5e-6]
+        except ZeroDivisionError:
+            if expand_range>1: return None
+            expected_range=[expected_range[0]-(expected_range[1]-expected_range[0])/2,
+                            expected_range[0]+(expected_range[1]-expected_range[0])/2]
+            repeat=3
+            expand_range+=1
+        repeat-=1
+
+    return expected_maximum_pos
+    
 def result():
 
     name="tau1"
     accu_val1={}
     accu_val2={}
-    overview1=MeasurementResult("Echo Height 1(%s)"%name)
-    overview2=MeasurementResult("Echo Height 2(%s)"%name)
+    overview_height1=MeasurementResult("Echo Height 1(%s)"%name)
+    overview_height2=MeasurementResult("Echo Height 2(%s)"%name)
+    overview_pos1=MeasurementResult("Echo Pos 1(%s)"%name)
+    overview_pos2=MeasurementResult("Echo Pos 2(%s)"%name)
     
     for timesignal in results:
         if not isinstance(timesignal, ADC_Result): continue
@@ -93,20 +140,45 @@ def result():
         baseline_correction(timesignal2, timesignal2.x[0]+30e-6, timesignal2.x[0]+400e-6)
         accu_val1[this_val]+=timesignal1
         accu_val2[this_val]+=timesignal2
-        magnetization1=get_mean(timesignal1,10.5e-6,11.5e-6)
-        magnetization2=get_mean(timesignal2, timesignal2.x[0]+10.5e-6, timesignal2.x[0]+11.5e-6)
-        # overview[this_val]+=math.sqrt(magnetization[0]**2+magnetization[1]**2)
-        overview1[this_val]+=magnetization1[0]              # [0] ist blau, [1] ist rot
-        overview2[this_val]+=magnetization2[0]              # [0] ist blau, [1] ist rot
         if accu_val1[this_val].n%100==0:
             # save data
             save_accu("accu_echo1_%s%g"%(name,this_val),accu_val1[this_val])
             save_accu("accu_echo2_%s%g"%(name,this_val),accu_val2[this_val])
+            p1=pick_peak(accu_val1[this_val], [timesignal1.x[0]+10e-6, timesignal1.x[0]+12e-6])
+            p2=pick_peak(accu_val2[this_val], [timesignal2.x[0]+10e-6, timesignal2.x[0]+12e-6])
+            if p1 is not None:
+                m1=get_mean(accu_val1[this_val], p1-0.2e-6, p1+0.2e-6)[0]
+            else:
+                p1 = m1 = 0
+            if p2 is not None:
+                m2=get_mean(accu_val2[this_val], p2-0.2e-6, p2+0.2e-6)[0]
+            else:
+                p1 = m2 = 0
+            print p1, m1, p2, m2
+            # overview[this_val]+=math.sqrt(magnetization[0]**2+magnetization[1]**2)
+            # [0] ist blau, [1] ist rot
+            overview_height1[this_val]=AccumulatedValue(m1,0)
+            overview_height2[this_val]=AccumulatedValue(m2,0)
+            overview_pos1[this_val]=AccumulatedValue(p1,0)
+            overview_pos2[this_val]=AccumulatedValue(p2,0)
+            overview_file=file("overview","w")
+            overview_file.write("# %s EchoHeight1 EchoPos1 EchoHeight2 EchoPos2\n"%name)
+            for x in overview_height1.keys():
+                overview_file.write("%g %g %g %g %g\n"%(x,
+                                                        overview_height1[x].mean(),
+                                                        overview_pos1[x].mean(),
+                                                        overview_height2[x].mean(),
+                                                        overview_pos2[x].mean()))
+            overview_file=None
             
-        data[overview1.get_title()]=overview1
-        data[overview2.get_title()]=overview2
+
+        data[overview_height1.get_title()]=overview_height1
+        data[overview_height2.get_title()]=overview_height2
+        data[overview_pos1.get_title()]=overview_pos1
+        data[overview_pos2.get_title()]=overview_pos2
         data["accu1(%s=%e)"%(name,this_val)]=accu_val1[this_val]
         data["accu2(%s=%e)"%(name,this_val)]=accu_val2[this_val]
+
 
 def stim_echo(t1, tau1, tau2, pi, det_phase=0, cycle=0, frequency=0):
     if pi>1e-4:
