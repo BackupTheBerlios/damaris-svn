@@ -26,20 +26,6 @@ def baseline_correction(timesignal, start, end):
     for i in xrange(len(means)):
 	timesignal.y[i]-=int(means[i])
 
-def save_accu(filename, data):
-    if isinstance(data,Accumulation):
-        f=open(filename,"w")
-        f.write("# accumulation %d\n"%data.n)
-        f.write("# t y1 y1err y2 y2err\n")
-        xdata=data.get_xdata()
-        ydata1=data.get_ydata(0)
-        ydata1err=data.get_yerr(0)
-        ydata2=data.get_ydata(1)
-        ydata2err=data.get_yerr(1)
-        for i in xrange(len(xdata)):
-            f.write("%g %g %g %g %g\n"%(xdata[i],ydata1[i],ydata1err[i],ydata2[i],ydata2err[i]))
-        f=None
-        xdata=ydata1=ydata1err=ydata2=ydata2err=None
 
 def rotate_signal(timesignal, angle):
     # implicit change to float arrays!
@@ -142,9 +128,6 @@ def result():
         accu_val1[this_val]+=timesignal1
         accu_val2[this_val]+=timesignal2
         if accu_val1[this_val].n%100==0:
-            # save data
-            save_accu("accu_echo1_%s%g"%(name,this_val),accu_val1[this_val])
-            save_accu("accu_echo2_%s%g"%(name,this_val),accu_val2[this_val])
             p1=pick_peak(accu_val1[this_val], [timesignal1.x[0]+10e-6, timesignal1.x[0]+12e-6])
             p2=pick_peak(accu_val2[this_val], [timesignal2.x[0]+10e-6, timesignal2.x[0]+12e-6])
             if p1 is not None:
@@ -157,11 +140,12 @@ def result():
                 p2 = m2 = 0
             print p1, m1, p2, m2
             # overview[this_val]+=math.sqrt(magnetization[0]**2+magnetization[1]**2)
-            # [0] ist blau, [1] ist rot
+            # [0] is blue, [1] is red
             overview_height1[this_val]=AccumulatedValue(m1,0)
             overview_height2[this_val]=AccumulatedValue(m2,0)
             overview_pos1[this_val]=AccumulatedValue(p1,0)
             overview_pos2[this_val]=AccumulatedValue(p2,0)
+            # dump data to a comprehensive overview
             overview_file=file("overview","w")
             overview_file.write("# %s EchoHeight1 EchoPos1 EchoHeight2 EchoPos2\n"%name)
             for x in overview_height1.keys():
@@ -171,7 +155,6 @@ def result():
                                                         overview_height2[x].mean(),
                                                         overview_pos2[x].mean()))
             overview_file=None
-            
 
         data[overview_height1.get_title()]=overview_height1
         data[overview_height2.get_title()]=overview_height2
@@ -245,11 +228,10 @@ def experiment():
     f = 75.0e6
     phase0 = 120.0 # vorher 150 für 540K Serie
 
-    for tau1 in staggered_range(log_range(60e-6, 0.5e-3, 5), 5):
+    for tau1 in staggered_range(log_range(60e-6, 0.5e-3, 1), 5):
     # for t in staggered_range(log_range(1e-3,3,40)):
     # for pi in lin_range(0.5e-6,2e-6,0.2e-6):
-        accus=4
-        if tau1>5e-5: accus*=2
+        accus=100
         for accu in xrange(accus):
             # def stim_echo(t1, tau1, tau2, pi, phase0, cycle=0, frequency=0)
             e=stim_echo(t1, tau1, tau2, pi, phase0, accu%4, f)
