@@ -174,7 +174,7 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
             "x" : tables.Float64Col(),
             "y_mean" : tables.Float64Col(),
             "y_sigma" : tables.Float64Col(),
-            "n" : tables.Int32Col()
+            "n" : tables.Int64Col()
             }
 
         mr_table=hdffile.createTable(where=where,name=name, description=h5_table_format, title=title)
@@ -191,7 +191,6 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
                     row["y_mean"]=y
                     row["y_sigma"]=0.0
                     row["n"]=1
-                    the_destination.write("%g %g 0 1\n"%(x,y))
                 else:
                     row["y_mean"]=y.mean()
                     row["y_sigma"]=y.mean_sigma()

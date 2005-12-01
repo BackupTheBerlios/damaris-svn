@@ -246,11 +246,13 @@ class Accumulation(Errorable, Drawable):
                                                             object=timedata,
                                                             title="Index %d, Channel %d"%(index_no,channel_no))
                         # set attributes
-                        time_slice_data.attrs.index=index_no
-                        time_slice_data.attrs.channel=channel_no
-                        time_slice_data.attrs.number=self.n
-                        time_slice_data.attrs.dwelltime=1.0/self.sampling_rate
-                        time_slice_data.attrs.start_time=1.0/self.sampling_rate*index[0]
+                        time_slice_data.attrs.index=numarray.array(index_no, type=numarray.Int32)
+                        time_slice_data.attrs.channel=numarray.array(channel_no, type=numarray.Int32)
+                        time_slice_data.attrs.number=numarray.array(self.n, type=numarray.Int64)
+                        time_slice_data.attrs.dwelltime=numarray.array(1.0/self.sampling_rate,
+                                                                       type=numarray.Float64)
+                        time_slice_data.attrs.start_time=numarray.array(1.0/self.sampling_rate*index[0],
+                                                                        type=numarray.Float64)
             finally:
                 self.lock.release()
                 hdffile.flush()
