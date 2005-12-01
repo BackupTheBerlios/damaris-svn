@@ -1,6 +1,8 @@
+import threading
 import math
 import types
 import sys
+import tables
 import exceptions
 import UserDict
 import Drawable
@@ -94,6 +96,7 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         Drawable.Drawable.__init__(self)
         UserDict.UserDict.__init__(self)
         self.quantity_name=quantity_name
+        self.lock=threading.RLock()
 
     # get the selected item, if it does not exist, create an empty one
     def __getitem__(self, key):
@@ -164,3 +167,36 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
                 the_destination.write("%g %g %g %d\n"%(x,y.mean(),y.mean_sigma(),y.n))
 
         the_destination=None
+
+
+    def write_to_hdf(self, hdffile, where, name, title):
+        h5_table_format= {
+            "x" : tables.Float64Col(),
+            "y_mean" : tables.Float64Col(),
+            "y_sigma" : tables.Float64Col(),
+            "n" : tables.Int32Col()
+            }
+
+        mr_table=hdffile.createTable(where=where,name=name, description=h5_table_format, title=title)
+        mr_table.attrs.damaris_type="MeasurementResult"
+        self.lock.acquire()
+        try:
+            mr_table.attrs.quantity_name=self.quantity_name
+                
+            row=mr_table.row
+            for x in self.get_xdata():
+                y=UserDict.UserDict.__getitem__(self,x)
+                row["x"]=x
+                if type(y) is types.FloatType:
+                    row["y_mean"]=y
+                    row["y_sigma"]=0.0
+                    row["n"]=1
+                    the_destination.write("%g %g 0 1\n"%(x,y))
+                else:
+                    row["y_mean"]=y.mean()
+                    row["y_sigma"]=y.mean_sigma()
+                    row["n"]=y.n
+                row.append()
+
+        finally:
+            self.lock.release()

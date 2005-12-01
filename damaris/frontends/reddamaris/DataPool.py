@@ -2,9 +2,12 @@
 # data pool collects data from data handling script
 # provides data to experiment script and display
 
+import tables
 import UserDict
 import threading
-
+import ADC_Result
+import Accumulation
+import MeasurementResult
 
 class DataPool(UserDict.DictMixin):
     """
@@ -78,7 +81,40 @@ class DataPool(UserDict.DictMixin):
         self.__registered_listeners=None
 
     def dump_hdf5(self,filename):
-        pass
+        dump_file=tables.openFile(filename, mode="w", title="datapool dump")
+        dump_group=dump_file.createGroup("/", "dump", "dictionary dump")
+        self.__dictlock.acquire()
+        try:
+            for (key,value) in self.__mydict.iteritems():
+                if key[:2]=="__": continue
+                # convert key to a valid name
+                group_keyname="dict_"
+                for character in key:
+                    if ((character>='a' and character<='z') or
+                        (character>='A' and character<='Z') or
+                        (character>='0' and character<='9')):
+                        group_keyname+=character
+                    else:
+                        group_keyname+="_"
+                # avoid double names by adding number extension
+                if group_keyname in dump_group:
+                    extension_count=0
+                    while group_keyname+"_%03d"%extension_count in dump_group:
+                        extension_count+=1
+                    group_keyname+="_%03d"%extension_count
+                # now write data
+                if isinstance(value, ADC_Result.ADC_Result):
+                    continue
+                if (isinstance(value, MeasurementResult.MeasurementResult) or
+                    isinstance(value, Accumulation.Accumulation)):
+                    value.write_to_hdf(hdffile=dump_file, where=dump_group, name=group_keyname, title=key)
+                    continue
+                print "don't know how to store data_pool[%s]"%key
+        finally:
+            self.__dictlock.release()
+            dump_file.flush()
+            dump_file.close()
+            dump_file=None
 
     def register_listener(self, listening_function):
         self.__registered_listeners.append(listening_function)

@@ -1,13 +1,14 @@
 #! /usr/bin/env python2.4
 
+import time
+import sys
+import os
 import DataPool
 import ResultReader
 import ExperimentWriter
 import BackendDriver
 import ResultHandling
 import ExperimentHandling
-import sys
-import os
 
 def some_listener(event):
     if event.subject=="__recentexperiment" or event.subject=="__recentresult":
@@ -49,29 +50,43 @@ if __name__=="__main__":
     res.start()
     if bd is not None: bd.start()
 
+    # time of last dump
+    dump_interval=600
+    next_dump_time=time.time()+dump_interval
     while filter(None,[exp,res,bd]):
+        if time.time()>next_dump_time:
+            try:
+                data.dump_hdf5("data_pool.h5")
+            except Exception,e:
+                print "dump failed", e
+            next_dump_time+=dump_interval
+            
         if exp is not None:
             if exp.isAlive():
                 exp.join(0.1)
             else:
                 if exp.raised_exception:
-                    print "\rexperiment script failed at line %d (function %s): %s"%(exp.location[0],exp.location[1],exp.raised_exception)
+                    print ": experiment script failed at line %d (function %s): %s"%(exp.location[0],exp.location[1],exp.raised_exception)
                 else:
-                    print "\rexperiment script finished"
+                    print ": experiment script finished"
                 exp = None
         if res is not None:
             if res.isAlive():
                 res.join(0.1)
             else:
                 if res.raised_exception:
-                    print "\rresult script failed at line %d (function %s): %s"%(res.location[0],res.location[1],res.raised_exception)
+                    print ": result script failed at line %d (function %s): %s"%(res.location[0],res.location[1],res.raised_exception)
                 else:
-                    print "\rresult script finished"
+                    print ": result script finished"
                 res = None
 
         if bd is not None:
             if bd.isAlive():
                 bd.join(0.1)
             else:
-                print "\rbackend finished"
+                print ": backend finished"
                 bd=None
+
+    # dump data pool
+    data.dump_hdf5("data_pool.h5")
+    data=None

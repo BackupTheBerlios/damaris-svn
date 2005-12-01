@@ -12,7 +12,10 @@
 from Errorable import Errorable
 from Drawable import Drawable
 
+import sys
 import threading
+import types
+import tables
 import numarray
 from types import *
 
@@ -185,6 +188,73 @@ class Accumulation(Errorable, Drawable):
 
     def get_job_id(self):
         return None
+
+    def write_as_csv(self, destination=sys.stdout):
+        """
+        writes the data to a file or to sys.stdout
+        destination can be a file or a filename
+        suitable for further processing
+        """
+        # write sorted
+        the_destination=None
+        if isinstance(destination,types.FileType):
+            the_destination=destination
+        elif isinstance(destination,types.StringTypes):
+            the_destination=file(destination,"w")
+        else:
+            raise Exception("sorry destination %s is not valid"%(repr(destination)))
+
+        the_destination.write("# accumulation %d\n"%self.n)
+        the_destination.write("# t y_mean y_err ...\n")
+        self.lock.acquire()
+        try:
+            xdata=self.get_xdata()
+            ch_no=self.get_number_of_channels()
+            ydata=map(self.get_ydata, xrange(ch_no))
+            yerr=map(self.get_yerr, xrange(ch_no))
+            for i in xrange(len(xdata)):
+                the_destination.write("%g"%xdata[i])
+                for j in xrange(ch_no):
+                    the_destination.write(" %g %g"%(ydata[j][i],yerr[j][i]))
+                the_destination.write("\n")
+            the_destination=None
+            xdata=yerr=ydata=None
+        finally:
+            self.lock.release()
+            
+
+
+    def write_to_hdf(self, hdffile, where, name, title):
+        accu_group=hdffile.createGroup(where=where,name=name,title=title)
+        accu_group._v_attrs.damaris_type="Accumulation"
+        if self.contains_data():
+            self.lock.acquire()
+            try:
+                for channel_no in xrange(len(self.y)):
+                    y_mean=self.get_ydata(channel_no)
+                    y_sigma=self.get_yerr(channel_no)
+                    for index_no in xrange(len(self.index)):
+                        index=self.index[index_no]
+                        # set time data
+                        timedata=numarray.array(type = numarray.Float64,
+                                                shape = (2*(index[1]-index[0]+1),))
+                        timedata[0::2]=y_mean[index[0]:index[1]+1]
+                        timedata[1::2]=y_sigma[index[0]:index[1]+1]
+                        timedata.setshape((index[1]-index[0]+1,2))
+                        time_slice_data=hdffile.createArray(accu_group,
+                                                            name="idx%03d_ch%03d"%(index_no,channel_no),
+                                                            object=timedata,
+                                                            title="Index %d, Channel %d"%(index_no,channel_no))
+                        # set attributes
+                        time_slice_data.attrs.index=index_no
+                        time_slice_data.attrs.channel=channel_no
+                        time_slice_data.attrs.number=self.n
+                        time_slice_data.attrs.dwelltime=1.0/self.sampling_rate
+                        time_slice_data.attrs.start_time=1.0/self.sampling_rate*index[0]
+            finally:
+                self.lock.release()
+                hdffile.flush()
+
 
     # / Schnittstellen nach Auﬂen ------------------------------------------------------------------
     
