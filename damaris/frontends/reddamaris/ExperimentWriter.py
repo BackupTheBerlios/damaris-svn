@@ -30,3 +30,16 @@ class ExperimentWriter:
         file(job_filename+".tmp","w").write(job.write_xml_string())
         os.rename(job_filename+".tmp", job_filename)
         self.no+=1
+
+
+class ExperimentWriterWithCleanup(ExperimentWriter):
+    """
+    writes experiments and cleans up in front of queue
+    """
+    def __init__(self, spool, no=0, job_pattern="job.%09d"):
+        ExperimentWriter.__init__(self, spool, no, job_pattern)
+        self.delete_no_files(self.no)
+
+    def send_next(self, job):
+        self.delete_no_files(self.no+1)
+        ExperimentWriter.send_next(self,job)

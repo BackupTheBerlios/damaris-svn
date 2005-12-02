@@ -32,6 +32,9 @@ class Accumulation(Errorable, Drawable):
         self.ylabel = "Avg. Samples [Digits]"
         self.lock=threading.RLock()
 
+        self.common_descriptions=None
+        self.time_period=[]
+
         self.use_error = error
 
         if self.uses_statistics():
@@ -230,6 +233,26 @@ class Accumulation(Errorable, Drawable):
         if self.contains_data():
             self.lock.acquire()
             try:
+                # save time stamps
+                if self.time_period is not None and len(self.time_period)>0:
+                    accu_group._v_attrs.earliest_time="%04d%02d%02d %02d:%02d:%02d.%03d"%(self.time_period[0].year,
+                                                                                          self.time_period[0].month,
+                                                                                          self.time_period[0].day,
+                                                                                          self.time_period[0].hour,
+                                                                                          self.time_period[0].minute,
+                                                                                          self.time_period[0].second,
+                                                                                          self.time_period[0].microsecond/1000)
+                    accu_group._v_attrs.oldest_time="%04d%02d%02d %02d:%02d:%02d.%03d"%(self.time_period[1].year,
+                                                                                        self.time_period[1].month,
+                                                                                        self.time_period[1].day,
+                                                                                        self.time_period[1].hour,
+                                                                                        self.time_period[1].minute,
+                                                                                        self.time_period[1].second,
+                                                                                        self.time_period[1].microsecond/1000)
+                if self.common_descriptions is not None:
+                    for (key,value) in self.common_descriptions.iteritems():
+                        accu_group._v_attrs.__setattr__("description_"+key,str(value))
+                # save channel data
                 for channel_no in xrange(len(self.y)):
                     y_mean=self.get_ydata(channel_no)
                     y_sigma=self.get_yerr(channel_no)
@@ -326,6 +349,7 @@ class Accumulation(Errorable, Drawable):
                 tmp_ysquare = []
 
                 self.lock.acquire()
+
                 for i in range(other.get_number_of_channels()):
                     tmp_y.append(numarray.array(other.y[i], type="Float64"))
                     if self.uses_statistics(): tmp_ysquare.append(tmp_y[i] ** 2)
@@ -335,12 +359,15 @@ class Accumulation(Errorable, Drawable):
                     r = Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = 1, index = other.index, sampl_freq = other.sampling_rate, error = True)
                 else:
                     r = Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, n = 1, error = False)
+                r.time_period=[other.job_date,other.job_date]
+                r.common_descriptions=other.description.copy()
                 self.lock.release()
                 return r
 
             # Other and self not empty (self + other)
             else:
                 self.lock.acquire()
+                
                 if self.sampling_rate != other.get_sampling_rate(): raise ValueError("Accumulation: You cant add ADC-Results with diffrent sampling-rates")
                 if len(self.y[0]) != len(other): raise ValueError("Accumulation: You cant add ADC-Results with diffrent number of samples")
                 if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add ADC-Results with diffrent number of channels")
@@ -358,6 +385,14 @@ class Accumulation(Errorable, Drawable):
                     r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = self.n + 1, index = self.index, sampl_freq = self.sampling_rate, error = True)
                 else:
                     r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, n = self.n + 1, index = self.index, sampl_freq = self.sampling_rate, error = False)
+                r.time_period=[min(self.time_period[0],other.job_date),
+                               max(self.time_period[1],other.job_date)]
+                if self.common_descriptions is not None:
+                    r.common_descriptions={}
+                    for key in self.common_descriptions.keys():
+                        if (key in other.description and self.common_descriptions[key]==other.description[key]):
+                            r.common_descriptions[key]=value
+
                 self.lock.release()
                 return r
 
@@ -374,20 +409,27 @@ class Accumulation(Errorable, Drawable):
                 tmp_ysquare = []
 
                 self.lock.acquire()
-                for i in range(other.get_number_of_channels()):
-                    tmp_y.append(other.y[i])
-                    tmp_ysquare.append(other.y_square[i])
 
                 if self.uses_statistics():
                     r = Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = other.n, index = other.index, sampl_freq = other.sampling_rate, error = True)
                 else:
                     r = Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, n = other.n, index = other.index, sampl_freq = other.sampling_rate, error = False)
+                for i in range(other.get_number_of_channels()):
+                    tmp_y.append(other.y[i])
+                    tmp_ysquare.append(other.y_square[i])
+                r.time_period=other.time_period[:]
+                if other.common_descriptions is not None:
+                    r.common_descriptions=othter.common_descriptions.copy()
+                else:
+                    r.common_descriptions=None
+
                 self.lock.release()
                 return r
 
             # Other and self not empty (self + other)
             else:
                 self.lock.acquire()
+
                 if self.sampling_rate != other.get_sampling_rate(): raise ValueError("Accumulation: You cant add accumulations with diffrent sampling-rates")
                 if len(self.y[0]) != len(other): raise ValueError("Accumulation: You cant add accumulations with diffrent number of samples")
                 if len(self.y) != other.get_number_of_channels(): raise ValueError("Accumulation: You cant add accumulations with diffrent number of channels")
@@ -406,6 +448,16 @@ class Accumulation(Errorable, Drawable):
                     r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = other.n + self.n, index = self.index, sampl_freq = self.sampling_rate, error = True)
                 else:
                     r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, n = other.n + self.n, index = self.index, sampl_freq = self.sampling_rate, error = False)
+
+                r.time_period=[min(self.time_period[0],other.time_period[0]),
+                               max(self.time_period[1],other.time_period[1])]
+                r.common_descriptions={}
+                if self.common_descriptions is not None and other.common_descriptions is not None:
+                    for key in self.common_descriptions.keys():
+                        if (key in other.common_descriptions and
+                            self.common_descriptions[key]==other.common_descriptions[key]):
+                            r.common_descriptions[key]=value
+
                 self.lock.release()
                 return r
             
@@ -463,6 +515,9 @@ class Accumulation(Errorable, Drawable):
                 self.set_title(self.__title_pattern % self.n)
                 self.lock.release()
 
+                self.time_period=[other.job_date,other.job_date]
+                self.common_descriptions=other.description.copy()
+
                 return self
 
 
@@ -481,6 +536,12 @@ class Accumulation(Errorable, Drawable):
                     if self.uses_statistics(): self.y_square[i] += numarray.array(other.y[i], type="Float64") ** 2
 
                 self.n += 1
+                self.time_period=[min(self.time_period[0],other.job_date),
+                                  max(self.time_period[1],other.job_date)]
+                if self.common_descriptions is not None:
+                    for key in self.common_descriptions.keys():
+                        if not (key in other.description and self.common_descriptions[key]==other.description[key]):
+                            del self.common_descriptions[key]
 
                 self.set_title(self.__title_pattern % self.n)
                 self.lock.release()
@@ -509,6 +570,8 @@ class Accumulation(Errorable, Drawable):
                     if self.uses_statistics(): self.y_square.append(self.y[i] ** 2)
 
                 self.set_title(self.__title_pattern % self.n)
+                self.common_descriptions=other.common_desriptions.copy()
+                self.time_period=other.time_period[:]
                 self.lock.release()
 
                 return self
@@ -528,6 +591,13 @@ class Accumulation(Errorable, Drawable):
                     if self.uses_statistics(): self.y_square[i] += other.y_square[i]
 
                 self.n += other.n
+                self.time_period=[min(self.time_period[0],other.time_period[0]),
+                                  max(self.time_period[1],other.time_period[1])]
+                if self.common_descriptions is not None and other.common_descriptions is not None:
+                    for key in self.common_descriptions.keys():
+                        if not (key in other.description and
+                                self.common_descriptions[key]==other.common_descriptions[key]):
+                            del self.common_descriptions[key]
 
                 self.set_title(self.__title_pattern % self.n)
                 self.lock.release()

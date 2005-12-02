@@ -242,7 +242,7 @@ class BlockingResultReader(ResultReader):
         ResultReader.__init__(self, spool_dir, no, result_pattern)
         self.quit_flag=False # asychronous quit flag
         self.stop_no=None # end of job queue
-        self.poll_time=0.1
+        self.poll_time=0.1 # sleep interval for polling results, <0 means no polling and stop
         self.purge= True # remove files after reading
 
     def __iter__(self):
@@ -253,6 +253,9 @@ class BlockingResultReader(ResultReader):
         expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
         while not self.quit_flag and (self.stop_no is None or self.stop_no>self.no):
             if not os.access(expected_filename,os.R_OK):
+                # stop polling, if required
+                if self.poll_time<0:
+                    break
                 time.sleep(self.poll_time)
                 continue
             r=self.get_result_object(expected_filename)

@@ -28,7 +28,7 @@ class BackendDriver(threading.Thread):
         self.core_state_file = "Mobile core.state"
         self.experiment_pattern="job.%09d"
         self.result_pattern=self.experiment_pattern+".result"
-        self.experiment_writer = ExperimentWriter.ExperimentWriter(self.spool_dir, no=0, job_pattern=self.experiment_pattern)
+        self.experiment_writer = ExperimentWriter.ExperimentWriterWithCleanup(self.spool_dir, no=0, job_pattern=self.experiment_pattern)
         self.result_reader = ResultReader.BlockingResultReader(self.spool_dir, no=0, result_pattern=self.result_pattern)
         self.quit_flag=threading.Event()
 
@@ -98,6 +98,7 @@ class BackendDriver(threading.Thread):
             self.core_pid = None
             # tell result reader, game is over...
             self.result_reader.stop_no=self.experiment_writer.no
+            self.result_reader.poll_time=-1
             self.result_reader=None
             self.experiment_writer=None
             
