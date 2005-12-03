@@ -15,12 +15,6 @@ class ExperimentWriter:
         if not os.path.isdir(spool):
             os.mkdir(spool)
 
-    def delete_no_files(self,no):
-        """
-        delete everything with this job number
-        """
-        for f in glob.glob(os.path.join(self.spool,(self.job_pattern%no))+"*"):
-            os.unlink(f)
 
     def send_next(self, job):
         """
@@ -43,3 +37,11 @@ class ExperimentWriterWithCleanup(ExperimentWriter):
     def send_next(self, job):
         self.delete_no_files(self.no+1)
         ExperimentWriter.send_next(self,job)
+
+    def delete_no_files(self,no):
+        """
+        delete everything with this job number
+        """
+        filename=os.path.join(self.spool,(self.job_pattern%no))
+        if os.path.isfile(filename): os.unlink(f)
+        if os.path.isfile(filename+".result"): os.unlink(f+".result")

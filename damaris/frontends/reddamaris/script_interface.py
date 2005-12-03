@@ -53,39 +53,46 @@ if __name__=="__main__":
     # time of last dump
     dump_interval=600
     next_dump_time=time.time()+dump_interval
-    while filter(None,[exp,res,bd]):
-        if time.time()>next_dump_time:
-            try:
-                data.dump_hdf5("data_pool.h5")
-            except Exception,e:
-                print "dump failed", e
-            next_dump_time+=dump_interval
+    try:
+        while filter(None,[exp,res,bd]):
+            time.sleep(0.1)
+            if time.time()>next_dump_time:
+                try:
+                    data.dump_hdf5("data_pool.h5")
+                except Exception,e:
+                    print "dump failed", e
+                next_dump_time+=dump_interval
             
-        if exp is not None:
-            if exp.isAlive():
-                exp.join(0.1)
-            else:
-                if exp.raised_exception:
-                    print ": experiment script failed at line %d (function %s): %s"%(exp.location[0],exp.location[1],exp.raised_exception)
-                else:
-                    print ": experiment script finished"
-                exp = None
-        if res is not None:
-            if res.isAlive():
-                res.join(0.1)
-            else:
-                if res.raised_exception:
-                    print ": result script failed at line %d (function %s): %s"%(res.location[0],res.location[1],res.raised_exception)
-                else:
-                    print ": result script finished"
-                res = None
+            if exp is not None:
+                if not exp.isAlive():
+                    exp.join()
+                    if exp.raised_exception:
+                        print ": experiment script failed at line %d (function %s): %s"%(exp.location[0],exp.location[1],exp.raised_exception)
+                    else:
+                        print ": experiment script finished"
+                    exp = None
 
-        if bd is not None:
-            if bd.isAlive():
-                bd.join(0.1)
-            else:
-                print ": backend finished"
-                bd=None
+            if res is not None:
+                if not res.isAlive():
+                    res.join()
+                    if res.raised_exception:
+                        print ": result script failed at line %d (function %s): %s"%(res.location[0],res.location[1],res.raised_exception)
+                    else:
+                        print ": result script finished"
+                    res = None
+
+            if bd is not None:
+                if not bd.isAlive():
+                    print ": backend finished"
+                    bd=None
+
+    except KeyboardInterrupt:
+        still_running=filter(None,[exp,res,bd])
+        for r in still_running:
+            r.quit()
+
+        for r in still_running:
+            r.join()
 
     # dump data pool
     data.dump_hdf5("data_pool.h5")
