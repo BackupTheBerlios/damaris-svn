@@ -22,6 +22,7 @@ class BackendDriver(threading.Thread):
     
     def __init__(self, executable, spool):
         threading.Thread.__init__(self)
+        self.core_pid = None
 
         self.executable=executable
         self.spool_dir=spool
@@ -39,7 +40,6 @@ class BackendDriver(threading.Thread):
         if not os.path.isdir(self.spool_dir):
             raise AssertionError("could not find backend's directory %s "%self.spool_dir)
         
-        self.core_pid = None
 
     def run(self):
         # Free remaining handle on file
@@ -94,6 +94,11 @@ class BackendDriver(threading.Thread):
         # wait on flag and look for backend
         while not self.quit_flag.isSet() and self.is_busy():
             self.quit_flag.wait(0.1)
+        if self.quit_flag.isSet():
+            self.stop_queue()
+            while self.is_busy():
+                time.sleep(0.1)
+            
         if not self.is_busy():
             self.core_pid = None
             # tell result reader, game is over...
@@ -101,6 +106,7 @@ class BackendDriver(threading.Thread):
             self.result_reader.poll_time=-1
             self.result_reader=None
             self.experiment_writer=None
+            
             
     def clear_job(self,no):
         jobfilename=os.path.join(self.spool_dir,"job.%09d")
@@ -144,7 +150,7 @@ class BackendDriver(threading.Thread):
                 kill_command=os.path.join(cygwin_path,"bin","kill.exe")
                 os.popen("%s -%s %d"%(kill_command,sig,self.core_pid))
         except OSError, e:
-            print "could not send signal %d to core: %s"%(sig, str(e))
+            print "could not send signal %s to core: %s"%(sig, str(e))
             
 
     def is_busy(self):

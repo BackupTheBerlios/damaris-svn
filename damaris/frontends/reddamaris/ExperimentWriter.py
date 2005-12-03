@@ -15,7 +15,6 @@ class ExperimentWriter:
         if not os.path.isdir(spool):
             os.mkdir(spool)
 
-
     def send_next(self, job):
         """
         """
@@ -43,5 +42,5 @@ class ExperimentWriterWithCleanup(ExperimentWriter):
         delete everything with this job number
         """
         filename=os.path.join(self.spool,(self.job_pattern%no))
-        if os.path.isfile(filename): os.unlink(f)
-        if os.path.isfile(filename+".result"): os.unlink(f+".result")
+        if os.path.isfile(filename): os.unlink(filename)
+        if os.path.isfile(filename+".result"): os.unlink(filename+".result")

@@ -263,8 +263,8 @@ class BlockingResultReader(ResultReader):
             yield r
             if self.quit_flag: break
             if self.purge:
-                if os.path.isfile(expected_filename): os.remove(f)
-                if os.path.isfile(expected_filename[:-7]): os.remove(f)
+                if os.path.isfile(expected_filename): os.remove(expected_filename)
+                if os.path.isfile(expected_filename[:-7]): os.remove(expected_filename[:-7])
             self.no+=1
             expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
             

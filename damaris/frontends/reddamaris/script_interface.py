@@ -47,12 +47,13 @@ if __name__=="__main__":
     exp=ExperimentHandling.ExperimentHandling(script, exp_writer, data)
     res=ResultHandling.ResultHandling(script, res_reader, data)
     exp.start()
-    res.start()
     if bd is not None: bd.start()
+    res.start()
 
     # time of last dump
     dump_interval=600
     next_dump_time=time.time()+dump_interval
+    # keyboard interrupts are handled in extra cleanup loop
     try:
         while filter(None,[exp,res,bd]):
             time.sleep(0.1)
@@ -89,7 +90,7 @@ if __name__=="__main__":
     except KeyboardInterrupt:
         still_running=filter(None,[exp,res,bd])
         for r in still_running:
-            r.quit()
+            r.quit_flag.set()
 
         for r in still_running:
             r.join()
