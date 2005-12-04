@@ -2,6 +2,7 @@
 # data pool collects data from data handling script
 # provides data to experiment script and display
 
+import types
 import tables
 import UserDict
 import threading
@@ -80,9 +81,15 @@ class DataPool(UserDict.DictMixin):
         self.__send_event(DataPool.Event(DataPool.Event.destroy))
         self.__registered_listeners=None
 
-    def dump_hdf5(self,filename):
-        dump_file=tables.openFile(filename, mode="w", title="datapool dump")
-        dump_group=dump_file.createGroup("/", "dump", "dictionary dump")
+    def write_hdf5(self,hdffile,where="/",name="data_pool"):
+        if type(hdffile) is types.StringType:
+            dump_file=tables.openFile(filename, mode="a")
+        elif isinstance(hdffile,tables.File):
+            dump_file=hdffile
+        else:
+            raise Exception("expecting hdffile or string")
+            
+        dump_group=dump_file.createGroup(where, name, "DAMARIS data pool")
         self.__dictlock.acquire()
         try:
             for (key,value) in self.__mydict.iteritems():
@@ -113,7 +120,6 @@ class DataPool(UserDict.DictMixin):
         finally:
             self.__dictlock.release()
             dump_file.flush()
-            dump_file.close()
             dump_file=None
 
     def register_listener(self, listening_function):

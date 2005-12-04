@@ -106,9 +106,9 @@ class ScriptInterface:
     def dump_data(self, filename):
         try:
             # write data from pool
-            self.data.dump_hdf5(filename)
+            dump_file=tables.openFile(filename,"w","DAMARIS experiment data")
+            self.data.write_hdf5(dump_file)
             # write scripts
-            dump_file=tables.openFile(filename,"r+")
             scriptgroup=dump_file.createGroup("/","scripts","Used Scripts")
             dump_file.createArray(scriptgroup,"experiment_script", self.exp_script)
             dump_file.createArray(scriptgroup,"result_script", self.res_script)
