@@ -83,7 +83,7 @@ class DataPool(UserDict.DictMixin):
 
     def write_hdf5(self,hdffile,where="/",name="data_pool"):
         if type(hdffile) is types.StringType:
-            dump_file=tables.openFile(filename, mode="a")
+            dump_file=tables.openFile(hdffile, mode="a")
         elif isinstance(hdffile,tables.File):
             dump_file=hdffile
         else:
@@ -120,6 +120,8 @@ class DataPool(UserDict.DictMixin):
         finally:
             self.__dictlock.release()
             dump_file.flush()
+            if type(hdffile) is types.StringType:
+                dump_file.close()
             dump_file=None
 
     def register_listener(self, listening_function):
