@@ -1,5 +1,6 @@
 import os.path
 import sys
+import codecs
 import pygtk
 pygtk.require("2.0")
 import gtk
@@ -26,7 +27,7 @@ class DamarisGUI:
         
         self.glade_layout_init()
         
-        self.text_widgets_init()
+        self.sw=ScriptWidgets(self.xml_gui)
 
         self.toolbar_init()
 
@@ -38,46 +39,6 @@ class DamarisGUI:
         self.main_window = self.xml_gui.get_widget("main_window")
 
         self.main_window.connect("delete-event", self.quit_event)
-
-    def text_widgets_init(self, exp_script="", res_script=""):
-        """
-        initialize text widgets with text
-        """
-        # script buffers:
-        self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
-        self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
-        self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
-        self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
-        self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
-        self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
-
-        # load buffers and set cursor to front
-        self.experiment_script_textbuffer.set_text(unicode(exp_script))
-        self.experiment_script_textbuffer.place_cursor(self.experiment_script_textbuffer.get_start_iter())
-        self.experiment_script_textbuffer.set_modified(False)
-        self.data_handling_textbuffer.set_text(unicode(res_script))
-        self.data_handling_textbuffer.place_cursor(self.data_handling_textbuffer.get_start_iter())
-        self.data_handling_textbuffer.set_modified(False)
-
-        # footline with line and col indicators
-        self.experiment_script_line_indicator=self.xml_gui.get_widget("experiment_script_line_textfield")
-        self.experiment_script_column_indicator=self.xml_gui.get_widget("experiment_script_column_textfield")
-        self.data_handling_line_indicator=self.xml_gui.get_widget("data_handling_line_textfield")
-        self.data_handling_column_indicator=self.xml_gui.get_widget("data_handling_column_textfield")
-
-        # some event handlers
-        self.experiment_script_textbuffer.connect("modified-changed", self.textviews_modified)
-        self.experiment_script_textview.connect_after("move-cursor", self.textviews_moved)
-        self.experiment_script_textview.connect("key-press-event", self.textviews_keypress)
-        self.experiment_script_textview.connect("button-release-event", self.textviews_clicked)
-        self.data_handling_textbuffer.connect("modified-changed", self.textviews_modified)
-        self.data_handling_textview.connect_after("move-cursor", self.textviews_moved)
-        self.data_handling_textview.connect("key-press-event", self.textviews_keypress)
-        self.data_handling_textview.connect("button-release-event", self.textviews_clicked)
-
-        # init location indicators
-        self.textviews_moved(self.experiment_script_textview)
-        self.textviews_moved(self.data_handling_textview)
 
     def monitor_init(self):
         """
@@ -145,12 +106,6 @@ class DamarisGUI:
     def toolbar_init(self):
         """
         """
-        # Toolbar buttons
-        self.toolbar_new_button = self.xml_gui.get_widget("toolbar_new_button")
-        self.toolbar_open_button = self.xml_gui.get_widget("toolbar_open_file_button")
-        self.toolbar_save_button = self.xml_gui.get_widget("toolbar_save_file_button")
-        self.toolbar_save_as_button = self.xml_gui.get_widget("toolbar_save_as_button")
-        self.toolbar_save_all_button = self.xml_gui.get_widget("toolbar_save_all_button")
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
         self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
         self.toolbar_check_scripts_button = self.xml_gui.get_widget("toolbar_check_scripts_button")
@@ -158,11 +113,6 @@ class DamarisGUI:
 
         # and their events
         self.xml_gui.signal_connect("on_toolbar_run_button_clicked", self.start_experiment)
-        self.xml_gui.signal_connect("on_toolbar_open_file_button_clicked", self.open_file)
-        self.xml_gui.signal_connect("on_toolbar_new_button_clicked", self.new_file)
-        self.xml_gui.signal_connect("on_toolbar_save_as_button_clicked", self.save_file_as)
-        self.xml_gui.signal_connect("on_toolbar_save_file_button_clicked", self.save_file)
-        self.xml_gui.signal_connect("on_toolbar_save_all_button_clicked", self.save_all_files)
         self.xml_gui.signal_connect("on_toolbar_pause_button_clicked", self.pause_experiment)
         self.xml_gui.signal_connect("on_toolbar_stop_button_clicked", self.stop_experiment)
         self.xml_gui.signal_connect("on_toolbar_execute_with_options_button_clicked", self.start_experiment_with_options)
@@ -172,6 +122,8 @@ class DamarisGUI:
         gtk.gdk.threads_enter()
         gtk.main()
         gtk.gdk.threads_leave()
+
+        self.sw=None
 
     # event handling: the real acitons in gui programming
 
@@ -186,10 +138,173 @@ class DamarisGUI:
         # and quit
         gtk.main_quit()
 
+    # toolbar related events:
+
+
+    def start_experiment_with_options(self, widget, data = None):
+        print "ToDo: start_experiment_with_options"
+        
+
+    def start_experiment(self, widget, data = None):
+        print "ToDo: start_experiment"
+
+    def pause_experiment(self, widget, data = None):
+        print "ToDo: pause_experiment"
+
+    def stop_experiment(self, widget, data = None):
+        print "ToDo: stop_experiment"
+
+
+class ScriptWidgets:
+
+    def __init__(self, xml_gui):
+        self.xml_gui=xml_gui
+        """
+        initialize text widgets with text
+        """
+
+        # my states
+        # editing enabled/disabled
+        self.editing_state=True
+        # keep in mind which filename was used for experiment script
+        self.exp_script_filename=None
+        # keep in mind which filename was used for result script
+        self.res_script_filename=None
+        
+        # script buffers:
+        self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
+        self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
+        self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
+        self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
+
+        # statusbar
+        self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
+        self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
+
+        # footline with line and col indicators
+        self.experiment_script_line_indicator=self.xml_gui.get_widget("experiment_script_line_textfield")
+        self.experiment_script_column_indicator=self.xml_gui.get_widget("experiment_script_column_textfield")
+        self.data_handling_line_indicator=self.xml_gui.get_widget("data_handling_line_textfield")
+        self.data_handling_column_indicator=self.xml_gui.get_widget("data_handling_column_textfield")
+
+        # some event handlers
+        self.experiment_script_textbuffer.connect("modified-changed", self.textviews_modified)
+        self.experiment_script_textview.connect_after("move-cursor", self.textviews_moved)
+        self.experiment_script_textview.connect("key-press-event", self.textviews_keypress)
+        self.experiment_script_textview.connect("button-release-event", self.textviews_clicked)
+        self.data_handling_textbuffer.connect("modified-changed", self.textviews_modified)
+        self.data_handling_textview.connect_after("move-cursor", self.textviews_moved)
+        self.data_handling_textview.connect("key-press-event", self.textviews_keypress)
+        self.data_handling_textview.connect("button-release-event", self.textviews_clicked)
+
+        # and the editing toolbar part
+        # buttons
+        self.toolbar_new_button = self.xml_gui.get_widget("toolbar_new_button")
+        self.toolbar_open_button = self.xml_gui.get_widget("toolbar_open_file_button")
+        self.toolbar_save_button = self.xml_gui.get_widget("toolbar_save_file_button")
+        self.toolbar_save_as_button = self.xml_gui.get_widget("toolbar_save_as_button")
+        self.toolbar_save_all_button = self.xml_gui.get_widget("toolbar_save_all_button")
+        # events
+        self.xml_gui.signal_connect("on_toolbar_open_file_button_clicked", self.open_file)
+        self.xml_gui.signal_connect("on_toolbar_new_button_clicked", self.new_file)
+        self.xml_gui.signal_connect("on_toolbar_save_as_button_clicked", self.save_file_as)
+        self.xml_gui.signal_connect("on_toolbar_save_file_button_clicked", self.save_file)
+        self.xml_gui.signal_connect("on_toolbar_save_all_button_clicked", self.save_all_files)
+
+        # my notebook
+        self.main_notebook = self.xml_gui.get_widget("main_notebook")
+        # config toolbar
+        self.main_notebook.connect_after("switch_page", self.notebook_page_switched)
+        
+        # start with empty scripts
+        self.set_scripts()
+        self.enable_editing()
+
+
+    # public methods
+
+    def set_scripts(self, exp_script=None, res_script=None):
+        # load buffers and set cursor to front
+        if exp_script:
+            self.experiment_script_textbuffer.set_text(unicode(exp_script))
+            self.experiment_script_textbuffer.place_cursor(self.experiment_script_textbuffer.get_start_iter())
+            self.experiment_script_textbuffer.set_modified(False)
+            self.textviews_moved(self.experiment_script_textview)
+        if res_script:
+            self.data_handling_textbuffer.set_text(unicode(res_script))
+            self.data_handling_textbuffer.place_cursor(self.data_handling_textbuffer.get_start_iter())
+            self.data_handling_textbuffer.set_modified(False)
+            self.textviews_moved(self.data_handling_textview)
+        self.set_toolbuttons_status()
+
+    def get_scripts(self):
+        """
+        returns scripts
+        """
+        exp_script=self.experiment_script_textbuffer.get_text(self.experiment_script_textbuffer.get_start_iter(),
+                                                              self.experiment_script_textbuffer.get_end_iter())
+        res_script=self.data_handling_textbuffer.get_text(self.data_handling_textbuffer.get_start_iter(),
+                                                                 self.data_handling_textbuffer.get_end_iter())
+        return (exp_script,res_script)
+
+    def disable_editing(self):
+        """
+        disable editing (for running experiments)
+        """
+        # disable buffers
+        self.editing_state=False
+        self.experiment_script_textview.set_sensitive(False)
+        self.data_handling_textview.set_sensitive(False)
+        self.set_toolbuttons_status()
+
+    def enable_editing(self):
+        """
+        returns to editable state
+        """
+        self.editing_state=True
+        self.experiment_script_textview.set_sensitive(True)
+        self.data_handling_textview.set_sensitive(True)
+        self.set_toolbuttons_status()
+
+
+    # methods to update status and appearance
+
+    def set_toolbuttons_status(self):
+        """
+        
+        ToDo: care about associated file names
+        """
+        current_page=self.main_notebook.get_current_page()
+        if self.editing_state and current_page in [0,1]:
+            self.toolbar_new_button.set_sensitive(True)
+            self.toolbar_open_button.set_sensitive(True)
+            # find visible tab
+            exp_modified=self.experiment_script_textbuffer.get_modified()
+            res_modified=self.data_handling_textbuffer.get_modified()
+            enable_save=True
+            if current_page==0:
+                enable_save=exp_modified and self.exp_script_filename is not None
+            elif current_page==1:
+                enable_save=res_modified and self.res_script_filename is not None
+            self.toolbar_save_button.set_sensitive(enable_save)
+            self.toolbar_save_as_button.set_sensitive(True)
+            self.toolbar_save_all_button.set_sensitive(exp_modified or res_modified)
+        else:
+            # disable toolbar
+            self.toolbar_new_button.set_sensitive(False)
+            self.toolbar_open_button.set_sensitive(False)
+            self.toolbar_save_button.set_sensitive(False)
+            self.toolbar_save_as_button.set_sensitive(False)
+            self.toolbar_save_all_button.set_sensitive(False)
+
     # text widget related events
 
+    def notebook_page_switched(self, notebook, page, pagenumber):
+        self.set_toolbuttons_status()
+
     def textviews_modified(self, data = None):
-        print "todo: modified"
+        # mix into toolbar affairs
+        self.set_toolbuttons_status()
 
     def textviews_clicked(self, widget, event):
         return self.textviews_moved(widget)
@@ -284,29 +399,115 @@ class DamarisGUI:
         self.textviews_moved(widget)
         return 0
 
+    def open_file(self, widget, Data = None):
+        """
+        do the open file dialog, if necessary ask for save
+        """
+        # ignore
+        if not self.editing_state: return 0
+        
+        # Determining the tab which is currently open
+        current_page=self.main_notebook.get_current_page()
+        if current_page == 0:
+            open_dialog_title="Open Experiment Script..."
+            modified=self.experiment_script_textbuffer.get_modified()
+        elif current_page == 1:
+            open_dialog_title="Open Result Script..."
+            modified=self.data_handling_textbuffer.get_modified()
+        else:
+            return 0
 
-    # toolbar related events:
+        if modified:
+            print "ToDo: Save First Dialog"
 
+        def response(self, response_id, script_widget):
+            if response_id == gtk.RESPONSE_OK:
+                file_name = dialog.get_filename()
+                if file_name is None:
+                    return
 
-    def start_experiment_with_options(self, widget, data = None):
-        print "ToDo: start_experiment_with_options"
+                script_filename=os.path.abspath(file_name)
+                if not os.access(script_filename, os.R_OK):
+                    outer_space.show_error_dialog("File I/O Error","Cannot read from file %s" % script_filename)
+                    return True
+
+                script_file = file(script_filename, "r")
+                script_string = u""
+                for line in script_file:
+                    script_string += unicode(line,encoding="iso-8859-1", errors="replace")
+                script_file.close()
+
+                if script_widget.main_notebook.get_current_page() == 0:    
+                    script_widget.set_scripts(script_string,None)
+                    script_widget.exp_script_filename=script_filename
+                elif script_widget.main_notebook.get_current_page() == 1:
+                    script_widget.set_scripts(None, script_string)
+                    script_widget.res_script_filename=script_filename
+                
+            return True
         
 
-    def start_experiment(self, widget, data = None):
-        print "ToDo: start_experiment"
+        parent_window=self.xml_gui.get_widget("main_window")
+        dialog = gtk.FileChooserDialog(title=open_dialog_title,
+                                       parent=parent_window,
+                                       action=gtk.FILE_CHOOSER_ACTION_OPEN,
+                                       buttons = (gtk.STOCK_OPEN, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL)
+                                       )
+        dialog.set_default_response(gtk.RESPONSE_OK)
+        dialog.set_select_multiple(False)
+        # Event-Handler for responce-signal (when one of the button is pressed)
+        dialog.connect("response", response, self)
 
-    def pause_experiment(self, widget, data = None):
-        print "ToDo: pause_experiment"
+        dialog.run()
+        dialog.destroy()
 
-    def stop_experiment(self, widget, data = None):
-        print "ToDo: stop_experiment"
+        # update title and so on...
 
-    def open_file(self, widget, Data = None):
-        print "ToDo: open_file"
+        return True
+
+
+    # end of open_file method
+
 
     def save_file(self, widget, Data = None):
-        print "ToDo: save_file"
+        """
+        save file to associated filename
+        """
+        # ignore
+        if not self.editing_state: return 0
+        
+        # Determining the tab which is currently open
+        current_page=self.main_notebook.get_current_page()
+        if current_page == 0:
+            modified=self.experiment_script_textbuffer.get_modified()
+            filename=self.exp_script_filename
+        elif current_page == 1:
+            modified=self.data_handling_textbuffer.get_modified()
+            filename=self.res_script_filename
+        else:
+            return 0
 
+        if not modified or filename is None: return 0
+
+        # save file
+        if current_page==0:
+            script=self.get_scripts()[0]
+        elif current_page==1:
+            script=self.get_scripts()[1]
+        else:
+            return 0
+
+        # encode from unicode to iso-8859-1
+        filecontents=codecs.getencoder("iso-8859-1")(script,"replace")[0]
+        file(filename,"w").write(filecontents)
+
+        if current_page == 0:
+            self.experiment_script_textbuffer.set_modified(False)
+        elif current_page == 1:
+            self.data_handling_textbuffer.set_modified(False)
+        self.set_toolbuttons_status()
+
+        
     def save_file_as(self, widget, Data = None):
         print "ToDo: save_file_as"
 
@@ -315,6 +516,7 @@ class DamarisGUI:
 
     def new_file(self, widget, Data = None):
         print "ToDo: new_file"
+        
 
 
 if __name__=="__main__":
