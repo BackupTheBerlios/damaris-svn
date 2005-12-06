@@ -1,17 +1,22 @@
-import os.path
+import time
 import sys
 import codecs
+import os.path
+
 import pygtk
 pygtk.require("2.0")
 import gtk
 import gtk.glade
+import gobject
 import pango
+
 import matplotlib
 import matplotlib.axes
 import matplotlib.figure
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
 from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
 
+import script_interface
 
 class DamarisGUI:
 
@@ -20,12 +25,30 @@ class DamarisGUI:
     Monitor_Display=3
     Log_Display=4
 
+    Edit_State=0
+    Run_State=1
+    Pause_State=2
+    Stop_State=3
+    Quit_State=4
+
     def __init__(self):
 
+        gtk.gdk.threads_init()
         #all my state variables
+        # active display... (do I really need it?)
         self.active_display=DamarisGUI.ExpScript_Display
+
+        # state: edit, run, stop, quit
+        # state transitions:
+        # edit -> run|quit
+        # run -> pause|stop
+        # pause -> run|stop
+        # stop -> edit
+        self.state=DamarisGUI.Edit_State
         
         self.glade_layout_init()
+        # my notebook
+        self.main_notebook = self.xml_gui.get_widget("main_notebook")
         
         self.sw=ScriptWidgets(self.xml_gui)
 
@@ -33,12 +56,19 @@ class DamarisGUI:
 
         self.monitor_init()
 
+        self.statusbar_init()
+
     def glade_layout_init(self):
         glade_file=os.path.join(os.path.dirname(__file__),"damaris.glade")
         self.xml_gui = gtk.glade.XML(glade_file)
         self.main_window = self.xml_gui.get_widget("main_window")
 
         self.main_window.connect("delete-event", self.quit_event)
+
+    def statusbar_init(self):
+        self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
+        self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
+        self.backend_statusbar_label = self.xml_gui.get_widget("statusbar_core_label")
 
     def monitor_init(self):
         """
@@ -108,12 +138,18 @@ class DamarisGUI:
         """
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
         self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
+        self.toolbar_pause_button = self.xml_gui.get_widget("toolbar_pause_button")
         self.toolbar_check_scripts_button = self.xml_gui.get_widget("toolbar_check_scripts_button")
         self.toolbar_exec_with_options_togglebutton = self.xml_gui.get_widget("toolbar_execute_with_options_button")
 
+        # prepare for edit state
+        self.toolbar_run_button.set_sensitive(True)
+        self.toolbar_stop_button.set_sensitive(False)
+        self.toolbar_pause_button.set_sensitive(False)
+
         # and their events
         self.xml_gui.signal_connect("on_toolbar_run_button_clicked", self.start_experiment)
-        self.xml_gui.signal_connect("on_toolbar_pause_button_clicked", self.pause_experiment)
+        self.xml_gui.signal_connect("on_toolbar_pause_button_toggled", self.pause_experiment)
         self.xml_gui.signal_connect("on_toolbar_stop_button_clicked", self.stop_experiment)
         self.xml_gui.signal_connect("on_toolbar_execute_with_options_button_clicked", self.start_experiment_with_options)
 
@@ -123,6 +159,7 @@ class DamarisGUI:
         gtk.main()
         gtk.gdk.threads_leave()
 
+        self.si=None
         self.sw=None
 
     # event handling: the real acitons in gui programming
@@ -133,27 +170,163 @@ class DamarisGUI:
         """
         expecting quit event for main application
         """
-        # do a cleanup...
-
-        # and quit
-        gtk.main_quit()
+        if self.state in [DamarisGUI.Edit_State, DamarisGUI.Quit_State]:
+            self.state=DamarisGUI.Quit_State
+            # do a cleanup...
+            print "ToDo: Cleanup, Save Dialogs ..."
+            # and quit
+            gtk.main_quit()
+            return False
+        else:
+            print "Stop Experiment please! (ToDo: Dialog)"
+            return True
 
     # toolbar related events:
-
 
     def start_experiment_with_options(self, widget, data = None):
         print "ToDo: start_experiment_with_options"
         
-
     def start_experiment(self, widget, data = None):
-        print "ToDo: start_experiment"
+        # prepare to run
+        self.state=DamarisGUI.Run_State
+        self.sw.disable_editing()
+        self.toolbar_run_button.set_sensitive(False)
+        self.toolbar_stop_button.set_sensitive(True)
+        self.toolbar_pause_button.set_sensitive(True)
+        self.toolbar_pause_button.set_active(False)
+
+        # get scripts and start script interface
+        exp_script, res_script=self.sw.get_scripts()
+
+        try:
+            spool_dir=os.path.abspath("spool")
+            self.si=script_interface.ScriptInterface(exp_script,
+                                                     res_script,
+                                                     "/home/achim/damaris/backends/machines/Mobilecore.exe",
+                                                     spool_dir)
+
+            self.si.data.register_listener(self.datapool_listener)
+            self.si.runScripts()
+        except Exception, e:
+            print "ToDo evaluate exception",str(e)
+            still_running=filter(None,[self.si.exp_handling,self.si.res_handling,self.si.back_driver])
+            for r in still_running:
+                r.quit_flag.set()
+
+            self.si=None
+            self.state=DamarisGUI.Edit_State
+            self.sw.enable_editing()
+            self.toolbar_run_button.set_sensitive(True)
+            self.toolbar_stop_button.set_sensitive(False)
+            self.toolbar_pause_button.set_sensitive(False)
+            self.toolbar_pause_button.set_active(False)
+            return
+
+        # switch to grapics
+        self.main_notebook.set_current_page(2)
+
+        # set running
+        self.experiment_script_statusbar_label.set_text("Experiment Script Running (0)")
+        self.data_handling_statusbar_label.set_text("Result Script Running (0)")
+        self.backend_statusbar_label.set_text("Backend Running")
+
+        # and observe it...
+        gobject.timeout_add(200,self.observe_running_experiment)
+
+    def observe_running_experiment(self):
+        """
+        periodically look at running threads
+        """
+        # look at components and update them
+        # test whether backend and scripts are done
+        if self.si.exp_handling is not None:
+            e=self.si.data.get("__recentexperiment",-1)+1
+            if not self.si.exp_handling.isAlive():
+                self.si.exp_handling.join()
+                if self.si.exp_handling.raised_exception:
+                    print "experiment script failed at line %d (function %s): %s"%(self.si.exp_handling.location[0],
+                                                                                   self.si.exp_handling.location[1],
+                                                                                   self.si.exp_handling.raised_exception)
+                    self.experiment_script_statusbar_label.set_text("Experiment Script Failed (%d)"%e)
+                else:
+                    self.experiment_script_statusbar_label.set_text("Experiment Script Finished (%d)"%e)
+                    print "experiment script finished"
+                self.si.exp_handling = None
+            else:
+                self.experiment_script_statusbar_label.set_text("Experiment Script Running (%d)"%e)
+
+
+        if self.si.res_handling is not None:
+            r=self.si.data.get("__recentresult",-1)+1
+            if not self.si.res_handling.isAlive():
+                self.si.res_handling.join()
+                if self.si.res_handling.raised_exception:
+                    print "result script failed at line %d (function %s): %s"%(self.si.res_handling.location[0],
+                                                                               self.si.res_handling.location[1],
+                                                                               self.si.res_handling.raised_exception)
+                    self.data_handling_statusbar_label.set_text("Result Script Failed (%d)"%r)
+                else:
+                    self.data_handling_statusbar_label.set_text("Result Script Finished (%d)"%r)
+                self.si.res_handling = None
+            else:
+                self.data_handling_statusbar_label.set_text("Result Script Running (%d)"%r)
+
+        if self.si.back_driver is not None:
+            if not self.si.back_driver.isAlive():
+                self.backend_statusbar_label.set_text("Backend Finished")
+                self.si.back_driver.join()
+                self.si.back_driver = None
+
+        still_running=filter(None,[self.si.exp_handling, self.si.res_handling, self.si.back_driver])
+
+        if len(still_running)==0:
+            print "all subprocesses ended"
+            self.state = DamarisGUI.Stop_State
+
+        if self.state == DamarisGUI.Stop_State:
+            if len(still_running)!=0:
+                print "subprocesses still running:", map(lambda s:s.getName(),still_running)
+                return True
+            self.state=DamarisGUI.Edit_State
+            self.sw.enable_editing()
+            self.toolbar_run_button.set_sensitive(True)
+            self.toolbar_stop_button.set_sensitive(False)
+            self.toolbar_pause_button.set_sensitive(False)
+            # now everything is stopped
+            return False
+
+        # or look at them again
+        return True
 
     def pause_experiment(self, widget, data = None):
         print "ToDo: pause_experiment"
+        pause_state=self.toolbar_pause_button.get_active()
+        if pause_state:
+            self.state=DamarisGUI.Pause_State
+        else:
+            self.state=DamarisGUI.Run_State
 
     def stop_experiment(self, widget, data = None):
-        print "ToDo: stop_experiment"
+        if self.state in [DamarisGUI.Run_State, DamarisGUI.Pause_State]:
+            still_running=filter(None,[self.si.exp_handling,self.si.res_handling,self.si.back_driver])
+            for r in still_running:
+                r.quit_flag.set()
+            self.state=DamarisGUI.Stop_State
+            self.toolbar_pause_button.set_sensitive(False)
 
+    def datapool_listener(self, event):
+        if event.subject[:2]!="__":
+            print "Event:", event.subject
+        return
+        if event.subject=="__recentexperiment":
+            e=event.origin.get("__recentexperiment",-1)+1
+        if event.subject=="__recentresult":
+            r=event.origin.get("__recentresult",-1)+1
+#             if e!=0:
+#                 ratio=100.0*r/e
+#             else:
+#                 ratio=100.0
+#             print "\r%d/%d (%.0f%%)"%(r,e,ratio),
 
 class ScriptWidgets:
 
@@ -217,7 +390,7 @@ class ScriptWidgets:
         self.main_notebook.connect_after("switch_page", self.notebook_page_switched)
         
         # start with empty scripts
-        self.set_scripts()
+        self.set_scripts("","")
         self.enable_editing()
 
 
@@ -225,12 +398,12 @@ class ScriptWidgets:
 
     def set_scripts(self, exp_script=None, res_script=None):
         # load buffers and set cursor to front
-        if exp_script:
+        if exp_script is not None:
             self.experiment_script_textbuffer.set_text(unicode(exp_script))
             self.experiment_script_textbuffer.place_cursor(self.experiment_script_textbuffer.get_start_iter())
             self.experiment_script_textbuffer.set_modified(False)
             self.textviews_moved(self.experiment_script_textview)
-        if res_script:
+        if res_script is not None:
             self.data_handling_textbuffer.set_text(unicode(res_script))
             self.data_handling_textbuffer.place_cursor(self.data_handling_textbuffer.get_start_iter())
             self.data_handling_textbuffer.set_modified(False)
@@ -265,7 +438,6 @@ class ScriptWidgets:
         self.experiment_script_textview.set_sensitive(True)
         self.data_handling_textview.set_sensitive(True)
         self.set_toolbuttons_status()
-
 
     # methods to update status and appearance
 
@@ -465,11 +637,7 @@ class ScriptWidgets:
 
         return True
 
-
-    # end of open_file method
-
-
-    def save_file(self, widget, Data = None):
+    def save_file(self, widget = None, Data = None):
         """
         save file to associated filename
         """
@@ -479,15 +647,13 @@ class ScriptWidgets:
         # Determining the tab which is currently open
         current_page=self.main_notebook.get_current_page()
         if current_page == 0:
-            modified=self.experiment_script_textbuffer.get_modified()
             filename=self.exp_script_filename
         elif current_page == 1:
-            modified=self.data_handling_textbuffer.get_modified()
             filename=self.res_script_filename
         else:
             return 0
 
-        if not modified or filename is None: return 0
+        if filename is None: return 0
 
         # save file
         if current_page==0:
@@ -508,16 +674,87 @@ class ScriptWidgets:
         self.set_toolbuttons_status()
 
         
-    def save_file_as(self, widget, Data = None):
-        print "ToDo: save_file_as"
+    def save_file_as(self, widget = None, Data = None):
+
+        def response(self, response_id, script_widget):
+            if response_id == gtk.RESPONSE_OK:
+                file_name = dialog.get_filename()
+                if file_name is None:
+                    return True
+
+                absfilename=os.path.abspath(file_name)
+                if os.access(file_name, os.F_OK):
+                    print "ToDo: Overwrite file question"
+
+                current_page=script_widget.main_notebook.get_current_page()
+                if current_page==0:
+                    script_widget.exp_script_filename=absfilename
+                elif current_page==1:
+                    script_widget.res_script_filename=absfilename
+                script_widget.save_file()
+                
+                return True
+        
+        # Determining the tab which is currently open
+
+        current_page=self.main_notebook.get_current_page()
+        if  current_page == 0:
+            dialog_title="Save Experiment Script As..."
+        elif current_page == 1:
+            dialog_title="Save Data Handling As..."
+        else:
+            return
+        
+        parent_window=self.xml_gui.get_widget("main_window")
+        dialog = gtk.FileChooserDialog(title = dialog_title,
+                                       parent = parent_window,
+                                       action = gtk.FILE_CHOOSER_ACTION_SAVE,
+                                       buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+
+        dialog.set_default_response(gtk.RESPONSE_OK)
+        dialog.set_select_multiple(False)
+
+        # Event-Handler for responce-signal (when one of the button is pressed)
+        dialog.connect("response", response, self)
+
+        dialog.run()
+        dialog.destroy()
+
+        return True
 
     def save_all_files(self, widget, Data = None):
-        print "ToDo: save_all_files"
+
+        current_page=self.main_notebook.get_current_page()
+            
+        # change page and call save dialog
+        self.main_notebook.set_current_page(0)
+        if self.exp_script_filename is None:
+            self.save_file_as()
+        else:
+            self.save_file()
+
+        self.main_notebook.set_current_page(1)
+        if self.res_script_filename is None:
+            self.save_file_as()
+        else:
+            self.save_file()
+
+        self.main_notebook.set_current_page(current_page)
 
     def new_file(self, widget, Data = None):
-        print "ToDo: new_file"
         
-
+        if not self.editing_state: return 0
+        current_page=self.main_notebook.get_current_page()
+        if current_page==0:
+            if self.experiment_script_textbuffer.get_modified():
+                print "ToDo: Save before Clear Dialog"
+            self.set_scripts("", None)
+            self.exp_script_filename=None
+        elif current_page==1:
+            if self.data_handling_textbuffer.get_modified():
+                print "ToDo: Save before Clear Dialog"
+            self.set_scripts(None, "")
+            self.res_script_filename=None
 
 if __name__=="__main__":
 
