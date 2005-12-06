@@ -21,7 +21,7 @@ This class handles the backend driver
 class BackendDriver(threading.Thread):
     
     def __init__(self, executable, spool):
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name="Backend Driver")
         self.core_pid = None
 
         self.executable=executable

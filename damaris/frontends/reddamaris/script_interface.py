@@ -30,6 +30,7 @@ class ScriptInterface:
         self.res_script=res_script
         self.backend_executable=backend_executable
         self.spool_dir=os.path.abspath(spool_dir)
+        self.exp_handling=self.res_handling=None
 
         self.exp_writer=self.res_reader=self.back_driver=None
         if self.backend_executable is not None:

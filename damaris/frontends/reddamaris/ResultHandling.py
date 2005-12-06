@@ -15,10 +15,10 @@ class ResultHandling(threading.Thread):
         self.script=script_data
         self.results=result_iterator
         self.data_space=data_pool
+        self.quit_flag=threading.Event()
 
     def run(self):
         # execute it
-        self.quit_flag=threading.Event()
         dataspace={}
         dataspace["results"]=self
         dataspace["data"]=self.data_space
