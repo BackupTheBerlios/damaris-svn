@@ -2,6 +2,8 @@ import time
 import sys
 import codecs
 import os.path
+import traceback
+import tables
 
 import pygtk
 pygtk.require("2.0")
@@ -10,6 +12,7 @@ import gtk.glade
 import gobject
 import pango
 
+import numarray
 import matplotlib
 import matplotlib.axes
 import matplotlib.figure
@@ -20,10 +23,10 @@ import script_interface
 
 class DamarisGUI:
 
-    ExpScript_Display=1
-    ResScript_Display=2
-    Monitor_Display=3
-    Log_Display=4
+    ExpScript_Display=0
+    ResScript_Display=1
+    Monitor_Display=2
+    Log_Display=3
 
     Edit_State=0
     Run_State=1
@@ -199,21 +202,32 @@ class DamarisGUI:
         exp_script, res_script=self.sw.get_scripts()
 
         try:
-            spool_dir=os.path.abspath("spool")
+            # start experiment
+            self.spool_dir=os.path.abspath("spool")
             self.si=script_interface.ScriptInterface(exp_script,
                                                      res_script,
                                                      "/home/achim/damaris/backends/machines/Mobilecore.exe",
-                                                     spool_dir)
+                                                     self.spool_dir)
 
             self.si.data.register_listener(self.datapool_listener)
             self.si.runScripts()
+            self.data=self.si.data
+            # start data dump
+            self.dump_timeinterval=60*10
+            self.dump_filename="DAMARIS_data_pool.h5"
+            self.dump_states(init=True)
+            # set next dump time
+            self.next_dump_time=time.time()+self.dump_timeinterval
         except Exception, e:
-            print "ToDo evaluate exception",str(e)
+            print "ToDo evaluate exception",str(e), "at",traceback.extract_tb(sys.exc_info()[2])[-1][1:3]
+
             still_running=filter(None,[self.si.exp_handling,self.si.res_handling,self.si.back_driver])
             for r in still_running:
                 r.quit_flag.set()
 
+            # cleanup
             self.si=None
+            self.data=None
             self.state=DamarisGUI.Edit_State
             self.sw.enable_editing()
             self.toolbar_run_button.set_sensitive(True)
@@ -231,7 +245,7 @@ class DamarisGUI:
         self.backend_statusbar_label.set_text("Backend Running")
 
         # and observe it...
-        gobject.timeout_add(200,self.observe_running_experiment)
+        gobject.timeout_add(400,self.observe_running_experiment)
 
     def observe_running_experiment(self):
         """
@@ -239,8 +253,9 @@ class DamarisGUI:
         """
         # look at components and update them
         # test whether backend and scripts are done
+        e=self.si.data.get("__recentexperiment",-1)+1
+        r=self.si.data.get("__recentresult",-1)+1
         if self.si.exp_handling is not None:
-            e=self.si.data.get("__recentexperiment",-1)+1
             if not self.si.exp_handling.isAlive():
                 self.si.exp_handling.join()
                 if self.si.exp_handling.raised_exception:
@@ -257,7 +272,6 @@ class DamarisGUI:
 
 
         if self.si.res_handling is not None:
-            r=self.si.data.get("__recentresult",-1)+1
             if not self.si.res_handling.isAlive():
                 self.si.res_handling.join()
                 if self.si.res_handling.raised_exception:
@@ -287,24 +301,108 @@ class DamarisGUI:
             if len(still_running)!=0:
                 print "subprocesses still running:", map(lambda s:s.getName(),still_running)
                 return True
+            # now everything is stopped
             self.state=DamarisGUI.Edit_State
             self.sw.enable_editing()
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_stop_button.set_sensitive(False)
             self.toolbar_pause_button.set_sensitive(False)
-            # now everything is stopped
+            self.dump_states()
+
+            # keep data to display but throw away everything else
+            self.si=None
+
             return False
+
+        # dump contents if dump interval is elapsed
+        if self.next_dump_time<time.time():
+            self.dump_states()
+            self.next_dump_time+=self.dump_timeinterval
 
         # or look at them again
         return True
 
+    def dump_states(self, init=False):
+        if init:
+            # dump all information to a file
+            print "ToDo: move away old dump file"
+            dump_file=tables.openFile(self.dump_filename,mode="w",title="DAMARIS experiment data")
+            # write scripts
+            scriptgroup=dump_file.createGroup("/","scripts","Used Scripts")
+            if self.si.exp_script:
+                dump_file.createArray(scriptgroup,"experiment_script", self.si.exp_script)
+            if self.si.res_script:
+                dump_file.createArray(scriptgroup,"result_script", self.si.res_script)
+            if self.si.backend_executable:
+                dump_file.createArray(scriptgroup,"backend_executable", self.si.backend_executable)
+            if self.si.spool_dir:
+                dump_file.createArray(scriptgroup,"spool_directory", self.spool_dir)
+            dump_file_timeline={"time": tables.StringCol(len("YYYYMMDD HH:MM:SS")),
+                                "experiments": tables.Int64Col(),
+                                "results": tables.Int64Col()}
+            dump_file.createTable("/","timeline", dump_file_timeline, title="Timeline of Experiment")
+            timeline_row=dump_file.root.timeline.row
+            timeline_row["time"]=time.strftime("%Y%m%d %H:%M:%S")
+            timeline_row["experiments"]=0
+            timeline_row["results"]=0
+            timeline_row.append()
+        else:
+            # repack file
+            os.rename(self.dump_filename,self.dump_filename+".bak")
+            old_dump_file=tables.openFile(self.dump_filename+".bak",mode="r+")
+            if "data_pool" in old_dump_file.root:
+                old_dump_file.removeNode(where="/", name="data_pool", recursive=True)
+            old_dump_file.copyFile(self.dump_filename)
+            old_dump_file.close()
+            old_dump_file=None
+            os.remove(self.dump_filename+".bak")
+            # prepare for update
+            dump_file=tables.openFile(self.dump_filename,mode="r+")
+            e=self.si.data.get("__recentexperiment",-1)+1
+            r=self.si.data.get("__recentresult",-1)+1
+            timeline_row=dump_file.root.timeline.row
+            timeline_row["time"]=time.strftime("%Y%m%d %H:%M:%S")
+            timeline_row["experiments"]=e
+            timeline_row["results"]=r
+            timeline_row.append()
+
+        self.data.write_hdf5(dump_file, where="/", name="data_pool")
+        
+        dump_file.flush()
+        dump_file.close()
+        dump_file=None
+        
     def pause_experiment(self, widget, data = None):
-        print "ToDo: pause_experiment"
+        """
+        pause experiment execution (that means delay backend and let others run)
+        """
+        if self.si is None: return False
         pause_state=self.toolbar_pause_button.get_active()
         if pause_state:
+            if self.state!=DamarisGUI.Run_State: return False
+            if self.si.spool_dir is None: return False
+            no=self.si.data.get("__recentresult",-1)+1
+            result_pattern=os.path.join(self.si.spool_dir, "job.%09d.result")
+            job_pattern=os.path.join(self.si.spool_dir, "job.%09d")
+            while os.path.isfile(result_pattern%no):
+                no+=1
+            i=0
+            self.pause_files=[]
+            while i<3 and os.path.isfile(job_pattern%(no+i)):
+                pause_file=(job_pattern%(no+i))+".pause"
+                os.rename(job_pattern%(no+i), pause_file )
+                self.pause_files.append(pause_file)
+                i+=1
             self.state=DamarisGUI.Pause_State
+            self.backend_statusbar_label.set_text("Backend Paused")
+                
         else:
+            if self.state!=DamarisGUI.Pause_State: return False
             self.state=DamarisGUI.Run_State
+            for f in self.pause_files:
+                os.rename(f, f[:-6])
+            self.pause_files=None
+            self.backend_statusbar_label.set_text("Backend Running")
 
     def stop_experiment(self, widget, data = None):
         if self.state in [DamarisGUI.Run_State, DamarisGUI.Pause_State]:
@@ -315,8 +413,8 @@ class DamarisGUI:
             self.toolbar_pause_button.set_sensitive(False)
 
     def datapool_listener(self, event):
-        if event.subject[:2]!="__":
-            print "Event:", event.subject
+        #if event.subject[:2]!="__":
+        #    print "Event:", event.subject
         return
         if event.subject=="__recentexperiment":
             e=event.origin.get("__recentexperiment",-1)+1

@@ -88,7 +88,7 @@ class DataPool(UserDict.DictMixin):
             dump_file=hdffile
         else:
             raise Exception("expecting hdffile or string")
-            
+
         dump_group=dump_file.createGroup(where, name, "DAMARIS data pool")
         self.__dictlock.acquire()
         try:
@@ -118,6 +118,7 @@ class DataPool(UserDict.DictMixin):
                     continue
                 print "don't know how to store data_pool[%s]"%key
         finally:
+            dump_group=None
             self.__dictlock.release()
             dump_file.flush()
             if type(hdffile) is types.StringType:
