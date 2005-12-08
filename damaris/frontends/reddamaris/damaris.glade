@@ -7,7 +7,7 @@
   <property name="width_request">760</property>
   <property name="height_request">560</property>
   <property name="visible">True</property>
-  <property name="title" translatable="yes">DAMARIS v0.0.1</property>
+  <property name="title" translatable="yes">DAMARIS v0.1</property>
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_CENTER</property>
   <property name="modal">False</property>
@@ -1451,6 +1451,7 @@ log</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
 	      <property name="is_important">False</property>
+	      <signal name="clicked" handler="on_toolbar_check_scripts_button_clicked" after="yes" last_modification_time="Thu, 08 Dec 2005 08:50:53 GMT"/>
 	    </widget>
 	    <packing>
 	      <property name="expand">False</property>

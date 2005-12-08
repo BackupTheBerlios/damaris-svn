@@ -177,7 +177,10 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
             "n" : tables.Int64Col()
             }
 
-        mr_table=hdffile.createTable(where=where,name=name, description=h5_table_format, title=title)
+        mr_table=hdffile.createTable(where=where,name=name,
+                                     description=h5_table_format,
+                                     title=title,
+                                     expectedrows=len(self))
         mr_table.attrs.damaris_type="MeasurementResult"
         self.lock.acquire()
         try:
@@ -198,4 +201,5 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
                 row.append()
 
         finally:
+            mr_table.flush()
             self.lock.release()

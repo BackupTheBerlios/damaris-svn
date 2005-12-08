@@ -276,7 +276,9 @@ class Accumulation(Errorable, Drawable):
                                                                        type=numarray.Float64)
                         time_slice_data.attrs.start_time=numarray.array(1.0/self.sampling_rate*index[0],
                                                                         type=numarray.Float64)
+                        time_slice_data.flush()
             finally:
+                accu_group=None
                 self.lock.release()
                 hdffile.flush()
 

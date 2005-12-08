@@ -4,6 +4,7 @@ import codecs
 import os.path
 import traceback
 import tables
+import compiler
 
 import pygtk
 pygtk.require("2.0")
@@ -19,7 +20,9 @@ import matplotlib.figure
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
 from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
 
+import DataPool
 import script_interface
+
 
 class DamarisGUI:
 
@@ -57,9 +60,11 @@ class DamarisGUI:
 
         self.toolbar_init()
 
-        self.monitor_init()
+        self.monitor=MonitorWidgets(self.xml_gui)
 
         self.statusbar_init()
+
+        self.main_window.show_all()
 
     def glade_layout_init(self):
         glade_file=os.path.join(os.path.dirname(__file__),"damaris.glade")
@@ -72,69 +77,6 @@ class DamarisGUI:
         self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
         self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
         self.backend_statusbar_label = self.xml_gui.get_widget("statusbar_core_label")
-
-    def monitor_init(self):
-        """
-        initialize matplotlib widget
-        """
-
-        # Display footer:
-        self.display_x_scaling_combobox = self.xml_gui.get_widget("display_x_scaling_combobox")
-        self.display_y_scaling_combobox = self.xml_gui.get_widget("display_y_scaling_combobox")
-        self.display_source_combobox = gtk.combo_box_new_text()
-        self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
-        self.display_statistics_checkbutton = self.xml_gui.get_widget("display_statistics_checkbutton")
-
-        # insert monitor
-        # Matplot (Display_Table, 1st Row) --------------------------------------------------------
-
-        # Neue Abbildung erstellen
-        self.matplot_figure = matplotlib.figure.Figure()
-
-        # Standartplot erstellen (1 Reihe, 1 Zeile, Beginnend beim 1.) und der Abbildung
-        self.matplot_axes = self.matplot_figure.add_subplot(111)
-
-        # Achsen beschriften & Gitternetzlinien sichtbar machen
-        self.matplot_axes.grid(True)
-
-        # Ersten Plot erstellen und Referenz des ersten Eintrags im zurueckgegebenen Tupel speichern
-        # Voerst: graphen[0,1] = Real und Img-Kanal; [2,3] = Real-Fehler, [4,5] = Img-Fehler
-        #self.graphen = []
-        #self.measurementresultgraph=None
-
-        self.matplot_axes.set_ylim([0.0,1.0])
-        self.matplot_axes.set_xlim([0.0,1.0])
-        self.matplot_axes.set_autoscale_on(self.display_autoscaling_checkbutton.get_active())
-        
-        # Lineare y-/x-Skalierung
-        self.matplot_axes.set_yscale("linear")
-        self.matplot_axes.set_xscale("linear")
-
-        # Matplot in einen GTK-Rahmen stopfen
-        self.matplot_canvas = matplotlib.backends.backend_gtkagg.FigureCanvasGTKAgg(self.matplot_figure)
-
-        self.display_table = self.xml_gui.get_widget("display_table")
-        self.display_table.attach(self.matplot_canvas, 0, 6, 0, 1, gtk.EXPAND | gtk.FILL, gtk.EXPAND | gtk.FILL, 0, 0)
-        self.matplot_canvas.show()
-
-        # Matplot Toolbar hinzufuegen (Display_Table, 2. Zeile) 
-
-        self.matplot_toolbar = matplotlib.backends.backend_gtk.NavigationToolbar2GTK(self.matplot_canvas, self.main_window)
-        
-        self.display_table.attach(self.matplot_toolbar, 0, 1, 1, 2, gtk.FILL | gtk.EXPAND, 0, 0, 0)
-        self.matplot_toolbar.show()
-
-        # /Mathplot --------------------------------------------------------------------------------
-
-        self.display_source_combobox.set_active(0)
-        self.display_source_combobox.set_add_tearoffs(1)
-        self.display_x_scaling_combobox.set_active(0)
-        self.display_y_scaling_combobox.set_active(0)
-        self.display_x_scaling_combobox.set_sensitive(False)
-        self.display_y_scaling_combobox.set_sensitive(False)
-
-        # and events...
-        pass
     
     def toolbar_init(self):
         """
@@ -142,7 +84,6 @@ class DamarisGUI:
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
         self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
         self.toolbar_pause_button = self.xml_gui.get_widget("toolbar_pause_button")
-        self.toolbar_check_scripts_button = self.xml_gui.get_widget("toolbar_check_scripts_button")
         self.toolbar_exec_with_options_togglebutton = self.xml_gui.get_widget("toolbar_execute_with_options_button")
 
         # prepare for edit state
@@ -177,6 +118,8 @@ class DamarisGUI:
             self.state=DamarisGUI.Quit_State
             # do a cleanup...
             print "ToDo: Cleanup, Save Dialogs ..."
+            self.sw=None
+            self.monitor=None
             # and quit
             gtk.main_quit()
             return False
@@ -209,15 +152,12 @@ class DamarisGUI:
                                                      "/home/achim/damaris/backends/machines/Mobilecore.exe",
                                                      self.spool_dir)
 
-            self.si.data.register_listener(self.datapool_listener)
-            self.si.runScripts()
             self.data=self.si.data
+            self.monitor.observe_data_pool(self.data)
+            self.si.runScripts()
             # start data dump
-            self.dump_timeinterval=60*10
             self.dump_filename="DAMARIS_data_pool.h5"
             self.dump_states(init=True)
-            # set next dump time
-            self.next_dump_time=time.time()+self.dump_timeinterval
         except Exception, e:
             print "ToDo evaluate exception",str(e), "at",traceback.extract_tb(sys.exc_info()[2])[-1][1:3]
 
@@ -246,6 +186,8 @@ class DamarisGUI:
 
         # and observe it...
         gobject.timeout_add(400,self.observe_running_experiment)
+        dump_timeinterval=60*1 # in seconds
+        self.dump_states_event_id=gobject.timeout_add(dump_timeinterval*1000,self.dump_states)
 
     def observe_running_experiment(self):
         """
@@ -255,6 +197,9 @@ class DamarisGUI:
         # test whether backend and scripts are done
         e=self.si.data.get("__recentexperiment",-1)+1
         r=self.si.data.get("__recentresult",-1)+1
+        e_text=None
+        r_text=None
+        b_text=None
         if self.si.exp_handling is not None:
             if not self.si.exp_handling.isAlive():
                 self.si.exp_handling.join()
@@ -262,14 +207,13 @@ class DamarisGUI:
                     print "experiment script failed at line %d (function %s): %s"%(self.si.exp_handling.location[0],
                                                                                    self.si.exp_handling.location[1],
                                                                                    self.si.exp_handling.raised_exception)
-                    self.experiment_script_statusbar_label.set_text("Experiment Script Failed (%d)"%e)
+                    e_text="Experiment Script Failed (%d)"%e
                 else:
-                    self.experiment_script_statusbar_label.set_text("Experiment Script Finished (%d)"%e)
+                    e_text="Experiment Script Finished (%d)"%e
                     print "experiment script finished"
                 self.si.exp_handling = None
             else:
-                self.experiment_script_statusbar_label.set_text("Experiment Script Running (%d)"%e)
-
+                e_text="Experiment Script Running (%d)"%e
 
         if self.si.res_handling is not None:
             if not self.si.res_handling.isAlive():
@@ -278,18 +222,27 @@ class DamarisGUI:
                     print "result script failed at line %d (function %s): %s"%(self.si.res_handling.location[0],
                                                                                self.si.res_handling.location[1],
                                                                                self.si.res_handling.raised_exception)
-                    self.data_handling_statusbar_label.set_text("Result Script Failed (%d)"%r)
+                    r_text="Result Script Failed (%d)"%r
                 else:
-                    self.data_handling_statusbar_label.set_text("Result Script Finished (%d)"%r)
+                    r_text="Result Script Finished (%d)"%r
                 self.si.res_handling = None
             else:
-                self.data_handling_statusbar_label.set_text("Result Script Running (%d)"%r)
+                r_text="Result Script Running (%d)"%r
 
         if self.si.back_driver is not None:
             if not self.si.back_driver.isAlive():
-                self.backend_statusbar_label.set_text("Backend Finished")
+                b_text="Backend Finished"
                 self.si.back_driver.join()
                 self.si.back_driver = None
+
+        gtk.gdk.threads_enter()
+        if e_text:
+            self.experiment_script_statusbar_label.set_text(e_text)
+        if r_text:
+                self.data_handling_statusbar_label.set_text(r_text)
+        if b_text:
+                self.backend_statusbar_label.set_text(b_text)
+        gtk.gdk.threads_leave()
 
         still_running=filter(None,[self.si.exp_handling, self.si.res_handling, self.si.back_driver])
 
@@ -301,28 +254,36 @@ class DamarisGUI:
             if len(still_running)!=0:
                 print "subprocesses still running:", map(lambda s:s.getName(),still_running)
                 return True
+
+            if not self.dump_states_event_id is None:
+                gobject.source_remove(self.dump_states_event_id)
+            self.dump_states()
+            self.dump_states_event_id=None
+            
             # now everything is stopped
             self.state=DamarisGUI.Edit_State
+            gtk.gdk.threads_enter()
             self.sw.enable_editing()
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_stop_button.set_sensitive(False)
             self.toolbar_pause_button.set_sensitive(False)
-            self.dump_states()
+            gtk.gdk.threads_leave()
 
             # keep data to display but throw away everything else
             self.si=None
 
             return False
 
-        # dump contents if dump interval is elapsed
-        if self.next_dump_time<time.time():
-            self.dump_states()
-            self.next_dump_time+=self.dump_timeinterval
-
         # or look at them again
         return True
 
     def dump_states(self, init=False):
+
+        class dump_file_timeline(tables.IsDescription):
+            time=tables.StringCol(length=len("YYYYMMDD HH:MM:SS"))
+            experiments=tables.Int64Col()
+            results=tables.Int64Col()
+
         if init:
             # dump all information to a file
             print "ToDo: move away old dump file"
@@ -337,15 +298,13 @@ class DamarisGUI:
                 dump_file.createArray(scriptgroup,"backend_executable", self.si.backend_executable)
             if self.si.spool_dir:
                 dump_file.createArray(scriptgroup,"spool_directory", self.spool_dir)
-            dump_file_timeline={"time": tables.StringCol(len("YYYYMMDD HH:MM:SS")),
-                                "experiments": tables.Int64Col(),
-                                "results": tables.Int64Col()}
-            dump_file.createTable("/","timeline", dump_file_timeline, title="Timeline of Experiment")
-            timeline_row=dump_file.root.timeline.row
+            timeline_table=dump_file.createTable("/","timeline", dump_file_timeline, title="Timeline of Experiment")
+            timeline_row=timeline_table.row
             timeline_row["time"]=time.strftime("%Y%m%d %H:%M:%S")
             timeline_row["experiments"]=0
             timeline_row["results"]=0
             timeline_row.append()
+            timeline_table.flush()
         else:
             # repack file
             os.rename(self.dump_filename,self.dump_filename+".bak")
@@ -360,17 +319,21 @@ class DamarisGUI:
             dump_file=tables.openFile(self.dump_filename,mode="r+")
             e=self.si.data.get("__recentexperiment",-1)+1
             r=self.si.data.get("__recentresult",-1)+1
-            timeline_row=dump_file.root.timeline.row
+            timeline_table=dump_file.root.timeline
+            timeline_row=timeline_table.row
             timeline_row["time"]=time.strftime("%Y%m%d %H:%M:%S")
             timeline_row["experiments"]=e
             timeline_row["results"]=r
             timeline_row.append()
+            timeline_table.flush()
 
         self.data.write_hdf5(dump_file, where="/", name="data_pool")
         
         dump_file.flush()
         dump_file.close()
         dump_file=None
+
+        return True
         
     def pause_experiment(self, widget, data = None):
         """
@@ -412,27 +375,13 @@ class DamarisGUI:
             self.state=DamarisGUI.Stop_State
             self.toolbar_pause_button.set_sensitive(False)
 
-    def datapool_listener(self, event):
-        #if event.subject[:2]!="__":
-        #    print "Event:", event.subject
-        return
-        if event.subject=="__recentexperiment":
-            e=event.origin.get("__recentexperiment",-1)+1
-        if event.subject=="__recentresult":
-            r=event.origin.get("__recentresult",-1)+1
-#             if e!=0:
-#                 ratio=100.0*r/e
-#             else:
-#                 ratio=100.0
-#             print "\r%d/%d (%.0f%%)"%(r,e,ratio),
-
 class ScriptWidgets:
 
     def __init__(self, xml_gui):
-        self.xml_gui=xml_gui
         """
         initialize text widgets with text
         """
+        self.xml_gui=xml_gui
 
         # my states
         # editing enabled/disabled
@@ -475,12 +424,14 @@ class ScriptWidgets:
         self.toolbar_save_button = self.xml_gui.get_widget("toolbar_save_file_button")
         self.toolbar_save_as_button = self.xml_gui.get_widget("toolbar_save_as_button")
         self.toolbar_save_all_button = self.xml_gui.get_widget("toolbar_save_all_button")
+        self.toolbar_check_scripts_button = self.xml_gui.get_widget("toolbar_check_scripts_button")
         # events
         self.xml_gui.signal_connect("on_toolbar_open_file_button_clicked", self.open_file)
         self.xml_gui.signal_connect("on_toolbar_new_button_clicked", self.new_file)
         self.xml_gui.signal_connect("on_toolbar_save_as_button_clicked", self.save_file_as)
         self.xml_gui.signal_connect("on_toolbar_save_file_button_clicked", self.save_file)
         self.xml_gui.signal_connect("on_toolbar_save_all_button_clicked", self.save_all_files)
+        self.xml_gui.signal_connect("on_toolbar_check_scripts_button_clicked",self.check_script)
 
         # my notebook
         self.main_notebook = self.xml_gui.get_widget("main_notebook")
@@ -559,6 +510,7 @@ class ScriptWidgets:
             self.toolbar_save_button.set_sensitive(enable_save)
             self.toolbar_save_as_button.set_sensitive(True)
             self.toolbar_save_all_button.set_sensitive(exp_modified or res_modified)
+            self.toolbar_check_scripts_button.set_sensitive(True)
         else:
             # disable toolbar
             self.toolbar_new_button.set_sensitive(False)
@@ -566,8 +518,22 @@ class ScriptWidgets:
             self.toolbar_save_button.set_sensitive(False)
             self.toolbar_save_as_button.set_sensitive(False)
             self.toolbar_save_all_button.set_sensitive(False)
+            self.toolbar_check_scripts_button.set_sensitive(False)
 
     # text widget related events
+
+    def check_script(self, widget, data=None):
+        if not self.editing_state: return 0
+        
+        current_page=self.main_notebook.get_current_page()
+        if not current_page in [0,1]: return 0
+        script=self.get_scripts()[current_page]
+        try:
+            compiler.parse(script)
+        except SyntaxError, se:
+            print "Syntax Error:", str(se), se.lineno, se.offset,"(ToDo: Dialog)"
+        except Exception, e:
+            print "Compilation Error:", str(e),"(ToDo: Dialog)"
 
     def notebook_page_switched(self, notebook, page, pagenumber):
         self.set_toolbuttons_status()
@@ -853,6 +819,142 @@ class ScriptWidgets:
                 print "ToDo: Save before Clear Dialog"
             self.set_scripts(None, "")
             self.res_script_filename=None
+
+
+class MonitorWidgets:
+    
+    def __init__(self, xml_gui):
+        """
+        initialize matplotlib widgets and stuff around
+        """
+
+        self.xml_gui=xml_gui
+        self.main_window = self.xml_gui.get_widget("main_window")
+        self.display_settings_frame = self.xml_gui.get_widget("display_settings_frame")
+
+        # Display footer:
+        self.display_x_scaling_combobox = self.xml_gui.get_widget("display_x_scaling_combobox")
+        self.display_y_scaling_combobox = self.xml_gui.get_widget("display_y_scaling_combobox")
+        self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
+        self.display_statistics_checkbutton = self.xml_gui.get_widget("display_statistics_checkbutton")
+
+        # insert monitor
+        # Matplot (Display_Table, 1st Row) --------------------------------------------------------
+
+        # Neue Abbildung erstellen
+        self.matplot_figure = matplotlib.figure.Figure()
+
+        # Standartplot erstellen (1 Reihe, 1 Zeile, Beginnend beim 1.) und der Abbildung
+        self.matplot_axes = self.matplot_figure.add_subplot(111)
+
+        # Achsen beschriften & Gitternetzlinien sichtbar machen
+        self.matplot_axes.grid(True)
+
+        # Ersten Plot erstellen und Referenz des ersten Eintrags im zurueckgegebenen Tupel speichern
+        # Voerst: graphen[0,1] = Real und Img-Kanal; [2,3] = Real-Fehler, [4,5] = Img-Fehler
+        #self.graphen = []
+        #self.measurementresultgraph=None
+
+        self.matplot_axes.set_ylim([0.0,1.0])
+        self.matplot_axes.set_xlim([0.0,1.0])
+        self.matplot_axes.set_autoscale_on(self.display_autoscaling_checkbutton.get_active())
+        
+        # Lineare y-/x-Skalierung
+        self.matplot_axes.set_yscale("linear")
+        self.matplot_axes.set_xscale("linear")
+
+        # Matplot in einen GTK-Rahmen stopfen
+        self.matplot_canvas = matplotlib.backends.backend_gtkagg.FigureCanvasGTKAgg(self.matplot_figure)
+
+        self.display_table = self.xml_gui.get_widget("display_table")
+        self.display_table.attach(self.matplot_canvas, 0, 6, 0, 1, gtk.EXPAND | gtk.FILL, gtk.EXPAND | gtk.FILL, 0, 0)
+        self.matplot_canvas.show()
+
+        # Matplot Toolbar hinzufuegen (Display_Table, 2. Zeile) 
+
+        self.matplot_toolbar = matplotlib.backends.backend_gtk.NavigationToolbar2GTK(self.matplot_canvas, self.main_window)
+        
+        self.display_table.attach(self.matplot_toolbar, 0, 1, 1, 2, gtk.FILL | gtk.EXPAND, 0, 0, 0)
+        self.matplot_toolbar.show()
+
+        # /Mathplot --------------------------------------------------------------------------------
+
+        # display source
+        self.display_source_liststore = gtk.ListStore(gobject.TYPE_STRING)
+        self.display_source_combobox = gtk.ComboBox(self.display_source_liststore)
+
+        self.display_source_cell = gtk.CellRendererText()
+        self.display_source_combobox.pack_start(self.display_source_cell, True)
+        self.display_source_combobox.add_attribute(self.display_source_cell, 'text', 0)
+        self.display_source_liststore.append(['None'])
+        self.display_source_combobox.set_active(0)
+        self.display_source_combobox.set_add_tearoffs(1)
+        self.display_settings_frame.attach(self.display_source_combobox, 1, 2, 0, 1,  gtk.FILL, gtk.FILL, 3, 0)
+
+        # display scaling
+        self.display_x_scaling_combobox.set_active(0)
+        self.display_y_scaling_combobox.set_active(0)
+        self.display_x_scaling_combobox.set_sensitive(False)
+        self.display_y_scaling_combobox.set_sensitive(False)
+
+        # and events...
+        self.display_source_combobox.connect("changed", self.display_source_changed_event)
+            
+        # data to observe
+        self.data_pool=None
+
+    def observe_data_pool(self, data_pool):
+        """
+        register a listener and save reference to data
+        """
+        if not self.data_pool is None:
+            # maybe some extra cleanup needed
+            print "ToDo: cleanup widgets"
+            self.data_pool.unregister_listener(self.datapool_listener)
+            self.data_pool=None
+            self.display_source_liststore.clear()
+            self.display_source_liststore.append(['None'])
+            self.display_source_combobox.set_active(0)
+            
+        self.data_pool=data_pool
+        self.data_pool.register_listener(self.datapool_listener)
+
+    def datapool_listener(self, event):
+        """
+        sort data as fast as possible and get rid of non-interesting data
+        """
+        if event.subject[:2]!="__":
+
+            gobject.idle_add(self.datapool_idle_listener,event)
+
+    def datapool_idle_listener(self,event):
+        # print "Event:", event.subject
+
+        if event.what==DataPool.DataPool.Event.new_key:
+            # update combo-box by inserting and rely on consistent information
+            gtk.gdk.threads_enter()
+            self.display_source_liststore.append([event.subject])
+            gtk.gdk.threads_leave()
+        elif event.what==DataPool.DataPool.Event.deleted_key:
+            # update combo-box by removing and rely on consistent information
+            gtk.gdk.threads_enter()
+            i=self.display_source_liststore.get_iter_first()
+            while not i is None:
+                if self.display_source_liststore.get(i,0)[0]==event.subject:
+                    self.display_source_liststore.remove(i)
+                    break
+                i=self.display_source_liststore.iter_next(i)
+            gtk.gdk.threads_leave()
+        elif event.what==DataPool.DataPool.Event.destroy:
+            self.display_source_liststore.clear()
+            self.display_source_liststore.append(['None'])
+            self.display_source_combobox.set_active(0)
+            
+        return
+
+    def display_source_changed_event(self, widget, data=None):
+        a=self.display_source_combobox.get_active_iter()
+        print "changed to",self.display_source_liststore.get(a,0)[0]
 
 if __name__=="__main__":
 
