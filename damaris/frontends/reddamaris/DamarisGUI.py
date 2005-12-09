@@ -21,6 +21,10 @@ from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanva
 from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
 
 import DataPool
+import Accumulation
+import ADC_Result
+import Drawable
+import MeasurementResult
 import script_interface
 
 
@@ -396,6 +400,9 @@ class ScriptWidgets:
         self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
         self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
         self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
+        # modify script fonts
+        self.experiment_script_textview.modify_font(pango.FontDescription("Courier 12"))
+        self.data_handling_textview.modify_font(pango.FontDescription("Courier 12"))
 
         # statusbar
         self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
@@ -464,10 +471,10 @@ class ScriptWidgets:
         returns scripts
         """
         exp_script=self.experiment_script_textbuffer.get_text(self.experiment_script_textbuffer.get_start_iter(),
-                                                              self.experiment_script_textbuffer.get_end_iter())
+                                                              self.experiment_script_textbuffer.get_end_iter()).rstrip()
         res_script=self.data_handling_textbuffer.get_text(self.data_handling_textbuffer.get_start_iter(),
-                                                                 self.data_handling_textbuffer.get_end_iter())
-        return (exp_script,res_script)
+                                                                 self.data_handling_textbuffer.get_end_iter()).rstrip()
+        return (exp_script, res_script)
 
     def disable_editing(self):
         """
@@ -899,38 +906,108 @@ class MonitorWidgets:
 
         # and events...
         self.display_source_combobox.connect("changed", self.display_source_changed_event)
-            
+        self.xml_gui.signal_connect("on_display_autoscaling_checkbutton_toggled", self.display_autoscaling_toggled)
+        self.xml_gui.signal_connect("on_display_statistics_checkbutton_toggled", self.display_statistics_toggled)
+        #self.xml_gui.signal_connect("on_display_x_scaling_combobox_changed", self.display_x_scaling_changed)
+        #self.xml_gui.signal_connect("on_display_y_scaling_combobox_changed", self.display_y_scaling_changed)
+        self.xml_gui.signal_connect("on_display_save_data_as_text_button_clicked", self.save_display_data_as_text)
+
         # data to observe
         self.data_pool=None
+        # name of displayed data and reference to data
+        self.displayed_data=[None,None]
+        self.__rescale=True
+        self.update_counter=0
 
     def observe_data_pool(self, data_pool):
         """
         register a listener and save reference to data
+        assume to be in gtk/gdk lock
         """
         if not self.data_pool is None:
             # maybe some extra cleanup needed
             print "ToDo: cleanup widgets"
+            if self.displayed_data[1] is not None and "unregister_listener" in dir(self.displayed_data[1]):
+                    self.displayed_data[1].unregister_listener(self.datastructures_listener)
+                    self.displayed_data[1]=None
+            self.displayed_data=[None,None]
             self.data_pool.unregister_listener(self.datapool_listener)
             self.data_pool=None
+
             self.display_source_liststore.clear()
             self.display_source_liststore.append(['None'])
             self.display_source_combobox.set_active(0)
-            
-        self.data_pool=data_pool
-        self.data_pool.register_listener(self.datapool_listener)
+            self.clear_display()
+            self.update_counter=0
+
+        if data_pool is not None:
+            # keep track of data
+            self.data_pool=data_pool
+            self.data_pool.register_listener(self.datapool_listener)
+
+        # display states
+        self.__rescale=True
+        self.displayed_data=[None,None]
+
+    #################### observing data structures and produce idle events
 
     def datapool_listener(self, event):
         """
         sort data as fast as possible and get rid of non-interesting data
         """
-        if event.subject[:2]!="__":
+        if event.subject[:2]=="__": return
+        if event.what==DataPool.DataPool.Event.updated_value:
+            if self.displayed_data[0] is None or event.subject!=self.displayed_data[0]:
+                # do nothing, forget it
+                return
+            if self.displayed_data[1] is self.data_pool[event.subject]:
+                # oh, another category
+                gobject.idle_add(self.update_display_idle_event,self.displayed_data[0][:])
+                return
 
-            gobject.idle_add(self.datapool_idle_listener,event)
+        gobject.idle_add(self.datapool_idle_listener,event)
+        
+    def datastructures_listener(self, event):
+        """
+        do fast work selecting important events
+        """
+        if event.origin is not self.displayed_data[1]: return
+        self.update_counter+=1
+        gobject.idle_add(self.update_display_idle_event,self.displayed_data[0][:])
+
+    ################### consume idle events
 
     def datapool_idle_listener(self,event):
-        # print "Event:", event.subject
-
-        if event.what==DataPool.DataPool.Event.new_key:
+        """
+        here dictionary changes are done
+        """
+        if event.what==DataPool.DataPool.Event.updated_value:
+            if (self.displayed_data[0] is not None and
+                self.displayed_data[0]==event.subject):
+                new_data_struct=self.data_pool[self.displayed_data[0]]
+                if self.displayed_data[1] is new_data_struct:
+                    # update display only
+                    gtk.gdk.threads_enter()
+                    try:
+                        self.update_display()
+                    finally:
+                        gtk.gdk.threads_leave()
+                else:
+                    # unregister old one
+                    if self.displayed_data[1] is not None and "unregister_listener" in dir(self.displayed_data[1]):
+                        self.displayed_data[1].unregister_listener(self.datastructures_listener)
+                        self.displayed_data[1]=None
+                    # register new one
+                    if "register_listener" in dir(new_data_struct):
+                        new_data_struct.register_listener(self.datastructures_listener)
+                    self.displayed_data[1]=new_data_struct
+                    gtk.gdk.threads_enter()
+                    try:
+                        self.renew_display()
+                    finally:
+                        gtk.gdk.threads_leave()
+                new_data_struct=None
+        elif event.what==DataPool.DataPool.Event.new_key:
             # update combo-box by inserting and rely on consistent information
             gtk.gdk.threads_enter()
             self.display_source_liststore.append([event.subject])
@@ -938,6 +1015,11 @@ class MonitorWidgets:
         elif event.what==DataPool.DataPool.Event.deleted_key:
             # update combo-box by removing and rely on consistent information
             gtk.gdk.threads_enter()
+            if (not self.displayed_data[0] is None and
+                self.displayed_data[0]==event.subject):
+                self.displayed_data=[None,None]
+                self.display_source_combobox.set_active(0)
+                self.clear_display()
             i=self.display_source_liststore.get_iter_first()
             while not i is None:
                 if self.display_source_liststore.get(i,0)[0]==event.subject:
@@ -946,15 +1028,243 @@ class MonitorWidgets:
                 i=self.display_source_liststore.iter_next(i)
             gtk.gdk.threads_leave()
         elif event.what==DataPool.DataPool.Event.destroy:
+            gtk.gdk.threads_enter()
             self.display_source_liststore.clear()
             self.display_source_liststore.append(['None'])
             self.display_source_combobox.set_active(0)
-            
+            self.displayed_data=[None,None]
+            self.clear_display()
+            gtk.gdk.threads_leave()
         return
 
+    def update_display_idle_event(self, subject=None):
+        self.update_counter-=1
+        if self.update_counter>10:
+            print "update queue too long (%d>10): throwing away things"%self.update_counter
+            return
+        if self.displayed_data[0] is None or subject!=self.displayed_data[0]:
+            return
+        gtk.gdk.threads_enter()
+        try:
+            self.update_display()
+        finally:
+            gtk.gdk.threads_leave()
+
+
+    ######################## events from buttons
+
     def display_source_changed_event(self, widget, data=None):
-        a=self.display_source_combobox.get_active_iter()
-        print "changed to",self.display_source_liststore.get(a,0)[0]
+        ai=self.display_source_combobox.get_active_iter()
+        new_data_name=str(self.display_source_liststore.get(ai,0)[0])
+        if (self.displayed_data[0] is None and new_data_name=="None"): return
+        if (self.displayed_data[0]==new_data_name): return
+        if self.displayed_data[1] is not None and "unregister_listener" in dir(self.displayed_data[1]):
+            self.displayed_data[1].unregister_listener(self.datastructures_listener)
+            self.displayed_data[1]=None
+            # register new one
+        if new_data_name=="None":
+            self.displayed_data=[None,None]
+            self.clear_display()
+        else:
+            new_data_struct=self.data_pool[new_data_name]
+            if "register_listener" in dir(new_data_struct):
+                new_data_struct.register_listener(self.datastructures_listener)
+            self.displayed_data=[new_data_name,new_data_struct]
+            self.renew_display()
+
+    def display_autoscaling_toggled(self, widget, data=None):
+        self.update_display(self.displayed_data[0][:])
+
+    def display_statistics_toggled(self, widget, data=None):
+        self.update_display(self.displayed_data[0][:])
+
+    def save_display_data_as_text(self, widget, data=None):
+        print "ToDo Save Data"
+
+
+    ##################### functions to feed display
+
+    def clear_display(self):
+        """
+        unconditionally throw away everything
+        we are inside gtk/gdk lock
+        """
+        if "__rescale" not in dir(self):
+            self.__rescale = True
+        if "measurementresultgraph" not in dir(self):
+            self.measurementresultgraph=None
+        elif self.measurementresultgraph is not None:
+            # clear errorbars
+            self.matplot_axes.lines.remove(self.measurementresultgraph[0])
+            for l in self.measurementresultgraph[1]:
+                self.matplot_axes.lines.remove(l)
+            self.measurementresultgraph=None
+            self.matplot_axes.clear()
+            self.matplot_axes.grid(True)
+        if "graphen" not in dir(self):
+            self.graphen=[]
+        elif self.graphen:
+            for l in self.graphen:
+                self.matplot_axes.lines.remove(l)
+            self.graphen=[]
+            self.matplot_axes.clear()
+            self.matplot_axes.grid(True)
+        self.matplot_canvas.draw()
+
+    def update_display(self, subject=None):
+        """
+        try to recycle labels, data, lines....
+        assume, object is not changed
+        we are inside gtk/gdk lock
+        """
+        in_result=self.data_pool[self.displayed_data[0]]
+        if isinstance(in_result, Accumulation.Accumulation) or isinstance(in_result, ADC_Result.ADC_Result):
+            # directly taken from bluedamaris
+            if len(self.graphen)==0:
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 2))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 2))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
+
+            xmin = in_result.get_xmin()
+            xmax = in_result.get_xmax()
+            ymin = in_result.get_ymin()
+            ymax = in_result.get_ymax()
+
+            # Check for log-scale
+            if xmin <= 0 or xmax <= 0:
+                self.display_x_scaling_combobox.set_sensitive(False)
+                self.display_x_scaling_combobox.set_active(0)
+            else:
+                self.display_x_scaling_combobox.set_sensitive(True)
+
+            if ymin <= 0 or ymax <= 0:
+                self.display_y_scaling_combobox.set_sensitive(False)
+                self.display_y_scaling_combobox.set_active(0)
+            else:
+                self.display_y_scaling_combobox.set_sensitive(True)   
+
+
+            # Initial rescaling needed?
+            if self.__rescale:
+                self.matplot_axes.set_xlim(xmin, xmax)
+                self.matplot_axes.set_ylim(ymin, ymax)
+                self.__rescale = False
+
+            # Autoscaling activated?
+            elif self.display_autoscaling_checkbutton.get_active():
+                if [xmin, xmax] != self.matplot_axes.get_xlim():
+                    self.matplot_axes.set_xlim(xmin, xmax)
+
+                # Rescale if new max is larger than old_ymax, simialar rules apply to ymin
+                [self.__old_ymin, self.__old_ymax] = self.matplot_axes.get_ylim()
+                ydiff=ymax-ymin
+                if (self.__old_ymax < ymax or self.__old_ymin > ymin or
+                    self.__old_ymax > ymax+0.2*ydiff or self.__old_ymin < ymin-0.2*ydiff):
+                    self.matplot_axes.set_ylim(ymin, ymax)
+
+            xdata=in_result.get_xdata()
+            ydata0=in_result.get_ydata(0)
+            ydata1=in_result.get_ydata(1)
+            self.graphen[0].set_data(xdata, ydata0)
+            self.graphen[1].set_data(xdata, ydata1)
+
+            # Statistics activated?
+            if (self.display_statistics_checkbutton.get_active() and
+                in_result.uses_statistics() and in_result.ready_for_drawing_error()):
+                # Real-Fehler
+                self.graphen[2].set_data(xdata, ydata0 + in_result.get_yerr(0))
+                self.graphen[3].set_data(xdata, ydata0 - in_result.get_yerr(0))
+                # Img-Fehler
+                self.graphen[4].set_data(xdata, ydata1 + in_result.get_yerr(1))
+                self.graphen[5].set_data(xdata, ydata1 - in_result.get_yerr(1))
+            else:
+                # Maybe theres a better place for deleting the error-lines
+                # Real-Fehler
+                self.graphen[2].set_data([0.0],[0.0])
+                self.graphen[3].set_data([0.0],[0.0])
+                # Img-Fehler
+                self.graphen[4].set_data([0.0],[0.0])
+                self.graphen[5].set_data([0.0],[0.0])
+            xdata=ydata0=ydata1=None
+
+            # Any title to be set?
+            if in_result.get_title() is not None:
+                self.matplot_axes.set_title(in_result.get_title())
+            else:
+                self.matplot_axes.set_title("")
+
+
+            # Any labels to be set?
+            if in_result.get_xlabel() is not None:
+                self.matplot_axes.set_xlabel(in_result.get_xlabel())
+            else:
+                self.matplot_axes.set_xlabel("")
+
+            if in_result.get_ylabel() is not None:
+                self.matplot_axes.set_ylabel(in_result.get_ylabel())
+            else:
+                self.matplot_axes.set_ylabel("")
+
+            # Draw it!
+            self.matplot_canvas.draw()
+            in_result=None
+            
+        elif isinstance(in_result, MeasurementResult.MeasurementResult):
+            # directly taken from bluedamaris
+            # remove lines and error bars
+            if self.measurementresultgraph is not None:
+                self.matplot_axes.lines.remove(self.measurementresultgraph[0])
+                for l in self.measurementresultgraph[1]:
+                    self.matplot_axes.lines.remove(l)
+                self.measurementresultgraph=None
+
+            [k,v,e]=in_result.get_errorplotdata()
+            # Initial rescaling needed?
+            if self.__rescale or self.display_autoscaling_checkbutton.get_active():
+                if len(k):
+                    xmin=min(k)
+                    xmax=max(k)
+                    ymin=min(map(lambda i:v[i]-e[i],xrange(len(v))))
+                    ymax=max(map(lambda i:v[i]+e[i],xrange(len(v))))
+                    self.__rescale = False
+                else:
+                    xmin=-1
+                    xmax=1
+                    ymin=-1
+                    ymax=1
+                    self.__rescale = True
+                
+                self.matplot_axes.set_xlim(xmin, xmax)
+                self.matplot_axes.set_ylim(ymin, ymax)
+
+            # add error bars
+            self.measurementresultgraph=self.matplot_axes.errorbar(x=k, y=v, yerr=e, fmt="b+")
+            k=v=e=None
+
+            # Any title to be set?
+            title=in_result.get_title()+""
+            if title is not None:
+                self.matplot_axes.set_title(title)
+            else:
+                self.matplot_axes.set_title("")
+
+            self.matplot_canvas.draw()
+            in_result=None        
+
+    def renew_display(self):
+        """
+        set all properties of display
+        we are inside gtk/gdk lock
+        """
+        self.clear_display()
+        to_draw=self.data_pool[self.displayed_data[0]]
+
+        if to_draw is None: return
+        self.update_display()
+
 
 if __name__=="__main__":
 
