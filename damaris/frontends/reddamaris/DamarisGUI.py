@@ -164,10 +164,16 @@ class DamarisGUI:
             self.dump_states(init=True)
         except Exception, e:
             print "ToDo evaluate exception",str(e), "at",traceback.extract_tb(sys.exc_info()[2])[-1][1:3]
+            print "Full traceback:"
+            traceback_file=StringIO.StringIO()
+            traceback.print_tb(sys.exc_info()[2], None, traceback_file)
+            print traceback_file.getvalue()
+            traceback_file=None
 
             still_running=filter(None,[self.si.exp_handling,self.si.res_handling,self.si.back_driver])
             for r in still_running:
                 r.quit_flag.set()
+            print "ToDo: enforce finishing components and join the threads"
 
             # cleanup
             self.si=None
@@ -190,7 +196,7 @@ class DamarisGUI:
 
         # and observe it...
         gobject.timeout_add(400,self.observe_running_experiment)
-        dump_timeinterval=60*1 # in seconds
+        dump_timeinterval=60*10 # in seconds
         self.dump_states_event_id=gobject.timeout_add(dump_timeinterval*1000,self.dump_states)
 
     def observe_running_experiment(self):
@@ -211,6 +217,7 @@ class DamarisGUI:
                     print "experiment script failed at line %d (function %s): %s"%(self.si.exp_handling.location[0],
                                                                                    self.si.exp_handling.location[1],
                                                                                    self.si.exp_handling.raised_exception)
+                    print "Full traceback", self.traceback
                     e_text="Experiment Script Failed (%d)"%e
                 else:
                     e_text="Experiment Script Finished (%d)"%e
@@ -226,6 +233,7 @@ class DamarisGUI:
                     print "result script failed at line %d (function %s): %s"%(self.si.res_handling.location[0],
                                                                                self.si.res_handling.location[1],
                                                                                self.si.res_handling.raised_exception)
+                    print "Full traceback", self.traceback
                     r_text="Result Script Failed (%d)"%r
                 else:
                     r_text="Result Script Finished (%d)"%r
@@ -1227,8 +1235,12 @@ class MonitorWidgets:
                 if len(k):
                     xmin=min(k)
                     xmax=max(k)
+                    # fix range and scaling problems
+                    if xmin==xmax: (xmin,xmax)=(xmin-1, xmin+1)
                     ymin=min(map(lambda i:v[i]-e[i],xrange(len(v))))
                     ymax=max(map(lambda i:v[i]+e[i],xrange(len(v))))
+                    # fix range and scaling problems
+                    if ymin==ymax: (ymin,ymax)=(ymin-1,ymin+1)
                     self.__rescale = False
                 else:
                     xmin=-1
