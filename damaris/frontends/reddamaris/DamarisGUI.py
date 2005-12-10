@@ -1,5 +1,6 @@
 import time
 import sys
+import StringIO
 import codecs
 import os.path
 import traceback
@@ -44,9 +45,6 @@ class DamarisGUI:
     def __init__(self):
 
         gtk.gdk.threads_init()
-        #all my state variables
-        # active display... (do I really need it?)
-        self.active_display=DamarisGUI.ExpScript_Display
 
         # state: edit, run, stop, quit
         # state transitions:
@@ -55,6 +53,10 @@ class DamarisGUI:
         # pause -> run|stop
         # stop -> edit
         self.state=DamarisGUI.Edit_State
+        # script execution engines and backend driver
+        self.si = None
+        # produced and displayed data
+        self.data = None
         
         self.glade_layout_init()
         # my notebook
@@ -148,15 +150,24 @@ class DamarisGUI:
         # get scripts and start script interface
         exp_script, res_script=self.sw.get_scripts()
 
+        # something running?
+        if self.si is not None:
+            print "Last Experiment is not clearly stopped!"
+        self.si = None
+        self.data = None
+        self.monitor.observe_data_pool(self.data)
+        
+        # start experiment
         try:
-            # start experiment
             self.spool_dir=os.path.abspath("spool")
+            # setup script engines
             self.si=script_interface.ScriptInterface(exp_script,
                                                      res_script,
                                                      "/home/achim/damaris/backends/machines/Mobilecore.exe",
                                                      self.spool_dir)
 
             self.data=self.si.data
+            # run frontend and script engines
             self.monitor.observe_data_pool(self.data)
             self.si.runScripts()
             # start data dump
@@ -170,14 +181,19 @@ class DamarisGUI:
             print traceback_file.getvalue()
             traceback_file=None
 
-            still_running=filter(None,[self.si.exp_handling,self.si.res_handling,self.si.back_driver])
-            for r in still_running:
-                r.quit_flag.set()
-            print "ToDo: enforce finishing components and join the threads"
+            self.data=None
+            if self.si is not None:
+                still_running=filter(None,[self.si.exp_handling,self.si.res_handling,self.si.back_driver])
+                for r in still_running:
+                    r.quit_flag.set()
+                print "waiting for threads stoping...",
+                still_running=filter(None,[self.si.exp_handling, self.si.res_handling, self.si.back_driver])
+                for t in still_running:
+                    t.join()
+                print "done"
 
             # cleanup
             self.si=None
-            self.data=None
             self.state=DamarisGUI.Edit_State
             self.sw.enable_editing()
             self.toolbar_run_button.set_sensitive(True)
@@ -381,6 +397,7 @@ class DamarisGUI:
 
     def stop_experiment(self, widget, data = None):
         if self.state in [DamarisGUI.Run_State, DamarisGUI.Pause_State]:
+            if self.si is None: return
             still_running=filter(None,[self.si.exp_handling,self.si.res_handling,self.si.back_driver])
             for r in still_running:
                 r.quit_flag.set()
@@ -409,8 +426,8 @@ class ScriptWidgets:
         self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
         self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
         # modify script fonts
-        self.experiment_script_textview.modify_font(pango.FontDescription("Courier 12"))
-        self.data_handling_textview.modify_font(pango.FontDescription("Courier 12"))
+        self.experiment_script_textview.modify_font(pango.FontDescription("Courier 14"))
+        self.data_handling_textview.modify_font(pango.FontDescription("Courier 14"))
 
         # statusbar
         self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
@@ -547,8 +564,17 @@ class ScriptWidgets:
             compiler.parse(script)
         except SyntaxError, se:
             print "Syntax Error:", str(se), se.lineno, se.offset,"(ToDo: Dialog)"
+            if current_page==0:
+                new_place=self.experiment_script_textbuffer.get_iter_at_line_offset(se.lineno-1, se.offset-1)
+                self.experiment_script_textbuffer.place_cursor(new_place)
+                self.experiment_script_textview.scroll_to_iter(new_place, 0.2, False, 0,0)
+            elif current_page==1:
+                new_place=self.data_handling_textbuffer.get_iter_at_line_offset(se.lineno-1, se.offset-1)
+                self.data_handling_textbuffer.place_cursor(new_place)
+                self.data_handling_textview.scroll_to_iter(new_place, 0.2, False, 0,0)
         except Exception, e:
             print "Compilation Error:", str(e),"(ToDo: Dialog)"
+
 
     def notebook_page_switched(self, notebook, page, pagenumber):
         self.set_toolbuttons_status()
@@ -1081,10 +1107,12 @@ class MonitorWidgets:
             self.renew_display()
 
     def display_autoscaling_toggled(self, widget, data=None):
-        self.update_display(self.displayed_data[0][:])
+        if self.displayed_data[0] is not None:
+            self.update_display(self.displayed_data[0][:])
 
     def display_statistics_toggled(self, widget, data=None):
-        self.update_display(self.displayed_data[0][:])
+        if self.displayed_data[0] is not None:
+            self.update_display(self.displayed_data[0][:])
 
     def save_display_data_as_text(self, widget, data=None):
         print "ToDo Save Data"
