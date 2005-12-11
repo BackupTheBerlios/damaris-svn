@@ -104,13 +104,15 @@ class DamarisGUI:
         self.xml_gui.signal_connect("on_toolbar_execute_with_options_button_clicked", self.start_experiment_with_options)
 
     def run(self):
-
+        # prolong lifetime of clipboard till the very end (avoid error message)
+        self.main_clipboard = self.sw.main_clipboard
         gtk.gdk.threads_enter()
         gtk.main()
         gtk.gdk.threads_leave()
 
         self.si=None
         self.sw=None
+        self.xml_gui=None
 
     # event handling: the real acitons in gui programming
 
@@ -428,6 +430,8 @@ class ScriptWidgets:
         # modify script fonts
         self.experiment_script_textview.modify_font(pango.FontDescription("Courier 14"))
         self.data_handling_textview.modify_font(pango.FontDescription("Courier 14"))
+        # clipboard
+        self.main_clipboard = gtk.Clipboard(selection = "CLIPBOARD")
 
         # statusbar
         self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
@@ -473,7 +477,6 @@ class ScriptWidgets:
         # start with empty scripts
         self.set_scripts("","")
         self.enable_editing()
-
 
     # public methods
 
@@ -602,6 +605,30 @@ class ScriptWidgets:
         """
         helpful tab and return key functions
         """
+        if event.state&gtk.gdk.CONTROL_MASK!=0:
+            if event.keyval==gtk.gdk.keyval_from_name("c"):
+                if self.main_notebook.get_current_page() == 0:
+                    self.experiment_script_textbuffer.copy_clipboard(self.main_clipboard)
+                elif self.main_notebook.get_current_page() == 1:
+                    self.data_handling_textbuffer.copy_clipboard(self.main_clipboard)
+                return True
+            elif event.keyval==gtk.gdk.keyval_from_name("x"):
+                # cut_clipboard(clipboard, textview editable?)
+                if self.main_notebook.get_current_page() == 0:
+                    self.experiment_script_textbuffer.cut_clipboard(self.main_clipboard, True)
+                elif self.main_notebook.get_current_page() == 1:
+                    self.data_handling_textbuffer.cut_clipboard(self.main_clipboard, True)
+                return True
+            elif event.keyval==gtk.gdk.keyval_from_name("v"):
+                # paste_clipboard(clipboard, textpos (None = Cursor), textview editable?)
+                if self.main_notebook.get_current_page() == 0:
+                    self.experiment_script_textbuffer.paste_clipboard(self.main_clipboard, None, True)
+                elif self.main_notebook.get_current_page() == 1:
+                    self.data_handling_textbuffer.paste_clipboard(self.main_clipboard, None, True)
+                return True
+            return 0
+
+        # indent helpers
         # tab keyval 0xff09
         # backspace keyval 0xff08
         # to do check if modified event is called after all
