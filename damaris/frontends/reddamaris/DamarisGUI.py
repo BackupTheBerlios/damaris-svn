@@ -235,7 +235,7 @@ class DamarisGUI:
                     print "experiment script failed at line %d (function %s): %s"%(self.si.exp_handling.location[0],
                                                                                    self.si.exp_handling.location[1],
                                                                                    self.si.exp_handling.raised_exception)
-                    print "Full traceback", self.traceback
+                    print "Full traceback", self.si.exp_handling.traceback
                     e_text="Experiment Script Failed (%d)"%e
                 else:
                     e_text="Experiment Script Finished (%d)"%e
@@ -251,7 +251,7 @@ class DamarisGUI:
                     print "result script failed at line %d (function %s): %s"%(self.si.res_handling.location[0],
                                                                                self.si.res_handling.location[1],
                                                                                self.si.res_handling.raised_exception)
-                    print "Full traceback", self.traceback
+                    print "Full traceback", self.si.res_handling.traceback
                     r_text="Result Script Failed (%d)"%r
                 else:
                     r_text="Result Script Finished (%d)"%r
