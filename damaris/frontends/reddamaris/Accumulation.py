@@ -261,11 +261,16 @@ class Accumulation(Errorable, Drawable):
                         # set time data
                         timedata=numarray.array(type = numarray.Float64,
                                                 shape = (2*(index[1]-index[0]+1),))
+                            
                         timedata[0::2]=y_mean[index[0]:index[1]+1]
-                        timedata[1::2]=y_sigma[index[0]:index[1]+1]
+                        if len(y_sigma):
+                            timedata[1::2]=y_sigma[index[0]:index[1]+1]
+                        else:
+                            timedata[1::2]=numarray.zeros(type = numarray.Float64,
+                                                          shape = ((index[1]-index[0]+1),))
                         timedata.setshape((index[1]-index[0]+1,2))
                         time_slice_data=hdffile.createArray(accu_group,
-                                                            name="idx%03d_ch%03d"%(index_no,channel_no),
+                                                            name="idx%04d_ch%04d"%(index_no,channel_no),
                                                             object=timedata,
                                                             title="Index %d, Channel %d"%(index_no,channel_no))
                         # set attributes
