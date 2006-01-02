@@ -69,8 +69,10 @@ class Experiment:
 
     def set_frequency(self, frequency, phase):
         "Sets the frequency generator to a desired frequency (Hz)"
-        self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%d" /></state>\n' % (frequency, phase))
+        self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%f" /></state>\n' % (frequency, phase))
 
+    def set_phase(self, phase):
+        self.state_list.append('<state time="0.5e-6"><analogout phase="%f" /></state>\n' % (phase))        
 
     def set_description(self, key, value):
         "Sets a description"
