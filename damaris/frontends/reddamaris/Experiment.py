@@ -67,12 +67,19 @@ class Experiment:
         self.state_list.append('</sequent>\n')
 
 
-    def set_frequency(self, frequency, phase):
+    def set_frequency(self, frequency, phase, ttls=0):
         "Sets the frequency generator to a desired frequency (Hz)"
-        self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%f" /></state>\n' % (frequency, phase))
+        if ttls==0:
+            self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%f"/></state>\n' % (frequency, phase))
+        else:
+            self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%f"/><ttlout value="%d"/></state>\n' % (frequency, phase, ttls))
 
-    def set_phase(self, phase):
-        self.state_list.append('<state time="0.5e-6"><analogout phase="%f" /></state>\n' % (phase))        
+    def set_phase(self, phase, ttls=0):
+        if ttls==0:
+            self.state_list.append('<state time="0.5e-6"><analogout phase="%f" /></state>\n' % (phase))
+        else:
+            self.state_list.append('<state time="0.5e-6"><analogout phase="%f" /><ttlout value="%d"/></state>\n' % (phase,ttls))
+        
 
     def set_description(self, key, value):
         "Sets a description"

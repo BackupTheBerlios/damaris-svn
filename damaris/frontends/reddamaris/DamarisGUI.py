@@ -6,6 +6,8 @@ import os.path
 import traceback
 import tables
 import compiler
+import types
+import xml.parsers.expat
 
 import pygtk
 pygtk.require("2.0")
@@ -68,6 +70,8 @@ class DamarisGUI:
 
         self.monitor=MonitorWidgets(self.xml_gui)
 
+        self.config=ConfigTab(self.xml_gui)
+
         self.statusbar_init()
 
         self.main_window.show_all()
@@ -80,12 +84,16 @@ class DamarisGUI:
         self.main_window.connect("delete-event", self.quit_event)
 
     def statusbar_init(self):
+        """
+        experiment and result thread status, backend state
+        """
         self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
         self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
         self.backend_statusbar_label = self.xml_gui.get_widget("statusbar_core_label")
     
     def toolbar_init(self):
         """
+        buttons like save and run...
         """
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
         self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
@@ -126,6 +134,7 @@ class DamarisGUI:
             self.state=DamarisGUI.Quit_State
             # do a cleanup...
             print "ToDo: Cleanup, Save Dialogs ..."
+            self.config=None
             self.sw=None
             self.monitor=None
             # and quit
@@ -149,6 +158,9 @@ class DamarisGUI:
         self.toolbar_pause_button.set_sensitive(True)
         self.toolbar_pause_button.set_active(False)
 
+        # get config values:
+        actual_config = self.config.get()
+
         # get scripts and start script interface
         exp_script, res_script=self.sw.get_scripts()
 
@@ -165,15 +177,15 @@ class DamarisGUI:
             # setup script engines
             self.si=script_interface.ScriptInterface(exp_script,
                                                      res_script,
-                                                     "/home/achim/damaris/backends/machines/Mobilecore.exe",
-                                                     self.spool_dir)
+                                                     config["backend_executable"],
+                                                     config["spool_dir"])
 
             self.data=self.si.data
             # run frontend and script engines
             self.monitor.observe_data_pool(self.data)
             self.si.runScripts()
             # start data dump
-            self.dump_filename="DAMARIS_data_pool.h5"
+            self.dump_filename=config["data_pool_name"]
             self.dump_states(init=True)
         except Exception, e:
             print "ToDo evaluate exception",str(e), "at",traceback.extract_tb(sys.exc_info()[2])[-1][1:3]
@@ -888,6 +900,140 @@ class ScriptWidgets:
             self.set_scripts(None, "")
             self.res_script_filename=None
 
+
+class ConfigTab:
+    """
+    by now all values are saved in the GUI widgets
+    """
+
+    defaultfilename="damaris_config.xml"
+
+    def __init__(self, xml_gui):
+        self.xml_gui=xml_gui
+
+        self.config_start_backend_checkbutton=self.xml_gui.get_widget("start_backend_checkbutton")
+        self.config_backend_executable_entry=self.xml_gui.get_widget("backend_executable_entry")
+        self.config_spool_dir_entry=self.xml_gui.get_widget("spool_dir_entry")
+        self.config_start_experiment_script_checkbutton=self.xml_gui.get_widget("start_experiment_script_checkbutton")
+        self.config_start_result_script_checkbutton=self.xml_gui.get_widget("start_result_script_checkbutton")
+        self.config_del_results_after_processing_checkbutton=self.xml_gui.get_widget("del_results_after_processing_checkbutton")
+        self.config_del_job_after_execution_checkbutton=self.xml_gui.get_widget("del_job_after_execution_checkbutton")
+        self.config_data_pool_name_entry=self.xml_gui.get_widget("data_pool_name_entry")
+        if sys.platform[:5] == "linux":
+            self.defaultfilename=os.path.expanduser("~/.damaris")
+
+        self.xml_gui.signal_connect("on_config_save_button_clicked", self.save_config_handler)
+        self.xml_gui.signal_connect("on_config_load_button_clicked", self.load_config_handler)
+
+    def get(self):
+        """
+        returns a dictionary of actual config values
+        """
+        return {
+            "start_backend": self.config_start_backend_checkbutton.get_active(),
+            "start_result_script": self.config_start_result_script_checkbutton.get_active(),
+            "start_experiment_script": self.config_start_experiment_script_checkbutton.get_active(),            
+            "spool_dir": self.config_spool_dir_entry.get_text(), 
+            "backend_executable" : self.config_backend_executable_entry.get_text(),
+            "data_pool_name" : self.config_data_pool_name_entry.get_text(),
+            "del_results_after_processing_checkbutton" : self.config_del_results_after_processing_checkbutton.get_active(),
+            "del_job_after_execution_checkbutton" : self.config_del_job_after_execution_checkbutton.get_active()
+            }
+
+    def set(self, config):
+        if "start_backend" in config:
+            self.config_start_backend_checkbutton.set_active(config["start_backend"])
+        if "start_experiment_script" in config:
+            self.config_start_experiment_script_checkbutton.set_active(config["start_experiment_script"])
+        if "start_result_script" in config:
+            self.config_start_result_script_checkbutton.set_active(config["start_result_script"])
+        if "spool_dir" in config:
+            self.config_spool_dir_entry.set_text(config["spool_dir"])
+        if "backend_executable" in config:
+            self.config_backend_executable_entry.set_text(config["backend_executable"])
+        if "del_results_after_processing_checkbutton" in config:
+            self.config_del_results_after_processing_checkbutton.set_active(config["del_results_after_processing_checkbutton"])
+        if "del_job_after_execution_checkbutton" in config:
+            self.config_del_job_after_execution_checkbutton.set_active(config["del_job_after_execution_checkbutton"])
+
+    def load_config_handler(self, widget):
+        self.load_config()
+
+    def save_config_handler(self, widget):
+        self.save_config()
+
+    def load_config(self, filename=None):
+        """
+        set config from an xml file
+        """
+        if filename is None:
+            filename=self.defaultfilename
+
+        # parser functions
+        def start_element(name, attrs, config):
+            if name == "config" and "key" in attrs:
+                config["__this_key__"]=attrs["key"]
+                if "type" in attrs:
+                    config["__this_type__"]=attrs["type"]
+                config[attrs["key"]]=""
+        
+        def end_element(name, config):
+            if "__this_type__" in config and "__this_key__" in config:
+                if config["__this_type__"] == "Boolean":
+                    if config[config["__this_key__"]] == "True":
+                        config[config["__this_key__"]]=True
+                    else:
+                        config[config["__this_key__"]]=False
+                elif config["__this_type__"] == "Integer":
+                    config[config["__this_key__"]]=int(config[config["__this_key__"]])
+
+            if "__this_type__" in config:
+                del config["__this_type__"]
+            if "__this_key__" in config:
+                del config["__this_key__"]
+
+        
+        def char_data(data, config):
+            if "__this_key__" in config:
+                config[config["__this_key__"]]+=data
+
+        # parse file contents to dictionary
+        config={}
+        p = xml.parsers.expat.ParserCreate()
+        p.StartElementHandler = lambda n,a: start_element(n,a, config)
+        p.EndElementHandler = lambda n: end_element(n, config)
+        p.CharacterDataHandler = lambda d: char_data(d, config)
+        p.ParseFile(file(filename,"r"))
+
+        self.set(config)
+        
+
+    def save_config(self, filename=None):
+        """
+        write config as an xml file
+        """
+        if filename is None:
+            filename=self.defaultfilename
+        configfile=file(filename, "w")
+        configfile.write("<?xml version='1.0'?>\n")
+        configfile.write("<damaris>\n")
+        config=self.get()
+        for k,v in config.iteritems():
+            val=""
+            typename=""
+            if type(v) is types.BooleanType:
+                typename="Boolean"
+                if v:
+                    val="True"
+                else:
+                    val="False"
+            if type(v) is types.StringType:
+                typename="String"
+                val=v
+            configfile.write("  <config key='%s' type='%s'>%s</config>\n"%(k, typename, val))
+        configfile.write("</damaris>\n")
+        
+        
 
 class MonitorWidgets:
     
