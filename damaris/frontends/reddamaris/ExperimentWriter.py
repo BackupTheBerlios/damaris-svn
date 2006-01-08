@@ -7,10 +7,11 @@ class ExperimentWriter:
     """
     writes experiments in propper way to spool directory
     """
-    def __init__(self, spool, no=0, job_pattern="job.%09d"):
+    def __init__(self, spool, no=0, job_pattern="job.%09d", inform_last_job=None):
         self.spool=spool
         self.job_pattern=job_pattern
         self.no=no
+        self.inform_last_job=inform_last_job
         # test if spool exists
         if not os.path.isdir(spool):
             os.mkdir(spool)
@@ -24,13 +25,17 @@ class ExperimentWriter:
         os.rename(job_filename+".tmp", job_filename)
         self.no+=1
 
+    def __del__(self):
+        print "del it"
+        if self.inform_last_job is not None:
+            self.inform_last_job.stop_no=self.no
 
 class ExperimentWriterWithCleanup(ExperimentWriter):
     """
     writes experiments and cleans up in front of queue
     """
-    def __init__(self, spool, no=0, job_pattern="job.%09d"):
-        ExperimentWriter.__init__(self, spool, no, job_pattern)
+    def __init__(self, spool, no=0, job_pattern="job.%09d", inform_last_job=None):
+        ExperimentWriter.__init__(self, spool, no, job_pattern, inform_last_job=inform_last_job)
         self.delete_no_files(self.no)
 
     def send_next(self, job):

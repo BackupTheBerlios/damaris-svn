@@ -20,17 +20,17 @@ This class handles the backend driver
 
 class BackendDriver(threading.Thread):
     
-    def __init__(self, executable, spool):
+    def __init__(self, executable, spool, clear_jobs=False, clear_results=False):
         threading.Thread.__init__(self, name="Backend Driver")
         self.core_pid = None
 
-        self.executable=executable
+        self.executable=str(executable)
         self.spool_dir=spool
         self.core_state_file = "Mobile core.state"
         self.experiment_pattern="job.%09d"
         self.result_pattern=self.experiment_pattern+".result"
         self.experiment_writer = ExperimentWriter.ExperimentWriterWithCleanup(self.spool_dir, no=0, job_pattern=self.experiment_pattern)
-        self.result_reader = ResultReader.BlockingResultReader(self.spool_dir, no=0, result_pattern=self.result_pattern)
+        self.result_reader = ResultReader.BlockingResultReader(self.spool_dir, no=0, result_pattern=self.result_pattern, clear_jobs=clear_jobs, clear_results=clear_results)
         self.quit_flag=threading.Event()
 
         if not os.path.isfile(self.executable):
@@ -38,8 +38,7 @@ class BackendDriver(threading.Thread):
         if not os.access(self.executable,os.X_OK):
             raise AssertionError("insufficient rights for backend %s execution"%self.executable)
         if not os.path.isdir(self.spool_dir):
-            raise AssertionError("could not find backend's directory %s "%self.spool_dir)
-        
+            raise AssertionError("could not find backend's spool directory %s "%self.spool_dir)        
 
     def run(self):
         # Free remaining handle on file
@@ -60,6 +59,7 @@ class BackendDriver(threading.Thread):
         # create logfile
         file(self.core_output_filename,"w")
                 
+        print "todo: move away all state files"
         if sys.platform[:5]=="linux":
             self.core_input=os.popen(self.executable+" --spool "+self.spool_dir+" >"+self.core_output_filename+" 2>&1","w")
         if sys.platform=="win32":
@@ -72,11 +72,16 @@ class BackendDriver(threading.Thread):
         timeout=10
         # to do: how should I know core's state name????!!!!!
         self.statefilename=os.path.join(self.spool_dir,self.core_state_file)
-        while not os.path.isfile(self.statefilename) and timeout>0:
+        state_files=()
+        while not os.path.isfile(self.statefilename) and len(state_files)==0 and timeout>0:
             time.sleep(0.1)
             timeout-=0.1
+            state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
         if timeout<0:
             raise AssertionError("state file %s did not show up"%self.statefilename)
+        if state_files and self.statefilename not in state_files:
+            print "found other state file(s)", state_files,  " taking first one"
+            self.statefilename=state_files[0]
 
         statefile=file(self.statefilename,"r")
         statelines=statefile.readlines()

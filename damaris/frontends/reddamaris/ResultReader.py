@@ -30,11 +30,13 @@ class ResultReader:
     ADCDATA_TYPE = 1
     ERROR_TYPE = 0
 
-    def __init__(self, spool_dir=".", no=0, result_pattern="job.%09d.result"):
-        self.spool_dir=spool_dir
-        self.start_no=no
-        self.no=self.start_no
-        self.result_pattern=result_pattern
+    def __init__(self, spool_dir=".", no=0, result_pattern="job.%09d.result", clear_jobs=False, clear_results=False):
+        self.spool_dir = spool_dir
+        self.start_no = no
+        self.no = self.start_no
+        self.result_pattern = result_pattern
+        self.clear_jobs=clear_jobs
+        self.clear_results=clear_results
 
     def __iter__(self):
         """
@@ -43,6 +45,11 @@ class ResultReader:
         expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
         while os.access(expected_filename,os.R_OK):
             yield self.get_result_object(expected_filename)
+            # purge result file
+            if self.clear_results:
+                if os.path.isfile(expected_filename): os.remove(expected_filename)
+            if self.clear_jobs:
+                if os.path.isfile(expected_filename[:-7]): os.remove(expected_filename[:-7])
             self.no+=1
             expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
         return
@@ -81,15 +88,19 @@ class ResultReader:
         self.xml_parser.CharacterDataHandler = self.__xmlCharacterDataFound
         self.xml_parser.EndElementHandler = self.__xmlEndTagFound
 
-        # Parsing all cdata as one block
-        self.xml_parser.buffer_text = True
-        buffersize=self.xml_parser.buffer_size*2
-        databuffer=in_file.read(buffersize)
-        while databuffer!="":
-            self.xml_parser.Parse(databuffer,False)
+        try:
+            # Parsing all cdata as one block
+            self.xml_parser.buffer_text = True
+            buffersize=self.xml_parser.buffer_size*2
             databuffer=in_file.read(buffersize)
+            while databuffer!="":
+                self.xml_parser.Parse(databuffer,False)
+                databuffer=in_file.read(buffersize)
 
-        self.xml_parser.Parse("",True)
+            self.xml_parser.Parse("",True)
+        except xml.parsers.expat.ExpatError:
+            print "ToDo: proper parser error message"
+            self.result = None
         self.xml_parser = None
 
     # Callback when a xml start tag is found
@@ -238,12 +249,11 @@ class BlockingResultReader(ResultReader):
     to follow an active result stream
     """
 
-    def __init__(self, spool_dir=".", no=0, result_pattern="job.%09d.result"):
-        ResultReader.__init__(self, spool_dir, no, result_pattern)
+    def __init__(self, spool_dir=".", no=0, result_pattern="job.%09d.result", clear_jobs=False, clear_results=False):
+        ResultReader.__init__(self, spool_dir, no, result_pattern, clear_jobs=clear_jobs, clear_results=clear_results)
         self.quit_flag=False # asychronous quit flag
         self.stop_no=None # end of job queue
         self.poll_time=0.1 # sleep interval for polling results, <0 means no polling and stop
-        self.purge= True # remove files after reading
 
     def __iter__(self):
         """
@@ -261,10 +271,11 @@ class BlockingResultReader(ResultReader):
             r=self.get_result_object(expected_filename)
             if self.quit_flag: break
             yield r
-            if self.quit_flag: break
-            if self.purge:
+            if self.clear_results:
                 if os.path.isfile(expected_filename): os.remove(expected_filename)
+            if self.clear_jobs:
                 if os.path.isfile(expected_filename[:-7]): os.remove(expected_filename[:-7])
+            if self.quit_flag: break
             self.no+=1
             expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
             

@@ -23,13 +23,17 @@ import matplotlib.figure
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
 from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
 
+
+import ExperimentWriter
+import ExperimentHandling
+import ResultReader
+import ResultHandling
+import BackendDriver
 import DataPool
 import Accumulation
 import ADC_Result
 import Drawable
 import MeasurementResult
-import script_interface
-
 
 class DamarisGUI:
 
@@ -120,6 +124,7 @@ class DamarisGUI:
 
         self.si=None
         self.sw=None
+        self.config=None
         self.xml_gui=None
 
     # event handling: the real acitons in gui programming
@@ -150,6 +155,21 @@ class DamarisGUI:
         print "ToDo: start_experiment_with_options"
         
     def start_experiment(self, widget, data = None):
+        
+        # something running?
+        if self.si is not None:
+            print "Last Experiment is not clearly stopped!"
+        self.si = None
+
+        # get config values:
+        actual_config = self.config.get()
+        if (not actual_config["start_backend"] and
+            not actual_config["start_result_script"] and
+            not actual_config["start_experiment_script"]):
+            return
+
+        self.data = None
+
         # prepare to run
         self.state=DamarisGUI.Run_State
         self.sw.disable_editing()
@@ -158,34 +178,35 @@ class DamarisGUI:
         self.toolbar_pause_button.set_sensitive(True)
         self.toolbar_pause_button.set_active(False)
 
-        # get config values:
-        actual_config = self.config.get()
-
         # get scripts and start script interface
         exp_script, res_script=self.sw.get_scripts()
-
-        # something running?
-        if self.si is not None:
-            print "Last Experiment is not clearly stopped!"
-        self.si = None
-        self.data = None
+        if not actual_config["start_result_script"]:
+            res_script=""
+        if not actual_config["start_experiment_script"]:
+            exp_script=""
+        backend=actual_config["backend_executable"]
+        if not actual_config["start_backend"]:
+            backend=""
+        
         self.monitor.observe_data_pool(self.data)
         
         # start experiment
         try:
             self.spool_dir=os.path.abspath("spool")
             # setup script engines
-            self.si=script_interface.ScriptInterface(exp_script,
-                                                     res_script,
-                                                     config["backend_executable"],
-                                                     config["spool_dir"])
+            self.si=ScriptInterface(exp_script,
+                                    res_script,
+                                    backend,
+                                    actual_config["spool_dir"],
+                                    clear_jobs=actual_config["del_jobs_after_execution"],
+                                    clear_results=actual_config["del_results_after_processing"])
 
             self.data=self.si.data
             # run frontend and script engines
             self.monitor.observe_data_pool(self.data)
             self.si.runScripts()
             # start data dump
-            self.dump_filename=config["data_pool_name"]
+            self.dump_filename=actual_config["data_pool_name"]
             self.dump_states(init=True)
         except Exception, e:
             print "ToDo evaluate exception",str(e), "at",traceback.extract_tb(sys.exc_info()[2])[-1][1:3]
@@ -220,12 +241,23 @@ class DamarisGUI:
         self.main_notebook.set_current_page(2)
 
         # set running
-        self.experiment_script_statusbar_label.set_text("Experiment Script Running (0)")
-        self.data_handling_statusbar_label.set_text("Result Script Running (0)")
-        self.backend_statusbar_label.set_text("Backend Running")
+        if self.si.exp_handling is not None:
+            self.experiment_script_statusbar_label.set_text("Experiment Script Running (0)")
+        else:
+            self.experiment_script_statusbar_label.set_text("Experiment Script Idle")
+        if self.si.res_handling is not None:
+            self.data_handling_statusbar_label.set_text("Result Script Running (0)")
+        else:
+            self.data_handling_statusbar_label.set_text("Result Script Idle")
+            
+        if self.si.back_driver is not None:
+            self.backend_statusbar_label.set_text("Backend Running")
+        else:
+            self.backend_statusbar_label.set_text("Backend Idle")
+            
 
         # and observe it...
-        gobject.timeout_add(400,self.observe_running_experiment)
+        gobject.timeout_add(200,self.observe_running_experiment)
         dump_timeinterval=60*10 # in seconds
         self.dump_states_event_id=gobject.timeout_add(dump_timeinterval*1000,self.dump_states)
 
@@ -936,8 +968,8 @@ class ConfigTab:
             "spool_dir": self.config_spool_dir_entry.get_text(), 
             "backend_executable" : self.config_backend_executable_entry.get_text(),
             "data_pool_name" : self.config_data_pool_name_entry.get_text(),
-            "del_results_after_processing_checkbutton" : self.config_del_results_after_processing_checkbutton.get_active(),
-            "del_job_after_execution_checkbutton" : self.config_del_job_after_execution_checkbutton.get_active()
+            "del_results_after_processing" : self.config_del_results_after_processing_checkbutton.get_active(),
+            "del_jobs_after_execution" : self.config_del_job_after_execution_checkbutton.get_active()
             }
 
     def set(self, config):
@@ -1477,6 +1509,54 @@ class MonitorWidgets:
 
         if to_draw is None: return
         self.update_display()
+
+
+class ScriptInterface:
+    
+    def __init__(self, exp_script=None, res_script=None, backend_executable=None, spool_dir="spool", clear_jobs=True, clear_results=True):
+        """
+        run experiment scripts and result scripts
+        """
+
+        self.exp_script=exp_script
+        self.res_script=res_script
+        self.backend_executable=str(backend_executable)
+        self.spool_dir=os.path.abspath(spool_dir)
+        self.clear_jobs=clear_jobs
+        self.clear_results=clear_results
+        self.exp_handling=self.res_handling=None
+
+        self.exp_writer=self.res_reader=self.back_driver=None
+        if self.backend_executable is not None and self.backend_executable!="":
+            self.back_driver=BackendDriver.BackendDriver(self.backend_executable, spool_dir, clear_jobs, clear_results)
+            if self.exp_script: self.exp_writer=self.back_driver.get_exp_writer()
+            if self.res_script: self.res_reader=self.back_driver.get_res_reader()
+        elif self.exp_script and self.res_script:
+            self.back_driver=None
+            self.res_reader=ResultReader.BlockingResultReader(spool_dir, clear_jobs=self.clear_jobs, clear_results=self.clear_results)
+            self.exp_writer=ExperimentWriter.ExperimentWriter(spool_dir, inform_last_job=self.res_reader)
+        else:
+            self.back_driver=None
+            if self.exp_script: self.exp_writer=ExperimentWriter.ExperimentWriter(spool_dir)
+            if self.res_script: self.res_reader=ResultReader.ResultReader(spool_dir, clear_jobs=self.clear_jobs, clear_results=self.clear_results)
+
+        self.data=DataPool.DataPool()
+
+
+    def runScripts(self):
+        # get script engines
+        self.exp_handling=self.res_handling=None
+        if self.exp_script and self.exp_writer:
+            self.exp_handling=ExperimentHandling.ExperimentHandling(self.exp_script, self.exp_writer, self.data)
+        if self.res_script and self.res_reader:
+            self.res_handling=ResultHandling.ResultHandling(self.res_script, self.res_reader, self.data)
+
+        # start them
+        if self.exp_handling: self.exp_handling.start()
+        if self.back_driver is not None: self.back_driver.start()
+        if self.res_handling: self.res_handling.start()
+
+        self.exp_writer=self.res_reader=None
 
 
 if __name__=="__main__":

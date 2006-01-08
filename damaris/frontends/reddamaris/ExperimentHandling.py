@@ -66,3 +66,4 @@ class ExperimentHandling(threading.Thread):
                 if self.quit_flag.isSet(): return
         job=Experiment.Quit()
         self.writer.send_next(job)
+        self.writer=None
