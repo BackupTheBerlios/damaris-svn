@@ -5,18 +5,19 @@ Markus Rosenstihl 2005 Nov
 #define DAC20_H
 
 #include "core/states.h"
-class pfg: public pfgpulse {
+
+class PFG {
  public:
  	int id;
- 	// defualt constructor
- 	pfg(int myid=0);
+ 	// default constructor
+ 	PFG(int myid=0);
  	//
- 	unsigned int dac_ttl_values(double dac_value, double length) const;
+ 	unsigned int dac_ttl_values(double dac_value) const;
  	// set the DAC to the required values
  	virtual void set_dac(state& experiment);
+	virtual void set_dac_ttls(state& experiment);
  	// destructor
- 	virtual ~pfg();
+ 	virtual ~PFG();
+
 };
-
-
 #endif
