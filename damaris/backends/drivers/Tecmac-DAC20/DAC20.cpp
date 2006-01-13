@@ -14,7 +14,7 @@ PFG::PFG(int myid): id(myid) {}
 
 PFG::~PFG() {}
 
-void PFG::dac_ttl_values(double dac_value) const {
+void PFG::dac_ttl_values(int dac_value) const {
 	int bit_mask = int(pow(double(2),(DAC_BIT_DEPTH-1)));
 	int data = int(pow(double(2), DATA_BIT));
 	int clk = int(pow(double(2), CLK_BIT));
