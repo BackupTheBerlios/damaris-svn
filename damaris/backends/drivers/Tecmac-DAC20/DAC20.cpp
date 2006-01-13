@@ -52,25 +52,28 @@ void PFG::set_dac(state& experiment)
 }
 
 void PFG::set_dac_ttls(state& the_state) 
-    {
+{
 
     state::iterator i=the_state.begin();
     while(i!=the_state.end()) {
-    ttlout* ttl_o=dynamic_cast<ttlout*>(*i);
-    if (ttlout!=NULL && ttlout->id==id) {
-      if (ttl_o==NULL) {
-	/* save the informations */
-	pts_ttl_o=ttl_o;
+      ttlout* ttl_o=dynamic_cast<ttlout*>(*i);
+      if (ttl_o!=NULL && ttl_o->id==id) {
+	if (ttl_o==NULL) {
+	  /* save the informations */
+	  //pts_ttl_o=ttl_o;
+	  ;
+	}
+	else {
+	  fprintf(stderr, "found another pts decade section, ignoring\n");
+	  delete ttl_o;
+	}
+	/* remove the analog out section */
+	the_state.erase(i++);
       }
       else {
-	fprintf(stderr, "found another pts decade section, ignoring\n");
-	delete ttl_o;
-      }
-      /* remove the analog out section */
-      the_state.erase(i++);
+	++i;
+      } /* state members loop */
+      
+      
     }
-    else
-      ++i;
-  } /* state members loop */
-
-    
+}
