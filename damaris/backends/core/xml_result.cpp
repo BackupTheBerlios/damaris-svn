@@ -564,7 +564,7 @@ int xml_result_writer::write_adcdata_formated(FILE* out, const std::string& form
 
 int xml_result_writer::write_adcdata_base64(FILE* out, const adc_result* res) const {
   fprintf(out,"<adcdata samples=\"%u\" rate=\"%g\">\n",res->samples,res->sampling_frequency);
-  size_t base64length=0;
+  unsigned int base64length=0;
   XMLByte* base64buffer=XERCES_CPP_NAMESPACE_QUALIFIER Base64::encode((XMLByte*)res->data,res->samples*2*sizeof(short int),&base64length);
   fwrite(base64buffer,1,base64length,out);
   XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&base64buffer);

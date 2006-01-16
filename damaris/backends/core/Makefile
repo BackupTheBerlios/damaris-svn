@@ -21,7 +21,7 @@ all: core.a
 	$(CXX) $< -o $@
 
 core.a:	$(CORE_CLASSES)
-	$(AR) r $@ $^
+	$(AR) rs $@ $^
 
 core.o: core.cpp core.h core_exception.h job.h
 	$(CXX) -c $(CXXFLAGS) -o $@ $<

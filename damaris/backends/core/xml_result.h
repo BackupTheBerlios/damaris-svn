@@ -75,11 +75,13 @@ class xml_result_reader {
 */
 class xml_result_writer {
 
+ public:
   /**
      \brief the adc data store method to choose
   */
   typedef enum {defaultmode, separate_file, ascii, csv, base64, hex} data_save_mode_type;
 
+ private:
   /**
      the chosen save method for adc data
    */
