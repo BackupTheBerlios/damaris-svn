@@ -1,6 +1,6 @@
 CXX=g++
-CXXFLAGS=-g -O0 -I. -I../..
-LDFLAGS=-lexpat -lxerces-c
+CXXFLAGS=-g -O0 -I. -I../.. -I/opt/local/include
+LDFLAGS=-lexpat -lxerces-c -L/opt/local/lib
 
 .PHONY: all clean install
 
