@@ -5,7 +5,7 @@
 
 int main(int argc, char** argv) {
   int dac_word;
-  signed dac_value=1000;
+  signed dac_value=2;
   state_atom* a=xml_state_reader().read_from_file("/dev/stdin");
   if (a==NULL) {
     fprintf(stderr, "%s: could not read a state tree from stdin\n", argv[0] );

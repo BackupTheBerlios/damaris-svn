@@ -6,32 +6,13 @@
 #define DAC_BIT_DEPTH 20
 
 // The channel configuration
-#define DATA_BIT 16	
-#define CLK_BIT 17
-#define LE_BIT 18
+#define DATA_BIT 18	
+#define CLK_BIT 16
+#define LE_BIT 17
 
 PFG::PFG(int myid): id(myid) {}
 
 PFG::~PFG() {}
-
-
-// creates an array with the word for the DAC
-void PFG::dac_ttl_values(signed dac_value, int *my_ptr) {
-	int bit_mask = int(pow(double(2),(DAC_BIT_DEPTH-1)));
-	int data = int(pow(double(2), DATA_BIT));
-	int clk = int(pow(double(2), CLK_BIT));
-	int le = int(pow(double(2), LE_BIT));
-	int bit;
-	
-	for (int j=0; j < DAC_BIT_DEPTH ; j++)	{
-		if (dac_value & bit_mask)
-			int bit = 1;
-		else
-			int bit = 1;
-		bit_mask >>= 1;
-		my_ptr[j]=bit;
-	}
-}
 
 
 // This sets the dac
@@ -94,26 +75,18 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 			register_ttls->id=0;
 			register_state->length=9e-8;
 			register_state->push_back(register_ttls);
-			
-			// todo: remove int bit_mask and so on 
-			int bit_mask = int(pow(double(2),(DAC_BIT_DEPTH-1)));
-			int data = int(pow(double(2), DATA_BIT));
-			int clk = int(pow(double(2), CLK_BIT));
-			int le = int(pow(double(2), LE_BIT));		
-			int dac_word[DAC_BIT_DEPTH];
-			
-			dac_ttl_values(dac_value, dac_word);
-			
+
 			for (int j=0; j < DAC_BIT_DEPTH ; j++)	{
-				int bit=dac_word[j];
-				register_ttls->ttls = (data*bit + le); // need one clock cycle to read in bit
+				int bit=dac_value & 1;
+				register_ttls->ttls = (int(pow(2.0, DATA_BIT))*bit + int(pow(2.0, LE_BIT))); // need one clock cycle to read in bit
 				the_sequence.insert(the_state,register_state->copy_new());
-				register_ttls->ttls = (data*bit + clk + le); // le should always be high
+				register_ttls->ttls = (int(pow(2.0, DATA_BIT))*bit + int(pow(2.0, CLK_BIT)) + int(pow(2.0, LE_BIT))); // le should always be high
 				the_sequence.insert(the_state,register_state->copy_new());
 				if (j == (DAC_BIT_DEPTH-1)) {// last bit => LE low, tell DAC to read the word in 
-					register_ttls->ttls = data*bit;
+					register_ttls->ttls = 0; //  int(pow(2.0, DATA_BIT))*bit;
 					the_sequence.insert(the_state,register_state->copy_new());
 				}
+				dac_value>>=1;
 			}
 			
 			// and shorten the remaining state 
