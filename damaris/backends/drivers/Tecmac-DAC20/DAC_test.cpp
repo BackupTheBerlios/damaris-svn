@@ -4,7 +4,8 @@
 
 
 int main(int argc, char** argv) {
-  int dac_value=1000;
+  int dac_word;
+  signed dac_value=1000;
   state_atom* a=xml_state_reader().read_from_file("/dev/stdin");
   if (a==NULL) {
     fprintf(stderr, "%s: could not read a state tree from stdin\n", argv[0] );
@@ -16,8 +17,6 @@ int main(int argc, char** argv) {
     delete a;
     return 1;
   }
-//  PFG().dac_ttl_values(12034);
-  //fprintf(stdout,PFG().dac_ttl_values(12034).dac_word[1]);
   PFG().set_dac(*a_state, dac_value);
   xml_state_writer().write_states(stdout,*a,1);
   delete a;  

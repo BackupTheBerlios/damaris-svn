@@ -12,11 +12,11 @@ class PFG {
  	// default constructor
  	PFG(int myid=0);
  	//
- 	int dac_ttl_values(int dac_value) const;
+ 	void dac_ttl_values(signed dac_value, int *my_ptr);
  	// set the DAC to the required values
- 	virtual void set_dac(state& experiment, int dac_value);
+ 	virtual void set_dac(state& experiment, signed dac_value);
 	//virtual void set_dac_ttls(state& experiment);
-	virtual void set_dac_recursive(state_sequent& the_sequence, state::iterator& the_state, int dac_value);
+	virtual void set_dac_recursive(state_sequent& the_sequence, state::iterator& the_state, signed dac_value);
  	// destructor
  	virtual ~PFG();
 
