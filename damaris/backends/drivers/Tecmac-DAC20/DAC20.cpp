@@ -22,7 +22,7 @@ void PFG::set_dac(state& experiment, signed dac_value) {
 	state_sequent* exp_sequence=dynamic_cast<state_sequent*>(&experiment);
 	if (exp_sequence==NULL)
 		// is a very state on top level, todo: change interface
-		fprintf(stdout, "cannot work on a single state, sorry (todo: change interface)");
+		throw pfg_exception( "cannot work on a single state, sorry (todo: change interface)");
 	else {
 		for(state_sequent::iterator child_state=exp_sequence->begin(); child_state!=exp_sequence->end(); ++child_state)
 			set_dac_recursive(*exp_sequence, child_state, dac_value);
@@ -42,7 +42,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 	// I am not a sequence, but a state
 	else {
 		state* this_state=dynamic_cast<state*>(*the_state);
-		if (this_state==NULL) fprintf(stdout, "state_atom in state_sequent not expected");
+		if (this_state==NULL) throw pfg_exception( "state_atom in state_sequent not expected");
 		analogout* PFG_aout=NULL;
 		// find a analogout section with suitable id
 		state::iterator i=this_state->begin();
@@ -56,7 +56,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				}
 				// there is no place for me here
 				else {
-					fprintf(stderr, "found another DAC section, ignoring\n");
+					throw pfg_exception( "found another DAC section, ignoring\n");
 					delete aout;
 				}
 				// remove the analog out section
@@ -69,7 +69,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 		if (PFG_aout!=NULL) {
 			// check the length of the state
 			if (this_state->length<9e-8*41.0)
-				fprintf(stderr, "time is too short to save DAC information");
+				throw pfg_exception( "time is too short to save DAC information");
 			else {
 				// copy of original state
 				state* register_state=new state(*this_state);

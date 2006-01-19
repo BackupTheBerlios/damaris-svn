@@ -1,13 +1,13 @@
 /*
-Markus Rosenstihl 2005 Nov
-*/
+ Markus Rosenstihl 2005 Nov
+ */
 #ifndef DAC20_H
 #define DAC20_H
 
 #include "core/states.h"
 
 class PFG {
- public:
+public:
  	int id;
  	// default constructor
  	PFG(int myid=0);
@@ -17,6 +17,11 @@ class PFG {
  	
 	// destructor
  	virtual ~PFG();
-
+	
 };
+
+class pfg_exception: public std::string {
+public:
+	pfg_exception(const std::string& s): std::string(s){}
+};    
 #endif
