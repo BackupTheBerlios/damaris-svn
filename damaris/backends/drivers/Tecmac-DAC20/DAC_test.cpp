@@ -21,7 +21,8 @@ int main(int argc, char** argv)
 			delete a;
 			return 1;
 		}
-		PFG().set_dac(*a_state, dac_value);
+		PFG().set_dac(dac_value);
+		PFG().set_dac(*a_state);
 		xml_state_writer().write_states(stdout,*a,1);
 		delete a;  
 		return 0;

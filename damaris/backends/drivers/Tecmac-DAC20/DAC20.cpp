@@ -3,6 +3,9 @@
 #include <cmath>
 #include "core/xml_states.h"
 #include <iostream>
+
+
+
 #define DAC_BIT_DEPTH 20
 
 // The channel configuration
@@ -10,14 +13,19 @@
 #define CLK_BIT 16
 #define LE_BIT 17
 
-PFG::PFG(int myid): id(myid) {}
+PFG::PFG(int myid): id(myid) {
+	dac_value=0;
+}
 
 PFG::~PFG() {}
 
 
 // This sets the dac
+void PFG::set_dac(signed dw) {
+	dac_value=dw;	
+	}
 
-void PFG::set_dac(state& experiment, signed dac_value) {
+void PFG::set_dac(state& experiment) {
 	
 	state_sequent* exp_sequence=dynamic_cast<state_sequent*>(&experiment);
 	if (exp_sequence==NULL)
@@ -25,19 +33,19 @@ void PFG::set_dac(state& experiment, signed dac_value) {
 		throw pfg_exception( "cannot work on a single state, sorry (todo: change interface)");
 	else {
 		for(state_sequent::iterator child_state=exp_sequence->begin(); child_state!=exp_sequence->end(); ++child_state)
-			set_dac_recursive(*exp_sequence, child_state, dac_value);
+			set_dac_recursive(*exp_sequence, child_state);
 	}
 }
 
 // This loops recursive through the state tree
 
-void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_state, signed dac_value) {
+void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_state) {
 	
 	state_sequent* a_sequence=dynamic_cast<state_sequent*>(*the_state);
 	// Am I a sequence? Yes? Go one sequence further
 	if (a_sequence!=NULL) { 
 		for(state_sequent::iterator child_state=a_sequence->begin(); child_state!=a_sequence->end(); ++child_state)
-			set_dac_recursive(*a_sequence, child_state, dac_value);
+			set_dac_recursive(*a_sequence, child_state);
 	}
 	// I am not a sequence, but a state
 	else {
