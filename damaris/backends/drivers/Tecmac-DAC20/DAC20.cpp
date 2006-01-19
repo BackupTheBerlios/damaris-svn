@@ -18,7 +18,7 @@ PFG::~PFG() {}
 // This sets the dac
 
 void PFG::set_dac(state& experiment, signed dac_value) {
-
+	
 	state_sequent* exp_sequence=dynamic_cast<state_sequent*>(&experiment);
 	if (exp_sequence==NULL)
 		// is a very state on top level, todo: change interface
@@ -44,7 +44,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 		state* this_state=dynamic_cast<state*>(*the_state);
 		if (this_state==NULL) fprintf(stdout, "state_atom in state_sequent not expected");
 		analogout* PFG_aout=NULL;
-		/* find a analogout section with suitable id */
+		// find a analogout section with suitable id
 		state::iterator i=this_state->begin();
 		while(i!=this_state->end()) {
 			analogout* aout=dynamic_cast<analogout*>(*i);
@@ -67,34 +67,42 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 		} // state members loop
 		
 		if (PFG_aout!=NULL) {
-			if (this_state->length<9e-8*41.0) fprintf(stderr, "time is too short to save DAC information");
-			// now, insert the ttl information
-			// copy of original state
-			state* register_state=new state(*this_state);
-			ttlout* register_ttls=new ttlout();
-			register_ttls->id=0;
-			register_state->length=9e-8;
-			register_state->push_back(register_ttls);
-
-			for (int j=0; j < DAC_BIT_DEPTH ; j++)	{
-				int bit=dac_value & 1;
-				register_ttls->ttls = (int(pow(2.0, DATA_BIT))*bit + int(pow(2.0, LE_BIT))); // need one clock cycle to read in bit
-				the_sequence.insert(the_state,register_state->copy_new());
-				register_ttls->ttls = (int(pow(2.0, DATA_BIT))*bit + int(pow(2.0, CLK_BIT)) + int(pow(2.0, LE_BIT))); // le should always be high
-				the_sequence.insert(the_state,register_state->copy_new());
-				if (j == (DAC_BIT_DEPTH-1)) {// last bit => LE low, tell DAC to read the word in 
-					register_ttls->ttls = 0; //  int(pow(2.0, DATA_BIT))*bit;
+			// check the length of the state
+			if (this_state->length<9e-8*41.0)
+				fprintf(stderr, "time is too short to save DAC information");
+			else {
+				// copy of original state
+				state* register_state=new state(*this_state);
+				ttlout* register_ttls=new ttlout();
+				register_ttls->id=0;
+				register_state->length=9e-8;
+				register_state->push_back(register_ttls);
+				
+				// now, insert the ttl information
+				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in
+				for (int j=0; j < DAC_BIT_DEPTH ; j++)	{
+					int bit=dac_value & 1;
+					// need one clock cycle to read in bit
+					// latch enable (LE) should always be high while doing so
+					// except for the last bit
+					// todo: may be we can save the last bit somehow
+					register_ttls->ttls = (int(pow(2.0, DATA_BIT))*bit + int(pow(2.0, LE_BIT)));
 					the_sequence.insert(the_state,register_state->copy_new());
+					register_ttls->ttls = (int(pow(2.0, DATA_BIT))*bit + int(pow(2.0, CLK_BIT)) + int(pow(2.0, LE_BIT)));
+					the_sequence.insert(the_state,register_state->copy_new());
+					if (j == (DAC_BIT_DEPTH-1)) {// last bit => LE low, tell DAC to read the word in 
+						register_ttls->ttls = 0; //  int(pow(2.0, DATA_BIT))*bit;
+						the_sequence.insert(the_state,register_state->copy_new());
+					}
+					dac_value>>=1;
 				}
-				dac_value>>=1;
-			}
-			
-			// and shorten the remaining state 
-			this_state->length-=9e-8*41;
-			delete register_state;
-			delete PFG_aout;		
+				
+				// and shorten the remaining state 
+				this_state->length-=9e-8*41;
+				delete register_state;
+				delete PFG_aout;	
+			}	
 		}
 		// end of state modifications 
 	}
 }
-
