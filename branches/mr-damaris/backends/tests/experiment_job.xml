@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<experiment id="0">
+<!-- saturation recovery -->
+<sequent>
+ <!-- saturation comb -->
+ <sequent>
+   <!-- suppose, that gate is on channel 1 -->
+   <!-- suppose, that pulse is on channel 2 -->
+   <state time="100e-6"><ttlout value="1"/><analogout f="1e7"/></state>
+   <state time="5e-6"><ttlout value="3"/><analogout f="1e7"/></state>
+   <state time="2e-6"><ttlout value="1"/><analogout f="1e7"/></state>
+   <state time="5e-6"><ttlout value="3"/><analogout f="1e7"/></state>
+   <state time="1e-6"><ttlout value="1"/><analogout f="1e7"/></state>
+   <state time="5e-6"><ttlout value="3"/><analogout f="1e7"/></state>
+   <state time="1e-6"><ttlout value="1"/><analogout f="1e7"/></state>
+   <state time="5e-6"><ttlout value="3"/><analogout f="1e7"/></state>
+ </sequent>
+ <!-- evolution time -->
+ <sequent>
+   <state time="1e-3"/>
+   <state time="100e-6"><ttlout value="1"/><analogout f="1e7"/></state>
+ </sequent>
+ <!-- ninty degree pulse and data recording after dead time -->
+ <sequent>
+   <state time="5e-6"><ttlout value="3"/><analogout f="1e5"/></state>
+   <state time="1e-6"><ttlout value="0"/><analogout f="1e5"/></state>
+   <state time="1e-2">
+      <analogin s="2000" f="2e6" resolution="12" sensitivity="4"/>
+      <analogout f="1e5"/>
+   </state>
+ </sequent>
+</sequent>
+</experiment>
