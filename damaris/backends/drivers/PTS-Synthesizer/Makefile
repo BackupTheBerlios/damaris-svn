@@ -7,7 +7,7 @@
 
 CXX=g++
 CXXFLAGS=-g -O0 -I. -I../..
-LDFLAGS=-lexpat
+LDFLAGS=../../core/core.a -lexpat
 
 .PHONY: all clean install
 
@@ -25,8 +25,8 @@ PTS.o: PTS.cpp ../frequgen.h
 PTS_test.o: PTS_test.cpp PTS.h
 	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
-PTS_test.exe: PTS_test.o PTS.o ../../core/core.a
-	$(CXX) $(LDFLAGS) -o $@ $^
+PTS_test.exe: PTS_test.o PTS.o
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 clean: ../../tools/add_endline.exe
 	for f in PTS.cpp PTS.h PTS_test.cpp; do $< $$f; done

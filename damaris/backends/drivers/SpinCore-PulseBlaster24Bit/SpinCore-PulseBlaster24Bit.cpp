@@ -146,13 +146,13 @@ PulseBlasterCommand* PulseBlaster24BitProgram::create_command(const PulseBlaster
 
 int PulseBlaster24BitProgram::write_to_file(FILE* out, size_t indent) const {
   std::string indent_string(indent,' ');
-  fprintf(out,"%s<PulsBlaster24BitProgram>\n",indent_string.c_str());
+  fprintf(out,"%s<PulseBlaster24BitProgram>\n",indent_string.c_str());
 
   for(const_iterator i=begin();i!=end();++i) {
     if (*i==NULL) throw SpinCorePulseBlaster_error("NULL pointer found in command list");
     (**i).write_to_file(out, indent+2);
   }
-  fprintf(out,"%s</PulsBlaster24BitProgram>\n",indent_string.c_str());
+  fprintf(out,"%s</PulseBlaster24BitProgram>\n",indent_string.c_str());
   return 1;
 }
 
@@ -163,7 +163,7 @@ int PulseBlaster24BitProgram::write_to_file(FILE* out, size_t indent) const {
 
 *********************************************************************/
 
-void SpinCorePulseBlaster24Bit::write_command(unsigned char* data, int flags, opcode inst, int inst_data, size_t delay) {
+void SpinCorePulseBlaster24Bit::write_command(unsigned char* data, int flags, opcode inst, unsigned int inst_data, size_t delay) {
     if (inst>8)
 	throw SpinCorePulseBlaster_error("instruction code not known");
     
@@ -197,7 +197,7 @@ void SpinCorePulseBlaster24Bit::write_command(unsigned char* data, const PulseBl
 	throw SpinCorePulseBlaster_error("found wrong command class in PulseBlasterProgram");
 
     if (command24Bit->program==NULL) throw SpinCorePulseBlaster_error("Command not associated with Program");
-    int inst_data=0;
+    unsigned int inst_data=0;
     switch(command24Bit->instruction) {
 	case SpinCorePulseBlaster::CONTINUE:
 	case SpinCorePulseBlaster::STOP:
@@ -206,8 +206,10 @@ void SpinCorePulseBlaster24Bit::write_command(unsigned char* data, const PulseBl
 	    // no parameter
 	    break;
 	case SpinCorePulseBlaster::LOOP:
-	case SpinCorePulseBlaster::LONG_DELAY:
 	    inst_data=command24Bit->loop_count-1;
+	    break;
+	case SpinCorePulseBlaster::LONG_DELAY:
+	    inst_data=command24Bit->loop_count-2;
 	    break;
 	case SpinCorePulseBlaster::BRANCH:
 	case SpinCorePulseBlaster::END_LOOP:
@@ -252,45 +254,4 @@ void SpinCorePulseBlaster24Bit::run_pulse_program(const PulseBlasterProgram& p) 
 	throw SpinCorePulseBlaster_error("found wrong program class in SpinCorePulseBlaster24Bit method");
     write_to_device(*prog);
     start();
-}
-
-void SpinCorePulseBlaster24Bit::wait_till_end() {
-    /* well.... a very bad implementation */
-    double waittime=duration-time_running.elapsed();
-#if 0
-    fprintf(stderr,"waiting while pulseprogram running...");
-#endif
-    // Bit zero is stopped; bit one is reset; bit two is running; bit three is waiting.
-    int status=get_status();
-#if 0
-    fprintf(stderr,"read status: %d\n",status);
-#endif
-    while (waittime>0.0 && core::term_signal==0 && !(status&0x1)) {
-      if (waittime<1e-4)
-	waittime=1e-4;
-      else
-	waittime*=0.9;
-#if 0
-      fprintf(stderr,"sleeping for %g seconds...",waittime);
-      fflush(stderr);
-#endif
-      timespec nanosleep_time;
-      nanosleep_time.tv_sec=(time_t)floor(waittime);
-      nanosleep_time.tv_nsec=(long)ceil((waittime-nanosleep_time.tv_sec)*1e9);
-      nanosleep(&nanosleep_time,NULL);
-      waittime=duration-time_running.elapsed();
-      status=get_status();
-#if 0
-      fprintf(stderr,"read status: %d\n",status);
-      fflush(stderr);
-#endif
-    }
-    if (core::term_signal!=0) {
-      //reset pulseblaster
-      stop();
-      reset_flags(0);
-    }
-#if 0
-    fprintf(stderr,"done\n");
-#endif
 }

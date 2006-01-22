@@ -10,6 +10,10 @@
 #include <core/stopwatch.h>
 #include <drivers/pulsegen.h>
 
+#ifndef SP_DEBUG
+# define SP_DEBUG 0
+#endif
+
 class SpinCorePulseBlaster_error: public pulse_exception {
 public:
   SpinCorePulseBlaster_error(const std::string& message): pulse_exception(message) {}
@@ -111,7 +115,9 @@ protected:
 #ifdef __CYGWIN__
   inline int write_register(unsigned int reg, unsigned int data) {
     int result=sp_outp(reg,data);
-    //fprintf(stderr, "sp_outp(%x,%x)\n",reg,data);
+#if SP_DEBUG
+    fprintf(stderr, "sp_outp(0x%02x,0x%02x)\n",reg,data);
+#endif
     if (result!=0) throw SpinCorePulseBlaster_error("write_register returned nonzero value");
     return result;
   }
@@ -135,7 +141,6 @@ protected:
       if (result<0) throw SpinCorePulseBlaster_error("read_register: error while reading");
       return result;
   }
-
 
 #endif
 

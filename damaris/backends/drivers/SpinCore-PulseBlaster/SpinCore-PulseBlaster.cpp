@@ -2,6 +2,10 @@
 #include "PulseBlasterProgram.h"
 #include "core/core.h"
 
+#ifndef SP_DEBUG
+# define SP_DEBUG 0
+#endif
+
 #ifdef __linux__
 # include <sys/types.h>
 # include <sys/stat.h>
@@ -21,36 +25,58 @@ SpinCorePulseBlasterLowlevel::~SpinCorePulseBlasterLowlevel() {
 #ifdef __CYGWIN__
 
 SpinCorePulseBlasterLowlevel::SpinCorePulseBlasterLowlevel() {
-  PBP_DLL = LoadLibrary("PBD03PC");
+#if 0
+  const char spincore_dll[]="spinapi";
+  const char sp_outp_func_name[]="pb_outp";
+  const char sp_inp_func_name[]="pb_inp";
+  const char sp_Close_func_name[]="pb_close";
+  const char sp_Init_func_name[]="pb_init";
+#endif
+#if 1
+  const char spincore_dll[]="PBD03PC";
+  const char sp_outp_func_name[]="pb_outp";
+  const char sp_inp_func_name[]="pb_inp";
+  const char sp_Close_func_name[]="ClosePMster";
+  const char sp_Init_func_name[]="InitPMster";
+#endif
+
+  PBP_DLL = LoadLibrary(spincore_dll);
   if (PBP_DLL==NULL) {
-    throw SpinCorePulseBlaster_error("could not open PBD03PC library\n");
+    throw SpinCorePulseBlaster_error(std::string("could not open ")+spincore_dll+" library\n");
   }
-  sp_outp = (__attribute__((stdcall))int(*)(unsigned short, int))GetProcAddress(PBP_DLL,"pb_outp");
+  sp_outp = (__attribute__((stdcall))int(*)(unsigned short, int))GetProcAddress(PBP_DLL,sp_outp_func_name);
   if (sp_outp==NULL) {
     FreeLibrary(PBP_DLL);
     PBP_DLL=NULL;
-    throw SpinCorePulseBlaster_error("could not access Pulseblaster PCI communication function PBD03PC_outp");
+    throw SpinCorePulseBlaster_error("could not access Pulseblaster PCI communication function sp_outp");
   }
-  sp_inp = (__attribute__((stdcall))int(*)(unsigned short))GetProcAddress(PBP_DLL,"pb_inp");
+  sp_inp = (__attribute__((stdcall))int(*)(unsigned short))GetProcAddress(PBP_DLL, sp_inp_func_name);
   if (sp_inp==NULL) {
     FreeLibrary(PBP_DLL);
     PBP_DLL=NULL;
-    throw SpinCorePulseBlaster_error("could not access Pulseblaster PCI communication function PBD03PC_inp");
+    throw SpinCorePulseBlaster_error("could not access Pulseblaster PCI communication function sp_inp");
   }
-  sp_Init = (__attribute__((stdcall))int(*)())GetProcAddress(PBP_DLL,"InitPMster");
+  sp_Init = (__attribute__((stdcall))int(*)())GetProcAddress(PBP_DLL,sp_Init_func_name);
   if (sp_Init==NULL) {
     FreeLibrary(PBP_DLL);
     PBP_DLL=NULL;
     throw SpinCorePulseBlaster_error("could not access Pulseblaster Init function");
   }
-  sp_Close = (__attribute__((stdcall))int(*)())GetProcAddress(PBP_DLL,"ClosePMster");
+  sp_Close = (__attribute__((stdcall))int(*)())GetProcAddress(PBP_DLL, sp_Close_func_name);
   if (sp_Close==NULL) {
     FreeLibrary(PBP_DLL);
     PBP_DLL=NULL;
     throw SpinCorePulseBlaster_error("could not access Pulseblaster Close function");
   }
+#if SP_DEBUG
+  __attribute__((stdcall))void (*sp_set_debug)(int flag);
+  sp_set_debug=(__attribute__((stdcall))void(*)(int))GetProcAddress(PBP_DLL,"pb_set_debug");
+  if (sp_set_debug!=NULL) sp_set_debug(1);
+  else fprintf(stderr, "could not load debug function from %s DLL\n",spincore_dll);
+#endif
   int result=sp_Init();
   if (result!=0) {
+    fprintf(stderr, "sp_Init returned %d\n", result);
     FreeLibrary(PBP_DLL);
     PBP_DLL=NULL;
     throw SpinCorePulseBlaster_error("could not initialise Pulseblaster card");
@@ -59,6 +85,7 @@ SpinCorePulseBlasterLowlevel::SpinCorePulseBlasterLowlevel() {
 
 SpinCorePulseBlasterLowlevel::~SpinCorePulseBlasterLowlevel() {
   if (sp_Close!=NULL) sp_Close();
+  sp_inp=NULL;
   sp_outp=NULL;
   sp_Close=NULL;
   sp_Init=NULL;
@@ -109,41 +136,63 @@ void SpinCorePulseBlaster::run_pulse_program(state& exp) {
   PulseBlasterProgram* c=create_program(exp);
   if (c==NULL)
     throw pulse_exception("could not create PulseBlasterDDSIIIProgram");
+  // one short "do nothing" state at beginning, because Pulseblaster has some problems with first command
+  c->push_front(c->create_command());
+  // end: clear flags and stop pulseblaster
   c->push_back(c->create_command());
   c->push_back(c->create_command());
   c->back()->instruction=STOP;
   run_pulse_program(*c);
   time_running.start();
-  duration+=2.0*shortest_pulse/clock;
+  duration+=3.0*shortest_pulse/clock;
   delete c;
 }
+
 
 void SpinCorePulseBlaster::wait_till_end() {
     /* well.... a very bad implementation */
     double waittime=duration-time_running.elapsed();
-#if 0
-    fprintf(stderr,"waiting while pulseprogram running...");
+#if SP_DEBUG
+    fprintf(stderr,"waiting while pulseprogram running (%f)...",waittime);
+#endif
     // Bit zero is stopped; bit one is reset; bit two is running; bit three is waiting.
     int status=get_status();
-    fprintf(stderr,"read status: %d\n",status);
+#if SP_DEBUG
+    fprintf(stderr,"status: 0x%0x ",status);
 #endif
-    while (waittime>0.0 && core::term_signal==0) {
-      if (waittime<1e-3) waittime=1e-3;
-#if 0
-      fprintf(stderr,"sleeping for %g seconds...",duration);
+    while (waittime>-1e6 && core::term_signal==0 && (status&0x4)) {
+      if (waittime<1e-4)
+	waittime=1e-4;
+      else
+	waittime*=0.9;
+#if SP_DEBUG
+      fprintf(stderr,"sleeping for %g seconds...",waittime);
       fflush(stderr);
 #endif
-      usleep((unsigned long)ceil(waittime*1e6));
+      timespec nanosleep_time;
+      nanosleep_time.tv_sec=(time_t)floor(waittime);
+      nanosleep_time.tv_nsec=(long)ceil((waittime-nanosleep_time.tv_sec)*1e9);
+      nanosleep(&nanosleep_time,NULL);
       waittime=duration-time_running.elapsed();
+      status=get_status();
+#if SP_DEBUG
+      fprintf(stderr,"status: 0x%0x ",status);
+      fflush(stderr);
+#endif
     }
     if (core::term_signal!=0) {
       //reset pulseblaster
       stop();
       reset_flags(0);
     }
-#if 0
+    if (waittime<=-1e6) {
+      fprintf(stderr, "ran into timeout, aborting...");
+      stop();
+      reset_flags(0);
+      status=get_status();
+      fprintf(stderr,"status: 0x%0x\n",status);
+    }
+#if SP_DEBUG
     fprintf(stderr,"done\n");
 #endif
 }
-
-

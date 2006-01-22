@@ -60,6 +60,11 @@ int simple_sequence() {
   return 0;
 }
 
+class core {
+public:
+  static int term_signal;
+};
+
 
 int state_sequence(const char* filename) {
 
@@ -72,18 +77,20 @@ int state_sequence(const char* filename) {
       delete sa;
       throw SpinCorePulseBlaster_error("found no states");
     }
+    prog.push_front(prog.create_command());
     prog.append_sequence(*ss);
     prog.push_back(prog.create_command());
     prog.push_back(prog.create_command());
     prog.back()->instruction=SpinCorePulseBlaster::STOP;
     prog.write_to_file(stdout);
+    state_iterator i(*ss);
+    while (!i.is_last()) i.next_state();
+    sp24.duration=i.get_time()+2*90e-9;
     sp24.run_pulse_program(prog);
     sp24.time_running.start();
-    int status=0;
-    do {
-      usleep(10000);
-      status=sp24.get_status();
-    } while (status&4);
+    
+    sp24.wait_till_end();
+
     fprintf(stdout, "%g seconds elapsed\n", sp24.time_running.elapsed());
   }
   catch(SpinCorePulseBlaster_error e) {
@@ -100,6 +107,7 @@ int state_sequence(const char* filename) {
 
 
 int main(int argc, char** argv) {
+  core::term_signal=0;
     size_t n=1;
     const char* filename=NULL;
 

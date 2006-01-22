@@ -107,7 +107,7 @@ class SpinCorePulseBlaster24Bit: public SpinCorePulseBlaster {
   virtual void write_command(unsigned char* data, const PulseBlasterCommand& command);
 
   /// write raw parameters as a 10 byte machine word
-  virtual void write_command(unsigned char* data, int flags, opcode inst, int inst_data, size_t delay);
+  virtual void write_command(unsigned char* data, int flags, opcode inst, unsigned int inst_data, size_t delay);
 
   /// append raw parameters as a 10 byte machine word
   virtual void append_command(std::string& data, int flags, opcode inst, int inst_data, size_t delay) {
@@ -124,11 +124,6 @@ class SpinCorePulseBlaster24Bit: public SpinCorePulseBlaster {
   }
 
   virtual void write_to_device(const PulseBlaster24BitProgram& p);
-
-  /**
-     wait till end of pulseprogram
-   */
-  virtual void wait_till_end();
 
   /**
      destructor (close device)

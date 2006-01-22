@@ -151,7 +151,7 @@ PulseBlasterDDSIIIProgram::PulseBlasterDDSIIIProgram(const PulseBlasterDDSIIIPro
 
 int PulseBlasterDDSIIIProgram::write_to_file(FILE* out, size_t indent) const {
   std::string indent_string(indent,' ');
-  fprintf(out,"%s<PulsBlasterDDSIIIProgram>\n",indent_string.c_str());
+  fprintf(out,"%s<PulseBlasterDDSIIIProgram>\n",indent_string.c_str());
 
   if (!frequency_registers.empty()) {
     fprintf(out,"%s  <frequencies>",indent_string.c_str());
@@ -177,7 +177,7 @@ int PulseBlasterDDSIIIProgram::write_to_file(FILE* out, size_t indent) const {
   for(const_iterator i=begin();i!=end();++i) {
     (**i).write_to_file(out,indent+2);
   }
-  fprintf(out,"%s</PulsBlasterDDSIIIProgram>\n",indent_string.c_str());
+  fprintf(out,"%s</PulseBlasterDDSIIIProgram>\n",indent_string.c_str());
   return 1;
 }
 
@@ -346,8 +346,10 @@ void SpinCorePulseBlasterDDSIII::write_command(unsigned char* data, const PulseB
     // no parameter
     break;
   case SpinCorePulseBlaster::LOOP:
-  case SpinCorePulseBlaster::LONG_DELAY:
     inst_data=command.loop_count-1;
+    break;
+  case SpinCorePulseBlaster::LONG_DELAY:
+    inst_data=command.loop_count-2;
     break;
   case SpinCorePulseBlaster::BRANCH:
   case SpinCorePulseBlaster::END_LOOP:
