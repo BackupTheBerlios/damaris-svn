@@ -7,9 +7,9 @@
 
 
 CXX=g++
-CXXFLAGS=-g -O0 -I. -I..
+CXXFLAGS=-g -O0 -I. -I.. -I/opt/local/include
 LDFLAGS=
-LIBS=-lexpat -lxerces-c -lm
+LIBS=-lexpat -lxerces-c -lm -L/opt/local/lib
 
 MACHINE=dummy
 
