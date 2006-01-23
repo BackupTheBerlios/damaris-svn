@@ -31,7 +31,7 @@ PulseBlaster24BitCommand::PulseBlaster24BitCommand(PulseBlaster24BitProgram& p,
 int PulseBlaster24BitCommand::write_to_file(FILE* out, size_t indent) const {
 
   if (program==NULL) throw pulse_exception("PulseBlaster24Bit: Command not associated with Program");
-  fprintf(out,"%s<instruction ttls=\"%d\" ",
+  fprintf(out,"%s<instruction ttls=\"0x%06x\" ",
 	  std::string(indent,' ').c_str(),ttls);
   switch(instruction) {
   case SpinCorePulseBlaster::LOOP:

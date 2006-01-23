@@ -130,18 +130,21 @@ void SpinCorePulseBlaster::run_pulse_program(state& exp) {
   state_iterator i(*seq);
   while (!i.is_last()) i.next_state();
   duration=i.get_time();
-#if 0
+#if SP_DEBUG
   fprintf(stderr, "caluclated time of pulse program is %g\n",duration);
 #endif
   PulseBlasterProgram* c=create_program(exp);
   if (c==NULL)
-    throw pulse_exception("could not create PulseBlasterDDSIIIProgram");
+    throw pulse_exception("could not create PulseBlasterProgram");
   // one short "do nothing" state at beginning, because Pulseblaster has some problems with first command
   c->push_front(c->create_command());
   // end: clear flags and stop pulseblaster
   c->push_back(c->create_command());
   c->push_back(c->create_command());
   c->back()->instruction=STOP;
+#if SP_DEBUG
+  c->write_to_file(stderr);
+#endif
   run_pulse_program(*c);
   time_running.start();
   duration+=3.0*shortest_pulse/clock;
@@ -150,8 +153,9 @@ void SpinCorePulseBlaster::run_pulse_program(state& exp) {
 
 
 void SpinCorePulseBlaster::wait_till_end() {
-    /* well.... a very bad implementation */
+
     double waittime=duration-time_running.elapsed();
+    double timeout=(waittime>10)?(waittime*0.01):0.1;
 #if SP_DEBUG
     fprintf(stderr,"waiting while pulseprogram running (%f)...",waittime);
 #endif
@@ -160,9 +164,9 @@ void SpinCorePulseBlaster::wait_till_end() {
 #if SP_DEBUG
     fprintf(stderr,"status: 0x%0x ",status);
 #endif
-    while (waittime>-1e6 && core::term_signal==0 && (status&0x4)) {
-      if (waittime<1e-4)
-	waittime=1e-4;
+    while (waittime>-timeout && core::term_signal==0 && (status&0x4)) {
+      if (waittime<1e-2)
+	waittime=1e-2;
       else
 	waittime*=0.9;
 #if SP_DEBUG
@@ -185,7 +189,7 @@ void SpinCorePulseBlaster::wait_till_end() {
       stop();
       reset_flags(0);
     }
-    if (waittime<=-1e6) {
+    if (waittime<=-timeout) {
       fprintf(stderr, "ran into timeout, aborting...");
       stop();
       reset_flags(0);
