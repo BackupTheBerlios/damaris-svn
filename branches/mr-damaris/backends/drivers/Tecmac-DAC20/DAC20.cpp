@@ -23,7 +23,7 @@ PFG::~PFG() {}
 // This sets the dac
 void PFG::set_dac(signed dw) {
 	dac_value=dw;	
-	}
+}
 
 void PFG::set_dac(state& experiment) {
 	
@@ -89,17 +89,17 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				// now, insert the ttl information
 				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in
 				int dac_word[20];
-				std::cout<< PFG_aout->dac_value <<std::endl;
+				// std::cout<< PFG_aout->dac_value <<std::endl;
 				for (int j = 0; j < DAC_BIT_DEPTH ; j++)	{
 					int bit=PFG_aout->dac_value & 1;
 					dac_word[j]=bit;
 					PFG_aout->dac_value>>=1;
-				}
+					}
 				// need one clock cycle to read in bit
 				// latch enable (LE) should always be high while doing so
 				// except for the last bit
 				// todo: may be we can save the last bit somehow
-				// ugly: reverse the bitpattern
+				// ugly: reverse the bi tpattern
 				for (int i=DAC_BIT_DEPTH-1; i >= 0; i--) {	
 					register_ttls->ttls = (int(pow(2.0, DATA_BIT))*dac_word[i] + int(pow(2.0, LE_BIT)));
 					the_sequence.insert(the_state,register_state->copy_new());
