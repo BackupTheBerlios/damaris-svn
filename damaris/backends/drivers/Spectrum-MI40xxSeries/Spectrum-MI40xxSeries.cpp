@@ -6,6 +6,21 @@
 #include "core/xml_states.h"
 #include "Spectrum-MI40xxSeries.h"
 
+#ifndef SPC_DEBUG
+# define SPC_DEBUG 0
+#endif
+
+void SpectrumMI40xxSeries::Configuration::print(FILE* f) {
+  fprintf(f, "Spectrum MI40xx Series Configuration:\n");
+  fprintf(f, "  Sample Frequency %g Hz, Acquisition Timeout %g\n",samplefreq,timeout);
+  if (data_structure!=NULL)
+    data_structure->print(f,2);
+  else
+    fprintf(f, "  No Data to acquire\n");
+  fprintf(f, "  Impedance %f Ohm, Sensitivity %f V, Coupling %s\n", impedance, sensitivity, (coupling==0)?"DC":"AC");    
+}
+
+
 SpectrumMI40xxSeries::SpectrumMI40xxSeries(const ttlout& t_line) {
   // to be configured
   device_id=0;
@@ -244,6 +259,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   conf->data_structure=NULL;
   conf->impedance=50; // Ohm
   conf->sensitivity=0; // Volts
+  conf->coupling=0; // DC
   collect_config_recursive(*exp_sequence, *conf);
 
   size_t sampleno=(conf->data_structure==NULL)?0:conf->data_structure->size();
@@ -263,6 +279,11 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   }
 
   effective_settings=conf;
+
+#if SPC_DEBUG
+  /* settings for this experiment */
+  conf->print(stderr);
+#endif
 
   /* make a check, whether spectrum board is running */
   int actual_status=0;
@@ -288,7 +309,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   // decide for aquisition mode and start it
   int16 nErr=ERR_OK;
   if (sampleno<fifo_minimal_size) {
-#if 0
+#if SPC_DEBUG
       fprintf(stderr, "expecting %u samples in normal mode\n",sampleno);
 #endif
       SpcSetParam (deviceno, SPC_MEMSIZE,             sampleno);      // Memory size
@@ -397,7 +418,7 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 
     if (fifobuffers.empty()) {
 	// simple version: standard acquisition, wait and get...
-#if 0
+#if SPC_DEBUG
 	fprintf(stderr, "fetching %u samples in normal mode (timeout is %g)\n",sampleno,timeout);
 #endif
 	stopwatch adc_timer;
@@ -419,14 +440,24 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
     
 # if defined __linux__
 	size_t data_length=SpcGetData (deviceno, 0, 0, 2 * sampleno, 2, (dataptr) adc_data);
-# elif defined __CYGWIN__
-	size_t data_length=SpcGetData (deviceno, 0, 0, 2 * sampleno,(void*) adc_data);
+# if SPC_DEBUG
+	fprintf(stderr, "SpcGetData returned %d, got %u samples, expected %u\n", data_length, data_length/sizeof(short int)/2, sampleno);
 # endif
 	if (2*sizeof(short int)*sampleno!=data_length) {
 	    free(adc_data);
 	    throw SpectrumMI40xxSeries_error("wrong amount of data from adc card");
 	}
 	// current position in adc data array
+# elif defined __CYGWIN__
+	int16 read_result=SpcGetData (deviceno, 0, 0, 2 * sampleno,(void*) adc_data);
+# if SPC_DEBUG
+	fprintf(stderr, "SpcGetData returned %d\n", read_result);
+# endif
+	if (read_result!=0) {
+	    free(adc_data);
+	    throw SpectrumMI40xxSeries_error("wrong amount of data from adc card");
+	}
+# endif
 	short int* data_position=adc_data;
 	// produced results
 	adc_results* the_results=new adc_results(0);
