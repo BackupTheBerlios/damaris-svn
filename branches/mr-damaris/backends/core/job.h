@@ -59,7 +59,7 @@ class job {
   }
 
   virtual int print() const{
-    printf("job no %d\n",job_no);
+    printf("job no %u\n",job_no);
     return 0;
   }
 

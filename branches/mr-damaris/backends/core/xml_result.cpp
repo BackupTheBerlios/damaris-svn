@@ -472,7 +472,7 @@ int xml_result_writer::write_adcs_to_file(const std::string& filename, const adc
       {
 	// write separate data file
 	char result_filename[1<<10];
-	snprintf(result_filename,sizeof(result_filename),"adc.%09d.%d.bin",ress->job_no,num_res);
+	snprintf(result_filename,sizeof(result_filename),"adc.%09u.%d.bin",ress->job_no,num_res);
 	write_adcdata_separate(out, std::string(result_filename), *res);
       }
       break;

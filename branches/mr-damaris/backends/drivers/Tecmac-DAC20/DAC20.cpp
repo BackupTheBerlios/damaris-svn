@@ -88,22 +88,27 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				
 				// now, insert the ttl information
 				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in
-				std::cout<< dac_value <<std::endl;
-				for (int j=0; j < DAC_BIT_DEPTH ; j++)	{
-					int bit=dac_value & 1;
-					// need one clock cycle to read in bit
-					// latch enable (LE) should always be high while doing so
-					// except for the last bit
-					// todo: may be we can save the last bit somehow
-					register_ttls->ttls = (int(pow(2.0, DATA_BIT))*bit + int(pow(2.0, LE_BIT)));
+				int dac_word[20];
+				std::cout<< PFG_aout->dac_value <<std::endl;
+				for (int j = 0; j < DAC_BIT_DEPTH ; j++)	{
+					int bit=PFG_aout->dac_value & 1;
+					dac_word[j]=bit;
+					PFG_aout->dac_value>>=1;
+				}
+				// need one clock cycle to read in bit
+				// latch enable (LE) should always be high while doing so
+				// except for the last bit
+				// todo: may be we can save the last bit somehow
+				// ugly: reverse the bitpattern
+				for (int i=DAC_BIT_DEPTH-1; i >= 0; i--) {	
+					register_ttls->ttls = (int(pow(2.0, DATA_BIT))*dac_word[i] + int(pow(2.0, LE_BIT)));
 					the_sequence.insert(the_state,register_state->copy_new());
-					register_ttls->ttls = (int(pow(2.0, DATA_BIT))*bit + int(pow(2.0, CLK_BIT)) + int(pow(2.0, LE_BIT)));
+					register_ttls->ttls = (int(pow(2.0, DATA_BIT))*dac_word[i] + int(pow(2.0, CLK_BIT)) + int(pow(2.0, LE_BIT)));
 					the_sequence.insert(the_state,register_state->copy_new());
-					if (j == (DAC_BIT_DEPTH-1)) {// last bit => LE low, tell DAC to read the word in 
+					if (i == (DAC_BIT_DEPTH-1)) {// last bit => LE low, tell DAC to read the word in 
 						register_ttls->ttls = 0; //  int(pow(2.0, DATA_BIT))*bit;
 						the_sequence.insert(the_state,register_state->copy_new());
 					}
-					dac_value>>=1;
 				}
 				
 				// and shorten the remaining state 
