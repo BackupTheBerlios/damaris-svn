@@ -70,8 +70,31 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				// remove the analog out section
 				this_state->erase(i++);
 			}
-			else
+			else {
+				if(0) {
+				state* my_state=NULL;
+				state* register_state=new state(*this_state);
+				ttlout* le_ttls=new ttlout();
+				le_ttls->id=0;
+				le_ttls->ttls=2000;//int(pow(2.0, LE_BIT));					
+				my_state=register_state;
+				// push le_ttls in the front of the state
+				my_state->push_front(le_ttls);
+				// delete the informations
+				//register_state->erase(i++);
+				//the_sequence.clear();
+				//the_sequence.insert(the_state,register_state->copy_flat());
+				//my_state->length=0.001;
+				the_sequence.insert(the_state, my_state->copy_flat());
+				//delete register_state;
+				the_sequence.remove(this_state);
+				
+				//this_state->length=0.0;
+				//this_state=NULL;
+				//delete le_ttls;
+				}
 				++i;
+			}
 		} // state members loop
 		
 		if (PFG_aout!=NULL) {
@@ -86,8 +109,6 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				register_state->length=9e-8;
 				register_state->push_back(register_ttls);
 				std::cout << "DANGER!! Need warmup pulse on LE" <<std::endl;	
-				//register_ttls->ttls = int(LE_BIT);
-				//register_state->length = 9e-1;
 				// now, insert the ttl information
 				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in
 				int dac_word[20];
@@ -101,7 +122,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				// latch enable (LE) should always be high while doing so
 				// except for the last bit
 				// todo: may be we can save the last bit somehow
-				// ugly: reverse the bi tpattern
+				// ugly: reverse the bit pattern
 				for (int i=DAC_BIT_DEPTH-1; i >= 0; i--) {	
 					register_ttls->ttls = (int(pow(2.0, DATA_BIT))*dac_word[i] + int(pow(2.0, LE_BIT)));
 					the_sequence.insert(the_state,register_state->copy_new());
@@ -118,6 +139,18 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				delete register_state;
 				delete PFG_aout;	
 			}	
+		}
+		else {
+			
+			ttlout* le_ttls=new ttlout();
+			le_ttls->id=0;
+			le_ttls->ttls=2000;//int(pow(2.0, LE_BIT));
+			this_state->push_front(le_ttls);
+			/*if (this_state->length < 0.02) {
+				this_state->length = 0.02;
+			}*/
+				
+				
 		}
 		// end of state modifications 
 	}
