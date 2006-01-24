@@ -9,9 +9,9 @@
 #define DAC_BIT_DEPTH 20
 
 // The channel configuration
-#define DATA_BIT 18	
-#define CLK_BIT 16
-#define LE_BIT 17
+#define DATA_BIT 2//18	
+#define CLK_BIT 0//16
+#define LE_BIT 1//17
 
 PFG::PFG(int myid): id(myid) {
 	dac_value=0;
@@ -85,7 +85,9 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				register_ttls->id=0;
 				register_state->length=9e-8;
 				register_state->push_back(register_ttls);
-				
+				std::cout << "DANGER!! Need warmup pulse on LE" <<std::endl;	
+				//register_ttls->ttls = int(LE_BIT);
+				//register_state->length = 9e-1;
 				// now, insert the ttl information
 				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in
 				int dac_word[20];
@@ -105,7 +107,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 					the_sequence.insert(the_state,register_state->copy_new());
 					register_ttls->ttls = (int(pow(2.0, DATA_BIT))*dac_word[i] + int(pow(2.0, CLK_BIT)) + int(pow(2.0, LE_BIT)));
 					the_sequence.insert(the_state,register_state->copy_new());
-					if (i == (DAC_BIT_DEPTH-1)) {// last bit => LE low, tell DAC to read the word in 
+					if (i == 0 /*(DAC_BIT_DEPTH-1)*/) {// last bit => LE low, tell DAC to read the word in 
 						register_ttls->ttls = 0; //  int(pow(2.0, DATA_BIT))*bit;
 						the_sequence.insert(the_state,register_state->copy_new());
 					}
