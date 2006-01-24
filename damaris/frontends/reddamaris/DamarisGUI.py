@@ -192,12 +192,12 @@ class DamarisGUI:
         
         # start experiment
         try:
-            self.spool_dir=os.path.abspath("spool")
+            self.spool_dir=os.path.abspath(actual_config["spool_dir"])
             # setup script engines
             self.si=ScriptInterface(exp_script,
                                     res_script,
                                     backend,
-                                    actual_config["spool_dir"],
+                                    self.spool_dir,
                                     clear_jobs=actual_config["del_jobs_after_execution"],
                                     clear_results=actual_config["del_results_after_processing"])
 
@@ -374,7 +374,7 @@ class DamarisGUI:
                 dump_file.createArray(scriptgroup,"result_script", self.si.res_script)
             if self.si.backend_executable:
                 dump_file.createArray(scriptgroup,"backend_executable", self.si.backend_executable)
-            if self.si.spool_dir:
+            if self.spool_dir:
                 dump_file.createArray(scriptgroup,"spool_directory", self.spool_dir)
             timeline_table=dump_file.createTable("/","timeline", dump_file_timeline, title="Timeline of Experiment")
             timeline_row=timeline_table.row
@@ -421,10 +421,10 @@ class DamarisGUI:
         pause_state=self.toolbar_pause_button.get_active()
         if pause_state:
             if self.state!=DamarisGUI.Run_State: return False
-            if self.si.spool_dir is None: return False
+            if self.spool_dir is None: return False
             no=self.si.data.get("__recentresult",-1)+1
-            result_pattern=os.path.join(self.si.spool_dir, "job.%09d.result")
-            job_pattern=os.path.join(self.si.spool_dir, "job.%09d")
+            result_pattern=os.path.join(self.spool_dir, "job.%09d.result")
+            job_pattern=os.path.join(self.spool_dir, "job.%09d")
             while os.path.isfile(result_pattern%no):
                 no+=1
             i=0
