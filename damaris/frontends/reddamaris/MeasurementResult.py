@@ -169,7 +169,9 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         the_destination=None
 
 
-    def write_to_hdf(self, hdffile, where, name, title):
+    def write_to_hdf(self, hdffile, where, name, title, compress=None):
+        if compress is not None:
+            print "ToDo: compress is not implemented in MeasurementResult.write_to_hdf"
         h5_table_format= {
             "x" : tables.Float64Col(),
             "y_mean" : tables.Float64Col(),

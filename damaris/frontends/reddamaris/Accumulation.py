@@ -227,7 +227,7 @@ class Accumulation(Errorable, Drawable):
             
 
 
-    def write_to_hdf(self, hdffile, where, name, title):
+    def write_to_hdf(self, hdffile, where, name, title, compress=None):
         accu_group=hdffile.createGroup(where=where,name=name,title=title)
         accu_group._v_attrs.damaris_type="Accumulation"
         if self.contains_data():
@@ -269,20 +269,35 @@ class Accumulation(Errorable, Drawable):
                             timedata[1::2]=numarray.zeros(type = numarray.Float64,
                                                           shape = ((index[1]-index[0]+1),))
                         timedata.setshape((index[1]-index[0]+1,2))
-                        time_slice_data=hdffile.createArray(accu_group,
-                                                            name="idx%04d_ch%04d"%(index_no,channel_no),
-                                                            object=timedata,
-                                                            title="Index %d, Channel %d"%(index_no,channel_no))
+                        time_slice_data=None
+                        if compress is not None:
+                            time_slice_data=hdffile.createCArray(accu_group,
+                                                                 name="idx%04d_ch%04d"%(index_no,channel_no),
+                                                                 shape=timedata.getshape(),
+                                                                 atom=tables.Float64Atom(shape=timedata.getshape(),
+                                                                                         flavor="NumArray"),
+                                                                 filters=tables.Filters(complevel=compress,
+                                                                                        complib='zlib'),
+                                                                 title="Index %d, Channel %d"%(index_no,channel_no))
+                            time_slice_data[:]=timedata
+                        else:
+                            time_slice_data=hdffile.createArray(accu_group,
+                                                                name="idx%04d_ch%04d"%(index_no,channel_no),
+                                                                object=timedata,
+                                                                title="Index %d, Channel %d"%(index_no,channel_no))
+
+                        timedata=None
                         # set attributes
-                        time_slice_data.attrs.index=numarray.array(index_no, type=numarray.Int32)
-                        time_slice_data.attrs.channel=numarray.array(channel_no, type=numarray.Int32)
-                        time_slice_data.attrs.number=numarray.array(self.n, type=numarray.Int64)
-                        time_slice_data.attrs.dwelltime=numarray.array(1.0/self.sampling_rate,
-                                                                       type=numarray.Float64)
-                        time_slice_data.attrs.start_time=numarray.array(1.0/self.sampling_rate*index[0],
-                                                                        type=numarray.Float64)
+                        time_slice_data._f_setAttr("index",numarray.array(index_no, type=numarray.Int32))
+                        time_slice_data._f_setAttr("channel",numarray.array(channel_no, type=numarray.Int32))
+                        time_slice_data._f_setAttr("number",numarray.array(self.n, type=numarray.Int64))
+                        time_slice_data._f_setAttr("dwelltime",numarray.array(1.0/self.sampling_rate,
+                                                                               type=numarray.Float64))
+                        time_slice_data._f_setAttr("start_time",numarray.array(1.0/self.sampling_rate*index[0],
+                                                                                type=numarray.Float64))
                         time_slice_data.flush()
             finally:
+                time_slice_data=None
                 accu_group=None
                 self.lock.release()
                 hdffile.flush()

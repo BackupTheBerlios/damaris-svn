@@ -219,7 +219,6 @@ class ResultReader:
                     self.adc_result_trailing_chars=""
                     tmp=numarray.fromstring(tmp_string, numarray.Int16,(len(tmp_string)/2))
                     del tmp_string
-                    sys.stdout.flush()
                     self.result.x[self.adc_result_sample_counter:]=(numarray.arange(tmp.size()/2)+self.adc_result_sample_counter)/self.result.get_sampling_rate()
                     self.result.y[0][self.adc_result_sample_counter:]=tmp[::2]
                     self.result.y[1][self.adc_result_sample_counter:]=tmp[1::2]

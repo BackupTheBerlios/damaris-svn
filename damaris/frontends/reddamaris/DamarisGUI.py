@@ -331,7 +331,7 @@ class DamarisGUI:
 
             if not self.dump_states_event_id is None:
                 gobject.source_remove(self.dump_states_event_id)
-            self.dump_states()
+            self.dump_states(compress=9)
             self.dump_states_event_id=None
             
             # now everything is stopped
@@ -351,7 +351,11 @@ class DamarisGUI:
         # or look at them again
         return True
 
-    def dump_states(self, init=False):
+    def dump_states(self, init=False, compress=None):
+        """
+        init: constructs basic structure of this file
+        compress: optional argument for zlib compression 0-9
+        """
 
         class dump_file_timeline(tables.IsDescription):
             time=tables.StringCol(length=len("YYYYMMDD HH:MM:SS"))
@@ -401,7 +405,7 @@ class DamarisGUI:
             timeline_row.append()
             timeline_table.flush()
 
-        self.data.write_hdf5(dump_file, where="/", name="data_pool")
+        self.data.write_hdf5(dump_file, where="/", name="data_pool", compress=compress)
         
         dump_file.flush()
         dump_file.close()
