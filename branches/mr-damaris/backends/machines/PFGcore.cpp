@@ -43,6 +43,9 @@ public:
       the_pg=new SpinCorePulseBlaster24Bit();
       PTS* my_pts=new PTS_latched(0); // ID of PTS_nalogout 0
       the_fg=my_pts;
+	  ttlout dac_latchenable;
+	  dac_latchenable.id=0;
+	  dac_latchenable.ttls=4;
       PFG* my_pfg=new PFG(1);
       the_gradientpg=my_pfg;
   }
