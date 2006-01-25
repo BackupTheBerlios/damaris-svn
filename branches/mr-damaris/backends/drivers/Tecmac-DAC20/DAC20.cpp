@@ -76,7 +76,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				state* register_state=new state(*this_state);
 				ttlout* le_ttls=new ttlout();
 				le_ttls->id=0;
-				le_ttls->ttls=2000;//int(pow(2.0, LE_BIT));					
+				le_ttls->ttls=int(pow(2.0, LE_BIT));					
 				my_state=register_state;
 				// push le_ttls in the front of the state
 				my_state->push_front(le_ttls);
@@ -135,16 +135,20 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				}
 				
 				// and shorten the remaining state 
+				//  and add LE High to this state
 				this_state->length-=9e-8*41;
+				register_ttls->ttls = int(pow(2.0, LE_BIT));
+				this_state->push_front(register_ttls);
 				delete register_state;
 				delete PFG_aout;	
+				// xml_state_writer().write_states(stdout,*a_sequence,1);
 			}	
 		}
 		else {
 			
 			ttlout* le_ttls=new ttlout();
 			le_ttls->id=0;
-			le_ttls->ttls=2000;//int(pow(2.0, LE_BIT));
+			le_ttls->ttls=int(pow(2.0, LE_BIT));
 			this_state->push_front(le_ttls);
 			/*if (this_state->length < 0.02) {
 				this_state->length = 0.02;

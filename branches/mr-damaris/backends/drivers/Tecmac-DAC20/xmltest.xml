@@ -3,5 +3,5 @@
  <state time="3.7e-2"><analogout id="1" a="5" dac_value="200"/></state>
  <state time="3.7e-6"><analogout id="2" a="5" dac_value="10002"/></state>
  <state time="3.7e-6"><analogout id="3" a="5" dac_value="1"/></state>
- <state time="3.7e-6"><analogout id="0" a="5" dac_value="4"/></state>
+ <state time="3.7e-6"><analogout id="0" a="5" dac_value="5"/></state>
 </sequent>
