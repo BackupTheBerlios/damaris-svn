@@ -1,7 +1,29 @@
 <?xml version="1.0"?>
 <sequent>
- <state time="3.7e-2"><analogout id="1" a="5" dac_value="200"/></state>
- <state time="3.7e-6"><analogout id="2" a="5" dac_value="10002"/></state>
- <state time="3.7e-6"><analogout id="3" a="5" dac_value="1"/></state>
- <state time="3.7e-6"><analogout id="0" a="5" dac_value="5"/></state>
+<state time="9.9999999999999995e-07"><ttlout value="61440"/></state>
+<state time="9.9999999999999995e-07"><ttlout value="32768"/></state>
+<state time="0.0001"/>
+<state time="2e-6"><analogout id="1" f="75000000.000000" phase="0.000000"/></state>
+<state time="0.11999599999999999"/>
+<state time="1.9999999999999999e-06"><ttlout value="1"/></state>
+<state time="5.75e-07"><ttlout value="3"/></state>
+<state time="2e-6"><analogout id="0" f="0.000000" phase="0.000000" dac_value="10002"/></state>
+<state time="2e-6"><analogout id="1" f="0.000000" phase="0.000000"/></state>
+<state time="0.00031804892620614084"/>
+<state time="3.7e-5"><analogout id="1" a="5" dac_value="200"/></state>
+<state time="3.7e-5"><analogout id="0" a="5" dac_value="10002"/></state>
+<state time="3.7e-5"><analogout id="1" a="5" dac_value="1"/></state>
+<state time="3.7e-5"><analogout id="0" a="5" dac_value="5"/></state>
+<state time="1.9999999999999999e-06"><ttlout value="1"/></state>
+<state time="5.75e-07"><ttlout value="3"/></state>
+<state time="2e-6"><analogout id="1" f="0.000000" phase="-123.000000"/></state>
+<state time="0.00031033642620614083"/>
+<state time="0.00025999999999999998"><analogin s="4096" f="2e+07" sensitivity="1.000000"/></state>
+<state time="2e-6"><analogout id="1" f="0.000000" phase="0.000000"/></state>
+<state time="0.0094230885737938593"/>
+<state time="1.9999999999999999e-06"><ttlout value="1"/></state>
+<state time="5.75e-07"><ttlout value="3"/></state>
+<state time="2e-6"><analogout id="1" f="0.000000" phase="-123.000000"/></state>
+<state time="0.00031062392620614081"/>
+<state time="0.00020684799999999998"><analogin s="4096" f="2e+07" sensitivity="1.000000"/></state>
 </sequent>

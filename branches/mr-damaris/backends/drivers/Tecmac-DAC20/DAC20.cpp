@@ -73,18 +73,6 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				this_state->erase(i++);
 			}
 			else {
-				if(0) {
-				state* my_state = NULL;
-				state* register_state = new state(*this_state);
-				ttlout* le_ttls = new ttlout();
-				le_ttls->id = 0;
-				le_ttls->ttls = int(pow(2.0, LE_BIT));					
-				my_state = register_state;
-				// push le_ttls in the front of the state
-				my_state->push_front(le_ttls);
-				the_sequence.insert(the_state, my_state->copy_flat());
-				the_sequence.remove(this_state);
-				}
 				++i;
 			}
 		} // state members loop
@@ -100,11 +88,10 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				register_ttls->id = 0;
 				register_state->length = 9e-8;
 				register_state->push_back(register_ttls);
-				std::cout << "DANGER!! Need warmup pulse on LE" <<std::endl;	
+			//	std::cout << "DANGER!! Need warmup pulse on LE" <<std::endl;	
 				// now, insert the ttl information
 				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in
 				int dac_word[20];
-				// std::cout<< PFG_aout->dac_value <<std::endl;
 				for (int j = 0; j < DAC_BIT_DEPTH ; j++)	{
 					int bit = PFG_aout->dac_value & 1;
 					dac_word[j] = bit;
@@ -126,25 +113,34 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				}
 				
 				// shorten the remaining state 
-				// and add LE High to this state
+				// and add LE high to this state
+				ttlout* ttls=new ttlout();
 				this_state->length -= 9e-8*41;
-				register_ttls->ttls = int(pow(2.0, LE_BIT));
-				this_state->push_front(register_ttls);
+				ttls->ttls = int(pow(2.0, LE_BIT));
+				this_state->push_front(ttls);
 				delete register_state;
 				delete PFG_aout;	
-				// xml_state_writer().write_states(stdout,*a_sequence,1);
+
 			}	
 		}
 		else {
-			
 			ttlout* le_ttls=new ttlout();
 			le_ttls->id = 0;
 			le_ttls->ttls = int(pow(2.0, LE_BIT));
 			this_state->push_front(le_ttls);
-			/*if (this_state->length < 0.02) {
-				this_state->length = 0.02;
-			}*/
-				
+#if 1	
+			state_iterator my_iterator(the_sequence);
+			while (!my_iterator.is_last())
+			    my_iterator.next_state();
+			std::cout << my_iterator.get_time() << std::endl;
+			if (my_iterator.get_time() < 2e-3) {
+			    std::cout << "Not enough time in front of state, prolonging the state" << std::endl;
+			    //state* prepare_state = new state(*this_state);
+			    //prepare_state->length = 2e-3;
+			    //the_sequence.insert(the_state, prepare_state);
+			    this_state->length=2e-3;
+			}
+#endif				
 				
 		}
 		// end of state modifications 
