@@ -19,7 +19,6 @@ PFG::PFG(int myid): id(myid) {
 
 PFG::~PFG() {}
 
-
 // This sets the dac_value
 void PFG::set_dac(signed dw) {
 	dac_value = dw;	
@@ -35,6 +34,27 @@ void PFG::set_dac(state& experiment) {
 	else {
 		for(state_sequent::iterator child_state = exp_sequence->begin(); child_state != exp_sequence->end(); ++child_state)
 			set_dac_recursive(*exp_sequence, child_state);
+		std::cout << "first state found"<< std::endl;
+		state s(9e-8);
+		ttlout le;
+		le.id=0;
+		le.ttls=int(pow(2.0, LE_BIT));
+		s.push_back(&le);
+		// push le_ttls in the front of the state
+		for ( int i = 0; i < DAC_BIT_DEPTH-1; i++ ) {
+		    std::cout << i << std::endl;
+		    le.ttls=int(pow(2.0, LE_BIT));
+		    exp_sequence->insert(child_state, s.copy_new());
+		    le.ttls=int(pow(2.0, LE_BIT))+int(pow(2.0,CLK_BIT));
+		    exp_sequence->insert(child_state, s.copy_new());
+		}
+		le.ttls=0;
+		exp_sequence->insert(child_state, s.copy_new());
+		// the state should be 2ms long
+		s.length = 2e-3-41*9e-8;
+		le.ttls=int(pow(2.0,LE_BIT));
+		exp_sequence->insert(child_state,s.copy_new());
+
 	}
 }
 
@@ -73,7 +93,30 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				this_state->erase(i++);
 			}
 			else {
-				++i;
+			    if (i==this_state->begin()) { // if this is first state set_dac(0)
+				std::cout << "first state found"<< std::endl;
+				state s(9e-8);
+				ttlout le;
+				le.id=0;
+				le.ttls=int(pow(2.0, LE_BIT));
+				s.push_back(&le);
+				// push le_ttls in the front of the state
+				for ( int i = 0; i < DAC_BIT_DEPTH-1; i++ ) {
+				    std::cout << i << std::endl;
+				    le.ttls=int(pow(2.0, LE_BIT));
+				    the_sequence.insert(the_state, s.copy_new());
+				    le.ttls=int(pow(2.0, LE_BIT))+int(pow(2.0,CLK_BIT));
+				    the_sequence.insert(the_state, s.copy_new());
+				}
+				le.ttls=0;
+				the_sequence.insert(the_state, s.copy_new());
+				// the state should be 2ms long
+				s.length = 2e-3-41*9e-8;
+				le.ttls=int(pow(2.0,LE_BIT));
+				the_sequence.insert(the_state,s.copy_new());
+			    }
+
+			    ++i;
 			}
 		} // state members loop
 		
@@ -128,11 +171,14 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 			le_ttls->id = 0;
 			le_ttls->ttls = int(pow(2.0, LE_BIT));
 			this_state->push_front(le_ttls);
-#if 1	
+			if (the_sequence.front()== this_state);
+			std::cout << "hurra" << std::endl;
+#if 0	
 			state_iterator my_iterator(the_sequence);
-			while (!my_iterator.is_last())
+			while (my_iterator.is_last())
+			    std::cout << my_iterator.get_count() << std::endl;
 			    my_iterator.next_state();
-			std::cout << my_iterator.get_time() << std::endl;
+			std::cout << my_iterator.get_count() << std::endl;
 			if (my_iterator.get_time() < 2e-3) {
 			    std::cout << "Not enough time in front of state, prolonging the state" << std::endl;
 			    //state* prepare_state = new state(*this_state);

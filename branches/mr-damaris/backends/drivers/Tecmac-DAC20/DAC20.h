@@ -13,6 +13,7 @@ public:
  	// default constructor
  	PFG(int myid=0);
 	virtual void set_dac(signed dw);
+//	virtual void set_dac_ttls(signed value);
  	virtual void set_dac(state& experiment);
 	virtual void set_dac_recursive(state_sequent& the_sequence, state::iterator& the_state);
  	
