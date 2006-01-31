@@ -88,8 +88,6 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				if (PFG_aout == NULL) {
 					// save the informations 
 					PFG_aout = aout;
-					// Should I put the state to zero here?
-					
 				}
 				// there is no place for me here
 				else {
@@ -153,18 +151,9 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 		}
 		else {
 			ttlout* le_ttls=new ttlout();
-			state register_state(9e-8);
-			register_state.push_front(le_ttls);
-			for ( int i = 0; i < DAC_BIT_DEPTH; i++) {
-			    le_ttls->ttls = int(pow(5.0, LE_BIT));
-			    the_sequence.insert(the_state, register_state.copy_new());
-			    le_ttls->ttls = int(pow(2.0, LE_BIT))+int(pow(2.0, CLK_BIT));
-			    the_sequence.insert(the_state, register_state.copy_new());
-			}
 			le_ttls->id = 0;
 			le_ttls->ttls = int(pow(2.0, LE_BIT));
 			this_state->push_back(le_ttls);
-			// shoudl i put the state to zero here?
 		}
 		// end of state modifications 
 	} // I was a state
