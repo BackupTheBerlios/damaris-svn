@@ -117,7 +117,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				register_state->push_back(register_ttls);
 			//	std::cout << "DANGER!! Need warmup pulse on LE" <<std::endl;	
 				// now, insert the ttl information
-				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in
+				// we need 4*DAC_BIT_DEPTH + 1 pulses to read the word in
 				int dac_word[20];
 				for (int j = 0; j < DAC_BIT_DEPTH ; j++)	{
 					int bit = PFG_aout->dac_value & 1;
@@ -156,7 +156,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 			state register_state(9e-8);
 			register_state.push_front(le_ttls);
 			for ( int i = 0; i < DAC_BIT_DEPTH; i++) {
-			    le_ttls->ttls = int(pow(2.0, LE_BIT));
+			    le_ttls->ttls = int(pow(5.0, LE_BIT));
 			    the_sequence.insert(the_state, register_state.copy_new());
 			    le_ttls->ttls = int(pow(2.0, LE_BIT))+int(pow(2.0, CLK_BIT));
 			    the_sequence.insert(the_state, register_state.copy_new());
