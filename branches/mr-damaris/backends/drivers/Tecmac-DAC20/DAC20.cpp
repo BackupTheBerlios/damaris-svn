@@ -91,7 +91,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				}
 				// there is no place for me here
 				else {
-					throw pfg_exception( "found another DAC section, ignoring\n");
+					throw pfg_exception( "found another DAC section, ignoring");
 					delete aout;
 				}
 				// remove the analog out section
@@ -105,7 +105,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 		if (PFG_aout != NULL) { // state modifications
 			// check the length of the state
 			if (this_state->length < 9e-8*41.0)
-				throw pfg_exception( "time is too short to save DAC information\n");
+				throw pfg_exception( "time is too short to save DAC information");
 			else {
 				// copy of original state
 				state* register_state = new state(*this_state);
@@ -114,9 +114,9 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				register_state->length = 9e-8;
 				register_state->push_back(register_ttls);
 				if (PFG_aout->dac_value > (pow(2.0, int(DAC_BIT_DEPTH-1))-1) )
-					throw pfg_exception("dac_value too high\n");
+					throw pfg_exception("dac_value too high");
 				if ( abs(PFG_aout->dac_value) > pow(2.0, int(DAC_BIT_DEPTH-1)) )
-					throw pfg_exception("dac_value too low\n");
+					throw pfg_exception("dac_value too low");
 			//	std::cout << "DANGER!! Need warmup pulse on LE" <<std::endl;	
 				// now, insert the ttl information
 				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in
