@@ -73,6 +73,12 @@ class Experiment:
             self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%f"/></state>\n' % (frequency, phase))
         else:
             self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%f"/><ttlout value="%d"/></state>\n' % (frequency, phase, ttls))
+    
+    def set_pfg(self, dac_value, length=None):
+	"""This sets the value for the PFG, don't forget to set back to 0 """
+	if lenght==None:
+	    length=42*9e-8
+	self.state_list.append('<state time="%s"><analogout id="1" dac_value="%i"/></state>\n' %(repr(length), dac_value))
 
     def set_phase(self, phase, ttls=0):
         if ttls==0:
