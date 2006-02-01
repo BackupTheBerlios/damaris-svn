@@ -113,8 +113,10 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				register_ttls->id = 0;
 				register_state->length = 9e-8;
 				register_state->push_back(register_ttls);
-				if (abs(PFG_aout->dac_value) > pow(2.0, int(DAC_BIT_DEPTH-1)))
-					throw pfg_exception("dac_value out of range\n");
+				if (PFG_aout->dac_value > (pow(2.0, int(DAC_BIT_DEPTH-1))-1) )
+					throw pfg_exception("dac_value too high\n");
+				if ( abs(PFG_aout->dac_value) > pow(2.0, int(DAC_BIT_DEPTH-1)) )
+					throw pfg_exception("dac_value too low\n");
 			//	std::cout << "DANGER!! Need warmup pulse on LE" <<std::endl;	
 				// now, insert the ttl information
 				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in

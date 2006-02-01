@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <sequent>
  <state time="0.01"><analogout id="3" a="3"/></state>
- <state time="3.0e-5"><analogout id="0" a="5" dac_value="1234567"/></state>
+ <state time="3.0e-5"><analogout id="0" a="5" dac_value="524287"/></state>
  <state time="0.01"><analogout id="3" a="3"/></state>
 </sequent>
