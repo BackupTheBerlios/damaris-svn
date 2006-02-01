@@ -34,7 +34,7 @@ void PFG::set_dac(state& experiment) {
 	else {
 		for(state_sequent::iterator child_state = exp_sequence->begin(); child_state != exp_sequence->end(); ++child_state)
 			set_dac_recursive(*exp_sequence, child_state);
-		std::cout << "first state"<< std::endl;
+//		std::cout << "first state"<< std::endl;
 		// Initialize the DAC to "0"
 		state s(9e-8);
 		ttlout le;
@@ -105,7 +105,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 		if (PFG_aout != NULL) { // state modifications
 			// check the length of the state
 			if (this_state->length < 9e-8*41.0)
-				throw pfg_exception( "time is too short to save DAC information");
+				throw pfg_exception( "time is too short to save DAC information\n");
 			else {
 				// copy of original state
 				state* register_state = new state(*this_state);
@@ -113,9 +113,11 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				register_ttls->id = 0;
 				register_state->length = 9e-8;
 				register_state->push_back(register_ttls);
+				if (abs(PFG_aout->dac_value) > pow(2.0, int(DAC_BIT_DEPTH-1)))
+					throw pfg_exception("dac_value out of range\n");
 			//	std::cout << "DANGER!! Need warmup pulse on LE" <<std::endl;	
 				// now, insert the ttl information
-				// we need 4*DAC_BIT_DEPTH + 1 pulses to read the word in
+				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in
 				int dac_word[20];
 				for (int j = 0; j < DAC_BIT_DEPTH ; j++)	{
 					int bit = PFG_aout->dac_value & 1;
@@ -151,7 +153,6 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 		}
 		else {
 			ttlout* le_ttls=new ttlout();
-			le_ttls->id = 0;
 			le_ttls->ttls = int(pow(2.0, LE_BIT));
 			this_state->push_back(le_ttls);
 		}
