@@ -135,6 +135,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 					the_sequence.insert(the_state,register_state->copy_new());
 					register_ttls->ttls = (int(pow(2.0, DATA_BIT))*dac_word[i] + int(pow(2.0, CLK_BIT)) + int(pow(2.0, LE_BIT)));
 					the_sequence.insert(the_state,register_state->copy_new());
+					//std::cout << dac_word[i];
 					if (i == 0 /*(DAC_BIT_DEPTH-1)*/) {// last bit => LE low, tell DAC to read the word in 
 						register_ttls->ttls = 0; //  int(pow(2.0, DATA_BIT))*bit;
 						the_sequence.insert(the_state,register_state->copy_new());

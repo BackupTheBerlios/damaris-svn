@@ -8,6 +8,7 @@
 #          the pulse-card; one file)                        #
 #                                                           #
 #############################################################
+import dac
 
 class Experiment:
 
@@ -70,13 +71,14 @@ class Experiment:
     def set_frequency(self, frequency, phase, ttls=0):
         "Sets the frequency generator to a desired frequency (Hz)"
         if ttls==0:
-            self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%f"/></state>\n' % (frequency, phase))
+            self.state_list.append('<state time="2e-6"><analogout id="0" f="%f" phase="%f"/></state>\n' % (frequency, phase))
         else:
-            self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%f"/><ttlout value="%d"/></state>\n' % (frequency, phase, ttls))
+            self.state_list.append('<state time="2e-6"><analogout id="0" f="%f" phase="%f"/><ttlout value="%d"/></state>\n' % (frequency, phase, ttls))
     
-    def set_pfg(self, dac_value, length=None):
-	"""This sets the value for the PFG, don't forget to set back to 0 """
-	if lenght==None:
+    def set_pfg(self, I_out, length=None):
+	"""This sets the value for the PFG, don't forget to set back to 0"""
+	dac_value=dac.conv(I_out)
+	if length==None:
 	    length=42*9e-8
 	self.state_list.append('<state time="%s"><analogout id="1" dac_value="%i"/></state>\n' %(repr(length), dac_value))
 
