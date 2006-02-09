@@ -38,7 +38,7 @@ public:
   PFG_hardware(){
       ttlout trigger;
       trigger.id=0;
-      trigger.ttls=4; /* line 2 */
+      trigger.ttls=4; /* line 2 */// 
       the_adc=new SpectrumMI40xxSeries(trigger);
       the_pg=new SpinCorePulseBlaster24Bit();
       PTS* my_pts=new PTS_latched(0); // ID of PTS_nalogout 0
