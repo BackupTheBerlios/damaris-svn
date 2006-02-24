@@ -141,11 +141,6 @@ class Quit(Experiment):
     # /Public Methods ------------------------------------------------------------------------------
 
 
-def reset():
-    "Resets the internal id-inkrementer to 0"
-    Experiment.job_id = 0
-
-
 def lin_range(start,stop, step):
     this_one=float(start)+0.0
     if step>0:
@@ -183,3 +178,11 @@ def staggered_range(some_range, size = 1):
     # now do the droped ones
     for i in left_out:
         yield i
+
+
+def combine_ranges(*ranges):
+    print ranges
+    for r in ranges:
+        for i in r:
+            yield i
+
