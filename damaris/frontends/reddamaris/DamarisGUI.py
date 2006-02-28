@@ -258,7 +258,7 @@ class DamarisGUI:
 
         # and observe it...
         gobject.timeout_add(200,self.observe_running_experiment)
-        dump_timeinterval=60*10 # in seconds
+        dump_timeinterval=60*60 # in seconds
         self.dump_states_event_id=gobject.timeout_add(dump_timeinterval*1000,self.dump_states)
 
     def observe_running_experiment(self):

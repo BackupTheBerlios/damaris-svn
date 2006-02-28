@@ -181,7 +181,6 @@ def staggered_range(some_range, size = 1):
 
 
 def combine_ranges(*ranges):
-    print ranges
     for r in ranges:
         for i in r:
             yield i

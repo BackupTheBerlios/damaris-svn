@@ -62,7 +62,12 @@ class AccumulatedValue:
     
     def sigma(self):
         if self.n>1:
-            return math.sqrt(((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0))
+            variance=((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0)
+            if variance<0:
+                if variance<-1e-20:
+                    print "variance=%g<0! assuming 0"%variance
+                return 0.0
+            return math.sqrt(variance)
         elif self.n==1:
             return 0
         else:
@@ -70,7 +75,12 @@ class AccumulatedValue:
 
     def mean_sigma(self):
         if self.n>1:
-            return math.sqrt(((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0)/float(self.n))
+            variance=((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0)/float(self.n)
+            if variance<0:
+                if variance<-1e-20:
+                    print "variance=%g<0! assuming 0"%variance
+                return 0.0
+            return math.sqrt(variance)
         elif self.n==1:
             return 0
         else:

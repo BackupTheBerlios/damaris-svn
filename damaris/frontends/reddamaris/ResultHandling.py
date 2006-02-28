@@ -17,6 +17,8 @@ class ResultHandling(threading.Thread):
         self.results=result_iterator
         self.data_space=data_pool
         self.quit_flag=threading.Event()
+        if self.data_space is not None:
+            self.data_space["__recentresult"]=-1
 
     def run(self):
         # execute it
@@ -35,7 +37,9 @@ class ResultHandling(threading.Thread):
             self.traceback=traceback_file.getvalue()
             traceback_file=None
             return
-        if not "result" in dataspace: return
+        if not "result" in dataspace:
+            dataspace=None
+            return
         try:
             dataspace["result"]()
         except Exception, e:
@@ -45,13 +49,15 @@ class ResultHandling(threading.Thread):
             traceback.print_tb(sys.exc_info()[2], None, traceback_file)
             self.traceback=traceback_file.getvalue()
             traceback_file=None
+            dataspace=None
 
     def __iter__(self):
         if self.quit_flag.isSet(): return
         for i in self.results:
             if self.quit_flag.isSet(): return
             if isinstance(i, Resultable.Resultable):
-                self.data_space["__recentresult"]=i.job_id+0
+                if self.data_space is not None:
+                    self.data_space["__recentresult"]=i.job_id+0
             yield i
             if self.quit_flag.isSet(): return
 
