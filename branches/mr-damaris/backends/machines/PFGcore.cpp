@@ -6,7 +6,7 @@
 ****************************************************************************/
 #include "machines/hardware.h"
 #include "core/core.h"
-#include "drivers/Tecmac-DAC20/DAC20.h"
+#include "drivers/Tecmag-DAC20/DAC20.h"
 #include "drivers/PTS-Synthesizer/PTS.h"
 #include "drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h"
 #include "drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h"
