@@ -41,7 +41,7 @@ public:
       trigger.ttls=4; /* line 2 */// 
       the_adc=new SpectrumMI40xxSeries(trigger);
       the_pg=new SpinCorePulseBlaster24Bit();
-      PTS* my_pts=new PTS_latched(0); // ID of PTS_nalogout 0
+      PTS* my_pts=new PTS_latched(0); // ID of PTS_analogout 0
       the_fg=my_pts;
       PFG* my_pfg=new PFG(1);
       the_gradientpg=my_pfg;

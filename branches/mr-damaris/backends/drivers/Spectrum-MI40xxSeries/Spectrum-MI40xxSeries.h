@@ -31,6 +31,10 @@
 # error "sorry, expecting linux or cygwin"
 #endif
 
+#ifndef SPC_DEBUG
+# define SPC_DEBUG 0
+#endif
+
 class SpectrumMI40xxSeries_error: public ADC_exception {
  public:
   SpectrumMI40xxSeries_error(const std::string& message): ADC_exception(message) {}
@@ -82,16 +86,21 @@ class SpectrumMI40xxSeries: public ADC {
 
   class Configuration {
   public:
-      /* sampling frequency */
+      /* sampling frequency in Hz */
       double samplefreq;
       /* acquired data description */
       DataManagementNode* data_structure;
-      /* a timeout for acquiring data */
+      /* a timeout for acquiring data in s*/
       double timeout;
-      /** configured input impedance */
+      /** configured input impedance in Ohm*/
       double impedance;
-      /** configured input sensitivity */
+      /** configured input sensitivity in V*/
       double sensitivity;
+      /** coupling 0=DC else AC */
+      int coupling;
+
+      /** print data for debug purpose  */
+      void print(FILE* f);
   };
 
   Configuration* effective_settings;

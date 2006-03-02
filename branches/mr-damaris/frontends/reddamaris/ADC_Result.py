@@ -111,11 +111,11 @@ class ADC_Result(Resultable, Drawable):
             self.lock.release()
             raise
 
-        tmp_x = self.x[start:end+1]
+        tmp_x = self.x[start:end+1].copy()
         tmp_y = []
 
         for i in range(self.get_number_of_channels()):
-            tmp_y.append(self.y[i][start:end+1])
+            tmp_y.append(self.y[i][start:end+1].copy())
 
         r = ADC_Result(x = tmp_x, y = tmp_y,  index = [(0,len(tmp_y[0])-1)], sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
         self.lock.release()

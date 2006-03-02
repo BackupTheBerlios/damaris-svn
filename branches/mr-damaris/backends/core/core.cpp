@@ -259,7 +259,7 @@ int core::write_to_output(const job& job_done, const result& result_gained){
     throw core_exception(std::string(__FUNCTION__)+": could not remove existing temporary result file");
   }
   if (term_signal!=0) return 0;
-  int write_result=xml_result_writer().write_to_file(tempfile,&result_gained);
+  int write_result=xml_result_writer(xml_result_writer::base64).write_to_file(tempfile,&result_gained);
   if (term_signal!=0) {
     unlink(tempfile.c_str());
     return 0;

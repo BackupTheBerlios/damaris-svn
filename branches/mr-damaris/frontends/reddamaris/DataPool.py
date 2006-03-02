@@ -81,7 +81,7 @@ class DataPool(UserDict.DictMixin):
         self.__send_event(DataPool.Event(DataPool.Event.destroy))
         self.__registered_listeners=None
 
-    def write_hdf5(self,hdffile,where="/",name="data_pool"):
+    def write_hdf5(self,hdffile,where="/",name="data_pool", compress=None):
         if type(hdffile) is types.StringType:
             dump_file=tables.openFile(hdffile, mode="a")
         elif isinstance(hdffile,tables.File):
@@ -114,7 +114,7 @@ class DataPool(UserDict.DictMixin):
                     continue
                 if (isinstance(value, MeasurementResult.MeasurementResult) or
                     isinstance(value, Accumulation.Accumulation)):
-                    value.write_to_hdf(hdffile=dump_file, where=dump_group, name=group_keyname, title=key)
+                    value.write_to_hdf(hdffile=dump_file, where=dump_group, name=group_keyname, title=key, compress=compress)
                     continue
                 print "don't know how to store data_pool[%s]"%key
         finally:

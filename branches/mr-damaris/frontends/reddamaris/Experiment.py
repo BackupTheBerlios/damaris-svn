@@ -75,12 +75,26 @@ class Experiment:
         else:
             self.state_list.append('<state time="2e-6"><analogout id="0" f="%f" phase="%f"/><ttlout value="%d"/></state>\n' % (frequency, phase, ttls))
     
-    def set_pfg(self, I_out, length=None):
-	"""This sets the value for the PFG, don't forget to set back to 0"""
+    def set_pfg(self, I_out, length=None, is_seq=0):
+	"""This sets the value for the PFG, it also sets it back automatically.
+	If you don't whish to do so (i.e. line shapes)  set is_seq=1"""
 	dac_value=dac.conv(I_out)
 	if length==None:
 	    length=42*9e-8
 	self.state_list.append('<state time="%s"><analogout id="1" dac_value="%i"/></state>\n' %(repr(length), dac_value))
+	if is_seq == 0:
+	    self.state_list.append('<state time="%s"><analogout id="1" dac_value="0"/></state>\n' %(repr(42*9e-8)) )
+ 
+    def set_pfg_wt(self, I_out, length=None, is_seq=0, trigger=0x10):
+	"""This sets the value for the PFG, it also sets it back automatically.
+	If you don't whish to do so (i.e. line shapes)  set is_seq=1"""
+	dac_value=dac.conv(I_out)
+	if length==None:
+	    length=42*9e-8
+	self.state_list.append('<state time="%s"><analogout id="1" dac_value="%i"/><ttlout value="%s"/></state>\n' %(repr(length), dac_value, trigger))
+	if is_seq == 0:
+	    self.state_list.append('<state time="%s"><analogout id="1" dac_value="0"/><ttlout value="%s"/></state>\n' %(repr(42*9e-8),trigger) )
+
 
     def set_phase(self, phase, ttls=0):
         if ttls==0:
@@ -149,11 +163,6 @@ class Quit(Experiment):
     # /Public Methods ------------------------------------------------------------------------------
 
 
-def reset():
-    "Resets the internal id-inkrementer to 0"
-    Experiment.job_id = 0
-
-
 def lin_range(start,stop, step):
     this_one=float(start)+0.0
     if step>0:
@@ -191,3 +200,10 @@ def staggered_range(some_range, size = 1):
     # now do the droped ones
     for i in left_out:
         yield i
+
+
+def combine_ranges(*ranges):
+    for r in ranges:
+        for i in r:
+            yield i
+

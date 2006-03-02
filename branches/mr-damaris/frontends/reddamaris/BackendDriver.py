@@ -58,7 +58,7 @@ class BackendDriver(threading.Thread):
             os.rename(self.core_output_filename, self.core_output_filename+".%02d"%0)
         # create logfile
         file(self.core_output_filename,"w")
-                
+
         print "todo: move away all state files"
         if sys.platform[:5]=="linux":
             self.core_input=os.popen(self.executable+" --spool "+self.spool_dir+" >"+self.core_output_filename+" 2>&1","w")
@@ -85,6 +85,7 @@ class BackendDriver(threading.Thread):
 
         statefile=file(self.statefilename,"r")
         statelines=statefile.readlines()
+	statefile=None
         statelinepattern=re.compile("<state name=\"([^\"]+)\" pid=\"([^\"]+)\" starttime=\"([^\"]+)\">")
         self.core_pid=-1
         for l in statelines:
@@ -159,12 +160,14 @@ class BackendDriver(threading.Thread):
             
 
     def is_busy(self):
-        "Checks for a *.state file in core_path"
-        file_list = glob.glob(os.path.join(self.spool_dir, self.core_state_file))
-        if len(file_list) != 0:
-            return True
-        else:
-            return False
+        "Checks for state file"
+        return os.path.isfile(self.statefilename)
+    
+        #file_list = glob.glob(os.path.join(self.spool_dir, self.core_state_file))
+        #if len(file_list) != 0:
+        #    return True
+        #else:
+        #    return False
 
 
     def get_exp_writer(self):

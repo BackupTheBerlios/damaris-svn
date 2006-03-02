@@ -1,6 +1,6 @@
 import os
 import os.path
-import glob
+import shutil
 import Experiment
 
 class ExperimentWriter:
@@ -21,8 +21,18 @@ class ExperimentWriter:
         """
         job.job_id=self.no
         job_filename=os.path.join(self.spool,self.job_pattern%self.no)
-        file(job_filename+".tmp","w").write(job.write_xml_string())
-        os.rename(job_filename+".tmp", job_filename)
+	f=file(job_filename+".tmp","w")
+	f.write(job.write_xml_string())
+	f.close() # explicit close under windows necessary (don't know why)
+	f=None
+	# this implementation tries to satisfiy msvc filehandle caching
+	# os.rename(job_filename+".tmp", job_filename)
+        shutil.copyfile(job_filename+".tmp", job_filename)
+	try:
+	    os.unlink(job_filename+".tmp")
+	except OSError:
+	    print "could not delete temporary file %s.tmp"%job_filename
+
         self.no+=1
 
     def __del__(self):
@@ -48,4 +58,5 @@ class ExperimentWriterWithCleanup(ExperimentWriter):
         """
         filename=os.path.join(self.spool,(self.job_pattern%no))
         if os.path.isfile(filename): os.unlink(filename)
+        if os.path.isfile(filename+".tmp"): os.unlink(filename+".tmp")
         if os.path.isfile(filename+".result"): os.unlink(filename+".result")

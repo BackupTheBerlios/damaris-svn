@@ -1,5 +1,7 @@
 #import math
-
+"""
+This module holds everything connected with the DAC and PFG
+"""
 def conv(I_out=0):
     """
     converts the demanded Output current in Integer

@@ -1,3 +1,4 @@
+# import 3rd party modules
 import time
 import sys
 import StringIO
@@ -23,7 +24,7 @@ import matplotlib.figure
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
 from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
 
-
+# import our own stuff
 import ExperimentWriter
 import ExperimentHandling
 import ResultReader
@@ -35,12 +36,24 @@ import ADC_Result
 import Drawable
 import MeasurementResult
 
+# global log facility, to be extended
+def log(message):
+    print "DamarisGUI", message
+
+ExperimentHandling.log=log
+ResultHandling.log=log
+ResultReader.log=log
+ExperimentWriter.log=log
+BackendDriver.log=log
+DataPool.log=log
+
 class DamarisGUI:
 
     ExpScript_Display=0
     ResScript_Display=1
     Monitor_Display=2
     Log_Display=3
+    Config_Display=4
 
     Edit_State=0
     Run_State=1
@@ -84,8 +97,8 @@ class DamarisGUI:
         glade_file=os.path.join(os.path.dirname(__file__),"damaris.glade")
         self.xml_gui = gtk.glade.XML(glade_file)
         self.main_window = self.xml_gui.get_widget("main_window")
-
         self.main_window.connect("delete-event", self.quit_event)
+        self.main_window.set_icon_from_file(os.path.join(os.path.dirname(__file__),"stock_snap-grid.png"))
 
     def statusbar_init(self):
         """
@@ -192,12 +205,12 @@ class DamarisGUI:
         
         # start experiment
         try:
-            self.spool_dir=os.path.abspath("spool")
+            self.spool_dir=os.path.abspath(actual_config["spool_dir"])
             # setup script engines
             self.si=ScriptInterface(exp_script,
                                     res_script,
                                     backend,
-                                    actual_config["spool_dir"],
+                                    self.spool_dir,
                                     clear_jobs=actual_config["del_jobs_after_execution"],
                                     clear_results=actual_config["del_results_after_processing"])
 
@@ -258,7 +271,7 @@ class DamarisGUI:
 
         # and observe it...
         gobject.timeout_add(200,self.observe_running_experiment)
-        dump_timeinterval=60*10 # in seconds
+        dump_timeinterval=60*60 # in seconds
         self.dump_states_event_id=gobject.timeout_add(dump_timeinterval*1000,self.dump_states)
 
     def observe_running_experiment(self):
@@ -331,7 +344,7 @@ class DamarisGUI:
 
             if not self.dump_states_event_id is None:
                 gobject.source_remove(self.dump_states_event_id)
-            self.dump_states()
+            self.dump_states(compress=9)
             self.dump_states_event_id=None
             
             # now everything is stopped
@@ -351,7 +364,11 @@ class DamarisGUI:
         # or look at them again
         return True
 
-    def dump_states(self, init=False):
+    def dump_states(self, init=False, compress=None):
+        """
+        init: constructs basic structure of this file
+        compress: optional argument for zlib compression 0-9
+        """
 
         class dump_file_timeline(tables.IsDescription):
             time=tables.StringCol(length=len("YYYYMMDD HH:MM:SS"))
@@ -370,7 +387,7 @@ class DamarisGUI:
                 dump_file.createArray(scriptgroup,"result_script", self.si.res_script)
             if self.si.backend_executable:
                 dump_file.createArray(scriptgroup,"backend_executable", self.si.backend_executable)
-            if self.si.spool_dir:
+            if self.spool_dir:
                 dump_file.createArray(scriptgroup,"spool_directory", self.spool_dir)
             timeline_table=dump_file.createTable("/","timeline", dump_file_timeline, title="Timeline of Experiment")
             timeline_row=timeline_table.row
@@ -401,7 +418,7 @@ class DamarisGUI:
             timeline_row.append()
             timeline_table.flush()
 
-        self.data.write_hdf5(dump_file, where="/", name="data_pool")
+        self.data.write_hdf5(dump_file, where="/", name="data_pool", compress=compress)
         
         dump_file.flush()
         dump_file.close()
@@ -417,10 +434,10 @@ class DamarisGUI:
         pause_state=self.toolbar_pause_button.get_active()
         if pause_state:
             if self.state!=DamarisGUI.Run_State: return False
-            if self.si.spool_dir is None: return False
+            if self.spool_dir is None: return False
             no=self.si.data.get("__recentresult",-1)+1
-            result_pattern=os.path.join(self.si.spool_dir, "job.%09d.result")
-            job_pattern=os.path.join(self.si.spool_dir, "job.%09d")
+            result_pattern=os.path.join(self.spool_dir, "job.%09d.result")
+            job_pattern=os.path.join(self.spool_dir, "job.%09d")
             while os.path.isfile(result_pattern%no):
                 no+=1
             i=0
@@ -1080,7 +1097,9 @@ class MonitorWidgets:
 
         # Display footer:
         self.display_x_scaling_combobox = self.xml_gui.get_widget("display_x_scaling_combobox")
+        self.display_x_scaling_combobox.set_sensitive(False)
         self.display_y_scaling_combobox = self.xml_gui.get_widget("display_y_scaling_combobox")
+        self.display_y_scaling_combobox.set_sensitive(False)
         self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
         self.display_statistics_checkbutton = self.xml_gui.get_widget("display_statistics_checkbutton")
 
@@ -1320,8 +1339,60 @@ class MonitorWidgets:
             self.update_display(self.displayed_data[0][:])
 
     def save_display_data_as_text(self, widget, data=None):
-        print "ToDo Save Data"
+        """
+        copy data to tmp file and show save dialog
+        """
+        data_to_save=self.displayed_data[:]
+        if self.displayed_data[1] is None:
+            # nothing to save
+            return
+        if "write_as_csv" not in dir(data_to_save[1]):
+            log("do not know how to save %s of class/type %s"%(data_to_save[0],type(data_to_save[1])))
+            return
 
+        # save them to a temporary file (in memory)
+        tmpdata=os.tmpfile()
+        tmpdata.writeline("# saved from monitor as %s"%data_to_save[0])
+        data_to_save[1].write_as_csv(tmpdata)
+        
+        # show save dialog
+        def response(self, response_id, tmpfile):
+            if response_id == gtk.RESPONSE_OK:
+                file_name = dialog.get_filename()
+                if file_name is None:
+                    return True
+
+                absfilename=os.path.abspath(file_name)
+                if os.access(file_name, os.F_OK):
+                    log("ToDo: Overwrite file question")
+
+                textfile=file(absfilename,"w")
+                tmpfile.seek(0)
+                for l in tmpfile:
+                    textfile.write(l)
+                textfile.close()
+                textfile=None
+                tmpfile=None
+                return True
+        
+        # Determining the tab which is currently open
+        dialog_title="Save %s in file"%data_to_save[0]
+        
+        dialog = gtk.FileChooserDialog(title = dialog_title,
+                                       parent = self.main_window,
+                                       action = gtk.FILE_CHOOSER_ACTION_SAVE,
+                                       buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
+
+        dialog.set_default_response(gtk.RESPONSE_OK)
+        dialog.set_select_multiple(False)
+
+        # Event-Handler for responce-signal (when one of the button is pressed)
+        dialog.connect("response", response, tmpdata)
+        del tmpdata, data_to_save
+        dialog.run()
+        dialog.destroy()
+
+        return True
 
     ##################### functions to feed display
 

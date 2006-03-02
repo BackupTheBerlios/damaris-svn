@@ -7,7 +7,10 @@ obj-m += pulseblaster.o
 
 else
 
+ifeq ($(shell uname -o), GNU/Linux)
 KERNELSRC=/lib/modules/$(shell uname -r)/build
+endif
+
 THISDIR=$(shell cd . >/dev/null; pwd)
 LIBS=-lm
 CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic
@@ -32,7 +35,8 @@ pulseblaster.ko:
 
 clean:
 	rm -f *.o *~ pulseblaster_test
+ifeq ($(shell uname -o), GNU/Linux)
 	$(MAKE) -C $(KERNELSRC) SUBDIRS=$(THISDIR) clean
-
+endif
 
 endif

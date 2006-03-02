@@ -62,7 +62,12 @@ class AccumulatedValue:
     
     def sigma(self):
         if self.n>1:
-            return math.sqrt(((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0))
+            variance=((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0)
+            if variance<0:
+                if variance<-1e-20:
+                    print "variance=%g<0! assuming 0"%variance
+                return 0.0
+            return math.sqrt(variance)
         elif self.n==1:
             return 0
         else:
@@ -70,7 +75,12 @@ class AccumulatedValue:
 
     def mean_sigma(self):
         if self.n>1:
-            return math.sqrt(((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0)/float(self.n))
+            variance=((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0)/float(self.n)
+            if variance<0:
+                if variance<-1e-20:
+                    print "variance=%g<0! assuming 0"%variance
+                return 0.0
+            return math.sqrt(variance)
         elif self.n==1:
             return 0
         else:
@@ -169,7 +179,9 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         the_destination=None
 
 
-    def write_to_hdf(self, hdffile, where, name, title):
+    def write_to_hdf(self, hdffile, where, name, title, compress=None):
+        if compress is not None:
+            print "ToDo: compress is not implemented in MeasurementResult.write_to_hdf"
         h5_table_format= {
             "x" : tables.Float64Col(),
             "y_mean" : tables.Float64Col(),
