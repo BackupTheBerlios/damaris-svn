@@ -51,7 +51,7 @@ endif
 	$(MAKE) -C ../drivers/PTS-Synthesizer PTS.o
 
 ../drivers/Tecmag-DAC20/DAC20.o:
-	&(MAKE) -C ../drivers/Tecmag-DAC20 DAC20.o
+	$(MAKE) -C ../drivers/Tecmag-DAC20 DAC20.o
 	
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a:
 	$(MAKE) -C ../drivers/Spectrum-MI40xxSeries Spectrum-MI40xxSeries.a
