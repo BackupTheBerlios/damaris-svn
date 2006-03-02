@@ -1,6 +1,6 @@
 #include <cstdio>
 #include "core/xml_states.h"
-#include "drivers/Tecmac-DAC20/DAC20.h"
+#include "drivers/Tecmag-DAC20/DAC20.h"
 
 
 int main(int argc, char** argv) 

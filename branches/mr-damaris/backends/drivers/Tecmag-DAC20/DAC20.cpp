@@ -3,10 +3,14 @@
 #include <cmath>
 #include "core/xml_states.h"
 #include <iostream>
+#include <list>
+#include <vector>
+using std::vector;
+using std::reverse;
 #ifndef TIMING
 #define TIMING 9e-8
 #endif
-//#define TESTING
+
 // The bit depth of the DAC
 #define DAC_BIT_DEPTH 20
 
@@ -123,6 +127,11 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				// now, insert the ttl information
 				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in
 				int dac_word[20];
+				if (0) {
+				    vector<int> dw(20,0);
+				    reverse(dw.begin(), dw.end());
+				    reverse(dac_word, dac_word + 20);
+				}
 				for (int j = 0; j < DAC_BIT_DEPTH ; j++)	{
 					int bit = PFG_aout->dac_value & 1;
 					dac_word[j] = bit;
@@ -131,14 +140,16 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				// need one clock cycle to read in bit
 				// latch enable (LE) should always be high while doing so
 				// except for the last bit
-				// ugly: reverse the bit pattern
-				for (int i = DAC_BIT_DEPTH-1; i >= 0; i--) {
+				// reverse the bit pattern
+				reverse(dac_word, dac_word + 20);
+				
+				for (int i = DAC_BIT_DEPTH; i < DAC_BIT_DEPTH; i++) {
 					register_ttls->ttls = (1 << DATA_BIT)*dac_word[i] + (1 << CLK_BIT) + (1 << LE_BIT);
 					the_sequence.insert(the_state,register_state->copy_new());
 					register_ttls->ttls = (1 << DATA_BIT)*dac_word[i] + (1 << LE_BIT);
 					the_sequence.insert(the_state,register_state->copy_new());
 					//std::cout << dac_word[i];
-					if (i == 0 /*(DAC_BIT_DEPTH-1)*/) {// last bit => LE low, tell DAC to read the word in 
+					if (i == (DAC_BIT_DEPTH-1)) {// last bit => LE low, tell DAC to read the word in 
 						register_ttls->ttls = 0; //  1<< DATA_BIT*bit;
 						the_sequence.insert(the_state,register_state->copy_new());
 					}
