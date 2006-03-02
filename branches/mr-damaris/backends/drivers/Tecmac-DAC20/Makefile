@@ -17,7 +17,7 @@ clean: ../../tools/add_endline.exe
 	rm -f *.exe *.o *~ core.*
 
 DAC20.o: DAC20.cpp DAC20.h
-	$(CXX) -c $(CXXFLAGS) -o $@ $<
+	$(CXX) -D TIMING=9e-8  -c $(CXXFLAGS) -o $@ $<
 
 DAC_test.exe: DAC_test.o DAC20.o ../../core/core.a
 	$(CXX) $(LDFLAGS) -o $@ $^

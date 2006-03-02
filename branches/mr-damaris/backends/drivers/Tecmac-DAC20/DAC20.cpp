@@ -3,8 +3,10 @@
 #include <cmath>
 #include "core/xml_states.h"
 #include <iostream>
-
-
+#ifndef TIMING
+#define TIMING 9e-8
+#endif
+//#define TESTING
 // The bit depth of the DAC
 #define DAC_BIT_DEPTH 20
 
@@ -36,27 +38,27 @@ void PFG::set_dac(state& experiment) {
 			set_dac_recursive(*exp_sequence, child_state);
 //		std::cout << "first state"<< std::endl;
 		// Initialize the DAC to "0"
-		state s(9e-8);
-		ttlout* latch=new ttlout();
-		latch->id=0;
-		latch->ttls = 1 << LE_BIT;
-		s.push_front(latch);
+		state s(TIMING);
+		ttlout* le=new ttlout();
+		le->id=0;
+		le->ttls=( 1 << LE_BIT );
+		s.push_front(le);
 		state::iterator my_state_iterator = exp_sequence->begin();
 		for ( int i = 0; i < DAC_BIT_DEPTH; i++ ) {
-		    latch->ttls=1 << LE_BIT;
+		    le->ttls=( 1 << LE_BIT) + ( 1 << CLK_BIT );
 		    exp_sequence->insert(my_state_iterator, s.copy_new());
-		    latch->ttls=(1 << LE_BIT) + (1 << CLK_BIT);
+		    le->ttls=( 1 << LE_BIT );
 		    exp_sequence->insert(my_state_iterator, s.copy_new());
 		    if ( i == DAC_BIT_DEPTH-1 ) {
 			//read in the word (41st pulse)
-			latch->ttls=0;
+			le->ttls=0;
 			exp_sequence->insert(my_state_iterator, s.copy_new());
 		    }
 		}
 		// 42nd pulse
 		// the state should be 2ms long
-		s.length = 2e-3-41*9e-8;
-		latch->ttls = 1 << LE_BIT;
+		s.length = 2e-3-41*TIMING;
+		le->ttls= ( 1 << LE_BIT );
 		exp_sequence->insert(my_state_iterator, s.copy_new());
 	}
 }
@@ -104,14 +106,14 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 		
 		if (PFG_aout != NULL) { // state modifications
 			// check the length of the state
-			if (this_state->length < 9e-8*41.0)
+			if (this_state->length < TIMING*41.0)
 				throw pfg_exception( "time is too short to save DAC information");
 			else {
 				// copy of original state
 				state* register_state = new state(*this_state);
 				ttlout* register_ttls = new ttlout();
 				register_ttls->id = 0;
-				register_state->length = 9e-8;
+				register_state->length = TIMING;
 				register_state->push_back(register_ttls);
 				if (PFG_aout->dac_value > (pow(2.0, int(DAC_BIT_DEPTH-1))-1) )
 					throw pfg_exception("dac_value too high");
@@ -130,10 +132,10 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				// latch enable (LE) should always be high while doing so
 				// except for the last bit
 				// ugly: reverse the bit pattern
-				for (int i = DAC_BIT_DEPTH-1; i >= 0; i--) {	
-					register_ttls->ttls = (1 << DATA_BIT)*dac_word[i] + (1 << LE_BIT);
+				for (int i = DAC_BIT_DEPTH-1; i >= 0; i--) {
+					register_ttls->ttls = (1 << DATA_BIT)*dac_word[i] + (1 << CLK_BIT) + (1 << LE_BIT);
 					the_sequence.insert(the_state,register_state->copy_new());
-					register_ttls->ttls = (1 << DATA_BIT )*dac_word[i] + (1 << CLK_BIT) + (1 << LE_BIT);
+					register_ttls->ttls = (1 << DATA_BIT)*dac_word[i] + (1 << LE_BIT);
 					the_sequence.insert(the_state,register_state->copy_new());
 					//std::cout << dac_word[i];
 					if (i == 0 /*(DAC_BIT_DEPTH-1)*/) {// last bit => LE low, tell DAC to read the word in 
@@ -146,7 +148,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				// and add LE high to this state
 				ttlout* ttls=new ttlout();
 				// 42nd pulse
-				this_state->length -= 9e-8*41;
+				this_state->length -= TIMING*41;
 				ttls->ttls = 1 << LE_BIT;
 				this_state->push_front(ttls);
 				delete register_state;
