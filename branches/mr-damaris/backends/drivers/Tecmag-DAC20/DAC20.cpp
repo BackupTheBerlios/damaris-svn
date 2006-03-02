@@ -5,8 +5,10 @@
 #include <iostream>
 #include <list>
 #include <vector>
-using std::vector;
+
 using std::reverse;
+using std::cout;
+using std::vector;
 #ifndef TIMING
 #define TIMING 9e-8
 #endif
@@ -125,25 +127,20 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 					throw pfg_exception("dac_value too low");
 			//	std::cout << "DANGER!! Need warmup pulse on LE" <<std::endl;	
 				// now, insert the ttl information
-				// we need 2*DAC_BIT_DEPTH + 1 pulses to read the word in
-				int dac_word[20];
-				if (0) {
-				    vector<int> dw(20,0);
-				    reverse(dw.begin(), dw.end());
-				    reverse(dac_word, dac_word + 20);
-				}
+				vector<int> dac_word;
 				for (int j = 0; j < DAC_BIT_DEPTH ; j++)	{
 					int bit = PFG_aout->dac_value & 1;
-					dac_word[j] = bit;
+					dac_word.push_back(bit);
+					cout << dac_word[j];
 					PFG_aout->dac_value >>= 1;
 					}
 				// need one clock cycle to read in bit
 				// latch enable (LE) should always be high while doing so
 				// except for the last bit
 				// reverse the bit pattern
-				reverse(dac_word, dac_word + 20);
+				reverse(dac_word.begin(), dac_word.end());
 				
-				for (int i = DAC_BIT_DEPTH; i < DAC_BIT_DEPTH; i++) {
+				for (int i = 0; i < DAC_BIT_DEPTH; i++) {
 					register_ttls->ttls = (1 << DATA_BIT)*dac_word[i] + (1 << CLK_BIT) + (1 << LE_BIT);
 					the_sequence.insert(the_state,register_state->copy_new());
 					register_ttls->ttls = (1 << DATA_BIT)*dac_word[i] + (1 << LE_BIT);
