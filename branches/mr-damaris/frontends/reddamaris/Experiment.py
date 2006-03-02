@@ -109,7 +109,9 @@ class Experiment:
             print 'Warning: Overwriting existing description "%s" = "%s" with "%s"' % (key, self.description[key], value)
 
         self.description[key] = value
-
+    def set_pts_local(self):
+	self.state_list.append('<state time="1e-6"><ttlout value="0xf000"/></state>\n')
+	self.state_list.append('<state time="1e-6"><ttlout value="0x8000"/></state>\n')
     # / Commands -----------------------------------------------------------------------------------
 
 
