@@ -85,7 +85,7 @@ class Experiment:
 	if is_seq == 0:
 	    self.state_list.append('<state time="%s"><analogout id="1" dac_value="0"/></state>\n' %(repr(42*9e-8)) )
  
-    def set_pfg_wt(self, I_out, length=None, is_seq=0, trigger=0x10):
+    def set_pfg_wt(self, I_out, length=None, is_seq=0, trigger=4):
 	"""This sets the value for the PFG, it also sets it back automatically.
 	If you don't whish to do so (i.e. line shapes)  set is_seq=1"""
 	dac_value=dac.conv(I_out)

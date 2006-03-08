@@ -26,7 +26,7 @@ class BackendDriver(threading.Thread):
 
         self.executable=str(executable)
         self.spool_dir=spool
-        self.core_state_file = "Mobile core.state"
+        self.core_state_file = "PFG core.state"
         self.experiment_pattern="job.%09d"
         self.result_pattern=self.experiment_pattern+".result"
         self.experiment_writer = ExperimentWriter.ExperimentWriterWithCleanup(self.spool_dir, no=0, job_pattern=self.experiment_pattern)
