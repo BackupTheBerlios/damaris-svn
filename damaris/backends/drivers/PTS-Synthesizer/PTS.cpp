@@ -204,7 +204,7 @@ void PTS_latched::set_frequency_recursive(state_sequent& the_sequence, state::it
 	register_ttls->ttls&=0x7fff;
 	the_sequence.insert(the_state,register_state->copy_new());
 	// in 0.1 Hz units !
-	size_t frequency_int=(int)floor(pts_aout->frequency*10.0+0.5);
+	unsigned long long int frequency_int=(unsigned long long int)floorl(fabs(pts_aout->frequency)*10.0+0.5);
 	/* 100MHz and 10MHz */
 	register_ttls->ttls=(frequency_int/1000000000)%10<<8|((frequency_int/100000000)%10)<<4|15<<12;
 	the_sequence.insert(the_state,register_state->copy_new());
