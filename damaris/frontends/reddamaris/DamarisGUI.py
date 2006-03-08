@@ -38,7 +38,7 @@ import MeasurementResult
 
 # global log facility, to be extended
 def log(message):
-    print "DamarisGUI", message
+    print "DamarisGUI: ", message
 
 ExperimentHandling.log=log
 ResultHandling.log=log
@@ -98,7 +98,7 @@ class DamarisGUI:
         self.xml_gui = gtk.glade.XML(glade_file)
         self.main_window = self.xml_gui.get_widget("main_window")
         self.main_window.connect("delete-event", self.quit_event)
-        self.main_window.set_icon_from_file(os.path.join(os.path.dirname(__file__),"stock_snap-grid.png"))
+        self.main_window.set_icon_from_file(os.path.join(os.path.dirname(__file__),"DAMARIS.png"))
 
     def statusbar_init(self):
         """

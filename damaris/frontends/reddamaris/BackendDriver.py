@@ -40,7 +40,6 @@ class BackendDriver(threading.Thread):
         if not os.path.isdir(self.spool_dir):
             raise AssertionError("could not find backend's spool directory %s "%self.spool_dir)        
 
-    def run(self):
         # Free remaining handle on file
         self.core_output = None
         # take care of older logfiles
@@ -93,6 +92,8 @@ class BackendDriver(threading.Thread):
             if matched:
                 self.core_pid=int(matched.group(2))
                 break
+
+    def run(self):
 
         # now open output file
         self.core_output=file(self.core_output_filename,"r")
