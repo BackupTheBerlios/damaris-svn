@@ -32,8 +32,10 @@ class Experiment:
 
 
     def ttl_pulse(self, length, channel = None, value = None):
-        the_value=0+value
-        if channel is not None and value is None:
+        the_value=0
+        if value is not None:
+            the_value=int(value)
+        elif channel is not None:
             the_value=1<<channel
         self.state_list.append('<state time="%s"><ttlout value="%d"/></state>\n' % (repr(length), the_value))
 
