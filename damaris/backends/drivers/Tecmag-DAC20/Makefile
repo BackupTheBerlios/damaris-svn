@@ -4,7 +4,7 @@ LDFLAGS=-lexpat -lxerces-c -L/opt/local/lib
 
 .PHONY: all clean install
 
-all: DAC20.o DAC_test.exe pfg_test.exe
+all: DAC20.o
 
 ../../tools/add_endline.exe: ../../tools/add_endline.cpp
 	$(CXX) $< -o $@
@@ -18,8 +18,3 @@ clean: ../../tools/add_endline.exe
 
 DAC20.o: DAC20.cpp DAC20.h
 	$(CXX) -D TIMING=9e-8  -c $(CXXFLAGS) -o $@ $<
-
-DAC_test.exe: DAC_test.o DAC20.o ../../core/core.a
-	$(CXX) $(LDFLAGS) -o $@ $^
-pfg_test.exe: pfg_test.o DAC20.o ../../core/core.a
-	$(CXX) $(LDFLAGS) -o $@ $^
