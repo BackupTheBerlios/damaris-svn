@@ -125,7 +125,6 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 					throw pfg_exception("dac_value too high");
 				if ( abs(PFG_aout->dac_value) > pow(2.0, int(DAC_BIT_DEPTH-1)) )
 					throw pfg_exception("dac_value too low");
-			//	std::cout << "DANGER!! Need warmup pulse on LE" <<std::endl;	
 				// now, insert the ttl information
 				vector<int> dac_word;
 				for (int j = 0; j < DAC_BIT_DEPTH ; j++)	{
