@@ -103,6 +103,8 @@ state_atom* xml_state_reader::state_factory(const XML_Char *name,
     const XML_Char* frequency=search_attributes(atts,"frequency","f",(XML_Char*)NULL);
     const XML_Char* phase=search_attributes(atts,"phase","p",(XML_Char*)NULL);
     const XML_Char* amplitude=search_attributes(atts,"amplitude","a",(XML_Char*)NULL);
+    const XML_Char* dac_value=search_attributes(atts,"dac_value","d",(XML_Char*)NULL);
+    if (dac_value!=NULL) aout->dac_value=strtol(dac_value,NULL,0);
     if (channel!=NULL) aout->id=strtoul(channel,NULL,0);
     if (frequency!=NULL) aout->frequency=strtod(frequency,NULL);
     if (phase!=NULL) aout->phase=strtod(phase,NULL);
@@ -273,12 +275,14 @@ int xml_state_writer::write_states(FILE* output, const state_atom& states_to_wri
   const analogout* ao=dynamic_cast<const analogout*>(&states_to_write);
   if (ao!=NULL) {
     fprintf(output,
-	    "%s<analogout id=\"%d\" frequency=\"%g\" amplitude=\"%g\" phase=\"%g\"/>\n",
+	    "%s<analogout id=\"%d\" frequency=\"%g\" amplitude=\"%g\" phase=\"%g\" dac_value=\"%d\"/>\n",
 	    indent_string.c_str(),
 	    ao->id,
 	    ao->frequency,
 	    ao->amplitude,
-	    ao->phase);
+	    ao->phase,
+	    ao->dac_value);
+    
     return 1;
   }
   const analogin* ai=dynamic_cast<const analogin*>(&states_to_write);

@@ -121,7 +121,7 @@ class ResultReader:
 
             self.adc_result_current_channel = 0
             self.adc_result_trailing_chars = ""
-            self.try_base64 = True
+            self.try_base64 = True 
 
             if self.result is None:
                 self.result = ADC_Result()

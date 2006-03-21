@@ -7,10 +7,11 @@
 
 #include "hardware.h"
 
-result* hardware::single_pulse_experiment(double frequency, double t_before, double t, double sample_freq, size_t samples) {
+result* hardware::single_pulse_experiment(double frequency, double t_before, double t, double sample_freq, size_t samples, signed dac_value) {
 # if 1
   the_fg->set_frequency(frequency);
   the_adc->sample_after_external_trigger(sample_freq,samples,sample_freq,samples);
+  the_gradientpg->set_dac(dac_value);
   the_pg->single_pulse_program(t_before,t,((double)samples)/sample_freq);
   return the_adc->get_samples();
 #else
@@ -29,6 +30,8 @@ result* hardware::experiment(const state& exp) {
 	the_fg->set_frequency(*work_copy);
       if (the_adc!=NULL)
 	the_adc->set_daq(*work_copy);
+      if (the_gradientpg!=NULL)
+	the_gradientpg->set_dac(*work_copy);
       // the pulse generator is necessary
       the_pg->run_pulse_program(*work_copy);
       // wait for pulse generator

@@ -9,7 +9,7 @@ CXX=g++
 CXXFLAGS=-O0 -g -I. -I..
 
 #ToDo PBP-HS3-test.exe
-SUBDIRS:=SpinCore-PulseBlaster SpinCore-PulseBlaster24Bit SpinCore-PulseBlasterDDSIII PTS-Synthesizer Eurotherm-2000Series dummy Spectrum-MI40xxSeries
+SUBDIRS:=SpinCore-PulseBlaster SpinCore-PulseBlaster24Bit SpinCore-PulseBlasterDDSIII PTS-Synthesizer Eurotherm-2000Series dummy Spectrum-MI40xxSeries Tecmag-DAC20
 ifeq ($(shell uname -o),"Cygwin")
 SUBDIRS:=$(SUBDIRS) TiePie-HS3 Datel-PCI416
 endif

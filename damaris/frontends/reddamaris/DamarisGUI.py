@@ -375,6 +375,12 @@ class DamarisGUI:
             experiments=tables.Int64Col()
             results=tables.Int64Col()
 
+
+        class timeline_tablecols(tables.IsDescription):
+            time=tables.StringCol(length=len("YYYYMMDD HH:MM:SS"))
+            experiments=tables.Int64Col()
+            results=tables.Int64Col()
+
         if init:
             # dump all information to a file
             print "ToDo: move away old dump file"
@@ -389,7 +395,7 @@ class DamarisGUI:
                 dump_file.createArray(scriptgroup,"backend_executable", self.si.backend_executable)
             if self.spool_dir:
                 dump_file.createArray(scriptgroup,"spool_directory", self.spool_dir)
-            timeline_table=dump_file.createTable("/","timeline", dump_file_timeline, title="Timeline of Experiment")
+            timeline_table=dump_file.createTable("/","timeline", timeline_tablecols, title="Timeline of Experiment")
             timeline_row=timeline_table.row
             timeline_row["time"]=time.strftime("%Y%m%d %H:%M:%S")
             timeline_row["experiments"]=0
@@ -1632,5 +1638,6 @@ class ScriptInterface:
 
 if __name__=="__main__":
 
+    sys.path.append(os.path.dirname(__file__))
     d=DamarisGUI()
     d.run()

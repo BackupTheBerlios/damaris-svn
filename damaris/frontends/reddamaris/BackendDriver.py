@@ -26,7 +26,7 @@ class BackendDriver(threading.Thread):
 
         self.executable=str(executable)
         self.spool_dir=spool
-        self.core_state_file = "Mobile core.state"
+        self.core_state_file = "PFG core.state"
         self.experiment_pattern="job.%09d"
         self.result_pattern=self.experiment_pattern+".result"
         self.experiment_writer = ExperimentWriter.ExperimentWriterWithCleanup(self.spool_dir, no=0, job_pattern=self.experiment_pattern)
@@ -161,12 +161,14 @@ class BackendDriver(threading.Thread):
             
 
     def is_busy(self):
-        "Checks for a *.state file in core_path"
-        file_list = glob.glob(os.path.join(self.spool_dir, self.core_state_file))
-        if len(file_list) != 0:
-            return True
-        else:
-            return False
+        "Checks for state file"
+        return os.path.isfile(self.statefilename)
+    
+        #file_list = glob.glob(os.path.join(self.spool_dir, self.core_state_file))
+        #if len(file_list) != 0:
+        #    return True
+        #else:
+        #    return False
 
 
     def get_exp_writer(self):

@@ -59,7 +59,7 @@ class job {
   }
 
   virtual int print() const{
-    printf("job no %d\n",job_no);
+    printf("job no %u\n",job_no);
     return 0;
   }
 
@@ -188,7 +188,7 @@ class single_pulse_experiment: public experiment {
   double sample_frequency;
   /** samples for each channel */
   size_t samples;
-
+signed dac_value;
   /**
      quick instantiation of single pulse experiment
    */
@@ -198,6 +198,7 @@ class single_pulse_experiment: public experiment {
     frequency=1e4;
     sample_frequency=5e6;
     samples=1<<12;
+   dac_value=3;
   }
 
   single_pulse_experiment(size_t n,const XERCES_CPP_NAMESPACE_QUALIFIER DOMNamedNodeMap* attrs);
@@ -208,7 +209,7 @@ class single_pulse_experiment: public experiment {
    */
   result* do_it(hardware* hw) {
     try {
-      result* data=hw->single_pulse_experiment(frequency,t_before,pulse_length,sample_frequency,samples);
+      result* data=hw->single_pulse_experiment(frequency,t_before,pulse_length,sample_frequency,samples,dac_value);
       data->job_no=job_no;
       return data;
     }

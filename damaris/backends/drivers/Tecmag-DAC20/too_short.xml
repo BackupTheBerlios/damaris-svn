@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<sequent>
+ <state time="3.0e-5"><analogout id="0" a="5" dac_value="-174288"/></state>
+</sequent>

@@ -7,9 +7,9 @@
 
 
 CXX=g++
-CXXFLAGS=-g -O0 -I. -I..
+CXXFLAGS=-g -O0 -I. -I.. -I/opt/local/include
 LDFLAGS=
-LIBS=-lexpat -lxerces-c -lm
+LIBS=-lexpat -lxerces-c -lm -L/opt/local/lib
 
 MACHINE=dummy
 
@@ -50,6 +50,9 @@ endif
 ../drivers/PTS-Synthesizer/PTS.o:
 	$(MAKE) -C ../drivers/PTS-Synthesizer PTS.o
 
+../drivers/Tecmag-DAC20/DAC20.o:
+	$(MAKE) -C ../drivers/Tecmag-DAC20 DAC20.o
+	
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a:
 	$(MAKE) -C ../drivers/Spectrum-MI40xxSeries Spectrum-MI40xxSeries.a
 
@@ -103,3 +106,14 @@ rm -f *~ *.o NQRcore.exe Mobilecore.exe dummycore.exe *.stackdump magnexgrad_bac
 
 install: $(MACHINE)core.exe
 	install $(MACHINE)core.exe $(PREFIX)
+
+PFGcore.exe: PFGcore.o hardware.o \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o ../drivers/Tecmag-DAC20/DAC20.o\
+../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
+	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
+
+PFGcore.o: PFGcore.cpp \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h ../drivers/Tecmag-DAC20/DAC20.h\
+../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+	$(CXX) -c $(CXXFLAGS) $< -o $@

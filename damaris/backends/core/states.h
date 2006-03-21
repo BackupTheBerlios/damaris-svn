@@ -100,13 +100,14 @@ class analogout: public state_atom {
   double phase;
   /** frequency in Hz*/
   double frequency;
-
+  signed dac_value;
   /** default: all of */
   analogout() {
     id=0;
     amplitude=0.0;
     phase=0.0;
     frequency=0.0;
+    dac_value=0;
   }
 
   analogout(const analogout& orig) {
@@ -114,6 +115,7 @@ class analogout: public state_atom {
     amplitude=orig.amplitude;
     phase=orig.phase;
     frequency=orig.frequency;
+    dac_value=orig.dac_value;
   }
 
   virtual state_atom* copy_new() const {

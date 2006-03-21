@@ -80,6 +80,7 @@ single_pulse_experiment::single_pulse_experiment(size_t n,const XERCES_CPP_NAMES
   frequency=1e4;
   sample_frequency=5e6;
   samples=1<<12;
+  dac_value=3;
 
   // find pulse length
   XERCES_CPP_NAMESPACE_QUALIFIER  DOMNode* length_attr=attrs->getNamedItem((XMLCh*)"length");
@@ -314,6 +315,12 @@ state_atom* experiment::state_factory(const XERCES_CPP_NAMESPACE_QUALIFIER DOMEl
       aout->frequency=strtod(frequency,NULL);
       XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&frequency);
     }
+    char* dac_value=get_parameter(element,"dac_value","d",(char*)NULL);
+    if (dac_value!=NULL) {
+      aout->dac_value=strtol(dac_value,NULL,0);
+      XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&dac_value);
+    }
+
     char* phase=get_parameter(element,"phase","p",(char*)NULL);
     if (phase!=NULL) {
       aout->phase=strtod(phase,NULL);

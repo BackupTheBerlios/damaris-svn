@@ -8,6 +8,7 @@
 #          the pulse-card; one file)                        #
 #                                                           #
 #############################################################
+import dac
 
 class Experiment:
 
@@ -72,9 +73,30 @@ class Experiment:
     def set_frequency(self, frequency, phase, ttls=0):
         "Sets the frequency generator to a desired frequency (Hz)"
         if ttls==0:
-            self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%f"/></state>\n' % (frequency, phase))
+            self.state_list.append('<state time="2e-6"><analogout id="0" f="%f" phase="%f"/></state>\n' % (frequency, phase))
         else:
-            self.state_list.append('<state time="2e-6"><analogout f="%f" phase="%f"/><ttlout value="%d"/></state>\n' % (frequency, phase, ttls))
+            self.state_list.append('<state time="2e-6"><analogout id="0" f="%f" phase="%f"/><ttlout value="%d"/></state>\n' % (frequency, phase, ttls))
+    
+    def set_pfg(self, I_out, length=None, is_seq=0):
+	"""This sets the value for the PFG, it also sets it back automatically.
+	If you don't whish to do so (i.e. line shapes)  set is_seq=1"""
+	dac_value=dac.conv(I_out)
+	if length==None:
+	    length=42*9e-8
+	self.state_list.append('<state time="%s"><analogout id="1" dac_value="%i"/></state>\n' %(repr(length), dac_value))
+	if is_seq == 0:
+	    self.state_list.append('<state time="%s"><analogout id="1" dac_value="0"/></state>\n' %(repr(42*9e-8)) )
+ 
+    def set_pfg_wt(self, I_out, length=None, is_seq=0, trigger=4):
+	"""This sets the value for the PFG, it also sets it back automatically.
+	If you don't whish to do so (i.e. line shapes)  set is_seq=1"""
+	dac_value=dac.conv(I_out)
+	if length==None:
+	    length=42*9e-8
+	self.state_list.append('<state time="%s"><analogout id="1" dac_value="%i"/><ttlout value="%s"/></state>\n' %(repr(length), dac_value, trigger))
+	if is_seq == 0:
+	    self.state_list.append('<state time="%s"><analogout id="1" dac_value="0"/><ttlout value="%s"/></state>\n' %(repr(42*9e-8),trigger) )
+
 
     def set_phase(self, phase, ttls=0):
         if ttls==0:
@@ -89,7 +111,9 @@ class Experiment:
             print 'Warning: Overwriting existing description "%s" = "%s" with "%s"' % (key, self.description[key], value)
 
         self.description[key] = value
-
+    def set_pts_local(self):
+	self.state_list.append('<state time="1e-6"><ttlout value="0xf000"/></state>\n')
+	self.state_list.append('<state time="1e-6"><ttlout value="0x8000"/></state>\n')
     # / Commands -----------------------------------------------------------------------------------
 
 

@@ -2,6 +2,6 @@
 <config>
 	<job_writer path="/tmp/dummyspool"/>
 	<data_handling path="/tmp/dummyspool" timeout="None"/>
-	<core exec="/home/achim/damaris/backends/machines/dummycore.exe"
+	<core exec="/home/markusro/damaris/backends/machines/PFGcore.exe"
               path="/tmp/dummyspool" core_state="dummy core.state"/>
 </config>
