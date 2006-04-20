@@ -1,6 +1,7 @@
 #include <cmath>
 #include <stack>
 #include "pthread.h"
+#include "core/core.h"
 #include "core/stopwatch.h"
 #include "core/result.h"
 #include "core/xml_states.h"
@@ -405,6 +406,7 @@ short int* SpectrumMI40xxSeries::split_adcdata_recursive(short int* data, const 
 
 result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 
+    if (core::term_signal!=0) return NULL;
     size_t sampleno=(effective_settings==NULL || effective_settings->data_structure==NULL)?0:effective_settings->data_structure->size();
     if (sampleno==0) return new adc_result(1,0,NULL);
     double timeout=_timeout;
@@ -425,7 +427,7 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 	adc_timer.start();
 	int adc_status;
 	SpcGetParam(deviceno, SPC_STATUS, &adc_status);
- 	while (adc_status!=SPC_READY && adc_timer.elapsed()<timeout){
+ 	while (core::term_signal==0 && adc_status!=SPC_READY && adc_timer.elapsed()<timeout){
 	  timespec sleeptime;
 	  sleeptime.tv_nsec=10*1000*1000;
 	  sleeptime.tv_sec=0;
@@ -433,9 +435,13 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 	  SpcGetParam(deviceno, SPC_STATUS, &adc_status);
 	}
 	SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
+	if (core::term_signal!=0) {
+	    free(adc_data);
+	    return NULL;
+	}
 	if (adc_status!=SPC_READY) {
 	    free(adc_data);
-	    throw SpectrumMI40xxSeries_error("timout occured while collecting data");
+	    throw SpectrumMI40xxSeries_error("timeout occured while collecting data");
 	}
     
 # if defined __linux__

@@ -4,6 +4,7 @@
  Created: June 2004
 
 ****************************************************************************/
+#include "core/core.h"
 #include "Datel-PCI416.h"
 
 DatelPCI416::DatelPCI416(const ttlout& t_line){
@@ -152,7 +153,7 @@ adc_result* DatelPCI416::get_samples(double timeout) {
   double time_spent=0;
   // busy wait for end
   fprintf(stderr,"waiting for ADC");
-  while (1) {
+  while (core::term_signal==0) {
     DWORD dma_status=0;
     // status NOT DONE=0, Done=1
     if (pci416_dma_status(board,&dma_status)!=NOERROR)
@@ -168,7 +169,8 @@ adc_result* DatelPCI416::get_samples(double timeout) {
     }
   }
   fprintf(stderr," done\n");
-
+  if (core::term_signal!=0) return NULL;
+    
   if (NOERROR!=stop_daq(board))
     throw ADC_exception("stop daq failed");
   if(NOERROR!=pci416_stop_dma(board,NULL))

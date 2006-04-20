@@ -6,6 +6,7 @@
 ****************************************************************************/
 #include "core_config.h"
 #include "core_exception.h"
+#include "xml_result.h"
 #include "core.h"
 #include <cerrno>
 #include <unistd.h>
@@ -18,6 +19,7 @@ core_config::core_config(const char** argv, int argc) {
     result_filename_pattern="job.%09lu.result";
     job_filename_pattern="job.%09lu";
     job_poll_wait=0.1;
+    result_encoding=xml_result_writer::base64;
     // find spool directory argument
     for (int i=1; i<argc; ++i) {
 	if (strncmp(argv[i],"--spool",7)==0) {
@@ -39,7 +41,24 @@ core_config::core_config(const char** argv, int argc) {
 
 int core_config::xml_write_core_config_lines(FILE* f) const {
   fprintf(f,"<jobs spool=\"%s\" pattern=\"%s\" polltime=\"%g\"/>\n", spool_directory.c_str(), job_filename_pattern.c_str(), job_poll_wait);
-  fprintf(f,"<results spool=\"%s\" pattern=\"%s\"/>\n", spool_directory.c_str(), result_filename_pattern.c_str());
+  std::string encoding_name;
+  switch (result_encoding) {
+  case xml_result_writer::defaultmode:
+    encoding_name="default"; break; 
+  case xml_result_writer::separate_file:
+    encoding_name="separate_file"; break;
+  case xml_result_writer::base64:
+    encoding_name="base64"; break;
+  case xml_result_writer::ascii:
+    encoding_name="ascii"; break;
+  case xml_result_writer::csv:
+    encoding_name="csv"; break;
+  case xml_result_writer::hex:
+    encoding_name="hex"; break;
+  default:
+    encoding_name="unknown";
+  }
+  fprintf(f,"<results spool=\"%s\" pattern=\"%s\" encoding=\"%s\"/>\n", spool_directory.c_str(), result_filename_pattern.c_str(),encoding_name.c_str());
   return 0;
 }
 
@@ -60,6 +79,7 @@ int core_config::xml_read_core_config_startElement(const std::string& name, cons
     xml_attrs::const_iterator pattern_attr=attrs.find("pattern");
     if (spool_attr!=attrs.end()) spool_directory=spool_attr->second;
     if (pattern_attr!=attrs.end()) result_filename_pattern=pattern_attr->second;
+    /* todo: result encoding */
   }
   return 0;
 }
@@ -113,7 +133,7 @@ core_state::core_state(const core& the_core): core_config(the_core.the_configura
   start_time=the_core.start_time;
 }
 
-core_state::core_state(const std::string& filename) {
+core_state::core_state(const std::string& filename): core_config() {
   
   if (access(filename.c_str(),R_OK)!=0)
     throw core_exception("could not open status file "+filename);

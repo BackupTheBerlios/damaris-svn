@@ -10,14 +10,17 @@
 #include <cstdio>
 #include <string>
 #include <map>
+#include "core/xml_result.h"
 
 class core;
 
 /**
+   useful for xml tag parsing
  */
 typedef std::map<const std::string, std::string> xml_attrs;
 
 /**
+   configuration variables influencing the runtime behaviour of core
  */
 class core_config {
  public:
@@ -38,19 +41,26 @@ class core_config {
      */
     std::string job_filename_pattern;
 
-    /*
+    /**
       wait time in seconds until next read
     */
     double job_poll_wait;
+    /**
+       encoding of result files
+     */
+    xml_result_writer::data_save_mode_type result_encoding;
+
     int xml_write_core_config_lines(FILE* f) const;
     int xml_read_core_config_startElement(const std::string& name, const xml_attrs& attrs);
-    core_config():spool_directory("."), result_filename_pattern("job.%09lu.result"), job_filename_pattern("job.%09lu"), job_poll_wait(0.1) {}
+    core_config():spool_directory("."), result_filename_pattern("job.%09lu.result"), job_filename_pattern("job.%09lu"), job_poll_wait(0.1),result_encoding(xml_result_writer::base64) {}
     core_config(const char** argv, int argc);
     core_config(const core_config& c): spool_directory(c.spool_directory),
-	result_filename_pattern(c.result_filename_pattern),
-	job_filename_pattern(c.job_filename_pattern),
-	job_poll_wait(c.job_poll_wait) {}
-    core_config(const std::string& dir): spool_directory(dir), result_filename_pattern("job.%09lu.result"), job_filename_pattern("job.%09lu"), job_poll_wait(0.1) {}
+      result_filename_pattern(c.result_filename_pattern),
+      job_filename_pattern(c.job_filename_pattern),
+      job_poll_wait(c.job_poll_wait),
+      result_encoding(c.result_encoding)
+      {}
+    core_config(const std::string& dir): spool_directory(dir), result_filename_pattern("job.%09lu.result"), job_filename_pattern("job.%09lu"), job_poll_wait(0.1), result_encoding(xml_result_writer::base64) {}
 };
 
 class core_state: public core_config {
