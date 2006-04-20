@@ -39,7 +39,7 @@ class NQR_core: public core {
   std::string my_name;
 
 public:
-  NQR_core(const core_config& conf): core(conf), my_name("Mobile machine") {
+  NQR_core(const core_config& conf): core(conf), my_name("NQR machine") {
       the_hardware=new NQR_hardware();
   }
 
