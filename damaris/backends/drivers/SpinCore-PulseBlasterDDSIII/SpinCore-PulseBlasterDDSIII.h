@@ -10,6 +10,7 @@
 #include "drivers/frequgen.h"
 #include "drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h"
 #include "drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h"
+#include "core/core.h"
 #include "core/states.h"
 #include "core/stopwatch.h"
 #include <cstdio>
@@ -30,16 +31,6 @@ class PulseBlasterDDSIIIProgram;
 class PulseBlasterDDSIIICommand;
 
 class SpinCorePulseBlasterDDSIII: public frequgen, public SpinCorePulseBlaster {
-
-  /**
-     how long the loaded pulse program lasts
-   */
-  double duration;
-
-  /**
-     time when pulseblaster was started
-   */
-  stopwatch time_running;
 
   /**
      number of frequency registers
@@ -109,6 +100,19 @@ class SpinCorePulseBlasterDDSIII: public frequgen, public SpinCorePulseBlaster {
      run a PulseBlaster Program
    */
   virtual void run_pulse_program(const PulseBlasterProgram& p);
+
+  /**
+     provide fake substitution for get_status
+   */
+  inline int get_status() {
+    fprintf(stderr,"PulseBlaster DDSIII does not support status readback! (assuming running state)\n");
+    return 4;
+  }
+
+  /**
+     status queries not working, workaround
+   */
+  void wait_till_end();
 
   /**
      destructor (close device)

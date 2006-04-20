@@ -466,8 +466,39 @@ void SpinCorePulseBlasterDDSIII::run_pulse_program(const PulseBlasterProgram& p)
   if (prog==NULL)
     throw SpinCorePulseBlaster_error("found wrong program class in SpinCorePulseBlasterDDSIII method");
   write_to_device(*prog);
-  prog->write_to_file(stderr);
   start();
+}
+
+void SpinCorePulseBlasterDDSIII::wait_till_end() {
+
+    double waittime=duration-time_running.elapsed();
+    double timeout=(waittime>10)?(waittime*0.01):0.05;
+#if SP_DEBUG
+    fprintf(stderr,"waiting while DDSIII pulseprogram running (%f s of %f s)...", waittime, duration);
+#endif
+    while (waittime>-timeout && core::term_signal==0) {
+      if (waittime<1e-2)
+	waittime=1e-2;
+      else
+	waittime*=0.9;
+#if SP_DEBUG
+      fprintf(stderr,"sleeping for %g seconds...",waittime);
+      fflush(stderr);
+#endif
+      timespec nanosleep_time;
+      nanosleep_time.tv_sec=(time_t)floor(waittime);
+      nanosleep_time.tv_nsec=(long)ceil((waittime-nanosleep_time.tv_sec)*1e9);
+      nanosleep(&nanosleep_time,NULL);
+      waittime=duration-time_running.elapsed();
+    }
+    if (core::term_signal!=0) {
+      //reset pulseblaster
+      stop();
+      reset_flags(0);
+    }
+#if SP_DEBUG
+    fprintf(stderr,"done\n");
+#endif
 }
 
 
