@@ -15,6 +15,7 @@
    \defgroup magnexgradmachine Magnex Static Gradient NMR Spectrometer
    \ingroup machines
    Uses Spincore Pulseblaster 24 Bit and Spectrum MI4021 together with PTS phase and frequency cable driver
+   Also implements Eurotherm temperature control
 
    \par Starting the hardware
    Switch on the amplifier
@@ -41,10 +42,42 @@ public:
       the_tc=new Eurotherm2000Series("/dev/ttyS0",2,0x0);
   }
 
+
+  /**
+     print out a temperature line
+   */
+  virtual result* experiment(const state& exp) {
+    result* r=hardware::experiment(exp);
+    /**
+       make a timestamp
+     */
+    time_t timestamp;
+    time(&timestamp);
+    tm timestamp_broken;
+    localtime_r(&timestamp, &timestamp_broken);
+    char timestamp_string[254];
+    strftime(timestamp_string,254, "%F %T", &timestamp_broken);
+    timeval exact_time;
+    gettimeofday(&exact_time, NULL);
+
+    if (the_tc!=NULL) {
+      try {
+	double temp=the_tc->get_temperature();
+	fprintf(stdout, "%s.%03d temperature=%f\n",timestamp_string, exact_time.tv_usec/1000, temp);
+      }
+      catch (Eurotherm2000Series_error e) {
+	fprintf(stdout, "%s.%03d temperature=0.0 (error %s)\n",timestamp_string, exact_time.tv_usec/1000, e.c_str());
+      }
+      fflush(stdout);
+    }
+    return r;
+  }
+
   virtual ~magnexgrad_hardware() {
     if (the_adc!=NULL) delete the_adc;
     if (the_pg!=NULL) delete the_pg;
     if (the_fg!=NULL) delete the_fg;
+    if (the_tc!=NULL) delete the_tc;
   }
 
 };
