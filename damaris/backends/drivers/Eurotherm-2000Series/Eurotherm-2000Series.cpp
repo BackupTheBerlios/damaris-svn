@@ -53,21 +53,33 @@ Eurotherm2000Series::Eurotherm2000Series(const std::string& dev_name, int dev_ad
 void Eurotherm2000Series::configure(const std::map<std::string,std::string>& config) {
   std::string error_message;
   try {
-    set_value("IM","0002.");
+    std::string mode;
+    const char config_mode[]="0002.";
+    read_value("IM",mode);
     for (std::map<std::string,std::string>::const_iterator i=config.begin();i!=config.end();++i) {
-      try { set_value(i->first,i->second); }
+      try {
+	std::string value;
+	read_value(i->first, value);
+	if (value!=i->second) {
+	  if (mode!=config_mode) set_value("IM",config_mode);
+	  set_value(i->first,i->second);
+	  mode=config_mode;
+	}
+      }
       catch (Eurotherm2000Series_error e){error_message+=i->first+"->"+i->second+", ";}
     }
-    set_value("IM","0000.");
-    // read superficial zero byte
-    char buffer[1];
-    while (read(serial_dev,buffer,1)<=0) sleep(1);
-    // wait for restarted communication
-    int timeout=10;
-    while (1) {
-      if (timeout<0) throw Eurotherm2000Series_error("could not establish connection after configuring");
-      try {get_summary_status();} catch(Eurotherm2000Series_error){--timeout;sleep(1); continue;}
-      break;
+    if (mode==config_mode) {
+      set_value("IM","0000.");
+      // read superficial zero byte
+      char buffer[1];
+      while (read(serial_dev,buffer,1)<=0) sleep(1);
+      // wait for restarted communication
+      int timeout=10;
+      while (1) {
+	if (timeout<0) throw Eurotherm2000Series_error("could not establish connection after configuring");
+	try {get_summary_status();} catch(Eurotherm2000Series_error){--timeout;sleep(1); continue;}
+	break;
+      }
     }
   }
   catch (Eurotherm2000Series_error e) {
