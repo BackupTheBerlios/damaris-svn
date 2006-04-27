@@ -27,6 +27,11 @@ class DataManagementNode {
   DataManagementNode(class DataManagementNode* par=NULL): parent(par), child(NULL), next(NULL), n(0) {}
 
   /**
+     (deep) copy constructor
+   */
+  DataManagementNode(const DataManagementNode& orig);
+
+  /**
      size of all childrens' data
   */
   size_t size() const;

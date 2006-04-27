@@ -101,8 +101,34 @@ class SpectrumMI40xxSeries: public ADC {
 
       /** print data for debug purpose  */
       void print(FILE* f);
+
+      Configuration() {
+	samplefreq=0; timeout=0; impedance=0; sensitivity=0; coupling=0; data_structure=NULL;
+      }
+
+      Configuration(const Configuration& orig) {
+	samplefreq=orig.samplefreq;
+	timeout=orig.timeout;
+	impedance=orig.impedance;
+	sensitivity=orig.sensitivity;
+	coupling=orig.coupling;
+	if (orig.data_structure==NULL) data_structure=NULL;
+	else data_structure=new DataManagementNode(*orig.data_structure);
+      }
+      
+      ~Configuration() {
+	if (data_structure!=NULL) delete data_structure;
+      }
   };
 
+  /**
+     these settings are copied and modified at need to derive effective settings
+   */
+  Configuration default_settings;
+
+  /**
+     only available with started measurement
+   */
   Configuration* effective_settings;
 
   short int* split_adcdata_recursive(short int* data, const DataManagementNode& structure, adc_results& result_splitted);

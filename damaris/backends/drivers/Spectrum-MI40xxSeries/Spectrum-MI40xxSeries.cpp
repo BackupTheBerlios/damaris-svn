@@ -1,5 +1,7 @@
 #include <cmath>
 #include <stack>
+#include <cerrno>
+#include <cstring>
 #include "pthread.h"
 #include "core/core.h"
 #include "core/stopwatch.h"
@@ -27,12 +29,18 @@ SpectrumMI40xxSeries::SpectrumMI40xxSeries(const ttlout& t_line) {
   device_id=0;
   trigger_line=t_line;
 
+  default_settings.impedance=1e6; // Ohm
+  default_settings.sensitivity=5; // Volts
   effective_settings=NULL;
   
 #     if defined __linux__
       // ----- open driver -----
       deviceno = open ("/dev/spc0", O_RDWR);
-      if (deviceno <= 0) throw SpectrumMI40xxSeries_error("device not found");
+      if (deviceno == -1) {
+	std::string error_message="could not open /dev/spc0";
+	if (errno==0) throw SpectrumMI40xxSeries_error( error_message+" (unknown error)");
+	else throw SpectrumMI40xxSeries_error( error_message+" ("+strerror(errno)+")");
+      }
 #     endif
 #     if defined __CYGWIN__
       // open library dll
@@ -155,7 +163,7 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 		    throw ADC_exception("can not handle more than one analogin section per state");
 		}
 		/* save sampling frequency */
-		if (settings.samplefreq<0)
+		if (settings.samplefreq<=0)
 		    settings.samplefreq=inputs.front()->sample_frequency;
 		else if (settings.samplefreq!=inputs.front()->sample_frequency) {
 		    while (!inputs.empty()) {delete inputs.front(); inputs.pop_front();}
@@ -255,12 +263,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
     throw ADC_exception("Spectrum-MI40xxSeries: only working on sequences");
  
   /* find out what to do */
-  Configuration* conf=new Configuration;
-  conf->samplefreq=-1; // not set
-  conf->data_structure=NULL;
-  conf->impedance=50; // Ohm
-  conf->sensitivity=0; // Volts
-  conf->coupling=0; // DC
+  Configuration* conf=new Configuration(default_settings);
   collect_config_recursive(*exp_sequence, *conf);
 
   size_t sampleno=(conf->data_structure==NULL)?0:conf->data_structure->size();

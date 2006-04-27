@@ -73,6 +73,16 @@ void DataManagementNode::print(FILE* f,size_t indent) {
   
 }
 
+DataManagementNode::DataManagementNode(const DataManagementNode& orig) {
+  parent=NULL;
+  if (orig.child!=NULL) {
+    child=new DataManagementNode(*orig.child);
+    for (DataManagementNode* i=child; i!=NULL; i=i->next) i->parent=this;
+  }
+  if (orig.next!=NULL) next=new DataManagementNode(*orig.next);
+  n=orig.n;
+}
+
 /**
    recursive destruction
 */
