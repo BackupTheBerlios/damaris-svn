@@ -802,10 +802,10 @@ class ScriptWidgets:
                     outer_space.show_error_dialog("File I/O Error","Cannot read from file %s" % script_filename)
                     return True
 
-                script_file = file(script_filename, "r")
+                script_file = file(script_filename, "rU")
                 script_string = u""
                 for line in script_file:
-                    script_string += unicode(line,encoding="iso-8859-1", errors="replace")
+                    script_string += unicode(line,encoding="iso-8859-15", errors="replace")
                 script_file.close()
 
                 if script_widget.main_notebook.get_current_page() == 0:    
@@ -862,8 +862,8 @@ class ScriptWidgets:
         else:
             return 0
 
-        # encode from unicode to iso-8859-1
-        filecontents=codecs.getencoder("iso-8859-1")(script,"replace")[0]
+        # encode from unicode to iso-8859-15
+        filecontents=codecs.getencoder("iso-8859-15")(script,"replace")[0]
         file(filename,"w").write(filecontents)
 
         if current_page == 0:
@@ -1358,7 +1358,7 @@ class MonitorWidgets:
 
         # save them to a temporary file (in memory)
         tmpdata=os.tmpfile()
-        tmpdata.writeline("# saved from monitor as %s"%data_to_save[0])
+        tmpdata.write("# saved from monitor as %s\n"%data_to_save[0])
         data_to_save[1].write_as_csv(tmpdata)
         
         # show save dialog
@@ -1390,6 +1390,7 @@ class MonitorWidgets:
                                        buttons = (gtk.STOCK_SAVE, gtk.RESPONSE_OK, gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL))
 
         dialog.set_default_response(gtk.RESPONSE_OK)
+        dialog.set_current_name(data_to_save[0])
         dialog.set_select_multiple(False)
 
         # Event-Handler for responce-signal (when one of the button is pressed)
