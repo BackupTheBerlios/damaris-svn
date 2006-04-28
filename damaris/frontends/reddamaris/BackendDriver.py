@@ -77,7 +77,15 @@ class BackendDriver(threading.Thread):
             timeout-=0.1
             state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
         if timeout<0:
-            raise AssertionError("state file %s did not show up"%self.statefilename)
+            # look into core log file and include contents
+            log_message=''
+            if os.path.isfile(self.core_output_filename):
+                # to do include log data
+                log_message=''.join(file(self.core_output_filename,"r").readlines()[:10])
+            if not log_message:
+                log_message="no error message from core"
+            raise AssertionError("state file %s did not show up:\n%s"%(self.statefilename,log_message))
+
         if state_files and self.statefilename not in state_files:
             print "found other state file(s)", state_files,  " taking first one"
             self.statefilename=state_files[0]
