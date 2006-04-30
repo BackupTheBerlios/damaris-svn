@@ -5,6 +5,7 @@
 
 ****************************************************************************/
 
+#include "core/core.h"
 #include "hardware.h"
 
 result* hardware::single_pulse_experiment(double frequency, double t_before, double t, double sample_freq, size_t samples, signed dac_value) {
@@ -22,7 +23,7 @@ result* hardware::single_pulse_experiment(double frequency, double t_before, dou
 
 result* hardware::experiment(const state& exp) {
   result* r=NULL;
-  for(size_t tries=0; r==NULL; ++tries) {
+  for(size_t tries=0; r==NULL && core::term_signal==0 &&  tries<102; ++tries) {
     state* work_copy=exp.copy_flat();
     if (work_copy==NULL) return new error_result(1,"could create work copy of experiment sequence");
     try {

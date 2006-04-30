@@ -263,8 +263,11 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
     throw ADC_exception("Spectrum-MI40xxSeries: only working on sequences");
  
   /* find out what to do */
-  Configuration* conf=new Configuration(default_settings);
+  Configuration* conf=new Configuration();
   collect_config_recursive(*exp_sequence, *conf);
+  if (conf->samplefreq<=0) conf->samplefreq=default_settings.samplefreq;
+  if (conf->impedance<=0) conf->impedance=default_settings.impedance;
+  if (conf->sensitivity<=0) conf->sensitivity=default_settings.sensitivity;
 
   size_t sampleno=(conf->data_structure==NULL)?0:conf->data_structure->size();
 
