@@ -9,6 +9,7 @@ import tables
 import compiler
 import types
 import xml.parsers.expat
+import threading
 
 import pygtk
 pygtk.require("2.0")
@@ -22,7 +23,7 @@ import matplotlib
 import matplotlib.axes
 import matplotlib.figure
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
-from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
+from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTK as NavigationToolbar
 
 # import our own stuff
 import ExperimentWriter
@@ -1219,25 +1220,43 @@ class MonitorWidgets:
         """
         sort data as fast as possible and get rid of non-interesting data
         """
+        while self.update_counter>5:
+            # print "sleeping to find time for updates"
+            threading.Event().wait(0.1)
         if event.subject[:2]=="__": return
         if event.what==DataPool.DataPool.Event.updated_value:
             if self.displayed_data[0] is None or event.subject!=self.displayed_data[0]:
                 # do nothing, forget it
                 return
-            if self.displayed_data[1] is self.data_pool[event.subject]:
-                # oh, another category
-                gobject.idle_add(self.update_display_idle_event,self.displayed_data[0][:])
-                return
 
-        gobject.idle_add(self.datapool_idle_listener,event)
+        displayed_object=self.displayed_data[1]
+        object_to_display=self.data_pool.get(event.subject)
+        if displayed_object is None or object_to_display is None:
+            self.update_counter+=1
+            gobject.idle_add(self.datapool_idle_listener,event,priority=gobject.PRIORITY_DEFAULT_IDLE)
+        else:
+            if  displayed_object is object_to_display or displayed_object.__class__ is object_to_display.__class__:
+                # oh, another category
+                self.update_counter+=1
+                gobject.idle_add(self.update_display_idle_event,self.displayed_data[0][:],
+                                 priority=gobject.PRIORITY_DEFAULT_IDLE)
+            else:
+                self.update_counter+=1
+                gobject.idle_add(self.datapool_idle_listener,event,priority=gobject.PRIORITY_DEFAULT_IDLE)
+
+        del displayed_object
+        del object_to_display
         
     def datastructures_listener(self, event):
         """
         do fast work selecting important events
         """
+        while self.update_counter>5:
+            # print "sleeping to find time for updates"
+            threading.Event().wait(0.1)
         if event.origin is not self.displayed_data[1]: return
         self.update_counter+=1
-        gobject.idle_add(self.update_display_idle_event,self.displayed_data[0][:])
+        gobject.idle_add(self.update_display_idle_event,self.displayed_data[0][:],priority=gobject.PRIORITY_DEFAULT_IDLE)
 
     ################### consume idle events
 
@@ -1245,17 +1264,22 @@ class MonitorWidgets:
         """
         here dictionary changes are done
         """
+        self.update_counter-=1
+        # print "datapool listener", self.update_counter
         if event.what==DataPool.DataPool.Event.updated_value:
             if (self.displayed_data[0] is not None and
                 self.displayed_data[0]==event.subject):
                 new_data_struct=self.data_pool[self.displayed_data[0]]
                 if self.displayed_data[1] is new_data_struct:
                     # update display only
-                    gtk.gdk.threads_enter()
-                    try:
-                        self.update_display()
-                    finally:
-                        gtk.gdk.threads_leave()
+                    if self.update_counter>10:
+                        print "update queue too long (%d>10): skipping one update"%self.update_counter
+                    else:
+                        gtk.gdk.threads_enter()
+                        try:
+                            self.update_display()
+                        finally:
+                            gtk.gdk.threads_leave()
                 else:
                     # unregister old one
                     if self.displayed_data[1] is not None and "unregister_listener" in dir(self.displayed_data[1]):
@@ -1265,11 +1289,14 @@ class MonitorWidgets:
                     if "register_listener" in dir(new_data_struct):
                         new_data_struct.register_listener(self.datastructures_listener)
                     self.displayed_data[1]=new_data_struct
-                    gtk.gdk.threads_enter()
-                    try:
-                        self.renew_display()
-                    finally:
-                        gtk.gdk.threads_leave()
+                    if self.update_counter>10:
+                        print "update queue too long (%d>10): skipping one update"%self.update_counter
+                    else:
+                        gtk.gdk.threads_enter()
+                        try:
+                            self.renew_display()
+                        finally:
+                            gtk.gdk.threads_leave()
                 new_data_struct=None
         elif event.what==DataPool.DataPool.Event.new_key:
             # update combo-box by inserting and rely on consistent information
@@ -1303,8 +1330,9 @@ class MonitorWidgets:
 
     def update_display_idle_event(self, subject=None):
         self.update_counter-=1
+        # print "update display", self.update_counter
         if self.update_counter>10:
-            print "update queue too long (%d>10): throwing away things"%self.update_counter
+            print "update queue too long (%d>10): skipping one update"%self.update_counter
             return
         if self.displayed_data[0] is None or subject!=self.displayed_data[0]:
             return
@@ -1429,6 +1457,8 @@ class MonitorWidgets:
             self.matplot_axes.clear()
             self.matplot_axes.grid(True)
         self.matplot_canvas.draw()
+        gtk.gdk.flush()
+
 
     def update_display(self, subject=None):
         """
@@ -1436,16 +1466,12 @@ class MonitorWidgets:
         assume, object is not changed
         we are inside gtk/gdk lock
         """
-        in_result=self.data_pool[self.displayed_data[0]]
+        in_result=self.data_pool.get(self.displayed_data[0])
+        if in_result is None:
+            self.clear_display()
+            return
         if isinstance(in_result, Accumulation.Accumulation) or isinstance(in_result, ADC_Result.ADC_Result):
             # directly taken from bluedamaris
-            if len(self.graphen)==0:
-                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 2))
-                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 2))
-                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
-                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
-                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
-                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
 
             xmin = in_result.get_xmin()
             xmax = in_result.get_xmax()
@@ -1487,8 +1513,16 @@ class MonitorWidgets:
             xdata=in_result.get_xdata()
             ydata0=in_result.get_ydata(0)
             ydata1=in_result.get_ydata(1)
-            self.graphen[0].set_data(xdata, ydata0)
-            self.graphen[1].set_data(xdata, ydata1)
+            if len(self.graphen)==0:
+                self.graphen.extend(self.matplot_axes.plot(xdata, ydata0, "b-", linewidth = 2))
+                self.graphen.extend(self.matplot_axes.plot(xdata, ydata1, "r-", linewidth = 2))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
+                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
+            else:
+                self.graphen[0].set_data(xdata, ydata0)
+                self.graphen[1].set_data(xdata, ydata1)
 
             # Statistics activated?
             if (self.display_statistics_checkbutton.get_active() and
@@ -1510,8 +1544,9 @@ class MonitorWidgets:
             xdata=ydata0=ydata1=None
 
             # Any title to be set?
-            if in_result.get_title() is not None:
-                self.matplot_axes.set_title(in_result.get_title())
+            in_result_title=in_result.get_title()
+            if in_result_title is not None:
+                self.matplot_axes.set_title(in_result_title)
             else:
                 self.matplot_axes.set_title("")
 
@@ -1529,6 +1564,7 @@ class MonitorWidgets:
 
             # Draw it!
             self.matplot_canvas.draw()
+            gtk.gdk.flush()
             in_result=None
             
         elif isinstance(in_result, MeasurementResult.MeasurementResult):
@@ -1575,6 +1611,7 @@ class MonitorWidgets:
                 self.matplot_axes.set_title("")
 
             self.matplot_canvas.draw()
+            gtk.gdk.flush()
             in_result=None        
 
     def renew_display(self):
@@ -1636,6 +1673,13 @@ class ScriptInterface:
 
         self.exp_writer=self.res_reader=None
 
+    def __del__(self):
+        self.exp_writer=None
+        self.res_reader=None
+        self.back_driver=None
+        self.data=None
+        self.exp_handling=None
+        self.res_handling=None
 
 if __name__=="__main__":
 
