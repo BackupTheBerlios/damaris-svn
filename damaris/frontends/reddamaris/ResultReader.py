@@ -14,6 +14,7 @@ import sys
 import base64
 import numarray
 import xml.parsers.expat
+import threading
 from datetime import datetime
 
 from ADC_Result import ADC_Result
@@ -135,7 +136,12 @@ class ResultReader:
                 self.result.set_job_date(self.result_job_date)
 
                 self.result.set_description_dictionary(self.result_description.copy())
-                
+                title="ADC-Result: job-id=%d"%int(self.result_job_number)
+                if len(self.result_description)>0:
+                    for k,v in self.result_description.iteritems():
+                        title+=", %s=%s"%(k,v)
+                self.result.set_title(title)
+                self.result_description=None
                 self.adc_result_sample_counter = 0
             else:
                 self.result.add_sample_space(int(in_attribute["samples"]))
@@ -250,7 +256,7 @@ class BlockingResultReader(ResultReader):
 
     def __init__(self, spool_dir=".", no=0, result_pattern="job.%09d.result", clear_jobs=False, clear_results=False):
         ResultReader.__init__(self, spool_dir, no, result_pattern, clear_jobs=clear_jobs, clear_results=clear_results)
-        self.quit_flag=False # asychronous quit flag
+        self.quit_flag=threading.Event() # asychronous quit flag
         self.stop_no=None # end of job queue
         self.poll_time=0.1 # sleep interval for polling results, <0 means no polling and stop
 
@@ -260,25 +266,25 @@ class BlockingResultReader(ResultReader):
         block until result is available
         """
         expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
-        while not self.quit_flag and (self.stop_no is None or self.stop_no>self.no):
+        while not self.quit_flag.isSet() and (self.stop_no is None or self.stop_no>self.no):
             if not os.access(expected_filename,os.R_OK):
                 # stop polling, if required
                 if self.poll_time<0:
                     break
-                time.sleep(self.poll_time)
+                self.quit_flag.wait(self.poll_time)
                 continue
             r=self.get_result_object(expected_filename)
-            if self.quit_flag: break
+            if self.quit_flag.isSet(): break
             yield r
             if self.clear_results:
                 if os.path.isfile(expected_filename): os.remove(expected_filename)
             if self.clear_jobs:
                 if os.path.isfile(expected_filename[:-7]): os.remove(expected_filename[:-7])
-            if self.quit_flag: break
+            if self.quit_flag.isSet(): break
             self.no+=1
             expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
             
         return
 
     def quit(self):
-        self.quit_flag=True
+        self.quit_flag.set()
