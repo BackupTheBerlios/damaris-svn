@@ -275,7 +275,7 @@ class Accumulation(Errorable, Drawable):
                                                                  name="idx%04d_ch%04d"%(index_no,channel_no),
                                                                  shape=timedata.getshape(),
                                                                  atom=tables.Float64Atom(shape=timedata.getshape(),
-                                                                                         flavor="nummrray"),
+                                                                                         flavor="numarray"),
                                                                  filters=tables.Filters(complevel=compress,
                                                                                         complib='zlib'),
                                                                  title="Index %d, Channel %d"%(index_no,channel_no))
