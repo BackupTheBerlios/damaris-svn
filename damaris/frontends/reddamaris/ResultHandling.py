@@ -16,7 +16,7 @@ class ResultHandling(threading.Thread):
         self.script=script_data
         self.results=result_iterator
         self.data_space=data_pool
-        self.quit_flag=threading.Event()
+        self.quit_flag=self.results.quit_flag
         if self.data_space is not None:
             self.data_space["__recentresult"]=-1
 
@@ -52,14 +52,20 @@ class ResultHandling(threading.Thread):
             dataspace=None
 
     def __iter__(self):
-        if self.quit_flag.isSet(): return
+        if self.quit_flag.isSet():
+            self.results=None
+            return
         for i in self.results:
-            if self.quit_flag.isSet(): return
+            if self.quit_flag.isSet():
+                self.results=None
+                return
             if isinstance(i, Resultable.Resultable):
                 if self.data_space is not None:
                     self.data_space["__recentresult"]=i.job_id+0
             yield i
-            if self.quit_flag.isSet(): return
+            if self.quit_flag.isSet():
+                self.results=None
+                return
 
     def stop(self):
         self.quit_flag.set()
