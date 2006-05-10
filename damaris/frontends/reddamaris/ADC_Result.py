@@ -6,6 +6,7 @@ from Accumulation import Accumulation
 
 import threading
 import numarray
+import sys
 from types import *
 
 #############################################################################
@@ -47,7 +48,7 @@ class ADC_Result(Resultable, Drawable):
             self.description = desc
             self.job_id = job_id
             self.job_date = job_date
-            title="ADC-Result: job-id = %d"%int(self.job_id)
+            title="ADC-Result: job-id=%d"%int(self.job_id)
             if len(self.description)>0:
                 for k,v in self.description.iteritems():
                     title+=", %s=%s"%(k,v)
@@ -68,9 +69,9 @@ class ADC_Result(Resultable, Drawable):
         if samples <= 0: raise ValueError("ValueError: You cant create an ADC-Result with less than 1 sample!")
         
         for i in range(channels):
-            self.y.append(numarray.array([0]*samples, type="Int16"))
+            self.y.append(numarray.zeros((samples,), type="Int16"))
 
-        self.x = numarray.array([0]*samples, type="Float64")
+        self.x = numarray.zeros((samples,), type="Float64")
 
         self.index.append((0, samples-1))
         self.cont_data = True
@@ -138,6 +139,39 @@ class ADC_Result(Resultable, Drawable):
 
     def uses_statistics(self):
         return False
+
+    def write_as_csv(self, destination=sys.stdout):
+        """
+        writes the data to a file or to sys.stdout
+        destination can be a file or a filename
+        suitable for further processing
+        """
+        # write sorted
+        the_destination=None
+        if isinstance(destination,types.FileType):
+            the_destination=destination
+        elif isinstance(destination,types.StringTypes):
+            the_destination=file(destination,"w")
+        else:
+            raise Exception("sorry destination %s is not valid"%(repr(destination)))
+
+        the_destination.write("# adc_result\n")
+        the_destination.write("# t y0 y1 ...\n")
+        self.lock.acquire()
+        try:
+            xdata=self.get_xdata()
+            ch_no=self.get_number_of_channels()
+            ydata=map(self.get_ydata, xrange(ch_no))
+            yerr=map(self.get_yerr, xrange(ch_no))
+            for i in xrange(len(xdata)):
+                the_destination.write("%g"%xdata[i])
+                for j in xrange(ch_no):
+                    the_destination.write(" %g %g"%(ydata[j][i],yerr[j][i]))
+                the_destination.write("\n")
+            the_destination=None
+            xdata=yerr=ydata=None
+        finally:
+            self.lock.release()
 
     # Überladen von Operatoren und Built-Ins -------------------------------------------------------
 
