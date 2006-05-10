@@ -12,6 +12,7 @@ class FFT:
 	self.sampling_rate = one_result.get_sampling_rate()
 	self.data_points = one_result.get_ydata(0).size()
 	self.aquisition_time = self.data_points / float(self.sampling_rate)
+	self.the_result.set_xlabel('Frequency [Hz]')
 		
     def rearrange(self, an_array):
         """
@@ -29,14 +30,14 @@ class FFT:
 	new_array[:n/2] = an_array[n/2:]
 	return new_array
 
-    def base_corr(self, cutoff=0.1, show=0):
+    def base_corr(self, cutoff=0.3, show=0):
 	"""
 	Subtracts the mean of the last cutoff % of the timsignal
 	to get rid of the  DC part in the FFT and returns the
 	new data.
-	If cutoff is not given, the mean of the last 10% will be
+	If cutoff is not given, the mean of the last 30% will be
 	subtracted.
-	If show=1 the result is return and no the instance. This allows to plot the baseline corrected signal
+	If show=1 the result is return and not the instance. This allows to plot the baseline corrected signal
 	Example:
 	base_corr(cutoff=0.2, show=1)
 	"""
@@ -76,6 +77,8 @@ class FFT:
 	imdata = numarray.array(self.the_result.y[1])
 	data = realdata + 1j*imdata
 	fftdata = self.rearrange(numarray.fft.fft(data, points))
+	#phase = numarray.arctan(fftdata.real.sum() / fftdata.imag.sum())
+	#print "PHASE:", phase*180/numarray.pi
 	# create our x axis
 	n = fftdata.size()
 	self.the_result.x = numarray.arange(n)*(self.sampling_rate/n)-(self.sampling_rate/2.0)
@@ -107,9 +110,10 @@ class FFT:
 	if center == "auto":
 	    i_center = int(self.the_result.y[0].argmax())
 	    maximum = self.the_result.y[0][i_center]
+	    print "Maximum at Frequency:", self.the_result.x[i_center]
 	else:
-	    i_center = int(self.data_points*center/self.sampling_rate)
-	print "TODO: set width automagically"
+	    i_center = int(self.data_points/2.0+self.data_points*center/self.sampling_rate)
+	#print "TODO: set width automagically"
 	#if width == "auto":
 	#    i_width = int(self.data_points*width)
 	i_width = int(self.data_points*width/self.sampling_rate)
