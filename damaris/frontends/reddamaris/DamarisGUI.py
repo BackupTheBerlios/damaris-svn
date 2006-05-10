@@ -1,5 +1,6 @@
-# import 3rd party modules
+# import native python modules
 import time
+import math
 import sys
 import StringIO
 import codecs
@@ -11,6 +12,8 @@ import types
 import xml.parsers.expat
 import threading
 
+# import 3rd party modules
+# gui graphics
 import pygtk
 pygtk.require("2.0")
 import gtk
@@ -18,7 +21,10 @@ import gtk.glade
 import gobject
 import pango
 
+# array math
 import numarray
+
+# math graphics
 import matplotlib
 import matplotlib.axes
 import matplotlib.figure
@@ -37,9 +43,26 @@ import ADC_Result
 import Drawable
 import MeasurementResult
 
-# global log facility, to be extended
-def log(message):
-    print "DamarisGUI: ", message
+class logstream:
+    gui_log=None
+    text_log=sys.__stdout__
+
+    def write(self, message):
+        # default for stdout and stderr
+        if self.gui_log is not None:
+            self.gui_log(message)
+        else:
+            self.text_log.write(message)
+            self.text_log.flush()
+
+    def __call__(self,message):
+        self.write(message)
+
+    def __del__(self):
+        pass
+
+global log
+log=logstream()
 
 ExperimentHandling.log=log
 ResultHandling.log=log
@@ -89,6 +112,8 @@ class DamarisGUI:
         self.monitor=MonitorWidgets(self.xml_gui)
 
         self.config=ConfigTab(self.xml_gui)
+
+        self.log=LogWindow(self.xml_gui)
 
         self.statusbar_init()
 
@@ -156,6 +181,7 @@ class DamarisGUI:
             self.config=None
             self.sw=None
             self.monitor=None
+            self.log=None
             # and quit
             gtk.main_quit()
             return False
@@ -223,11 +249,12 @@ class DamarisGUI:
             self.dump_filename=actual_config["data_pool_name"]
             self.dump_states(init=True)
         except Exception, e:
-            print "ToDo evaluate exception",str(e), "at",traceback.extract_tb(sys.exc_info()[2])[-1][1:3]
-            print "Full traceback:"
+            #print "ToDo evaluate exception",str(e), "at",traceback.extract_tb(sys.exc_info()[2])[-1][1:3]
+            #print "Full traceback:"
             traceback_file=StringIO.StringIO()
             traceback.print_tb(sys.exc_info()[2], None, traceback_file)
-            print traceback_file.getvalue()
+            self.main_notebook.set_current_page(DamarisGUI.Log_Display)
+            print "Error while executing scripts:\n"+traceback_file.getvalue()
             traceback_file=None
 
             self.data=None
@@ -252,7 +279,7 @@ class DamarisGUI:
             return
 
         # switch to grapics
-        self.main_notebook.set_current_page(2)
+        self.main_notebook.set_current_page(DamarisGUI.Monitor_Display)
 
         # set running
         if self.si.exp_handling is not None:
@@ -474,6 +501,35 @@ class DamarisGUI:
             self.state=DamarisGUI.Stop_State
             self.toolbar_pause_button.set_sensitive(False)
 
+class LogWindow:
+    """
+    writes messages to the log window
+    """
+
+    def __init__(self, xml_gui):
+        
+        self.xml_gui=xml_gui
+        self.textview=self.xml_gui.get_widget("messages_textview")
+        self.textbuffer=self.textview.get_buffer()
+        self.logstream=log
+        self.logstream.gui_log=self
+
+    def __call__(self, message):
+        date_tag=u""
+        # timetags are set too often
+        if message!="\n" and False:
+            timetag=time.time()
+            timetag_int=math.floor(timetag)
+            timetag_ms=int((timetag-timetag_int)*1000)
+            date_tag=time.strftime(u"%Y%m%d  %H:%M:%S.%%03d:\n",time.localtime(timetag_int))%timetag_ms
+        self.textbuffer.place_cursor(self.textbuffer.get_end_iter())
+        self.textbuffer.insert_at_cursor(date_tag+unicode(message))
+        self.textview.scroll_mark_onscreen(self.textbuffer.get_insert())
+
+    def __del__(self):
+        self.logstream.gui_log=None
+        self.logstream=None
+
 class ScriptWidgets:
 
     def __init__(self, xml_gui):
@@ -623,6 +679,17 @@ class ScriptWidgets:
             self.toolbar_save_all_button.set_sensitive(False)
             self.toolbar_check_scripts_button.set_sensitive(False)
 
+        if self.exp_script_filename:
+            exp_titlename=unicode(os.path.basename(self.exp_script_filename))
+        else:
+            exp_titlename=u"unnamed"
+        if self.res_script_filename:
+            res_titlename=unicode(os.path.basename(self.res_script_filename))
+        else:
+            res_titlename=u"unnamed"
+        window_title=u"DAMARIS %s,%s"%(exp_titlename, res_titlename)
+        self.xml_gui.get_widget("main_window").set_title(window_title)
+
     # text widget related events
 
     def check_script(self, widget, data=None):
@@ -634,7 +701,7 @@ class ScriptWidgets:
         try:
             compiler.parse(script)
         except SyntaxError, se:
-            print "Syntax Error:", str(se), se.lineno, se.offset,"(ToDo: Dialog)"
+            print "Syntax Error:\n"+str(se)+se.lineno+se.offset+"\n(ToDo: Dialog)"
             if current_page==0:
                 new_place=self.experiment_script_textbuffer.get_iter_at_line_offset(se.lineno-1, se.offset-1)
                 self.experiment_script_textbuffer.place_cursor(new_place)
@@ -644,7 +711,7 @@ class ScriptWidgets:
                 self.data_handling_textbuffer.place_cursor(new_place)
                 self.data_handling_textview.scroll_to_iter(new_place, 0.2, False, 0,0)
         except Exception, e:
-            print "Compilation Error:", str(e),"(ToDo: Dialog)"
+            print "Compilation Error:\n"+str(e)+"\n(ToDo: Dialog)"
 
 
     def notebook_page_switched(self, notebook, page, pagenumber):
@@ -810,11 +877,11 @@ class ScriptWidgets:
                 script_file.close()
 
                 if script_widget.main_notebook.get_current_page() == 0:    
-                    script_widget.set_scripts(script_string,None)
                     script_widget.exp_script_filename=script_filename
+                    script_widget.set_scripts(script_string,None)
                 elif script_widget.main_notebook.get_current_page() == 1:
-                    script_widget.set_scripts(None, script_string)
                     script_widget.res_script_filename=script_filename
+                    script_widget.set_scripts(None, script_string)
                 
             return True
         
@@ -1235,7 +1302,8 @@ class MonitorWidgets:
             self.update_counter+=1
             gobject.idle_add(self.datapool_idle_listener,event,priority=gobject.PRIORITY_DEFAULT_IDLE)
         else:
-            if  displayed_object is object_to_display or displayed_object.__class__ is object_to_display.__class__:
+            if event.what==DataPool.DataPool.Event.updated_value and \
+                   (displayed_object is object_to_display or displayed_object.__class__ is object_to_display.__class__):
                 # oh, another category
                 self.update_counter+=1
                 gobject.idle_add(self.update_display_idle_event,self.displayed_data[0][:],
@@ -1684,5 +1752,9 @@ class ScriptInterface:
 if __name__=="__main__":
 
     sys.path.append(os.path.dirname(__file__))
+    sys.stdout=log
+    sys.stderr=log
     d=DamarisGUI()
     d.run()
+    sys.stdout=sys.__stdout__
+    sys.stderr=sys.__stderr__
