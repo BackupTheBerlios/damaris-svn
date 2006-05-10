@@ -701,7 +701,7 @@ class ScriptWidgets:
         try:
             compiler.parse(script)
         except SyntaxError, se:
-            print "Syntax Error:\n"+str(se)+se.lineno+se.offset+"\n(ToDo: Dialog)"
+            print "Syntax Error:\n%s at line %d, offset %d"%(str(se),se.lineno,se.offset)+"\n(ToDo: Dialog)"
             if current_page==0:
                 new_place=self.experiment_script_textbuffer.get_iter_at_line_offset(se.lineno-1, se.offset-1)
                 self.experiment_script_textbuffer.place_cursor(new_place)
