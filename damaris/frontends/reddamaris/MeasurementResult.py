@@ -167,7 +167,7 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         else:
             raise Exception("sorry destination %s is not valid"%(repr(destination)))
 
-        the_destination.write("# quantity:"+str(self.quantity_name))
+        the_destination.write("# quantity:"+str(self.quantity_name)+"\n")
         the_destination.write("# x y ysigma n\n")
         for x in self.get_xdata():
             y=UserDict.UserDict.__getitem__(self,x)

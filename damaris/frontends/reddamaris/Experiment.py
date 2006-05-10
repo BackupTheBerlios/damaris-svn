@@ -26,10 +26,10 @@ class Experiment:
 
     def rf_pulse(self, channel, length = None):
         if length is None:
-            self.state_list.append('<ttlout value="%d"/>\n' % channel)
+            self.state_list.append('<ttlout value="0x%06x"/>\n' % channel)
 
         else:
-            self.state_list.append('<state time="%s"><ttlout value="%d"/></state>\n' % (repr(length), channel))
+            self.state_list.append('<state time="%s"><ttlout value="0x%06x"/></state>\n' % (repr(length), channel))
 
 
     def ttl_pulse(self, length, channel = None, value = None):
@@ -38,7 +38,7 @@ class Experiment:
             the_value=int(value)
         elif channel is not None:
             the_value=1<<channel
-        self.state_list.append('<state time="%s"><ttlout value="%d"/></state>\n' % (repr(length), the_value))
+        self.state_list.append('<state time="%s"><ttlout value="0x%06x"/></state>\n' % (repr(length), the_value))
 
     def state_start(self, time):
         self.state_list.append('<state time="%s">\n' % repr(time))
