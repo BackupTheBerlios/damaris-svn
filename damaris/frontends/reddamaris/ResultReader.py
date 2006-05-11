@@ -38,6 +38,7 @@ class ResultReader:
         self.result_pattern = result_pattern
         self.clear_jobs=clear_jobs
         self.clear_results=clear_results
+        self.quit_flag=threading.Event() # asychronous quit flag
 
     def __iter__(self):
         """
@@ -256,7 +257,6 @@ class BlockingResultReader(ResultReader):
 
     def __init__(self, spool_dir=".", no=0, result_pattern="job.%09d.result", clear_jobs=False, clear_results=False):
         ResultReader.__init__(self, spool_dir, no, result_pattern, clear_jobs=clear_jobs, clear_results=clear_results)
-        self.quit_flag=threading.Event() # asychronous quit flag
         self.stop_no=None # end of job queue
         self.poll_time=0.1 # sleep interval for polling results, <0 means no polling and stop
 

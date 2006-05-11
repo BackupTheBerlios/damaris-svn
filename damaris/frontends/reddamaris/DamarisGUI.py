@@ -254,7 +254,7 @@ class DamarisGUI:
             traceback_file=StringIO.StringIO()
             traceback.print_tb(sys.exc_info()[2], None, traceback_file)
             self.main_notebook.set_current_page(DamarisGUI.Log_Display)
-            print "Error while executing scripts:\n"+traceback_file.getvalue()
+            print "Error while executing scripts: %s\n"%str(e)+traceback_file.getvalue()
             traceback_file=None
 
             self.data=None

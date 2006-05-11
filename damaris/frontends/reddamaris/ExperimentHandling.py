@@ -54,6 +54,7 @@ class ExperimentHandling(threading.Thread):
         if exp_iterator is None or self.quit_flag.isSet():
             dataspace=None
             exp_iterator=None
+            self.writer=None
             return
         while not self.quit_flag.isSet():
             # get next experiment from script 
@@ -70,6 +71,7 @@ class ExperimentHandling(threading.Thread):
                 traceback_file=None
                 dataspace=None
                 exp_iterator=None
+                self.writer=None
                 return
             # send it
             self.writer.send_next(job)

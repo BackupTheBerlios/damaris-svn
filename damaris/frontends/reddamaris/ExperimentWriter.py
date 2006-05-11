@@ -36,9 +36,9 @@ class ExperimentWriter:
         self.no+=1
 
     def __del__(self):
-        print "del it"
         if self.inform_last_job is not None:
             self.inform_last_job.stop_no=self.no
+            self.inform_last_job=None
 
 class ExperimentWriterWithCleanup(ExperimentWriter):
     """
