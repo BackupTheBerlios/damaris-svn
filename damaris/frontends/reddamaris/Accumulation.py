@@ -125,19 +125,20 @@ class Accumulation(Errorable, Drawable):
         if not self.uses_statistics(): return []
         if not self.contains_data(): return []
 
-        if self.n < 2: return numarray.zeros((len(self.y[0]),),type="Float64")
-
         self.lock.acquire()
+        if self.n < 2:
+            self.lock.release()
+            return numarray.zeros((len(self.y[0]),),type="Float64")
+
 
         # ( E(X^2) - E(X)^2 )^0.5
         try:
             tmp_yerr = (((self.y_square[channel] / self.n) - ((self.y[channel] / self.n)**2))/self.n) ** 0.5
-        except:
-            print "Warning Accumulation.get_yerr(channel): Channel index does not exist."
+        except e:
+            print "Warning Accumulation.get_yerr(channel): Std-Deviation calculation failed (%s)"%(str(e))
             tmp_yerr = numarray.zeros((len(self.y[0]),),type="Float64")
 
         self.lock.release()
-
         return tmp_yerr
 
 
@@ -321,7 +322,6 @@ class Accumulation(Errorable, Drawable):
         for i in range(self.get_number_of_channels()):
             tmp_string += ("Y(%d):                " % i) + repr(self.y[i]) + "\n"
             if self.uses_statistics(): tmp_string += "y_square(%d):         " % i + str(self.y_square[i]) + "\n"
-            if self.uses_statistics() and self.n >= 2: tmp_string += "\ny_err(%d):            " % i + str(self.yerr[i])  + "\n"
 
         tmp_string += "Indexes:             " + str(self.index) + "\n"
 

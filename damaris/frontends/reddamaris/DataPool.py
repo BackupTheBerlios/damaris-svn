@@ -111,12 +111,19 @@ class DataPool(UserDict.DictMixin):
                     group_keyname+="_%03d"%extension_count
                 # now write data
                 if isinstance(value, ADC_Result.ADC_Result):
-                    continue
-                if (isinstance(value, MeasurementResult.MeasurementResult) or
+                    print "ToDo: ADC_Result.write_to_hdf"
+                elif (isinstance(value, MeasurementResult.MeasurementResult) or
                     isinstance(value, Accumulation.Accumulation)):
-                    value.write_to_hdf(hdffile=dump_file, where=dump_group, name=group_keyname, title=key, compress=compress)
-                    continue
-                print "don't know how to store data_pool[%s]"%key
+                    try:
+                        value.write_to_hdf(hdffile=dump_file,
+                                           where=dump_group,
+                                           name=group_keyname,
+                                           title=key,
+                                           compress=compress)
+                    except e:
+                        print "failed to write data_pool[%s]: %s"%(key,str(e))
+                else:
+                    print "don't know how to store data_pool[%s]"%key
         finally:
             dump_group=None
             self.__dictlock.release()
