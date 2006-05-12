@@ -120,7 +120,7 @@ class DataPool(UserDict.DictMixin):
                                            name=group_keyname,
                                            title=key,
                                            compress=compress)
-                    except e:
+                    except Exception,e:
                         print "failed to write data_pool[%s]: %s"%(key,str(e))
                 else:
                     print "don't know how to store data_pool[%s]"%key
