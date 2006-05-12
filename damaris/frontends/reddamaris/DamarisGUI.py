@@ -1040,13 +1040,16 @@ class ConfigTab:
         self.config_start_experiment_script_checkbutton=self.xml_gui.get_widget("start_experiment_script_checkbutton")
         self.config_start_result_script_checkbutton=self.xml_gui.get_widget("start_result_script_checkbutton")
         self.config_del_results_after_processing_checkbutton=self.xml_gui.get_widget("del_results_after_processing_checkbutton")
-        self.config_del_job_after_execution_checkbutton=self.xml_gui.get_widget("del_job_after_execution_checkbutton")
+        self.config_del_jobs_after_execution_checkbutton=self.xml_gui.get_widget("del_jobs_after_execution_checkbutton")
         self.config_data_pool_name_entry=self.xml_gui.get_widget("data_pool_name_entry")
+        self.config_data_pool_write_interval_entry=self.xml_gui.get_widget("data_pool_write_interval_entry")
         if sys.platform[:5] == "linux":
             self.defaultfilename=os.path.expanduser("~/.damaris")
 
         self.xml_gui.signal_connect("on_config_save_button_clicked", self.save_config_handler)
         self.xml_gui.signal_connect("on_config_load_button_clicked", self.load_config_handler)
+        self.xml_gui.signal_connect("on_backend_executable_browse_button_clicked",
+                                    self.browse_backend_executable_dialog)
 
     def get(self):
         """
@@ -1060,7 +1063,7 @@ class ConfigTab:
             "backend_executable" : self.config_backend_executable_entry.get_text(),
             "data_pool_name" : self.config_data_pool_name_entry.get_text(),
             "del_results_after_processing" : self.config_del_results_after_processing_checkbutton.get_active(),
-            "del_jobs_after_execution" : self.config_del_job_after_execution_checkbutton.get_active()
+            "del_jobs_after_execution" : self.config_del_jobs_after_execution_checkbutton.get_active()
             }
 
     def set(self, config):
@@ -1074,16 +1077,19 @@ class ConfigTab:
             self.config_spool_dir_entry.set_text(config["spool_dir"])
         if "backend_executable" in config:
             self.config_backend_executable_entry.set_text(config["backend_executable"])
-        if "del_results_after_processing_checkbutton" in config:
-            self.config_del_results_after_processing_checkbutton.set_active(config["del_results_after_processing_checkbutton"])
-        if "del_job_after_execution_checkbutton" in config:
-            self.config_del_job_after_execution_checkbutton.set_active(config["del_job_after_execution_checkbutton"])
+        if "del_results_after_processing" in config:
+            self.config_del_results_after_processing_checkbutton.set_active(config["del_results_after_processing"])
+        if "del_jobs_after_execution" in config:
+            self.config_del_jobs_after_execution_checkbutton.set_active(config["del_jobs_after_execution"])
 
     def load_config_handler(self, widget):
         self.load_config()
 
     def save_config_handler(self, widget):
         self.save_config()
+
+    def browse_backend_executable_dialog(self, widget):
+        print "ToDo: browse filesytem for backend executable"
 
     def load_config(self, filename=None):
         """
@@ -1156,8 +1162,6 @@ class ConfigTab:
             configfile.write("  <config key='%s' type='%s'>%s</config>\n"%(k, typename, val))
         configfile.write("</damaris>\n")
         
-        
-
 class MonitorWidgets:
     
     def __init__(self, xml_gui):

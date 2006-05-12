@@ -8,6 +8,7 @@ import threading
 import numarray
 import sys
 from types import *
+import tables
 
 #############################################################################
 #                                                                           #
@@ -172,6 +173,67 @@ class ADC_Result(Resultable, Drawable):
             xdata=yerr=ydata=None
         finally:
             self.lock.release()
+
+    def write_to_hdf(self, hdffile, where, name, title, compress=None):
+        accu_group=hdffile.createGroup(where=where,name=name,title=title)
+        accu_group._v_attrs.damaris_type="ADC_result"
+        if self.contains_data():
+            self.lock.acquire()
+            try:
+                # save time stamps
+                if "job_date" in dir(self) and self.job_date is not None:
+                    accu_group._v_attrs.time="%04d%02d%02d %02d:%02d:%02d.%03d"%(self.job_date.year,
+                                                                                 self.job_date.month,
+                                                                                 self.job_date.day,
+                                                                                 self.job_date.hour,
+                                                                                 self.job_date.minute,
+                                                                                 self.job_date.second,
+                                                                                 self.job_date.microsecond/1000)
+
+                if self.description is not None:
+                    for (key,value) in self.description.iteritems():
+                        accu_group._v_attrs.__setattr__("description_"+key,str(value))
+                # save channel data
+                for channel_no in xrange(len(self.y)):
+                    y_mean=self.get_ydata(channel_no)
+                    for index_no in xrange(len(self.index)):
+                        index=self.index[index_no]
+                        # set time data
+                        timedata=numarray.array(y_mean[index[0]:index[1]+1],
+                                                type = numarray.Int32)
+                        
+                        time_slice_data=None
+                        if compress is not None:
+                            time_slice_data=hdffile.createCArray(accu_group,
+                                                                 name="idx%04d_ch%04d"%(index_no,channel_no),
+                                                                 shape=timedata.getshape(),
+                                                                 atom=tables.Int32Atom(shape=timedata.getshape(),
+                                                                                       flavor="numarray"),
+                                                                 filters=tables.Filters(complevel=compress,
+                                                                                        complib='zlib'),
+                                                                 title="Index %d, Channel %d"%(index_no,channel_no))
+                            time_slice_data[:]=timedata
+                        else:
+                            time_slice_data=hdffile.createArray(accu_group,
+                                                                name="idx%04d_ch%04d"%(index_no,channel_no),
+                                                                object=timedata,
+                                                                title="Index %d, Channel %d"%(index_no,channel_no))
+
+                        timedata=None
+                        # set attributes
+                        time_slice_data._f_setAttr("index",numarray.array(index_no, type=numarray.Int32))
+                        time_slice_data._f_setAttr("channel",numarray.array(channel_no, type=numarray.Int32))
+                        time_slice_data._f_setAttr("dwelltime",numarray.array(1.0/self.sampling_rate,
+                                                                               type=numarray.Float64))
+                        time_slice_data._f_setAttr("start_time",numarray.array(1.0/self.sampling_rate*index[0],
+                                                                                type=numarray.Float64))
+                        time_slice_data.flush()
+            finally:
+                time_slice_data=None
+                accu_group=None
+                self.lock.release()
+                hdffile.flush()
+
 
     # Überladen von Operatoren und Built-Ins -------------------------------------------------------
 

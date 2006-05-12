@@ -110,10 +110,9 @@ class DataPool(UserDict.DictMixin):
                         extension_count+=1
                     group_keyname+="_%03d"%extension_count
                 # now write data
-                if isinstance(value, ADC_Result.ADC_Result):
-                    print "ToDo: ADC_Result.write_to_hdf"
-                elif (isinstance(value, MeasurementResult.MeasurementResult) or
-                    isinstance(value, Accumulation.Accumulation)):
+                if isinstance(value, ADC_Result.ADC_Result) or \
+                   isinstance(value, MeasurementResult.MeasurementResult) or \
+                   isinstance(value, Accumulation.Accumulation):
                     try:
                         value.write_to_hdf(hdffile=dump_file,
                                            where=dump_group,
