@@ -85,7 +85,7 @@ class DamarisGUI:
     Stop_State=3
     Quit_State=4
 
-    def __init__(self):
+    def __init__(self, exp_script_filename=None, res_script_filename=None):
 
         gtk.gdk.threads_init()
 
@@ -106,6 +106,25 @@ class DamarisGUI:
         self.main_notebook = self.xml_gui.get_widget("main_notebook")
         
         self.sw=ScriptWidgets(self.xml_gui)
+        exp_script=u""
+        if exp_script_filename is not None and exp_script_filename!="":
+            self.sw.exp_script_filename=exp_script_filename[:]
+            if os.path.isfile(exp_script_filename) and os.access(exp_script_filename, os.R_OK):
+                script_file = file(exp_script_filename, "rU")
+                for line in script_file:
+                    exp_script += unicode(line,encoding="iso-8859-15", errors="replace")
+                script_file.close()
+
+        res_script=u""
+        if res_script_filename is not None and res_script_filename!="":
+            self.sw.res_script_filename=res_script_filename[:]
+            if os.path.isfile(res_script_filename) and os.access(res_script_filename, os.R_OK):
+                script_file = file(res_script_filename, "rU")
+                for line in script_file:
+                    res_script += unicode(line,encoding="iso-8859-15", errors="replace")
+                script_file.close()
+
+        self.sw.set_scripts(exp_script, res_script)
 
         self.toolbar_init()
 
@@ -118,6 +137,7 @@ class DamarisGUI:
         self.statusbar_init()
 
         self.main_window.show_all()
+        self.main_window.present()
 
     def glade_layout_init(self):
         glade_file=os.path.join(os.path.dirname(__file__),"damaris.glade")
@@ -299,8 +319,14 @@ class DamarisGUI:
 
         # and observe it...
         gobject.timeout_add(200,self.observe_running_experiment)
-        dump_timeinterval=60*60 # in seconds
-        self.dump_states_event_id=gobject.timeout_add(dump_timeinterval*1000,self.dump_states)
+        dump_timeinterval=60*60*10
+        try:
+            dump_timeinterval=int(60*float(actual_config["data_pool_write_interval"]))
+        except ValueError,e:
+            print "configuration provides non-number for dump interval: "+str(e)
+        self.dump_states_event_id=None
+        if dump_timeinterval>0:
+            self.dump_states_event_id=gobject.timeout_add(dump_timeinterval*1000,self.dump_states)
 
     def observe_running_experiment(self):
         """
@@ -372,8 +398,8 @@ class DamarisGUI:
 
             if not self.dump_states_event_id is None:
                 gobject.source_remove(self.dump_states_event_id)
+                self.dump_states_event_id=None
             self.dump_states(compress=9)
-            self.dump_states_event_id=None
             
             # now everything is stopped
             self.state=DamarisGUI.Edit_State
@@ -1051,6 +1077,9 @@ class ConfigTab:
         self.xml_gui.signal_connect("on_backend_executable_browse_button_clicked",
                                     self.browse_backend_executable_dialog)
 
+        if os.path.isfile(self.defaultfilename) and os.access(self.defaultfilename,os.R_OK):
+            self.load_config()
+
     def get(self):
         """
         returns a dictionary of actual config values
@@ -1063,7 +1092,8 @@ class ConfigTab:
             "backend_executable" : self.config_backend_executable_entry.get_text(),
             "data_pool_name" : self.config_data_pool_name_entry.get_text(),
             "del_results_after_processing" : self.config_del_results_after_processing_checkbutton.get_active(),
-            "del_jobs_after_execution" : self.config_del_jobs_after_execution_checkbutton.get_active()
+            "del_jobs_after_execution" : self.config_del_jobs_after_execution_checkbutton.get_active(),
+            "data_pool_write_interval" : self.config_data_pool_write_interval_entry.get_text()
             }
 
     def set(self, config):
@@ -1081,6 +1111,10 @@ class ConfigTab:
             self.config_del_results_after_processing_checkbutton.set_active(config["del_results_after_processing"])
         if "del_jobs_after_execution" in config:
             self.config_del_jobs_after_execution_checkbutton.set_active(config["del_jobs_after_execution"])
+        if "data_pool_write_interval" in config:
+            self.config_data_pool_write_interval_entry.set_text(config["data_pool_write_interval"])
+        if "data_pool_name" in config:
+            self.config_data_pool_name_entry.set_text(config["data_pool_name"])
 
     def load_config_handler(self, widget):
         self.load_config()
@@ -1089,7 +1123,41 @@ class ConfigTab:
         self.save_config()
 
     def browse_backend_executable_dialog(self, widget):
-        print "ToDo: browse filesytem for backend executable"
+        """
+        do the open file dialog
+        """
+        backend_filename_dialog_title="find backend"
+
+        def response(self, response_id, script_widget):
+            if response_id == gtk.RESPONSE_OK:
+                file_name = self.get_filename()
+                if file_name is None:
+                    return
+                script_widget.config_backend_executable_entry.set_text(file_name)
+            return True
+
+
+        parent_window=self.xml_gui.get_widget("main_window")
+        dialog = gtk.FileChooserDialog(title=backend_filename_dialog_title,
+                                       parent=parent_window,
+                                       action=gtk.FILE_CHOOSER_ACTION_OPEN,
+                                       buttons = (gtk.STOCK_OPEN,
+                                                  gtk.RESPONSE_OK,
+                                                  gtk.STOCK_CANCEL,
+                                                  gtk.RESPONSE_CANCEL))
+        dialog.set_default_response(gtk.RESPONSE_OK)
+        dialog.set_select_multiple(False)
+        dialog.set_filename(os.path.abspath(self.config_backend_executable_entry.get_text()))
+        # Event-Handler for responce-signal (when one of the button is pressed)
+        dialog.connect("response", response, self)
+        f=gtk.FileFilter()
+        f.add_custom(gtk.FILE_FILTER_FILENAME, lambda x:os.access(x[0],os.X_OK))
+        dialog.set_filter(f)
+
+        dialog.run()
+        dialog.destroy()
+
+        return True
 
     def load_config(self, filename=None):
         """
@@ -1758,7 +1826,18 @@ if __name__=="__main__":
     sys.path.append(os.path.dirname(__file__))
     sys.stdout=log
     sys.stderr=log
-    d=DamarisGUI()
+    # find scripts to load in parameter list
+    exp_script = None
+    res_script = None
+    if len(sys.argv)<=3:
+        if len(sys.argv)==2:
+            exp_script=sys.argv[1]
+        if len(sys.argv)==3:
+            res_script=sys.argv[2]
+    else:
+        print """too many arguments.\nDamarisGUI.py (Experiment File|"") (Result File|"")"""
+    
+    d=DamarisGUI(exp_script, res_script)
     d.run()
     sys.stdout=sys.__stdout__
     sys.stderr=sys.__stderr__

@@ -1788,7 +1788,9 @@ http://www.fkp.physik.tu-darmstadt.de/damaris/
 
 Python frontend written by Christopher Schmitt, Achim Gädke and Markus Rosenstihl
 Backends written by Achim Gädke, Markus Rosenstihl, tested by Holger Stork
-The drivers included in the backend may use propietary interfaces or include commercial third party's code.
+The drivers included in the backend may use propietary interfaces. The source code
+distribution may include commercial third party's code, which is specially marked and
+not covered by this license.
 
 		    GNU GENERAL PUBLIC LICENSE
 		       Version 2, June 1991
