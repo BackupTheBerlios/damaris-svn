@@ -181,7 +181,7 @@ def lin_range(start,stop, step):
 
 def log_range(start, stop, stepno):
     if (start<=0 or stop<=0 or stepno<1):
-        raise Exception.Exception("start, stop must be positive and stepno must be >=1")
+        raise ValueError("start, stop must be positive and stepno must be >=1")
     if int(stepno)==1:
         factor=1.0
     else:
