@@ -7,6 +7,7 @@
 #ifndef RESULT_H
 #define RESULT_H
 
+#include <xercesc/dom/DOM.hpp>
 #include <list>
 #include <string>
 
@@ -102,9 +103,10 @@ class adc_result: public result {
  */
 class configuration_result: public result {
  public:
-  configuration_result():result(0) {}
+  XERCES_CPP_NAMESPACE_QUALIFIER DOMDocument* tag;
+  configuration_result(size_t _no);
 
-  ~configuration_result() {}
+  ~configuration_result();
 };
 
 

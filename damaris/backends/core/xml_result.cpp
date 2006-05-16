@@ -2,6 +2,12 @@
 #include <cstdlib>
 #include <xercesc/util/Base64.hpp>
 #include <xercesc/util/XMLString.hpp>
+#include <xercesc/dom/DOM.hpp>
+#include <xercesc/util/XMLString.hpp>
+#include <xercesc/util/PlatformUtils.hpp>
+#include <xercesc/util/XercesDefs.hpp>
+#include <xercesc/dom/DOMWriter.hpp>
+#include <xercesc/framework/MemBufFormatTarget.hpp>
 
 /* ***************************************************************************************************
 
@@ -413,6 +419,11 @@ int xml_result_writer::write_to_file(const std::string& filename, const result* 
     write_adcs_to_file(filename, adc_ress);
     return 0;
   }
+  const configuration_results* config_ress=dynamic_cast<const configuration_results*>(res);
+  if (config_ress!=NULL) {
+    write_configuration_results_to_file(filename, *config_ress);
+    return 0;
+  }
     
   const error_result* err_res=dynamic_cast<const error_result*>(res);
   if (err_res!=NULL) write_error_to_file(filename,err_res);
@@ -448,6 +459,30 @@ int xml_result_writer::write_error_to_file(const std::string& filename, const er
   fprintf(out,"<result job=\"%u\">\n",res->job_no);
   fprintf(out," <error>%s</error>\n",res->error_message.c_str());
   fprintf(out,"</result>");
+  fclose(out);
+  return 0;
+}
+
+int xml_result_writer::write_configuration_results_to_file(const std::string& filename, const configuration_results& ress) const {
+
+  FILE* out=fopen(filename.c_str(),"w");
+  fprintf(out,"<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
+  fprintf(out,"<result job=\"%u\">\n<configuration>\n",ress.job_no);
+  XMLCh tempStr[100];
+  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("LS", tempStr, 99);
+  XERCES_CPP_NAMESPACE_QUALIFIER DOMImplementation *impl2=XERCES_CPP_NAMESPACE_QUALIFIER DOMImplementationRegistry::getDOMImplementation(tempStr);
+  XERCES_CPP_NAMESPACE_QUALIFIER DOMWriter *theSerializer=((XERCES_CPP_NAMESPACE_QUALIFIER  DOMImplementationLS*)impl2)->createDOMWriter();  
+  for (configuration_results::const_iterator i=ress.begin(); i!=ress.end(); ++i)
+    if ((*i)->tag->getDocumentElement()!=NULL) {
+      XERCES_CPP_NAMESPACE_QUALIFIER MemBufFormatTarget mem;
+      theSerializer->writeNode(&mem,*((*i)->tag->getDocumentElement()));
+      fwrite((char*)mem.getRawBuffer(),sizeof(char),mem.getLen(),out);
+      mem.reset();
+    }
+  theSerializer->release();
+  
+  // todo
+  fprintf(out,"</configuration>\n</result>\n");
   fclose(out);
   return 0;
 }

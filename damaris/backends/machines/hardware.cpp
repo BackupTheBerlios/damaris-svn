@@ -6,6 +6,7 @@
 ****************************************************************************/
 
 #include "core/core.h"
+#include "core/result.h"
 #include "hardware.h"
 
 result* hardware::single_pulse_experiment(double frequency, double t_before, double t, double sample_freq, size_t samples, signed dac_value) {
@@ -68,7 +69,7 @@ configuration_results* hardware::configure(const std::list<configuration_device_
     if (configurable_devices.count(i->name)!=0) to_configure.push_back(&(*i));
     else {
       // todo generate a remark
-      r->push_back(new configuration_result());
+      r->push_back(new configuration_result(0));
     }
   }
 
@@ -87,12 +88,12 @@ configuration_results* hardware::configure(const std::list<configuration_device_
 	}
 	catch (device_error e) {
 	  // error to result...
-	  config_result=new configuration_result();
+	  config_result=new configuration_result(0);
 	}
       }
       else {
 	// error to result...
-	config_result=new configuration_result();
+	config_result=new configuration_result(0);
       }
       if (config_result!=NULL) {
 	// do not configure this device again...

@@ -97,7 +97,7 @@ magnexgrad_backend.o: magnexgrad_backend.cpp \
 dummycore.o: dummycore.cpp ../drivers/dummy/dummy.o
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
-dummycore.exe: dummycore.o ../core/core.a ../drivers/dummy/dummy.o hardware.o ../drivers/tempcont.o
+dummycore.exe: dummycore.o  ../drivers/dummy/dummy.o hardware.o ../drivers/tempcont.o ../core/core.a
 	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
 
 clean: ../tools/add_endline.exe

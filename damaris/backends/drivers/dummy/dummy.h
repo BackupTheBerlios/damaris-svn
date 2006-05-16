@@ -78,7 +78,7 @@ class dummy: public ADC, public frequgen, public pulsegen, public tempcont, publ
       return NULL;
     }
     conf.print();
-    return new configuration_result();
+    return new configuration_result(0);
   }
 
   virtual ~dummy() {}

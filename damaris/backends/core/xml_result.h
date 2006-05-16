@@ -139,6 +139,11 @@ class xml_result_writer {
   int write_adcdata_base64(FILE* out, const adc_result* res) const;
 
   /**
+     write configuration tags to one file
+   */
+  int write_configuration_results_to_file(const std::string& filename, const configuration_results& ress) const;
+
+  /**
      write the error message
    */
   int write_error_to_file(const std::string& filename, const error_result* res) const;
