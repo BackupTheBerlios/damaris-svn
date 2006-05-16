@@ -407,3 +407,87 @@ result* experiment::do_it(hardware* hw) {
     
   return data;
 }
+
+result* single_pulse_experiment::do_it(hardware* hw) {
+  try {
+    result* data=hw->single_pulse_experiment(frequency,t_before,pulse_length,sample_frequency,samples,dac_value);
+    data->job_no=job_no;
+    return data;
+  }
+  catch (ADC_exception e) {
+    return new error_result(job_no,e);
+  }
+  catch (pulse_exception& e) {
+    return new error_result(job_no,e);
+  }
+}
+
+configuration::configuration(size_t n, XERCES_CPP_NAMESPACE_QUALIFIER DOMElement* conf_data ):job(n) {
+  XERCES_CPP_NAMESPACE_QUALIFIER DOMNode* one_child=conf_data->getFirstChild();
+
+  while (one_child!=NULL) {
+    if (one_child->getNodeType()==XERCES_CPP_NAMESPACE_QUALIFIER DOMNode::ELEMENT_NODE) {
+      // found an element
+      configuration_device_section new_one;
+      // copy name
+      char* dev_name=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(one_child->getNodeName());
+      new_one.name=dev_name;
+      XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&dev_name);
+      
+      // copy attributes
+      XERCES_CPP_NAMESPACE_QUALIFIER DOMNamedNodeMap* dev_attribs=one_child->getAttributes();
+      if (dev_attribs!=NULL) {
+	
+	XMLSize_t i=0;
+	while (1) {
+	  XERCES_CPP_NAMESPACE_QUALIFIER DOMNode* dev_attrib=dev_attribs->item(i);
+	  if (dev_attrib==NULL) break;
+	  char* dev_attrib_name=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(dev_attrib->getNodeName());
+	  char* dev_attrib_value=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(dev_attrib->getNodeValue());
+	  new_one.attributes[dev_attrib_name]=dev_attrib_value;
+	  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&dev_attrib_name);
+	  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&dev_attrib_value);
+	  dev_attrib->getNodeValue();
+	  ++i;
+	}
+      }
+
+      // now copy string contents
+      new_one.data="";
+      XERCES_CPP_NAMESPACE_QUALIFIER DOMNode* child_child=one_child->getFirstChild();
+      while (child_child!=NULL) {
+	if (child_child->getNodeType()==XERCES_CPP_NAMESPACE_QUALIFIER DOMNode::TEXT_NODE ||
+	    child_child->getNodeType()==XERCES_CPP_NAMESPACE_QUALIFIER DOMNode::CDATA_SECTION_NODE) {
+	  char* text_data=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(child_child->getNodeValue());
+	  new_one.data.append(text_data);
+	  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&text_data);	  
+	}
+	child_child=child_child->getNextSibling();
+      }
+      configuration_changes.push_back(new_one);
+    }
+    one_child=one_child->getNextSibling();
+  }  
+}
+
+result* configuration::do_it(hardware* hw) {
+  return hw->configure(configuration_changes);
+}
+
+void configuration_device_section::print(FILE* f) const {
+  fprintf(f,"name: %s\n",name.c_str());
+  for (std::map<const std::string, std::string>::const_iterator j=attributes.begin();
+       j!=attributes.end();
+       ++j) {
+    fprintf(f,"  %s: %s\n",j->first.c_str(),j->second.c_str());
+  } // j
+  fprintf(f,"data: %s\n", data.c_str());
+}
+
+void configuration::print(FILE* f) const {
+  for (std::list<configuration_device_section>::const_iterator i=configuration_changes.begin();
+       i!=configuration_changes.end();
+       ++i) {
+    i->print(f);
+  } // i
+}

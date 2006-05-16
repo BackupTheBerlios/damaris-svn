@@ -14,7 +14,7 @@
 #include <string>
 #include <map>
 #include "core/result.h"
-#include "machines/hardware.h"
+#include "core/states.h"
 
 
 class core;
@@ -44,8 +44,6 @@ public:
    - experiment jobs
 */
 
-#include <xercesc/dom/DOMElement.hpp>
-
 class job {
  public:
 
@@ -63,10 +61,6 @@ class job {
     return 0;
   }
 
-  virtual result* do_it() {
-    throw job_exception("insuficient implementation of a job class");
-    return (result*)NULL;
-  }
 
   virtual ~job() {}
 };
@@ -86,7 +80,7 @@ class control: public job {
 class quit_job: public control {
  public:
   quit_job(const size_t n): control(n) {}
-  result* do_it(core* c);
+  virtual result* do_it(core* c);
 };
 
 /**
@@ -97,7 +91,7 @@ class do_nothing_job: public control {
  public:
   do_nothing_job(const size_t n): control(n) {}
 
-  result* do_it(core* c) {
+  virtual result* do_it(core* c) {
     /* of course nothing to do...*/
     return new result(job_no);
   }
@@ -121,7 +115,7 @@ class wait_job: public control {
     sec=sec_to_wait;
   }
 
-  result* do_it(core* c);
+  virtual result* do_it(core* c);
 
 };
 
@@ -134,7 +128,7 @@ class pause_job: public control {
  public:
 
   pause_job(const size_t n): control(n) {}
-  result* do_it(core* c);
+  virtual result* do_it(core* c);
 };
 
 /**
@@ -145,9 +139,11 @@ class restart_job: public control {
  public:
 
   restart_job(const size_t n): control(n) {}
-  result* do_it(core* c);
+
+  virtual result* do_it(core* c);
 };
 
+class hardware;
 
 /**
    base class for experiments
@@ -207,22 +203,44 @@ signed dac_value;
      does the single pulse experiment
      \return in case of success ADC_result object is returned, otherwise an error_result object
    */
-  result* do_it(hardware* hw) {
-    try {
-      result* data=hw->single_pulse_experiment(frequency,t_before,pulse_length,sample_frequency,samples,dac_value);
-      data->job_no=job_no;
-      return data;
-    }
-    catch (ADC_exception e) {
-      return new error_result(job_no,e);
-    }
-    catch (pulse_exception& e) {
-      return new error_result(job_no,e);
-    }
-  }
-
+  virtual result* do_it(hardware* hw);
 
 };
+
+
+class configuration_device_section {
+ public:
+  std::string name;
+  std::map<std::string,std::string> attributes;
+  std::string data;
+  void print(FILE* f=stdout) const;
+};
+
+
+
+/**
+   a configuration job changes the instrument to another state, something like:
+   * temperature,
+   * sample position (lateral, axial),
+   * shim, tuning
+   these configuration changes generally do not occurr during a pulse sequence and are not very frequent.
+ */
+class configuration: public job {
+ public:
+  /*
+     suitable data model for each device
+  */
+
+  std::list<configuration_device_section> configuration_changes;
+
+ public:
+  configuration(size_t n, XERCES_CPP_NAMESPACE_QUALIFIER DOMElement* conf_data=NULL );
+  void print(FILE* f=stdout) const;
+
+  result* do_it(hardware* hw);
+  
+};
+
 
 //@}
 

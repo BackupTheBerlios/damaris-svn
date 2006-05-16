@@ -5,14 +5,14 @@
 
 ****************************************************************************/
 
+#include "drivers/device.h"
 #include "drivers/ADC.h"
 #include "drivers/frequgen.h"
 #include "drivers/pulsegen.h"
 #include "drivers/tempcont.h"
-
 #include <cmath>
 
-class dummy: public ADC, public frequgen, public pulsegen, public tempcont {
+class dummy: public ADC, public frequgen, public pulsegen, public tempcont, public device {
   double frequency;
   /**
      save artificial results while running pulse program
@@ -69,6 +69,17 @@ class dummy: public ADC, public frequgen, public pulsegen, public tempcont {
      \return temperature, that is set
   */
   virtual double get_setpoint() const;
+
+  /**
+   */
+  virtual configuration_result* configure(const configuration_device_section& conf, int run) {
+    if (run<10) {
+      fprintf(stdout, "%d\n",run);
+      return NULL;
+    }
+    conf.print();
+    return new configuration_result();
+  }
 
   virtual ~dummy() {}
 };

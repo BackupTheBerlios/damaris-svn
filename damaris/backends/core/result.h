@@ -98,6 +98,30 @@ class adc_result: public result {
 };
 
 /**
+   
+ */
+class configuration_result: public result {
+ public:
+  configuration_result():result(0) {}
+
+  ~configuration_result() {}
+};
+
+
+class configuration_results: public std::list<configuration_result*>, public result {
+ public:
+  configuration_results(size_t _no): result(_no) {}
+  virtual ~configuration_results() {
+    while (!empty()) {
+      delete back();
+      pop_back();
+    }
+  }
+
+};
+
+
+/**
  */
 class adc_results: public std::list<adc_result*>, public result {
  public:

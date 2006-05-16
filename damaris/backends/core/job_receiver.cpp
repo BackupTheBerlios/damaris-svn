@@ -126,7 +126,7 @@ job* job_receiver::receive(const std::string& filename) {
   else if (strcasecmp(docname,"wait")==0) {
     this_job=new wait_job(no,rootattrs);
   } /* wait */
-  if (strcasecmp(docname,"experiment")==0) {
+  else if (strcasecmp(docname,"experiment")==0) {
     try {
       this_job=new experiment(no, rootelement);
     }
@@ -134,15 +134,33 @@ job* job_receiver::receive(const std::string& filename) {
       char* domerrmsg=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(de.msg);
       char domerrno[5];
       snprintf(domerrno,5,"%d",de.code);
-      job_exception je("sorry, something happend: ");
+      job_exception je("sorry, something happend while parsing experiment job: ");
       je.append(domerrmsg);
       je.append(", code ");
       je.append(domerrno);
       XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&domerrmsg);
+      // cleanup missing
       throw je;
     }
   }
-  if (strcasecmp(docname,"singlepulse")==0) {
+  else if (strcasecmp(docname,"configuration")==0) {
+    try {
+      this_job=new configuration(no, rootelement);
+    }
+    catch (const XERCES_CPP_NAMESPACE_QUALIFIER DOMException& de) {
+      char* domerrmsg=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(de.msg);
+      char domerrno[5];
+      snprintf(domerrno,5,"%d",de.code);
+      job_exception je("sorry, something happend while parsing configuration job: ");
+      je.append(domerrmsg);
+      je.append(", code ");
+      je.append(domerrno);
+      XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&domerrmsg);
+      // cleanup missing
+      throw je;
+    }
+  }
+  else if (strcasecmp(docname,"singlepulse")==0) {
     this_job=new single_pulse_experiment(no,rootattrs);
   }
 

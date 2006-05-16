@@ -30,6 +30,7 @@ public:
     the_pg=d;
     the_fg=d;
     the_tc=d;
+    configurable_devices["dummy"]=d;
   }
   
   ~dummy_hardware() {

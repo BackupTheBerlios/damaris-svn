@@ -235,8 +235,16 @@ result* core::do_the_job(job& the_job) {
       return r;
   }
 
+  // experiments
+  configuration* confjob=dynamic_cast<configuration*>(&the_job);
+  if (confjob!=NULL) {
+    result* r=confjob->do_it(the_hardware);
+    return r;
+  }
+
+
   // execute everything else without parameter ...
-  return the_job.do_it();
+  return NULL; //the_job.do_it();
 }
 
 int core::write_to_output(const job& job_done, const result& result_gained){

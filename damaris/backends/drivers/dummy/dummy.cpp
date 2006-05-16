@@ -41,11 +41,17 @@ void dummy::sample_after_external_trigger(double rate, size_t no, double sens, s
   // generate artificial result
   short int* data=(short int*)malloc(no*sizeof(short int)*2);
   const double amplitude=1<<10;
-  const double noise=1<<6;
-  const double step=0.04/2.0*M_PI;
+  const double noise=1<<9;
+  const double intermediate_f=1e4;
+  const double time_offset=1e-5;
+  const double decay_constant=1e-4;
+  const double mixing_phase=0;
   for (double i=0; i<no; i++) {
-    data[(size_t)i*2]=(short int)floor(amplitude*sin(step*i)+noise*((double)rand()/(double)RAND_MAX-0.5));
-    data[(size_t)i*2+1]=(short int)floor(amplitude*cos(step*i)+noise*((double)rand()/(double)RAND_MAX-0.5));
+    double t=time_offset+i/rate;
+    data[(size_t)i*2]=(short int)floor(amplitude*sin(intermediate_f*t*2*M_PI+mixing_phase)*exp(-t/decay_constant)+
+				       noise*((double)rand()/(double)RAND_MAX-0.5));
+    data[(size_t)i*2+1]=(short int)floor(amplitude*cos(intermediate_f*t*2*M_PI+mixing_phase)*exp(-t/decay_constant)+
+					 noise*((double)rand()/(double)RAND_MAX-0.5));
   }
   new_results->push_back(new adc_result(0, no, data, rate));
 }

@@ -57,3 +57,55 @@ result* hardware::experiment(const state& exp) {
   }
   return r;
 }
+
+configuration_results* hardware::configure(const std::list<configuration_device_section>& d) {
+  configuration_results* r=new configuration_results(0);
+  
+  // create a work list
+  std::list<const configuration_device_section*> to_configure;
+  for (std::list<configuration_device_section>::const_iterator i=d.begin(); i!=d.end(); ++i) {
+    // if the device name is available, we will add a pointer, otherwise a remark about missing device
+    if (configurable_devices.count(i->name)!=0) to_configure.push_back(&(*i));
+    else {
+      // todo generate a remark
+      r->push_back(new configuration_result());
+    }
+  }
+
+  // go through this list again and again, until all devices returned at least something...
+  int run=0;
+  for (int run=0; !to_configure.empty(); ++run) {
+
+    std::list<const configuration_device_section*>::iterator i=to_configure.begin();
+    while( i!=to_configure.end()) {
+      configuration_result* config_result=NULL;
+      std::map<const std::string, device*>::iterator dev_iterator=configurable_devices.find((*i)->name);
+      device* dev=dev_iterator->second;
+      if (dev!=NULL) {
+	try {
+	  config_result=dev->configure(**i, run);
+	}
+	catch (device_error e) {
+	  // error to result...
+	  config_result=new configuration_result();
+	}
+      }
+      else {
+	// error to result...
+	config_result=new configuration_result();
+      }
+      if (config_result!=NULL) {
+	// do not configure this device again...
+	r->push_back(config_result);
+	i=to_configure.erase(i);
+      }
+      else {
+	// once more
+	++i;
+      }
+    }
+
+  }
+
+  return r;
+}
