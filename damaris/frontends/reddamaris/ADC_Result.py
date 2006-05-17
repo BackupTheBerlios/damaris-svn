@@ -267,7 +267,7 @@ class ADC_Result(Resultable, Drawable):
             for i in range(self.get_number_of_channels()):
                 tmp_y.append(numarray.array(self.y[i], type="Float64") + other)
 
-            r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+            r = ADC_Result(x = self.x+0, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
             return r
         else:
