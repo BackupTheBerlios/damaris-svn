@@ -51,12 +51,7 @@ class ExperimentHandling(threading.Thread):
                 self.traceback=traceback_file.getvalue()
                 traceback_file=None
                 return
-        if exp_iterator is None or self.quit_flag.isSet():
-            dataspace=None
-            exp_iterator=None
-            self.writer=None
-            return
-        while not self.quit_flag.isSet():
+        while exp_iterator is not None and not self.quit_flag.isSet():
             # get next experiment from script 
             try:
                 job=exp_iterator.next()
@@ -69,10 +64,7 @@ class ExperimentHandling(threading.Thread):
                 traceback.print_tb(sys.exc_info()[2], None, traceback_file)
                 self.traceback=traceback_file.getvalue()
                 traceback_file=None
-                dataspace=None
-                exp_iterator=None
-                self.writer=None
-                return
+                break
             # send it
             self.writer.send_next(job)
             # write a note

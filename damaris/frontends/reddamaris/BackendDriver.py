@@ -23,6 +23,7 @@ class BackendDriver(threading.Thread):
     def __init__(self, executable, spool, clear_jobs=False, clear_results=False):
         threading.Thread.__init__(self, name="Backend Driver")
         self.core_pid = None
+        self.statefilename=None
 
         self.executable=str(executable)
         self.spool_dir=spool
@@ -71,26 +72,33 @@ class BackendDriver(threading.Thread):
         # look out for state file
         timeout=10
         # to do: how should I know core's state name????!!!!!
-        self.statefilename=os.path.join(self.spool_dir,self.core_state_file)
-        state_files=()
-        while not os.path.isfile(self.statefilename) and len(state_files)==0 and timeout>0:
-            time.sleep(0.1)
-            timeout-=0.1
+        self.statefilename=None
+        statefilename=os.path.join(self.spool_dir,self.core_state_file)
+        state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
+        while not os.path.isfile(statefilename) and len(state_files)==0:
+            if timeout<0:
+                # look into core log file and include contents
+                log_message=''
+                if os.path.isfile(self.core_output_filename):
+                    # to do include log data
+                    log_message=''.join(file(self.core_output_filename,"r").readlines()[:10])
+                    if not log_message:
+                        log_message="no error message from core"
+                raise AssertionError("state file %s did not show up:\n%s"%(statefilename,log_message))
+            time.sleep(0.05)
+            timeout-=0.05
             state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
-        if timeout<0:
-            # look into core log file and include contents
-            log_message=''
-            if os.path.isfile(self.core_output_filename):
-                # to do include log data
-                log_message=''.join(file(self.core_output_filename,"r").readlines()[:10])
-            if not log_message:
-                log_message="no error message from core"
-            raise AssertionError("state file %s did not show up:\n%s"%(self.statefilename,log_message))
 
-        if state_files and self.statefilename not in state_files:
+        # save the one
+        if statefilename in state_files:
+            self.statefilename=statefilename
+        elif len(state_files)>0:
             print "found other state file(s)", state_files,  " taking first one"
             self.statefilename=state_files[0]
+        else:
+            raise AssertionError("did not find anything (should not happen) and no timeout?!")
 
+        # read state file
         statefile=file(self.statefilename,"r")
         statelines=statefile.readlines()
 	statefile=None
@@ -170,7 +178,7 @@ class BackendDriver(threading.Thread):
 
     def is_busy(self):
         "Checks for state file"
-        return os.path.isfile(self.statefilename)
+        return self.statefilename is not None and os.path.isfile(self.statefilename)
     
         #file_list = glob.glob(os.path.join(self.spool_dir, self.core_state_file))
         #if len(file_list) != 0:

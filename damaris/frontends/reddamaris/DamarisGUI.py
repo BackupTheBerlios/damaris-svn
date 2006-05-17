@@ -31,6 +31,7 @@ import matplotlib.figure
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
 from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTK as NavigationToolbar
 
+sys.path.append(os.path.dirname(__file__))
 # import our own stuff
 import ExperimentWriter
 import ExperimentHandling
@@ -541,16 +542,19 @@ class LogWindow:
         self.logstream.gui_log=self
 
     def __call__(self, message):
+        timetag=time.time()
+        gobject.idle_add(self.add_message_callback,timetag,message,priority=gobject.PRIORITY_LOW)
+
+    def add_message_callback(self, timetag, message):
         date_tag=u""
-        # timetags are set too often
         if message!="\n" and False:
-            timetag=time.time()
             timetag_int=math.floor(timetag)
             timetag_ms=int((timetag-timetag_int)*1000)
             date_tag=time.strftime(u"%Y%m%d  %H:%M:%S.%%03d:\n",time.localtime(timetag_int))%timetag_ms
-        self.textbuffer.place_cursor(self.textbuffer.get_end_iter())
+        gtk.gdk.threads_enter()
         self.textbuffer.insert_at_cursor(date_tag+unicode(message))
-        self.textview.scroll_mark_onscreen(self.textbuffer.get_insert())
+        self.textview.scroll_to_mark(self.textbuffer.get_insert(),0.1)
+        gtk.gdk.threads_leave()
 
     def __del__(self):
         self.logstream.gui_log=None
@@ -994,7 +998,7 @@ class ScriptWidgets:
         if  current_page == 0:
             dialog_title="Save Experiment Script As..."
         elif current_page == 1:
-            dialog_title="Save Data Handling As..."
+            dialog_title="Save Result Script As..."
         else:
             return
         
@@ -1048,7 +1052,7 @@ class ScriptWidgets:
                 print "ToDo: Save before Clear Dialog"
             self.set_scripts(None, "")
             self.res_script_filename=None
-
+        self.set_toolbuttons_status()
 
 class ConfigTab:
     """
@@ -1799,19 +1803,24 @@ class ScriptInterface:
 
 
     def runScripts(self):
-        # get script engines
-        self.exp_handling=self.res_handling=None
-        if self.exp_script and self.exp_writer:
-            self.exp_handling=ExperimentHandling.ExperimentHandling(self.exp_script, self.exp_writer, self.data)
-        if self.res_script and self.res_reader:
-            self.res_handling=ResultHandling.ResultHandling(self.res_script, self.res_reader, self.data)
+        try:
+            # get script engines
+            self.exp_handling=self.res_handling=None
+            if self.exp_script and self.exp_writer:
+                self.exp_handling=ExperimentHandling.ExperimentHandling(self.exp_script, self.exp_writer, self.data)
+            if self.res_script and self.res_reader:
+                self.res_handling=ResultHandling.ResultHandling(self.res_script, self.res_reader, self.data)
 
-        # start them
-        if self.exp_handling: self.exp_handling.start()
-        if self.back_driver is not None: self.back_driver.start()
-        if self.res_handling: self.res_handling.start()
+            # start them
+            if self.back_driver is not None:
+                self.back_driver.start()
+                while not (self.back_driver.is_busy() or self.back_driver.quit_flag.isSet()):
+                    time.sleep(0.05)
+            if self.exp_handling: self.exp_handling.start()
+            if self.res_handling: self.res_handling.start()
 
-        self.exp_writer=self.res_reader=None
+        finally:
+            self.exp_writer=self.res_reader=None
 
     def __del__(self):
         self.exp_writer=None
@@ -1823,20 +1832,19 @@ class ScriptInterface:
 
 if __name__=="__main__":
 
-    sys.path.append(os.path.dirname(__file__))
-    sys.stdout=log
-    sys.stderr=log
     # find scripts to load in parameter list
     exp_script = None
     res_script = None
     if len(sys.argv)<=3:
-        if len(sys.argv)==2:
+        if len(sys.argv)>=2:
             exp_script=sys.argv[1]
         if len(sys.argv)==3:
             res_script=sys.argv[2]
     else:
         print """too many arguments.\nDamarisGUI.py (Experiment File|"") (Result File|"")"""
     
+    sys.stdout=log
+    sys.stderr=log
     d=DamarisGUI(exp_script, res_script)
     d.run()
     sys.stdout=sys.__stdout__
