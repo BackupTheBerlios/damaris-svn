@@ -14,6 +14,8 @@ class device_error: public std::string {
 
 
 /**
+   base class for devices
+   devices can be configured   
  */
 class device {
  public:
@@ -21,12 +23,11 @@ class device {
   /**
      configuration interface
      if no result: call that section again
-     run is incremented each call
+     run is incremented for each call, starting with 0
    */
   virtual configuration_result* configure(const configuration_device_section& conf, int run)=0;
 
   virtual ~device() {}
-
 };
 
 

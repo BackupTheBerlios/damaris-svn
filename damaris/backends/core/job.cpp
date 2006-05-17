@@ -471,7 +471,19 @@ configuration::configuration(size_t n, XERCES_CPP_NAMESPACE_QUALIFIER DOMElement
 }
 
 result* configuration::do_it(hardware* hw) {
-  return hw->configure(configuration_changes);
+  result* res=hw->configure(configuration_changes);
+  configuration_result* cres=dynamic_cast<configuration_result*>(res);
+  if (cres!=NULL)
+    cres->job_no=job_no;
+  else {
+    configuration_results* cress=dynamic_cast<configuration_results*>(res);
+    if (cress!=NULL) {
+      cress->job_no=job_no;
+      for(configuration_results::iterator i=cress->begin(); i!=cress->end(); ++i)
+	(*i)->job_no=job_no;
+    }
+  }
+  return res;
 }
 
 void configuration_device_section::print(FILE* f) const {

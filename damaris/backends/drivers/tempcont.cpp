@@ -1,6 +1,8 @@
 #include "tempcont.h"
 #include <cmath>
 #include "errno.h"
+#include <xercesc/util/XMLString.hpp>
+#include <xercesc/dom/DOMElement.hpp>
 
 void temp_history::print_xml(FILE* f) const {
   if (step==0) {fprintf(f,"<temperature/>\n");}
@@ -14,6 +16,46 @@ void temp_history::print_xml(FILE* f) const {
     fprintf(f,"\n");
   }
   fprintf(f,"</temperature>\n");
+}
+
+configuration_result* temp_history::as_result() const {
+  configuration_result* res=new configuration_result(0);
+  XMLCh* myname=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("temphistory");
+  XERCES_CPP_NAMESPACE_QUALIFIER DOMElement* newelement=res->tag->createElement(myname);
+  res->tag->insertBefore(newelement,NULL);
+  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&myname);
+  
+  // print step [s]
+  XMLCh* step_name=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("step");
+  char step_value_char_buf[100];
+  snprintf(step_value_char_buf,sizeof(step_value_char_buf),"%d",step);
+  XMLCh* step_value=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(step_value_char_buf);
+  newelement->setAttribute(step_name,step_value);
+  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&step_name);
+  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&step_value);
+  // print latest timestamp
+  XMLCh* latest_name=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("latest");
+  char latest_value_char_buf[200];
+  struct tm latest_broken_timeinfo;
+  localtime_r(&latest, &latest_broken_timeinfo);
+  strftime(latest_value_char_buf,sizeof(latest_value_char_buf),"%Y%m%d %H:%M:%S",&latest_broken_timeinfo);
+  XMLCh* latest_value=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(latest_value_char_buf);
+  newelement->setAttribute(latest_name,latest_value);
+  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&latest_name);
+  XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&latest_value);
+  
+  // append values to buffer
+  if (!empty()) {
+    for (const_iterator i=begin(); i!=end(); ++i){
+      char temp_char_buf[256];
+      snprintf(temp_char_buf,sizeof(temp_char_buf),"%g\n",*i);
+      XMLCh* temp_line=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(temp_char_buf);
+      XERCES_CPP_NAMESPACE_QUALIFIER DOMText* textnode=res->tag->createTextNode(temp_line);
+      XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&temp_line);
+      newelement->insertBefore(textnode,NULL);
+    }
+  }
+  return res;
 }
 
 void* history_maintainance_thread(void* temperature_sensor) {
@@ -69,10 +111,10 @@ double tempcont::wait_setpoint_reached(double delta, size_t timeout) const {
 void tempcont::maintain_history() {
   // wait for initialisation of derived class or failure
   pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS,NULL);
-  // sleep 0.9 seconds, that assures a check every second
+  // sleep 0.2 seconds, that assures a check every second
   timespec sleeptime;
   sleeptime.tv_sec=0;
-  sleeptime.tv_nsec=800*1000*1000;
+  sleeptime.tv_nsec=200*1000*1000;
   while (1) {
     // do not maintain history until step is set to a reasonable value
     if (history_step!=0) {
@@ -116,6 +158,49 @@ void tempcont::maintain_history() {
   }
   return;
 }
+
+configuration_result* tempcont::configure(const configuration_device_section& conf, int run) {
+
+  std::map<const std::string,std::string>::const_iterator get=conf.attributes.find("get");
+  if (get!=conf.attributes.end()) {
+    temp_history* h=get_history(0);
+    configuration_result* res=h->as_result();
+    delete h;
+    return res;
+  }
+
+  std::map<const std::string,std::string>::const_iterator set=conf.attributes.find("set");
+  if (set!=conf.attributes.end()) {
+    // read new temperature setpoint
+    const char* temp_str=set->second.c_str();
+    char* temp_str_end=NULL;
+    double new_temperature=strtod(temp_str,&temp_str_end);
+    if (temp_str_end-temp_str!=set->second.size()) {
+      throw tempcont_error("could not read new temperature setpoint from attributes");
+    }
+    // set the temperature
+    double new_temp_return=set_setpoint(new_temperature);
+    if (new_temp_return!=new_temperature) {
+      char error_message[256];
+      snprintf(error_message, sizeof(error_message), "could not set new temperature setpoint %d!=%d",
+	       new_temp_return,
+	       new_temperature);
+      throw tempcont_error(error_message);
+    }
+
+    // report success
+    configuration_result* res=new configuration_result(0);
+    XMLCh* myname=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(conf.name.c_str());
+    XERCES_CPP_NAMESPACE_QUALIFIER DOMElement* newelement=res->tag->createElement(myname);
+    res->tag->insertBefore(newelement,NULL);
+    XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&myname);
+    return res;
+  }
+
+  
+
+}
+
 
 tempcont::tempcont() {
   // initialise history

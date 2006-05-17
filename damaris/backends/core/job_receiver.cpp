@@ -72,7 +72,7 @@ job* job_receiver::receive(const std::string& filename) {
     char* message = XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(toCatch.getMessage());
     job_exception je(std::string("XML SAX Parser error: ")+message);
     char location[100];
-    snprintf(location,sizeof(location),"line %ld column %ld",toCatch.getLineNumber(),toCatch.getColumnNumber());
+    snprintf(location,sizeof(location),", line %ld column %ld",toCatch.getLineNumber(),toCatch.getColumnNumber());
     je.append(location);
     XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&message);
     throw je;

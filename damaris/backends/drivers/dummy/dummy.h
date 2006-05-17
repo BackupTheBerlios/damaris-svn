@@ -12,7 +12,7 @@
 #include "drivers/tempcont.h"
 #include <cmath>
 
-class dummy: public ADC, public frequgen, public pulsegen, public tempcont, public device {
+class dummy:  public virtual device, public ADC, public frequgen, public pulsegen, public tempcont {
   double frequency;
   /**
      save artificial results while running pulse program

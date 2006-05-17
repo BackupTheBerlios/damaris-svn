@@ -72,7 +72,7 @@ class hardware {
   /**
      \brief shuts down hardware
    */
-  virtual ~hardware() {}
+  virtual ~hardware() {};
 };
 
 #endif

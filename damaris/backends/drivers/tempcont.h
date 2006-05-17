@@ -11,6 +11,7 @@
 #include <vector>
 #include <string>
 #include <pthread.h>
+#include "device.h"
 
 /**
    \addtogroup basedrivers
@@ -20,10 +21,10 @@
 /**
    exception for errors of temperature control hardware
 */
-class tempcont_error: public std::string {
+class tempcont_error: public device_error {
  public:
-  tempcont_error(std::string message): std::string(message) {}
-  tempcont_error(const tempcont_error& orig): std::string(orig) {}
+  tempcont_error(std::string message): device_error(message) {}
+  tempcont_error(const tempcont_error& orig): device_error((const device_error&)orig) {}
 };
 
 /**
@@ -40,6 +41,10 @@ class temp_history: public std::vector<double> {
    */
   void print_xml(FILE* f) const;
   /**
+     get back a configuration result object
+   */
+  configuration_result* as_result() const;
+  /**
      time of last element
   */
   time_t latest;
@@ -53,7 +58,7 @@ class temp_history: public std::vector<double> {
 /**
    abstract base class for temperature sensor with temperature history and controler
  */
-class tempcont {
+class tempcont: public virtual device {
  protected:
 
   /**
@@ -165,6 +170,12 @@ class tempcont {
      terminates threads and exit
    */
   virtual ~tempcont();
+
+  /**
+     set and read configuration
+   */
+  virtual configuration_result* configure(const configuration_device_section& conf, int run);
+
 };
 /**
    @}

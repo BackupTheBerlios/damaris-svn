@@ -40,6 +40,8 @@ public:
       PTS* my_pts=new PTS_latched(0);
       the_fg=my_pts;
       the_tc=new Eurotherm2000Series("/dev/ttyS0",2,0x0);
+
+      configurable_devices["T"]=the_tc;
   }
 
 
