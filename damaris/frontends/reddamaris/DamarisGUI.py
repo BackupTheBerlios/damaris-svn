@@ -284,7 +284,8 @@ class DamarisGUI:
                 for r in still_running:
                     r.quit_flag.set()
                 print "waiting for threads stoping...",
-                still_running=filter(None,[self.si.exp_handling, self.si.res_handling, self.si.back_driver])
+                still_running=filter(lambda x:x is not None and x.isAlive(),
+                                     [self.si.exp_handling, self.si.res_handling, self.si.back_driver])
                 for t in still_running:
                     t.join()
                 print "done"
@@ -1818,7 +1819,6 @@ class ScriptInterface:
                     time.sleep(0.05)
             if self.exp_handling: self.exp_handling.start()
             if self.res_handling: self.res_handling.start()
-
         finally:
             self.exp_writer=self.res_reader=None
 

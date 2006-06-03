@@ -1,5 +1,6 @@
 import os
 import os.path
+import subprocess
 import sys
 import time
 import re
@@ -23,6 +24,7 @@ class BackendDriver(threading.Thread):
     def __init__(self, executable, spool, clear_jobs=False, clear_results=False):
         threading.Thread.__init__(self, name="Backend Driver")
         self.core_pid = None
+        self.core_input = None
         self.statefilename=None
 
         self.executable=str(executable)
@@ -62,12 +64,14 @@ class BackendDriver(threading.Thread):
 
         print "todo: move away all state files"
         if sys.platform[:5]=="linux":
-            self.core_input=os.popen(self.executable+" --spool "+self.spool_dir+" >"+self.core_output_filename+" 2>&1","w")
+            #self.core_input=os.popen(self.executable+" --spool "+self.spool_dir+" >"+self.core_output_filename+" 2>&1","w")
+            self.core_input=subprocess.Popen("\""+self.executable+"\" --spool \""+self.spool_dir+"\" >"+self.core_output_filename+" 2>&1", shell=True)
+            
         if sys.platform=="win32":
             cygwin_root_key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/")
             cygwin_path=_winreg.QueryValueEx(cygwin_root_key,"native")[0]
             os.environ["PATH"]+=";"+os.path.join(cygwin_path,"bin")+";"+os.path.join(cygwin_path,"lib")
-            self.core_input=os.popen("\"" + self.executable + "\"" + " --spool "+self.spool_dir+" >"+self.core_output_filename+" 2>&1","w")
+            self.core_input=subprocess.Popen("\"" + self.executable + "\"" + " --spool "+self.spool_dir+" >"+self.core_output_filename+" 2>&1")
 
         # look out for state file
         timeout=10
@@ -76,15 +80,17 @@ class BackendDriver(threading.Thread):
         statefilename=os.path.join(self.spool_dir,self.core_state_file)
         state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
         while not os.path.isfile(statefilename) and len(state_files)==0:
-            if timeout<0:
+            if timeout<0 or self.core_input is None or self.core_input.poll() is not None or self.quit_flag.isSet():
                 # look into core log file and include contents
                 log_message=''
+                self.core_input=None
                 if os.path.isfile(self.core_output_filename):
                     # to do include log data
                     log_message=''.join(file(self.core_output_filename,"r").readlines()[:10])
                     if not log_message:
                         log_message="no error message from core"
-                raise AssertionError("state file %s did not show up:\n%s"%(statefilename,log_message))
+                self.quit_flag.set()
+                raise AssertionError("state file %s did not show up or backend died away:\n%s"%(statefilename,log_message))
             time.sleep(0.05)
             timeout-=0.05
             state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
@@ -178,7 +184,8 @@ class BackendDriver(threading.Thread):
 
     def is_busy(self):
         "Checks for state file"
-        return self.statefilename is not None and os.path.isfile(self.statefilename)
+        return self.statefilename is not None and os.path.isfile(self.statefilename) and \
+               self.core_input is not None and self.core_input.poll() is None
     
         #file_list = glob.glob(os.path.join(self.spool_dir, self.core_state_file))
         #if len(file_list) != 0:
@@ -200,3 +207,4 @@ class BackendDriver(threading.Thread):
                 self.abort()
             except OSError:
                 pass
+        self.core_input=None
