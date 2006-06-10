@@ -149,9 +149,9 @@ class ADC_Result(Resultable, Drawable):
         """
         # write sorted
         the_destination=None
-        if isinstance(destination,types.FileType):
+        if isinstance(destination,FileType):
             the_destination=destination
-        elif isinstance(destination,types.StringTypes):
+        elif isinstance(destination,StringTypes):
             the_destination=file(destination,"w")
         else:
             raise Exception("sorry destination %s is not valid"%(repr(destination)))
