@@ -166,7 +166,7 @@ int PulseBlaster24BitProgram::write_to_file(FILE* out, size_t indent) const {
 void SpinCorePulseBlaster24Bit::write_command(unsigned char* data, int flags, opcode inst, unsigned int inst_data, size_t delay) {
     if (inst>8)
 	throw SpinCorePulseBlaster_error("instruction code not known");
-    
+        
     // Output, Control Word 1st Byte
     data[0]=(flags&0xff0000)>>16;
     // Output, Control Word 2nd Byte
@@ -187,6 +187,12 @@ void SpinCorePulseBlaster24Bit::write_command(unsigned char* data, int flags, op
     data[8]=(delay&0xff00)>>8;
     // Delay Count 4th Byte
     data[9]=(delay&0xff);
+    /* *** BUG-FIX (ToDo: clean solution) ***
+       there is a nasty error in pulseblaster, affecting all states with 4th byte
+       equal 0xff and delay >255. In this case reduce state for 10ns.
+    */
+    if (data[9]==0xff && delay>0xff)
+      data[9]=0xfe;
 }
 
 
@@ -219,6 +225,8 @@ void SpinCorePulseBlaster24Bit::write_command(unsigned char* data, const PulseBl
 	default:
 	    throw SpinCorePulseBlaster_error("instruction code not known");
     }
+    if (command24Bit->length<3)
+	    throw SpinCorePulseBlaster_error("delay length too small!");
     unsigned int delay=(unsigned int)command24Bit->length-3;
     write_command(data,command24Bit->ttls,command24Bit->instruction,inst_data,delay);
 }

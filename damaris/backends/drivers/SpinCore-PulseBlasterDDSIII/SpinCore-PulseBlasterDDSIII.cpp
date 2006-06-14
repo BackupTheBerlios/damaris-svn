@@ -383,6 +383,12 @@ void SpinCorePulseBlasterDDSIII::write_command(unsigned char* data, const PulseB
   data[8]=(delay&0xff00)>>8;
   // Delay Count 4th Byte
   data[9]=(delay&0xff);
+  /* *** BUG-FIX (ToDo: clean solution) ***
+     there is a nasty error in pulseblaster, affecting all states with 4th byte
+     equal 0xff and delay >255. In this case reduce state for 10ns.
+  */
+  if (data[9]==0xff && delay>0xff)
+    data[9]=0xfe;
 }
 
 int SpinCorePulseBlasterDDSIII::write_to_device(const PulseBlasterDDSIIIProgram& p) {

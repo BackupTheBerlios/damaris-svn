@@ -54,7 +54,7 @@ PulseBlasterCommand::PulseBlasterCommand(PulseBlasterProgram& p, int _ttls, doub
   instruction=SpinCorePulseBlaster::CONTINUE;
   program=&p;
   jump=p.end();
-  length=(size_t)floor(_length*p.internal_clock_freq);
+  length=(size_t)floor(_length*p.internal_clock_freq+0.5); // graceful rounding
 }
 
 /* ***************************************************************************************
