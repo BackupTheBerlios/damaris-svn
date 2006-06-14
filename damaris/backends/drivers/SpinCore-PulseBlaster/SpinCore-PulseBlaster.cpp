@@ -25,14 +25,14 @@ SpinCorePulseBlasterLowlevel::~SpinCorePulseBlasterLowlevel() {
 #ifdef __CYGWIN__
 
 SpinCorePulseBlasterLowlevel::SpinCorePulseBlasterLowlevel() {
-#if 0
+#if 1
   const char spincore_dll[]="spinapi";
   const char sp_outp_func_name[]="pb_outp";
   const char sp_inp_func_name[]="pb_inp";
   const char sp_Close_func_name[]="pb_close";
   const char sp_Init_func_name[]="pb_init";
 #endif
-#if 1
+#if 0
   const char spincore_dll[]="PBD03PC";
   const char sp_outp_func_name[]="pb_outp";
   const char sp_inp_func_name[]="pb_inp";

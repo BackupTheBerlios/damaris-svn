@@ -102,7 +102,7 @@ static int amcc_outb(char data, unsigned short address) {
 		// Transfer Address
 		
 		// Read RECV bit from the Board
-		RECV_START = inb(base_address+CHK_RECV);
+		RECV_START = inb_p(base_address+CHK_RECV);
 
 		RECV_START &= CLEAR31;	// Only Save LSB
 
@@ -114,7 +114,7 @@ static int amcc_outb(char data, unsigned short address) {
 		RECV_TIMEOUT = 0;
 		while ((RECV_POLLING == 1) && (RECV_TIMEOUT < MAX_RECV_TIMEOUT)) 
 		{
-			RECV_TOGGLE = inb(base_address+CHK_RECV);
+			RECV_TOGGLE = inb_p(base_address+CHK_RECV);
 
 			RECV_TOGGLE &= CLEAR31;	// Only Save LSB
 			if (RECV_TOGGLE != RECV_START) RECV_POLLING = 0;	// Finished if Different
@@ -123,24 +123,24 @@ static int amcc_outb(char data, unsigned short address) {
 		}
 
 		// Transfer Complete (Clear) Signal
-		outb(0, base_address+SIG_TRNS);
+		outb_p(0, base_address+SIG_TRNS);
 
 		// Transfer Data
 
 		// Read RECV bit from the Board
-		RECV_START = inb(base_address+CHK_RECV);
+		RECV_START = inb_p(base_address+CHK_RECV);
 
 		RECV_START &= CLEAR31;	// Only Save LSB
 
 		// Send Data to OGMB
-		outl(Temp_Data, base_address+OGMB);
+		outl_p(Temp_Data, base_address+OGMB);
 
 		RECV_POLLING = 1;	// Set Polling Flag
 		RECV_TIMEOUT = 0;
 		while ((RECV_POLLING == 1) && (RECV_TIMEOUT < MAX_RECV_TIMEOUT)) 
 		{
 			// Check for Toggled RECV
-                        RECV_TOGGLE = inb(base_address+CHK_RECV);
+                        RECV_TOGGLE = inb_p(base_address+CHK_RECV);
 
 			RECV_TOGGLE &= CLEAR31;	// Only Save LSB
 			if (RECV_TOGGLE != RECV_START) RECV_POLLING = 0;	// Finished if Different
@@ -149,7 +149,7 @@ static int amcc_outb(char data, unsigned short address) {
 		}
 
 		// Transfer Complete (Clear) Signal
-		outb(0, base_address+SIG_TRNS);
+		outb_p(0, base_address+SIG_TRNS);
 
 	return XFER_ERROR;	
 }
@@ -183,7 +183,7 @@ static char amcc_inb(unsigned int address) {
   unsigned int Temp_Data = 0;
 
  if (base_address==0) {
-      printk("%s: reg %02x)=0 (guessed)\n",DEVICE_NAME, 0xff&address);
+      printk("%s: reg(%02x)=0 (guessed)\n",DEVICE_NAME, 0xff&address);
       return 0;
   }
 
@@ -200,7 +200,7 @@ static char amcc_inb(unsigned int address) {
   while ((RECV_POLLING == 1) && (RECV_TIMEOUT < MAX_RECV_TIMEOUT)) {
       // Check for Toggled RECV
       //RECV_TOGGLE = _inp(CHK_RECV);
-      RECV_TOGGLE = inb (base_address+CHK_RECV);
+      RECV_TOGGLE = inb_p (base_address+CHK_RECV);
       RECV_TOGGLE &= BIT1;	// Only Save Bit 1
       
       if (RECV_TOGGLE == RECV_START) RECV_POLLING = 0;	// Finished if Different
@@ -213,12 +213,12 @@ static char amcc_inb(unsigned int address) {
 
   //Temp_Data = _inp(ICMB);
   // Read RECV bit from the Board
-  Temp_Data = inb (base_address+ICMB);
+  Temp_Data = inb_p (base_address+ICMB);
   Temp_Data &= CLEAR24;
 
 		
   //Toggle = _inp(SIG_TRNS);
-  Toggle = inb (base_address+SIG_TRNS);
+  Toggle = inb_p (base_address+SIG_TRNS);
   
   Toggle_Temp = Toggle & BIT1; // Only Save Bit 1
   if (Toggle_Temp == 0x0)
@@ -231,7 +231,7 @@ static char amcc_inb(unsigned int address) {
     }
 
   //_outp(SIG_TRNS, Toggle);
-  outb (Toggle,base_address+SIG_TRNS);
+  outb_p (Toggle,base_address+SIG_TRNS);
   
   RECV_POLLING = 1;	// Set Polling Flag
   RECV_TIMEOUT = 0;
@@ -240,7 +240,7 @@ static char amcc_inb(unsigned int address) {
   while ((RECV_POLLING == 1) && (RECV_TIMEOUT < MAX_RECV_TIMEOUT)) {
     // Check for Toggled RECV
     //RECV_TOGGLE = _inp(CHK_RECV);
-    RECV_TOGGLE = inb (base_address + CHK_RECV);
+    RECV_TOGGLE = inb_p (base_address + CHK_RECV);
     RECV_TOGGLE &= BIT1;	// Only Save Bit 1
       
     if (RECV_TOGGLE == RECV_STOP) RECV_POLLING = 0;	// Finished if Different
@@ -260,10 +260,6 @@ static char amcc_inb(unsigned int address) {
     return XFER_ERROR;
   }
 }
-
-
-
-/*************************************************************************************/
 
 
 static int device_release(struct inode *inode, struct file *file)

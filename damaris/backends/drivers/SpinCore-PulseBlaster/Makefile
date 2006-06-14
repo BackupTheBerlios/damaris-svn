@@ -12,14 +12,17 @@ KERNELSRC=/lib/modules/$(shell uname -r)/build
 endif
 
 THISDIR=$(shell cd . >/dev/null; pwd)
-LIBS=-lm
-CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic
+LIBS=-lm -lxerces-c -lexpat
+CXXFLAGS=-DSP_DEBUG=0 -g -O0 -Wall -Wshadow -pedantic
 CPPFLAGS=-I../..
 
 all: PulseBlasterProgram.o SpinCore-PulseBlaster.o
 
 pulseblaster_test: pulseblaster_test.cpp SpinCore-PulseBlaster.o
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o$@ $^ $(LIBS)
+
+TestCase: TestCase.cpp SpinCore-PulseBlaster.o ../../core/core.a
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -I. -o$@ $^ $(LIBS)
 
 PulseBlasterProgram.o: PulseBlasterProgram.cpp PulseBlasterProgram.h
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o$@ $<
