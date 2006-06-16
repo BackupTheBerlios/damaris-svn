@@ -401,7 +401,7 @@ class DamarisGUI:
             if not self.dump_states_event_id is None:
                 gobject.source_remove(self.dump_states_event_id)
                 self.dump_states_event_id=None
-            self.dump_states(compress=9)
+            self.dump_states(compress=1)
             
             # now everything is stopped
             self.state=DamarisGUI.Edit_State

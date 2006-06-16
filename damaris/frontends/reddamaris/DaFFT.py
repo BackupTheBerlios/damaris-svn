@@ -30,6 +30,16 @@ class FFT:
 	new_array[:n/2] = an_array[n/2:]
 	return new_array
 
+    def write_n(self, afile):
+	filename = open(afile,'w')
+	filename = open(afile,'a')
+	#print self.the_result.get_description_dictionary()
+	#filename.write('%s'%self.get_description_dictionary())
+	for i in range(self.data_points):
+	    filename.write('%e\t%e\t%e\n'%(self.the_result.x[i], self.the_result.y[0][i], self.the_result.y[1][i]))
+	filename.close()    
+	return self
+
     def base_corr(self, cutoff=0.3, show=0):
 	"""
 	Subtracts the mean of the last cutoff % of the timsignal
@@ -49,7 +59,7 @@ class FFT:
 	    return self.the_result
 	return self
 
-    def abs_fft(self, points=None, zoom=None):
+    def abs_fft(self, points=None, zoom=None,write = 'off'):
 	"""
 	Fourier transforms the timesignal;
 	points is the number of points to transform, if more points given than data points
@@ -67,12 +77,15 @@ class FFT:
 	self.the_result.x = numarray.arange(n)*(self.sampling_rate/n)-(self.sampling_rate/2.0)
 	self.the_result.y[0] = absfft
 	self.the_result.y[1] = numarray.zeros(n)
-	if zoom is None: return self.the_result
+	if write == 'on':
+	    return self
 	else:
-	    center, width = zoom
-	    return self.zoom(self.the_result, center, width)
+	    if zoom is None: return self.the_result
+	    else:
+		center, width = zoom
+		return self.zoom(self.the_result, center, width)
 
-    def fft(self, points=None, zoom=None):
+    def fft(self, points=None, zoom=None, write='off'):
 	realdata = numarray.array(self.the_result.y[0])
 	imdata = numarray.array(self.the_result.y[1])
 	data = realdata + 1j*imdata
@@ -85,12 +98,15 @@ class FFT:
 	# create new result
 	self.the_result.y[0] = fftdata.real
 	self.the_result.y[1] = fftdata.imag
-	if zoom is None: return self.the_result
+	if write == 'on':
+	    return self
 	else:
-	    center, width = zoom
-	    return self.zoom(self.the_result, center, width)
+	    if zoom is None: return self.the_result
+	    else:
+		center, width = zoom
+		return self.zoom(self.the_result, center, width)
 
-    def realfft(self, points=None, zoom=None):
+    def realfft(self, points=None, zoom=None, write = 'off'):
 	realdata = numarray.array(self.the_result.y[0])
 	imdata = numarray.array(self.the_result.y[1])
 	data = realdata + 1j*imdata
@@ -101,10 +117,13 @@ class FFT:
 	self.the_result.x =  numarray.arange(n)*(self.sampling_rate/n)-(self.sampling_rate/2.0)
 	self.the_result.y[0] = realfft
 	self.the_result.y[1] = numarray.zeros(n)
-	if zoom is None: return self.the_result
+	if write == 'on':
+	    return self
 	else:
-	    center, width = zoom
-	    return self.zoom(self.the_result, center, width)
+	    if zoom is None: return self.the_result
+	    else:
+		center, width = zoom
+		return self.zoom(self.the_result, center, width)
 
     def zoom(self,some_result, center="auto", width=1000):
 	if center == "auto":

@@ -9,7 +9,6 @@ import numarray
 import sys
 from types import *
 import tables
-
 #############################################################################
 #                                                                           #
 # Name: Class ADC_Result                                                    #
