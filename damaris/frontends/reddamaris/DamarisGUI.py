@@ -522,12 +522,13 @@ class DamarisGUI:
 
     def stop_experiment(self, widget, data = None):
         if self.state in [DamarisGUI.Run_State, DamarisGUI.Pause_State]:
+            self.toolbar_pause_button.set_sensitive(False)
+            self.toolbar_stop_button.set_sensitive(False)
             if self.si is None: return
             still_running=filter(None,[self.si.exp_handling,self.si.res_handling,self.si.back_driver])
             for r in still_running:
                 r.quit_flag.set()
             self.state=DamarisGUI.Stop_State
-            self.toolbar_pause_button.set_sensitive(False)
 
 class LogWindow:
     """
