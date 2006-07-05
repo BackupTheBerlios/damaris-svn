@@ -544,6 +544,7 @@ class LogWindow:
         self.textbuffer=self.textview.get_buffer()
         self.logstream=log
         self.logstream.gui_log=self
+        self.last_timetag=None
 
     def __call__(self, message):
         timetag=time.time()
@@ -551,11 +552,13 @@ class LogWindow:
 
     def add_message_callback(self, timetag, message):
         date_tag=u""
-        if message!="\n" and False:
+        if self.last_timetag is None or (message!="\n" and self.last_timetag+60<timetag):
+            self.last_timetag=timetag
             timetag_int=math.floor(timetag)
             timetag_ms=int((timetag-timetag_int)*1000)
             date_tag=time.strftime(u"%Y%m%d  %H:%M:%S.%%03d:\n",time.localtime(timetag_int))%timetag_ms
         gtk.gdk.threads_enter()
+        self.textbuffer.place_cursor(self.textbuffer.get_end_iter())
         self.textbuffer.insert_at_cursor(date_tag+unicode(message))
         self.textview.scroll_to_mark(self.textbuffer.get_insert(),0.1)
         gtk.gdk.threads_leave()
