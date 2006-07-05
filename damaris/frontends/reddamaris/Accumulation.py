@@ -275,10 +275,10 @@ class Accumulation(Errorable, Drawable):
                             time_slice_data=hdffile.createCArray(accu_group,
                                                                  name="idx%04d_ch%04d"%(index_no,channel_no),
                                                                  shape=timedata.getshape(),
-                                                                 atom=tables.Float64Atom(shape=timedata.getshape(),
+                                                                 atom=tables.Float64Atom(shape=(1,2),
                                                                                          flavor="numarray"),
                                                                  filters=tables.Filters(complevel=compress,
-                                                                                        complib='zlib'),
+                                                                                        complib='lzo'),
                                                                  title="Index %d, Channel %d"%(index_no,channel_no))
                             time_slice_data[:]=timedata
                         else:
