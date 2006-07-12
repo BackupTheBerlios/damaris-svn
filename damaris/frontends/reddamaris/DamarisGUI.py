@@ -387,24 +387,36 @@ class DamarisGUI:
                 self.backend_statusbar_label.set_text(b_text)
         gtk.gdk.threads_leave()
 
-        still_running=filter(None,[self.si.exp_handling, self.si.res_handling, self.si.back_driver])
 
+        still_running=filter(None,[self.si.exp_handling, self.si.res_handling, self.si.back_driver])
         if len(still_running)==0:
-            print "all subprocesses ended"
+            if not self.dump_states_event_id is None:
+                gobject.source_remove(self.dump_states_event_id)
+                self.dump_states_event_id=None
+            if "dump_thread" not in dir(self) or self.dump_thread is None:
+                print "all subprocesses ended..."
+                print "saving data pool",
+                self.dump_start_time=time.time()
+                # thread to do that...
+                self.dump_thread=threading.Thread(target=self.dump_states,
+                                                  name="dump states",
+                                                  kwargs={"compress": None})
+                self.dump_thread.start()
             self.state = DamarisGUI.Stop_State
 
         if self.state == DamarisGUI.Stop_State:
             if len(still_running)!=0:
                 print "subprocesses still running:", map(lambda s:s.getName(),still_running)
                 return True
+            if "dump_thread" in dir(self) and self.dump_thread is not None:
+                if self.dump_thread.isAlive():
+                    print ".",
+                    return True
+                self.dump_thread.join()
+                self.dump_thread=None
+                print "done"
+                print "dump time %f s"%(time.time()-self.dump_start_time)
 
-            if not self.dump_states_event_id is None:
-                gobject.source_remove(self.dump_states_event_id)
-                self.dump_states_event_id=None
-            t1=time.time()
-            self.dump_states(compress=None)
-            print "dump time %f s"%(time.time()-t1)
-            
             # now everything is stopped
             self.state=DamarisGUI.Edit_State
             gtk.gdk.threads_enter()
@@ -797,6 +809,19 @@ class ScriptWidgets:
                     self.experiment_script_textbuffer.paste_clipboard(self.main_clipboard, None, True)
                 elif self.main_notebook.get_current_page() == 1:
                     self.data_handling_textbuffer.paste_clipboard(self.main_clipboard, None, True)
+                return True
+            elif event.keyval==gtk.gdk.keyval_from_name("s"):
+                # save buffer
+                page=self.main_notebook.get_current_page()
+                if (self.exp_script_filename,self.res_script_filename)[page] is None:
+                    self.save_file_as()
+                else:
+                    self.save_file()
+                return True
+            elif event.keyval==gtk.gdk.keyval_from_name("S"):
+                # save both buffers
+                print "ToDo: save both buffers"
+                self.save_all_files(None, None)
                 return True
             return 0
 

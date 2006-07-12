@@ -91,8 +91,10 @@ class DataPool(UserDict.DictMixin):
 
         dump_group=dump_file.createGroup(where, name, "DAMARIS data pool")
         self.__dictlock.acquire()
+        dict_keys=self.__mydict.keys()
+        self.__dictlock.release()
         try:
-            for (key,value) in self.__mydict.iteritems():
+            for key in dict_keys:
                 if key[:2]=="__": continue
                 # convert key to a valid name
                 group_keyname="dict_"
@@ -109,10 +111,14 @@ class DataPool(UserDict.DictMixin):
                     while group_keyname+"_%03d"%extension_count in dump_group:
                         extension_count+=1
                     group_keyname+="_%03d"%extension_count
+                self.__dictlock.acquire()
+                if key not in self.__mydict:
+                    # outdated ...
+                    self.__dictlock.release()
+                    continue
+                value=self.__mydict[key]
                 # now write data
-                if isinstance(value, ADC_Result.ADC_Result) or \
-                   isinstance(value, MeasurementResult.MeasurementResult) or \
-                   isinstance(value, Accumulation.Accumulation):
+                if "write_to_hdf" in dir(value):
                     try:
                         value.write_to_hdf(hdffile=dump_file,
                                            where=dump_group,
@@ -123,9 +129,11 @@ class DataPool(UserDict.DictMixin):
                         print "failed to write data_pool[%s]: %s"%(key,str(e))
                 else:
                     print "don't know how to store data_pool[%s]"%key
+                value=None
+                self.__dictlock.release()
+
         finally:
             dump_group=None
-            self.__dictlock.release()
             dump_file.flush()
             if type(hdffile) is types.StringType:
                 dump_file.close()
