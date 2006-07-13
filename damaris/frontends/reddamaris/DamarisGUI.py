@@ -455,6 +455,8 @@ class DamarisGUI:
             # dump all information to a file
             print "ToDo: move away old dump file"
             dump_file=tables.openFile(self.dump_filename,mode="w",title="DAMARIS experiment data")
+            if dump_file.isUndoEnabled():
+                dump_file.disableUndo()
             # write scripts
             scriptgroup=dump_file.createGroup("/","scripts","Used Scripts")
             if self.si.exp_script:
@@ -471,7 +473,6 @@ class DamarisGUI:
             timeline_row["experiments"]=0
             timeline_row["results"]=0
             timeline_row.append()
-            timeline_table.flush()
         else:
             # repack file
             os.rename(self.dump_filename,self.dump_filename+".bak")
@@ -484,6 +485,8 @@ class DamarisGUI:
             os.remove(self.dump_filename+".bak")
             # prepare for update
             dump_file=tables.openFile(self.dump_filename,mode="r+")
+            if dump_file.isUndoEnabled():
+                dump_file.disableUndo()
             e=self.si.data.get("__recentexperiment",-1)+1
             r=self.si.data.get("__recentresult",-1)+1
             timeline_table=dump_file.root.timeline
@@ -492,7 +495,6 @@ class DamarisGUI:
             timeline_row["experiments"]=e
             timeline_row["results"]=r
             timeline_row.append()
-            timeline_table.flush()
 
         self.data.write_hdf5(dump_file, where="/", name="data_pool", compress=compress)
         

@@ -117,7 +117,8 @@ class DataPool(UserDict.DictMixin):
                     self.__dictlock.release()
                     continue
                 value=self.__mydict[key]
-                # now write data
+                self.__dictlock.release()
+                # now write data, assuming, the object is constant during write operation
                 if "write_to_hdf" in dir(value):
                     try:
                         value.write_to_hdf(hdffile=dump_file,
@@ -130,11 +131,9 @@ class DataPool(UserDict.DictMixin):
                 else:
                     print "don't know how to store data_pool[%s]"%key
                 value=None
-                self.__dictlock.release()
 
         finally:
             dump_group=None
-            dump_file.flush()
             if type(hdffile) is types.StringType:
                 dump_file.close()
             dump_file=None

@@ -213,5 +213,4 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
                 row.append()
 
         finally:
-            mr_table.flush()
             self.lock.release()

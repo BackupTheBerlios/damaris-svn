@@ -296,13 +296,10 @@ class Accumulation(Errorable, Drawable):
                                                                                type=numarray.Float64))
                         time_slice_data._f_setAttr("start_time",numarray.array(1.0/self.sampling_rate*index[0],
                                                                                 type=numarray.Float64))
-                        time_slice_data.flush()
             finally:
                 time_slice_data=None
                 accu_group=None
                 self.lock.release()
-                hdffile.flush()
-
 
     # / Schnittstellen nach Auﬂen ------------------------------------------------------------------
     
