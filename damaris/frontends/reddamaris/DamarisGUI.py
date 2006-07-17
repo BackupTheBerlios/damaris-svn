@@ -452,8 +452,29 @@ class DamarisGUI:
             results=tables.Int64Col()
 
         if init:
+            # move away old file
+            if os.path.isfile(self.dump_filename):
+                # create bakup name pattern
+                dump_filename_pattern=None
+                (filename,ext)=os.path.splitext(self.dump_filename)
+                if ext in [".h5", ".hdf", ".hdf5"]:
+                    dump_filename_pattern=filename.replace("%","%%")+"_%d"+ext
+                else:
+                    dump_filename_pattern=dump_filename.replace("%","%%")+"_%d"
+                    
+                last_backup=0
+                cummulated_size=os.stat(self.dump_filename).st_size
+                while os.path.isfile(dump_filename_pattern%last_backup):
+                    cummulated_size+=os.stat(dump_filename_pattern%last_backup).st_size
+                    last_backup+=1
+                while last_backup>0:
+                    os.rename(dump_filename_pattern%(last_backup-1),dump_filename_pattern%last_backup)
+                    last_backup-=1
+                os.rename(self.dump_filename,dump_filename_pattern%0)
+                if cummulated_size>(1<<30):
+                    print "Warning: the cummulated backups size of '%s' is %d MByte"%(self.dump_filename, cummulated_size/(1<<20))                
+
             # dump all information to a file
-            print "ToDo: move away old dump file"
             dump_file=tables.openFile(self.dump_filename,mode="w",title="DAMARIS experiment data")
             if dump_file.isUndoEnabled():
                 dump_file.disableUndo()
