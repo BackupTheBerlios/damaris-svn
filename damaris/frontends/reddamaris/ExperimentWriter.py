@@ -23,15 +23,16 @@ class ExperimentWriter:
         job_filename=os.path.join(self.spool,self.job_pattern%self.no)
 	f=file(job_filename+".tmp","w")
 	f.write(job.write_xml_string())
+        f.flush()
 	f.close() # explicit close under windows necessary (don't know why)
-	f=None
+	del f
 	# this implementation tries to satisfiy msvc filehandle caching
-	# os.rename(job_filename+".tmp", job_filename)
-        shutil.copyfile(job_filename+".tmp", job_filename)
-	try:
-	    os.unlink(job_filename+".tmp")
-	except OSError:
-	    print "could not delete temporary file %s.tmp"%job_filename
+	os.rename(job_filename+".tmp", job_filename)
+        #shutil.copyfile(job_filename+".tmp", job_filename)
+	#try:
+	#    os.unlink(job_filename+".tmp")
+	#except OSError:
+	#    print "could not delete temporary file %s.tmp"%job_filename
 
         self.no+=1
 
