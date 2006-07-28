@@ -26,6 +26,8 @@ import numarray
 
 # math graphics
 import matplotlib
+# force use of numarray
+matplotlib.rcParams["numerix"]="numarray"
 import matplotlib.axes
 import matplotlib.figure
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
