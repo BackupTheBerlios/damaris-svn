@@ -191,7 +191,7 @@ void SpinCorePulseBlaster24Bit::write_command(unsigned char* data, int flags, op
        there is a nasty error in pulseblaster, affecting all states with 4th byte
        equal 0xff and delay >255. In this case reduce state for 10ns.
     */
-    if (data[9]==0xff && delay>0xff)
+    if (0 && data[9]==0xff && delay>0xff)
       data[9]=0xfe;
 }
 

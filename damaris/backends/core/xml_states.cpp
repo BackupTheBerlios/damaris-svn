@@ -163,6 +163,7 @@ void xml_state_reader::end_element(const XML_Char *name) {
 }
 
 xml_state_reader::xml_state_reader() {
+  fprintf(stderr, "xml_state_reader class is decrepated, please shift to xerces supporting classes.\n");
   root=(state_atom*)NULL;
   parser=XML_ParserCreate((XML_Char*)NULL);
   XML_SetUserData(parser,(void*)this);
