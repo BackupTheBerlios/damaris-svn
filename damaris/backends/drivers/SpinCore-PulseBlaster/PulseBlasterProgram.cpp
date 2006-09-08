@@ -108,6 +108,18 @@ void PulseBlasterProgram::append_sequence(const state& the_states) {
     if (typeid(*this_tag)==typeid(state_sequent)) {
       //fprintf(stderr,"found sequence\n");
       state_sequent* sequence=dynamic_cast<state_sequent*>(this_tag);
+      // throw away all elements, which were non-states
+      for(state_sequent::iterator i=sequence->begin(); sequence->end()!=i;) {
+	if (dynamic_cast<state*>(*i)==0) {
+	  // states are expected, nothing else!
+	  fprintf(stderr, "only states are allowed inside a sequent section!\n");
+	  delete *i;
+	  i=sequence->erase(i);
+	}
+	else
+	  // fine
+	  ++i;
+      }
       // skip if empty
       if (!sequence->empty() && sequence->repeat>0) {
 	if (sequence->repeat>1<<20) {
