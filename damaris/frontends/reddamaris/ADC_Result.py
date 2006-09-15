@@ -203,13 +203,16 @@ class ADC_Result(Resultable, Drawable):
                         
                         time_slice_data=None
                         if compress is not None:
+                            prefered_complib='lzo'
+                            if tables.whichLibVersion(prefered_complib) is None:
+                                prefered_complib='zlib' #builtin
                             time_slice_data=hdffile.createCArray(accu_group,
                                                                  name="idx%04d_ch%04d"%(index_no,channel_no),
                                                                  shape=timedata.getshape(),
                                                                  atom=tables.Int32Atom(shape=1,
                                                                                        flavor="numarray"),
                                                                  filters=tables.Filters(complevel=compress,
-                                                                                        complib='lzo'),
+                                                                                        complib=prefered_complib),
                                                                  title="Index %d, Channel %d"%(index_no,channel_no))
                             time_slice_data[:]=timedata
                         else:

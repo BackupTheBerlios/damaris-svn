@@ -270,18 +270,20 @@ class Accumulation(Errorable, Drawable):
                             timedata[1::2]=numarray.zeros(type = numarray.Float64,
                                                           shape = ((index[1]-index[0]+1),))
                         timedata.setshape((index[1]-index[0]+1,2))
-			chunkshape = numarray.shape(timedata)
-			chunkshape = (min(chunkshape[0],1024*8),chunkshape[1])
                         time_slice_data=None
                         if compress is not None:
-			    print "compressing ..."
+                            chunkshape = numarray.shape(timedata)
+                            chunkshape = (min(chunkshape[0],1024*8),chunkshape[1])
+                            prefered_complib='lzo'
+                            if tables.whichLibVersion(prefered_complib) is None:
+                                prefered_complib='zlib' #builtin
                             time_slice_data=hdffile.createCArray(accu_group,
                                                                  name="idx%04d_ch%04d"%(index_no,channel_no),
                                                                  shape=timedata.getshape(),
                                                                  atom=tables.Float64Atom(shape=chunkshape,
                                                                                          flavor="numarray"),
                                                                  filters=tables.Filters(complevel=compress,
-                                                                                        complib='lzo',
+                                                                                        complib=prefered_complib,
 											shuffle=1),
                                                                  title="Index %d, Channel %d"%(index_no,channel_no))
                             time_slice_data[:]=timedata
