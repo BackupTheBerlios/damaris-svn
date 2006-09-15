@@ -77,37 +77,37 @@ class Experiment:
         else:
             self.state_list.append('<state time="2e-6"><analogout id="0" f="%f" phase="%f"/><ttlout value="%d"/></state>\n' % (frequency, phase, ttls))
     
-    def set_pfg(self, I_out=None, int_value=None, length=None, is_seq=0):
+    def set_pfg(self, I_out=None, dac_value=None, length=None, is_seq=0):
 	"""This sets the value for the PFG, it also sets it back automatically.
 	If you don't whish to do so (i.e. line shapes)  set is_seq=1"""
 	
-	if I_out == None and int_value == None:
+	if I_out == None and dac_value == None:
 	    dac_value=0
-	if I_out != None and int_value == None:
+	if I_out != None and dac_value == None:
 	    dac_value=dac.conv(I_out)
-	if I_out == None and int_value != None:
-	    dac_value=int_value
-	if I_out !=None and int_value != None:
+	if I_out == None and dac_value != None:
+	    dac_value=dac_value
+	if I_out !=None and dac_value != None:
 	    dac_value = 0
-	    print "WARNING: You can't set both, I_out and int_value! dac_value set to 0"
+	    print "WARNING: You can't set both, I_out and dac_value! dac_value set to 0"
 	if length == None:
 	    length=42*9e-8
 	self.state_list.append('<state time="%s"><analogout id="1" dac_value="%i"/></state>\n' %(repr(length), dac_value))
 	if is_seq == 0:
 	    self.state_list.append('<state time="%s"><analogout id="1" dac_value="0"/></state>\n' %(repr(42*9e-8)) )
  
-    def set_pfg_wt(self, I_out=None, int_value=None, length=None, is_seq=0, trigger=4):
+    def set_pfg_wt(self, I_out=None, dac_value=None, length=None, is_seq=0, trigger=4):
 	"""This sets the value for the PFG (plus trigger, default=2**2), it also sets it back automatically.
 	If you don't whish to do so (i.e. line shapes)  set is_seq=1"""
-	if I_out == None and int_value == None:
+	if I_out == None and dac_value == None:
 	    dac_value=0
-	if I_out != None and int_value == None:
+	if I_out != None and dac_value == None:
 	    dac_value=dac.conv(I_out)
-	if I_out == None and int_value != None:
-	    dac_value=int_value
-	if I_out !=None and int_value != None:
+	if I_out == None and dac_value != None:
+	    dac_value=dac_value
+	if I_out !=None and dac_value != None:
 	    dac_value = 0
-	    print "WARNING: You can't set both, I_out and int_value! dac_value set to 0"
+	    print "WARNING: You can't set both, I_out and dac_value! dac_value set to 0"
 	if length==None:
 	    length=42*9e-8
 	self.state_list.append('<state time="%s"><analogout id="1" dac_value="%i"/><ttlout value="%s"/></state>\n' %(repr(length), dac_value, trigger))
