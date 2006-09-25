@@ -10,6 +10,10 @@
 #include <cmath>
 #include "core/xml_states.h"
 
+#ifdef __CYGWIN__
+# define floorl floor
+#endif
+
 PTS::PTS(int myid): id(myid) {
   frequency=0;
   phase=0;
