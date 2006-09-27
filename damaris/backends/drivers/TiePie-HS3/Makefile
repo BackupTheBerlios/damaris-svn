@@ -25,9 +25,15 @@ tiepie.o: tiepie.cpp tiepie.h
 TiePie-HS3.a: TiePie-HS3.o tiepie.o
 	$(AR) r $@ $^
 
+HS3test.exe: HS3test.cpp TiePie-HS3.a ../../core/core.a
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+../../core/core.a:
+	$(MAKE) -C ../../core core.a
+
 clean:
 	for f in *.cpp *.h; do ../../tools/add_endline.exe $$f; done; \
-rm -f *.o *~ \#* *.stackdump *.a
+rm -f *.o *~ \#* *.stackdump *.a *.exe
 
 install:
 	install *.hex *.dll $(PREFIX)

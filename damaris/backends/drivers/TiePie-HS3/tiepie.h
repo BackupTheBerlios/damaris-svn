@@ -136,7 +136,7 @@ bool _export CloseDLL( void );
  typedef word  (WINAPI    *GETFUNCGENMAXAMPLITUDE   ) (double*      ); extern  word  (__stdcall *GetFuncGenMaxAmplitude   ) (double*      );
  typedef word  (WINAPI    *GETAVAILABLERESOLUTIONS  ) (double*      ); extern  word  (__stdcall *GetAvailableResolutions  ) (double*      );
  typedef word  (WINAPI    *GETAVAILABLESENSITIVITIES) (double*      ); extern  word  (__stdcall *GetAvailableSensitivities) (double*      );
- typedef word  (WINAPI)   *GETNRCHANNELS            ) (word*        ); extern  word  (__stdcall *GetNrChannels            ) (word*        );
+ typedef word  (WINAPI    *GETNRCHANNELS            ) (word*        ); extern  word  (__stdcall *GetNrChannels            ) (word*        );
 /*
  * Controlling the input resolution
  */
