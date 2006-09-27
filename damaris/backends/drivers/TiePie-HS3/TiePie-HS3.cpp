@@ -14,10 +14,18 @@ TiePieHS3::TiePieHS3() {
   if (1!=OpenDLL(dtHandyscope3)){
     throw ADC_exception("could not find driver dll for HS3!");
   }
-  if (0!=InitInstrument(0)) {
+  if (NO_ERROR!=InitInstrument(0)) {
     ADC_exception("HS3 not available!");
   }
-
+  unsigned int serialno=0;
+  unsigned short int retval=GetSerialNumber(&serialno);
+  //fprintf(stderr, "sizeof(unsigned int)=%d, sizeof(unsigned short int)=%d\n", sizeof(serialno), sizeof(retval));
+  if (NO_ERROR!=retval) {
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "could not get device's serial number: GetSerialNumber returned %d", retval);
+    throw ADC_exception(std::string(buffer));
+  }
+  fprintf(stderr, "successfully initialized HS3, SN=%d\n",serialno);
   trigger_line_id=0;
   trigger_line_mask=1<<2;
 }
@@ -25,13 +33,18 @@ TiePieHS3::TiePieHS3() {
 void TiePieHS3::sample_after_external_trigger(double _rate, size_t _samples, double _sensitivity ,size_t _resolution) {
   ADC_Abort();
   /* set autoranging off */
-  SetAutoRanging(1,0);
-  SetAutoRanging(2,0);
+  SetAutoRanging(Ch1,0);
+  SetAutoRanging(Ch2,0);
 
   samples=_samples;
   if (samples==0 || _rate<=0) return;
-  if (0!=SetRecordLength(samples)) {
-     throw ADC_exception("could not set record length");
+  unsigned short int retval;
+  //samples=1024*1024*1024; // impossible value... provoke error
+  retval=SetRecordLength(samples);
+  if (0!=retval) {
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), "could not set record length: SetRecrodLength(%d) returned %d", samples, retval);
+    throw ADC_exception(std::string(buffer));
   }
   if (0!=SetPostSamples(samples)){
     throw ADC_exception("could not set post sample number");
@@ -60,9 +73,9 @@ void TiePieHS3::sample_after_external_trigger(double _rate, size_t _samples, dou
 #if 0
   /* set DC level value to zero */
   const double dclevel_req=-2.0;
-  if (E_NO_ERRORS!=SetDcLevel(1,dclevel_req))
+  if (E_NO_ERRORS!=SetDcLevel(1, dclevel_req))
     throw ADC_exception("could not set dc level for channel 1");
-  if (E_NO_ERRORS!=SetDcLevel(2,dclevel_req))
+  if (E_NO_ERRORS!=SetDcLevel(2, dclevel_req))
     throw ADC_exception("could not set dc level for channel 2");
 #endif
 
@@ -77,18 +90,21 @@ void TiePieHS3::sample_after_external_trigger(double _rate, size_t _samples, dou
   fprintf(stderr,"set sensitivity to %g\n",sensitivity);
 
   /* set input coupling to DC */
-  if (0!=SetCoupling(1,1) || 0!=SetCoupling(2,1))
+  if (0!=SetCoupling(Ch1, ctDC) || 0!=SetCoupling(Ch2, ctDC))
     throw ADC_exception("could not set coupling to dc");
 
   /* what to measure */
-  if (E_NO_ERRORS!=SetMeasureMode(3))   /* 3=Channel 1 and 2 */
+  if (E_NO_ERRORS!=SetMeasureMode(mmCh12))   /* Channel 1 and 2 */
     throw ADC_exception("could not set measurement mode");
   /* the trigger source */
-  if (E_NO_ERRORS!=SetTriggerSource(2)) /* 2=external trigger, 5=immediately */
+  if (E_NO_ERRORS!=SetTriggerSource(tsExternal)) /* external trigger */
     throw ADC_exception("could not set trigger source");
   /* which slope to trigger */
-  if (E_NO_ERRORS!=SetTriggerMode(0))   /* 0=Rising slope */
+  if (E_NO_ERRORS!=SetTriggerMode(tmRising))   /* 0=Rising slope */
     throw ADC_exception("could not set trigger source");
+  /* set transfer mode */
+  if (E_NO_ERRORS!=SetTransferMode(tmBlock))
+    throw ADC_exception("could not set transfer mode");
 
   /* finally start the measurement */
   if (0!=ADC_Start())
