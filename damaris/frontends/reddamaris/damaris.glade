@@ -1782,6 +1782,7 @@ log</property>
 		      <property name="right_margin">0</property>
 		      <property name="indent">0</property>
 		      <property name="text" translatable="yes">DAMARIS python frontend version 0.3, 2006
+%(moduleversions)s
 
 DArmstadt Magnetic Resonance Instrument Software, 2004-2006
 http://www.fkp.physik.tu-darmstadt.de/damaris/
@@ -2593,7 +2594,7 @@ Public License instead of this License.
 	      <property name="stock_id">gtk-stop</property>
 	      <property name="visible_horizontal">True</property>
 	      <property name="visible_vertical">True</property>
-	      <property name="is_important">False</property>
+	      <property name="is_important">True</property>
 	      <signal name="clicked" handler="on_toolbar_stop_button_clicked" last_modification_time="Wed, 27 Jul 2005 13:43:55 GMT"/>
 	    </widget>
 	    <packing>

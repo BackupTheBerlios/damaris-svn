@@ -2,6 +2,7 @@
 import time
 import math
 import sys
+import platform
 import StringIO
 import codecs
 import os.path
@@ -402,7 +403,7 @@ class DamarisGUI:
                 # thread to do that...
                 self.dump_thread=threading.Thread(target=self.dump_states,
                                                   name="dump states",
-                                                  kwargs={"compress": None})
+                                                  kwargs={"compress": 9})
                 self.dump_thread.start()
             self.state = DamarisGUI.Stop_State
 
@@ -1130,6 +1131,34 @@ class ConfigTab:
         self.config_del_jobs_after_execution_checkbutton=self.xml_gui.get_widget("del_jobs_after_execution_checkbutton")
         self.config_data_pool_name_entry=self.xml_gui.get_widget("data_pool_name_entry")
         self.config_data_pool_write_interval_entry=self.xml_gui.get_widget("data_pool_write_interval_entry")
+        self.config_info_textview=self.xml_gui.get_widget("info_textview")
+
+        # insert version informations
+        components_text=u"""
+operating system %(os)s
+python version %(python)s
+matplotlib version %(matplotlib)s
+numarray version %(numarray)s
+pytables version %(pytables)s
+pygtk version %(pygtk)s
+gtk version %(gtk)s
+"""
+        components_versions = {
+            "os":         platform.platform() ,
+            "python":     sys.version ,
+            "matplotlib": matplotlib.__version__,
+            "numarray":   numarray.__version__,
+            "pytables":   tables.__version__,
+            "pygtk":      "%d.%d.%d"%gtk.pygtk_version,
+            "gtk":        "%d.%d.%d"%gtk.gtk_version
+            }
+
+        info_textbuffer=self.config_info_textview.get_buffer()
+        info_text=info_textbuffer.get_text(info_textbuffer.get_start_iter(),info_textbuffer.get_end_iter())
+        info_text%={"moduleversions": components_text%components_versions}
+        info_textbuffer.set_text(info_text)
+        del info_textbuffer, info_text, components_text, components_versions
+        
         if sys.platform[:5] == "linux":
             self.defaultfilename=os.path.expanduser("~/.damaris")
 
