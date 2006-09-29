@@ -52,7 +52,7 @@ endif
 
 ../drivers/Tecmag-DAC20/DAC20.o:
 	$(MAKE) -C ../drivers/Tecmag-DAC20 DAC20.o
-	
+
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a:
 	$(MAKE) -C ../drivers/Spectrum-MI40xxSeries Spectrum-MI40xxSeries.a
 
@@ -94,6 +94,17 @@ magnexgrad_backend.o: magnexgrad_backend.cpp \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+deuteron_backend.o: deuteron_backend.cpp \
+../drivers/SpinCore-PulseBlasterDDSIII/SpinCore-PulseBlasterDDSIII.h \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+deuteron_backend.exe: deuteron_backend.o hardware.o \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
+../drivers/SpinCore-PulseBlasterDDSIII/SpinCore-PulseBlasterDDSIII.o \
+../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
+	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
+
 dummycore.o: dummycore.cpp ../drivers/dummy/dummy.o
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
@@ -102,7 +113,7 @@ dummycore.exe: dummycore.o  ../drivers/dummy/dummy.o hardware.o ../drivers/tempc
 
 clean: ../tools/add_endline.exe
 	for f in *.cpp *.h; do ../tools/add_endline.exe $$f;done; \
-rm -f *~ *.o NQRcore.exe Mobilecore.exe dummycore.exe *.stackdump magnexgrad_backend
+rm -f *~ *.o *.exe *.stackdump magnexgrad_backend
 
 install: $(MACHINE)core.exe
 	install $(MACHINE)core.exe $(PREFIX)
