@@ -204,14 +204,14 @@ class ADC_Result(Resultable, Drawable):
                         time_slice_data=None
                         if compress is not None:
                             chunkshape = numarray.shape(timedata)
-                            chunkshape = (min(chunkshape[0],1024*8),chunkshape[1])
+                            chunkshape = (min(chunkshape[0],1024*8),)
                             prefered_complib='lzo'
                             if tables.whichLibVersion(prefered_complib) is None:
                                 prefered_complib='zlib' #builtin
                             time_slice_data=hdffile.createCArray(accu_group,
                                                                  name="idx%04d_ch%04d"%(index_no,channel_no),
                                                                  shape=timedata.getshape(),
-                                                                 atom=tables.Int32Atom(shape=chunkshape),
+                                                                 atom=tables.Int32Atom(shape=chunkshape,
                                                                                        flavor="numarray"),
                                                                  filters=tables.Filters(complevel=compress,
                                                                                         complib=prefered_complib),

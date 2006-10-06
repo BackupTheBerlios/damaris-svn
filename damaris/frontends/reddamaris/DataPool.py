@@ -1,11 +1,13 @@
-
 # data pool collects data from data handling script
 # provides data to experiment script and display
 
+import sys
 import types
 import tables
 import UserDict
 import threading
+import traceback
+import StringIO
 import ADC_Result
 import Accumulation
 import MeasurementResult
@@ -127,9 +129,13 @@ class DataPool(UserDict.DictMixin):
                                            title=key,
                                            compress=compress)
                     except Exception,e:
-                        print "failed to write data_pool[%s]: %s"%(key,str(e))
+                        print "failed to write data_pool[\"%s\"]: %s"%(key,str(e))
+	                traceback_file=StringIO.StringIO()
+			traceback.print_tb(sys.exc_info()[2], None, traceback_file)
+			print "detailed traceback: %s\n"%str(e)+traceback_file.getvalue()
+	                traceback_file=None
                 else:
-                    print "don't know how to store data_pool[%s]"%key
+                    print "don't know how to store data_pool[\"%s\"]"%key
                 value=None
 
         finally:
