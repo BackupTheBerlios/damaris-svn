@@ -273,7 +273,10 @@ class Accumulation(Errorable, Drawable):
                         time_slice_data=None
                         if compress is not None:
                             chunkshape = numarray.shape(timedata)
-                            chunkshape = (min(chunkshape[0],1024*8),chunkshape[1])
+			    try:
+				chunkshape = (min(chunkshape[0],1024*8),chunkshape[1])
+			    except:
+				chunkshape = (min(chunkshape[0],1024*8),)
                             prefered_complib='lzo'
                             if tables.whichLibVersion(prefered_complib) is None:
                                 prefered_complib='zlib' #builtin
