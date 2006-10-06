@@ -91,6 +91,7 @@ class Experiment:
 	    dac_value = 0
 	    print "WARNING: You can't set both, I_out and dac_value! dac_value set to 0"
 	if length == None:
+	    # mimimum length
 	    length=42*9e-8
 	self.state_list.append('<state time="%s"><analogout id="1" dac_value="%i"/></state>\n' %(repr(length), dac_value))
 	if is_seq == 0:

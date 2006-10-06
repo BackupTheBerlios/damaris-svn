@@ -162,14 +162,14 @@ class ADC_Result(Resultable, Drawable):
             xdata=self.get_xdata()
             ch_no=self.get_number_of_channels()
             ydata=map(self.get_ydata, xrange(ch_no))
-            yerr=map(self.get_yerr, xrange(ch_no))
+            #yerr=map(self.get_yerr, xrange(ch_no))
             for i in xrange(len(xdata)):
                 the_destination.write("%g"%xdata[i])
                 for j in xrange(ch_no):
-                    the_destination.write(" %g %g"%(ydata[j][i],yerr[j][i]))
+                    the_destination.write(" %g"%(ydata[j][i]))
                 the_destination.write("\n")
             the_destination=None
-            xdata=yerr=ydata=None
+            xdata=ydata=None
         finally:
             self.lock.release()
 
@@ -203,13 +203,15 @@ class ADC_Result(Resultable, Drawable):
                         
                         time_slice_data=None
                         if compress is not None:
+                            chunkshape = numarray.shape(timedata)
+                            chunkshape = (min(chunkshape[0],1024*8),chunkshape[1])
                             prefered_complib='lzo'
                             if tables.whichLibVersion(prefered_complib) is None:
                                 prefered_complib='zlib' #builtin
                             time_slice_data=hdffile.createCArray(accu_group,
                                                                  name="idx%04d_ch%04d"%(index_no,channel_no),
                                                                  shape=timedata.getshape(),
-                                                                 atom=tables.Int32Atom(shape=1,
+                                                                 atom=tables.Int32Atom(shape=chunkshape),
                                                                                        flavor="numarray"),
                                                                  filters=tables.Filters(complevel=compress,
                                                                                         complib=prefered_complib),
