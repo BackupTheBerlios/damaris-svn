@@ -83,6 +83,19 @@ Mobilecore.o: Mobilecore.cpp \
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
 	$(CXX) -c $(CXXFLAGS) $< -o $@
 
+
+bg_backend: bg_backend.o hardware.o \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o ../drivers/Eurotherm-2000Series/Eurotherm-2000Series.o ../drivers/tempcont.o \
+../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
+	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
+
+bg_backend.o: bg_backend.cpp  ../drivers/PTS-Synthesizer/PTS.h \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+	$(CXX) -c $(CXXFLAGS) $< -o $@
+
+
 magnexgrad_backend: magnexgrad_backend.o hardware.o \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o ../drivers/Eurotherm-2000Series/Eurotherm-2000Series.o ../drivers/tempcont.o \
@@ -113,7 +126,7 @@ dummycore.exe: dummycore.o  ../drivers/dummy/dummy.o hardware.o ../drivers/tempc
 
 clean: ../tools/add_endline.exe
 	for f in *.cpp *.h; do ../tools/add_endline.exe $$f;done; \
-rm -f *~ *.o *.exe *.stackdump magnexgrad_backend
+rm -f *~ *.o *.exe *.stackdump magnexgrad_backend bg_backend
 
 install: $(MACHINE)core.exe
 	install $(MACHINE)core.exe $(PREFIX)

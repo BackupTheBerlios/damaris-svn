@@ -1,7 +1,7 @@
 /* **************************************************************************
 
  Author: Achim Gaedke
- Created: June 2004
+ Created: October 2006
 
 ****************************************************************************/
 #include "machines/hardware.h"
@@ -31,20 +31,27 @@
    line 2 for trigger
    line 3 free
  */
-class Mobile_hardware: public hardware {
+class bg_hardware: public hardware {
 
 public:
-  Mobile_hardware(){
+  bg_hardware(){
       ttlout trigger;
       trigger.id=0;
       trigger.ttls=4; /* line 2 */
       the_adc=new SpectrumMI40xxSeries(trigger);
       the_pg=new SpinCorePulseBlaster24Bit();
-      PTS* my_pts=new PTS_latched(0);
+      PTS* my_pts=new PTS(0);
+
+      ttlout t;
+      for (int i=23; i>15; --i) {
+	t.ttls=std::bitset<32>(1<<i);
+	my_pts->ttl_masks.push_back(t);
+      }
+      my_pts->negative_logic=0;
       the_fg=my_pts;
   }
 
-  virtual ~Mobile_hardware() {
+  virtual ~bg_hardware() {
     if (the_adc!=NULL) delete the_adc;
     if (the_fg!=NULL) delete the_fg;
     if (the_pg!=NULL) delete the_pg;
@@ -55,12 +62,12 @@ public:
 /**
    \brief brings standard core together with the Mobile NMR hardware
 */
-class Mobile_core: public core {
+class bg_core: public core {
   std::string the_name;
 public:
-    Mobile_core(const core_config& conf): core(conf) {
-	the_hardware=new Mobile_hardware();
-	the_name="Mobile core";
+  bg_core(const core_config& conf): core(conf) {
+	the_hardware=new bg_hardware();
+	the_name="Burkhard's core";
   }
   virtual const std::string& core_name() const {
   	return the_name;
@@ -76,7 +83,7 @@ int main(int argc, const char** argv) {
   try {
       core_config my_conf(argv, argc);
       // setup input and output
-      Mobile_core my_core(my_conf);
+      bg_core my_core(my_conf);
       // start core application
       my_core.run();
   }
