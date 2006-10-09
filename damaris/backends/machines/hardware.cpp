@@ -55,6 +55,7 @@ result* hardware::experiment(const state& exp) {
       r=new error_result(1,"pulse_exception: "+p);
     }
     delete work_copy;
+    if (core::quit_signal!=0) break;
   }
   return r;
 }
