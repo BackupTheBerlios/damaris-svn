@@ -23,4 +23,4 @@ test: test.o Spectrum-MI40xxSeries.o ../../core/core.a
 	$(MAKE) -C ../../core core.a
 
 clean:
-	rm -f *.o *~ test *.core
+	rm -f *.o *.a *~ test *.core
