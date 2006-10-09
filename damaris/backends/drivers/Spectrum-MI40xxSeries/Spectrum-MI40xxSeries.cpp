@@ -297,7 +297,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   SpcGetParam(deviceno, SPC_STATUS, &actual_status);
   if (actual_status!=SPC_READY) {
       fprintf(stderr, "Warning: Spectrum board was is running before starting data aquisition.\n");
-      SpcSetParam (deviceno, SPC_COMMAND,      SPC_STOP);     // start the board
+      SpcSetParam (deviceno, SPC_COMMAND,      SPC_STOP);     // stop the board
   }
 
   /* and the dirty things there...
@@ -538,6 +538,7 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 }
 
 SpectrumMI40xxSeries::~SpectrumMI40xxSeries() {
+  SpcSetParam (deviceno, SPC_COMMAND,      SPC_STOP);     // stop the board
 # if defined __linux__
   close (deviceno);
 # elif defined __CYGWIN__
