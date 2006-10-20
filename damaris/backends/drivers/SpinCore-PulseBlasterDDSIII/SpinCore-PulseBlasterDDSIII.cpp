@@ -212,6 +212,17 @@ PulseBlasterCommand* PulseBlasterDDSIIIProgram::create_command(const state& the_
 
   // todo: state's defaults
 
+  /*
+    There are three analog outputs on this card, but only two phase registers and two gates:
+
+    id=0, DAC_OUT1: influenced by rx1_specified, rx_phase, rx_enable
+    id=1, DAC_OUT0: influenced by rx2_specified, tx_phase, rx_enable
+    id=2, DAC_OUT2: influenced by tx_specified,  tx_phase, tx_enable
+
+    all channels have the same frequency
+
+  */
+
   double length=the_state.length;
   double state_frequency=0;
   unsigned long ttls=0;
@@ -219,6 +230,9 @@ PulseBlasterCommand* PulseBlasterDDSIIIProgram::create_command(const state& the_
   SpinCorePulseBlasterDDSIII::analog_state rx_enable=SpinCorePulseBlasterDDSIII::ANALOG_OFF;
   double tx_phase=0;
   SpinCorePulseBlasterDDSIII::analog_state tx_enable=SpinCorePulseBlasterDDSIII::ANALOG_OFF;
+  int rx1_specified=0;
+  int rx2_specified=0;
+  int tx_specified=0;
 
   for (state::const_iterator i=the_state.begin(); i!=the_state.end(); ++i) {
     // collect states information
@@ -229,7 +243,7 @@ PulseBlasterCommand* PulseBlasterDDSIIIProgram::create_command(const state& the_
     }
     // add frequency information
     const analogout* ao=dynamic_cast<const analogout*>(*i);
-    if (ao!=NULL && ao->id<2) {
+    if (ao!=NULL && ao->id>=0 && ao->id<=2) {
       if ((rx_enable!=SpinCorePulseBlasterDDSIII::ANALOG_OFF ||
 	   tx_enable!=SpinCorePulseBlasterDDSIII::ANALOG_OFF) &&
 	  fabs(state_frequency-ao->frequency)>freq_accuracy)
@@ -237,21 +251,35 @@ PulseBlasterCommand* PulseBlasterDDSIIIProgram::create_command(const state& the_
       state_frequency=ao->frequency;
       switch(ao->id) {
       case 0:
-	if (rx_enable!=SpinCorePulseBlasterDDSIII::ANALOG_OFF) throw pulse_exception("rx channel already set");
+	//if (rx_enable!=SpinCorePulseBlasterDDSIII::ANALOG_OFF) throw pulse_exception("rx channel already set");
 	// rx is identified with channel 0
 	rx_phase=ao->phase;
 	rx_enable=SpinCorePulseBlasterDDSIII::ANALOG_ON;
+	rx1_specified=1;
 	break;
       case 1:
-	if (tx_enable!=SpinCorePulseBlasterDDSIII::ANALOG_OFF) throw pulse_exception("tx channel already set");
+	//if (tx_enable!=SpinCorePulseBlasterDDSIII::ANALOG_OFF) throw pulse_exception("tx channel already set");
 	// tx is identified with channel 1
+	if (tx_specified && fabs(ao->phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of TX channel\n");
+	tx_phase=ao->phase;
+	rx_enable=SpinCorePulseBlasterDDSIII::ANALOG_ON;
+	rx2_specified=1;
+	break;
+      case 2:
+	if (tx_specified || tx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON) throw pulse_exception("tx channel already set");
+	// tx is identified with channel 1
+	if (rx2_specified && fabs(ao->phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of RX2 channel\n");
 	tx_phase=ao->phase;
 	tx_enable=SpinCorePulseBlasterDDSIII::ANALOG_ON;
+	tx_specified=1;
 	break;
       }
       continue;
     }
   }
+#if SP_DEBUG
+  fprintf(stderr, "rx phase=%f, tx phase=%f\n",rx_phase, tx_phase);
+#endif
   return new PulseBlasterDDSIIICommand(*this,state_frequency,rx_phase,rx_enable,tx_phase,tx_enable,ttls,length);
 }
 
