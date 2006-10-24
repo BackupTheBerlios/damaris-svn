@@ -1,7 +1,7 @@
 #include "SpinCore-PulseBlaster24Bit.h"
 #include "core/xml_states.h"
-#include "cstring"
-#include "cerrno"
+#include <cstring>
+#include <cerrno>
 
 int lowlevel_test() {
   try {
@@ -21,6 +21,28 @@ int lowlevel_test() {
   }
 
   return 0;
+}
+
+int wait_test() {
+  try {
+    SpinCorePulseBlaster24Bit p;
+    std::string program;
+    //virtual void append_command(std::string& data, int flags, opcode inst, int inst_data, size_t delay)
+    p.append_command(program,0,SpinCorePulseBlaster::CONTINUE,0,97);
+    p.append_command(program,8,SpinCorePulseBlaster::WAIT,0,97);
+    p.append_command(program,4,SpinCorePulseBlaster::CONTINUE,0,97);
+    p.append_command(program,0,SpinCorePulseBlaster::CONTINUE,0,97);
+    p.append_command(program,0,SpinCorePulseBlaster::STOP,0,97);   
+    p.set_program(program);
+    p.set_initialized();
+    p.start();
+  }
+  catch(SpinCorePulseBlaster_error e) {
+    fprintf(stderr, "%s\n", e.c_str());
+  }
+
+  return 0;
+
 }
 
 int simple_sequence() {
@@ -144,7 +166,7 @@ int main(int argc, char** argv) {
 	i++;
     }
     if (n>1) {
-	fprintf(stdout,"%s: executed %s %lu times\n",argv[0],filename,i);
+	fprintf(stdout,"%s: executed %s %u times\n",argv[0],filename,i);
     }
     return value_returned;
 }
