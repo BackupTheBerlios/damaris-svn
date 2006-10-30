@@ -49,10 +49,12 @@ PulseBlasterDDSIIICommand::PulseBlasterDDSIIICommand(PulseBlasterDDSIIIProgram& 
   // allocate frequency and phases only if necessary
   if (_rx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON || _tx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON) {
     freq_reg=p.get_frequency_regno(_frequency);
-    if (_rx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON)
-      rx_phase_reg=p.get_rx_phase_regno(_rx_phase);
-    if (_tx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON)
-      tx_phase_reg=p.get_tx_phase_regno(_tx_phase);
+    // todo: be sure, whether tx_phase is really needed for DAC_OUT_0
+    // and so on...
+    //if (_rx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON)
+    rx_phase_reg=p.get_rx_phase_regno(_rx_phase);
+    //if (_tx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON)
+    tx_phase_reg=p.get_tx_phase_regno(_tx_phase);
   }
   rx_enable=_rx_enable;
   tx_enable=_tx_enable;
@@ -215,8 +217,8 @@ PulseBlasterCommand* PulseBlasterDDSIIIProgram::create_command(const state& the_
   /*
     There are three analog outputs on this card, but only two phase registers and two gates:
 
-    id=0, DAC_OUT1: influenced by rx1_specified, rx_phase, rx_enable
-    id=1, DAC_OUT0: influenced by rx2_specified, tx_phase, rx_enable
+    id=0, DAC_OUT0: influenced by rx1_specified, tx_phase, rx_enable
+    id=1, DAC_OUT1: influenced by rx2_specified, rx_phase, rx_enable
     id=2, DAC_OUT2: influenced by tx_specified,  tx_phase, tx_enable
 
     all channels have the same frequency
@@ -230,9 +232,9 @@ PulseBlasterCommand* PulseBlasterDDSIIIProgram::create_command(const state& the_
   SpinCorePulseBlasterDDSIII::analog_state rx_enable=SpinCorePulseBlasterDDSIII::ANALOG_OFF;
   double tx_phase=0;
   SpinCorePulseBlasterDDSIII::analog_state tx_enable=SpinCorePulseBlasterDDSIII::ANALOG_OFF;
-  int rx1_specified=0;
-  int rx2_specified=0;
-  int tx_specified=0;
+  int id0_specified=0;
+  int id1_specified=0;
+  int id2_specified=0;
 
   for (state::const_iterator i=the_state.begin(); i!=the_state.end(); ++i) {
     // collect states information
@@ -251,27 +253,28 @@ PulseBlasterCommand* PulseBlasterDDSIIIProgram::create_command(const state& the_
       state_frequency=ao->frequency;
       switch(ao->id) {
       case 0:
+	if (id0_specified) throw pulse_exception("rx channel (DAC_OUT_0) channel already set");
 	//if (rx_enable!=SpinCorePulseBlasterDDSIII::ANALOG_OFF) throw pulse_exception("rx channel already set");
 	// rx is identified with channel 0
-	rx_phase=ao->phase;
+	if (id2_specified && fabs(ao->phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of TX (DAC_OUT_2) channel\n");
+	tx_phase=ao->phase;
 	rx_enable=SpinCorePulseBlasterDDSIII::ANALOG_ON;
-	rx1_specified=1;
+	id0_specified=1;
 	break;
       case 1:
-	//if (tx_enable!=SpinCorePulseBlasterDDSIII::ANALOG_OFF) throw pulse_exception("tx channel already set");
+	if (id1_specified) throw pulse_exception("rx channel (DAC_OUT_1) channel already set");
 	// tx is identified with channel 1
-	if (tx_specified && fabs(ao->phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of TX channel\n");
-	tx_phase=ao->phase;
+	rx_phase=ao->phase;
 	rx_enable=SpinCorePulseBlasterDDSIII::ANALOG_ON;
-	rx2_specified=1;
+	id1_specified=1;
 	break;
       case 2:
-	if (tx_specified || tx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON) throw pulse_exception("tx channel already set");
+	if (id2_specified || tx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON) throw pulse_exception("tx channel (DAC_OUT_2) already set");
 	// tx is identified with channel 1
-	if (rx2_specified && fabs(ao->phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of RX2 channel\n");
+	if (id2_specified && fabs(ao->phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of RX2 channel\n");
 	tx_phase=ao->phase;
 	tx_enable=SpinCorePulseBlasterDDSIII::ANALOG_ON;
-	tx_specified=1;
+	id2_specified=1;
 	break;
       }
       continue;
@@ -280,6 +283,11 @@ PulseBlasterCommand* PulseBlasterDDSIIIProgram::create_command(const state& the_
 #if SP_DEBUG
   fprintf(stderr, "rx phase=%f, tx phase=%f\n",rx_phase, tx_phase);
 #endif
+  if (!id0_specified && rx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON)
+    fprintf(stderr, "WARNING from PulseBlaster DDSIII: RF Output enabled on DAC_OUT_0\n");
+  if (!id1_specified && rx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON)
+    fprintf(stderr, "WARNING from PulseBlaster DDSIII: RF Output enabled on DAC_OUT_1\n");
+
   return new PulseBlasterDDSIIICommand(*this,state_frequency,rx_phase,rx_enable,tx_phase,tx_enable,ttls,length);
 }
 
