@@ -271,7 +271,7 @@ PulseBlasterCommand* PulseBlasterDDSIIIProgram::create_command(const state& the_
       case 2:
 	if (id2_specified || tx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON) throw pulse_exception("tx channel (DAC_OUT_2) already set");
 	// tx is identified with channel 1
-	if (id2_specified && fabs(ao->phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of RX2 channel\n");
+	if (id0_specified && fabs(ao->phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of RX (DAC_OUT_0) channel\n");
 	tx_phase=ao->phase;
 	tx_enable=SpinCorePulseBlasterDDSIII::ANALOG_ON;
 	id2_specified=1;
