@@ -269,9 +269,6 @@ class DamarisGUI:
             # run frontend and script engines
             self.monitor.observe_data_pool(self.data)
             self.si.runScripts()
-            # start data dump
-            self.dump_filename=actual_config["data_pool_name"]
-            self.dump_states(init=True)
         except Exception, e:
             #print "ToDo evaluate exception",str(e), "at",traceback.extract_tb(sys.exc_info()[2])[-1][1:3]
             #print "Full traceback:"
@@ -322,6 +319,17 @@ class DamarisGUI:
             self.backend_statusbar_label.set_text("Backend Idle")
             
 
+        # start data dump
+        self.dump_filename=actual_config["data_pool_name"]
+        self.dump_complib=actual_config.get("data_pool_complib",None)
+        if self.dump_complib=="None":
+            self.dump_complib=None
+        if self.dump_complib is not None:
+            self.dump_complevel=int(actual_config.get("data_pool_comprate",0))
+        else:
+            self.dump_complevel=0
+            
+        self.dump_states(init=True)
         # and observe it...
         gobject.timeout_add(200,self.observe_running_experiment)
         dump_timeinterval=60*60*10
@@ -331,7 +339,7 @@ class DamarisGUI:
             print "configuration provides non-number for dump interval: "+str(e)
         self.dump_states_event_id=None
         if dump_timeinterval>0:
-            self.dump_states_event_id=gobject.timeout_add(dump_timeinterval*1000,self.dump_states)
+            self.dump_states_event_id=gobject.timeout_add(dump_timeinterval*1000, self.dump_states)
 
     def observe_running_experiment(self):
         """
@@ -400,10 +408,9 @@ class DamarisGUI:
                 print "all subprocesses ended..."
                 print "saving data pool",
                 self.dump_start_time=time.time()
-                # thread to do that...
-                self.dump_thread=threading.Thread(target=self.dump_states,
-                                                  name="dump states",
-                                                  kwargs={"compress": 9})
+                # thread to save data...
+                self.dump_thread=threading.Thread(target=self.dump_states, name="dump states")
+
                 self.dump_thread.start()
             self.state = DamarisGUI.Stop_State
 
@@ -437,7 +444,7 @@ class DamarisGUI:
         # or look at them again
         return True
 
-    def dump_states(self, init=False, compress=None):
+    def dump_states(self, init=False):
         """
         init: constructs basic structure of this file
         compress: optional argument for zlib compression 0-9
@@ -454,6 +461,7 @@ class DamarisGUI:
             experiments=tables.Int64Col()
             results=tables.Int64Col()
 
+        dump_file=None
         if init:
             # move away old file
             if os.path.isfile(self.dump_filename):
@@ -497,6 +505,7 @@ class DamarisGUI:
             timeline_row["experiments"]=0
             timeline_row["results"]=0
             timeline_row.append()
+            timeline_table.flush()
         else:
             # repack file
             os.rename(self.dump_filename,self.dump_filename+".bak")
@@ -519,12 +528,14 @@ class DamarisGUI:
             timeline_row["experiments"]=e
             timeline_row["results"]=r
             timeline_row.append()
+            timeline_table.flush()
 
-        self.data.write_hdf5(dump_file, where="/", name="data_pool", compress=compress)
+        self.data.write_hdf5(dump_file, where="/", name="data_pool",
+                             complib=self.dump_complib, complevel=self.dump_complevel)
         
         dump_file.flush()
         dump_file.close()
-        dump_file=None
+        del dump_file
 
         return True
         
@@ -1131,15 +1142,17 @@ class ConfigTab:
         self.config_del_jobs_after_execution_checkbutton=self.xml_gui.get_widget("del_jobs_after_execution_checkbutton")
         self.config_data_pool_name_entry=self.xml_gui.get_widget("data_pool_name_entry")
         self.config_data_pool_write_interval_entry=self.xml_gui.get_widget("data_pool_write_interval_entry")
+        self.config_data_pool_complib=self.xml_gui.get_widget("CompLibs")
+        self.config_data_pool_comprate=self.xml_gui.get_widget("CompRatio")
         self.config_info_textview=self.xml_gui.get_widget("info_textview")
 
         # insert version informations
         components_text=u"""
 operating system %(os)s
 python version %(python)s
-matplotlib version %(matplotlib)s
+matplotlib version %(matplotlib)s, using %(matplotlib_numerix)s
 numarray version %(numarray)s
-pytables version %(pytables)s
+pytables version %(pytables)s, using %(pytables_libs)s
 pygtk version %(pygtk)s
 gtk version %(gtk)s
 """
@@ -1147,11 +1160,37 @@ gtk version %(gtk)s
             "os":         platform.platform() ,
             "python":     sys.version ,
             "matplotlib": matplotlib.__version__,
+            "matplotlib_numerix": matplotlib.rcParams["numerix"],
             "numarray":   numarray.__version__,
-            "pytables":   tables.__version__,
+            "pytables":   tables.getPyTablesVersion(),
+            "pytables_libs": "",
             "pygtk":      "%d.%d.%d"%gtk.pygtk_version,
             "gtk":        "%d.%d.%d"%gtk.gtk_version
             }
+
+        # pytables modules:
+        # find compression extensions for combo box and write version numbers
+        # list is taken from ValueError output of tables.whichLibVersion("")
+        model=self.config_data_pool_complib.get_model()
+        for  libname in ('hdf5', 'zlib', 'lzo', 'ucl', 'bzip2'):
+            version_info=None
+            try:
+                version_info=tables.whichLibVersion(libname)
+            except ValueError:
+                continue
+            if version_info:
+                components_versions["pytables_libs"]+="\n  %s: %s"%(libname, str(version_info))
+                if libname!="hdf5":
+                    # a compression library, add it to combo box
+                    if isinstance(model,gtk.ListStore):
+                        model.append([libname])
+                    elif isinstance(model,gtk.TreeStore):
+                        model.append(None,[libname])
+                    else:
+                        print "cannot append compression lib name to %s"%model.__class__.__name__
+
+        # set no compression as default...
+        self.config_data_pool_complib.set_active(0)
 
         info_textbuffer=self.config_info_textview.get_buffer()
         info_text=info_textbuffer.get_text(info_textbuffer.get_start_iter(),info_textbuffer.get_end_iter())
@@ -1174,6 +1213,8 @@ gtk version %(gtk)s
         """
         returns a dictionary of actual config values
         """
+        complib_iter=self.config_data_pool_complib.get_active_iter()
+        complib=self.config_data_pool_complib.get_model().get_value(complib_iter,0)
         return {
             "start_backend": self.config_start_backend_checkbutton.get_active(),
             "start_result_script": self.config_start_result_script_checkbutton.get_active(),
@@ -1183,7 +1224,9 @@ gtk version %(gtk)s
             "data_pool_name" : self.config_data_pool_name_entry.get_text(),
             "del_results_after_processing" : self.config_del_results_after_processing_checkbutton.get_active(),
             "del_jobs_after_execution" : self.config_del_jobs_after_execution_checkbutton.get_active(),
-            "data_pool_write_interval" : self.config_data_pool_write_interval_entry.get_text()
+            "data_pool_write_interval" : self.config_data_pool_write_interval_entry.get_text(),
+            "data_pool_complib": complib,
+            "data_pool_comprate": self.config_data_pool_comprate.get_value_as_int()
             }
 
     def set(self, config):
@@ -1205,6 +1248,20 @@ gtk version %(gtk)s
             self.config_data_pool_write_interval_entry.set_text(config["data_pool_write_interval"])
         if "data_pool_name" in config:
             self.config_data_pool_name_entry.set_text(config["data_pool_name"])
+        if "data_pool_comprate" in config:
+            self.config_data_pool_comprate.set_value(float(config["data_pool_comprate"]))
+        if "data_pool_complib" in config:
+            # find combo-box entry and make it active...
+            model=self.config_data_pool_complib.get_model()
+            iter=model.get_iter_first()
+            while iter is not None:
+                if model.get(iter,0)[0]==config["data_pool_complib"]:
+                    self.config_data_pool_complib.set_active_iter(iter)
+                    break
+                iter=model.iter_next(iter)
+            # if this compression method is not supported, warn and do nothing
+            if iter is None:
+                print "compression method %s is not supported"%config["data_pool_complib"]
 
     def load_config_handler(self, widget):
         self.load_config()
@@ -1314,9 +1371,12 @@ gtk version %(gtk)s
                     val="True"
                 else:
                     val="False"
-            if type(v) is types.StringType:
+            elif type(v) is types.StringType:
                 typename="String"
                 val=v
+            elif type(v) is types.IntType:
+                typename="Integer"
+                val=str(v)
             configfile.write("  <config key='%s' type='%s'>%s</config>\n"%(k, typename, val))
         configfile.write("</damaris>\n")
         

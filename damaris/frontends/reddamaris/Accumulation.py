@@ -228,7 +228,7 @@ class Accumulation(Errorable, Drawable):
             
 
 
-    def write_to_hdf(self, hdffile, where, name, title, compress=None):
+    def write_to_hdf(self, hdffile, where, name, title, complib=None, complevel=None):
         accu_group=hdffile.createGroup(where=where,name=name,title=title)
         accu_group._v_attrs.damaris_type="Accumulation"
         if self.contains_data():
@@ -271,22 +271,21 @@ class Accumulation(Errorable, Drawable):
                                                           shape = ((index[1]-index[0]+1),))
                         timedata.setshape((index[1]-index[0]+1,2))
                         time_slice_data=None
-                        if compress is not None:
+                        if complib is not None:
+                            if complevel is None:
+                                complevel=9
                             chunkshape = numarray.shape(timedata)
 			    if len(chunkshape) <= 1:
 				chunkshape = (min(chunkshape[0],1024*8),)
 			    else:
 				chunkshape = (min(chunkshape[0],1024*8), chunkshape[1])
-                            prefered_complib='lzo'
-                            if tables.whichLibVersion(prefered_complib) is None:
-                                prefered_complib='zlib' #builtin
                             time_slice_data=hdffile.createCArray(accu_group,
                                                                  name="idx%04d_ch%04d"%(index_no,channel_no),
                                                                  shape=timedata.getshape(),
                                                                  atom=tables.Float64Atom(shape=chunkshape,
                                                                                          flavor="numarray"),
-                                                                 filters=tables.Filters(complevel=compress,
-                                                                                        complib=prefered_complib,
+                                                                 filters=tables.Filters(complevel=complevel,
+                                                                                        complib=complib,
 											shuffle=1),
                                                                  title="Index %d, Channel %d"%(index_no,channel_no))
                             time_slice_data[:]=timedata

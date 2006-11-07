@@ -83,7 +83,7 @@ class DataPool(UserDict.DictMixin):
         self.__send_event(DataPool.Event(DataPool.Event.destroy))
         self.__registered_listeners=None
 
-    def write_hdf5(self,hdffile,where="/",name="data_pool", compress=None):
+    def write_hdf5(self,hdffile,where="/",name="data_pool", complib=None, complevel=None):
         if type(hdffile) is types.StringType:
             dump_file=tables.openFile(hdffile, mode="a")
         elif isinstance(hdffile,tables.File):
@@ -127,7 +127,8 @@ class DataPool(UserDict.DictMixin):
                                            where=dump_group,
                                            name=group_keyname,
                                            title=key,
-                                           compress=compress)
+                                           complib=complib,
+                                           complevel=complevel)
                     except Exception,e:
                         print "failed to write data_pool[\"%s\"]: %s"%(key,str(e))
 	                traceback_file=StringIO.StringIO()
