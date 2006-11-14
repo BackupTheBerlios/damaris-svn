@@ -90,7 +90,9 @@ core::core(const core_config& configuration) {
       the_configuration.job_poll_wait=0.1;
   else
       the_configuration.job_poll_wait=configuration.job_poll_wait;
-  
+
+  // todo valid value?!
+  the_configuration.result_encoding=configuration.result_encoding;
   // init hardware is done by derived class
   the_hardware=NULL;
 
