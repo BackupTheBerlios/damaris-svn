@@ -63,7 +63,7 @@ public:
   PulseBlaster24BitCommand();
 
   /// constructs a minimal length state
-  PulseBlaster24BitCommand(const PulseBlaster24BitProgram&);
+  PulseBlaster24BitCommand(PulseBlaster24BitProgram&);
 
   /// the copy constructor
   PulseBlaster24BitCommand(const PulseBlaster24BitCommand&);
@@ -81,12 +81,11 @@ public:
 */
 class SpinCorePulseBlaster24Bit: public SpinCorePulseBlaster {
  public:
-    int ttl_device_id;
 
     /**
        initialises the PulseBlaster24Bit of Spincore
     */
-    SpinCorePulseBlaster24Bit(int the_id=0, double the_clock=1e8):  SpinCorePulseBlaster(10,the_clock) {ttl_device_id=the_id;}
+    SpinCorePulseBlaster24Bit(int the_id=0, double the_clock=1e8, unsigned int _sync_mask=0):  SpinCorePulseBlaster(10,the_clock) {ttl_device_id=the_id; sync_mask=_sync_mask;}
 
     SpinCorePulseBlaster24Bit(const SpinCorePulseBlaster24Bit& orig);
     /**
@@ -98,9 +97,10 @@ class SpinCorePulseBlaster24Bit: public SpinCorePulseBlaster {
      first test routine for spectrometer
    */
   virtual void single_pulse_program(double before, double length, double after);
-    /**
+
+  /**
      run a PulseBlaster Program
-   */
+  */
   virtual void run_pulse_program(const PulseBlasterProgram& p);
 
   /// write command as a 10 byte machine word

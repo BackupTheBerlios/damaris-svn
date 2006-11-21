@@ -21,7 +21,7 @@ PulseBlaster24BitCommand::PulseBlaster24BitCommand(): PulseBlasterCommand() {
 
 PulseBlaster24BitCommand::PulseBlaster24BitCommand(const PulseBlaster24BitCommand& orig): PulseBlasterCommand(orig) {}
 
-PulseBlaster24BitCommand::PulseBlaster24BitCommand(const PulseBlaster24BitProgram& p) {}
+PulseBlaster24BitCommand::PulseBlaster24BitCommand(PulseBlaster24BitProgram& p): PulseBlasterCommand(p) {}
 
 PulseBlaster24BitCommand::PulseBlaster24BitCommand(PulseBlaster24BitProgram& p,
 						   int _ttls, double _length)
@@ -250,9 +250,8 @@ void SpinCorePulseBlaster24Bit::single_pulse_program(double before, double lengt
 
 PulseBlasterProgram* SpinCorePulseBlaster24Bit::create_program(state& exp) {
     PulseBlaster24BitProgram* prog=new PulseBlaster24BitProgram();
-    // some initialisiation...
+    // the user's code
     prog->append_sequence(exp);
-    // some reset code ...
     return prog;
 }
 
