@@ -1,3 +1,4 @@
+
 #include <cmath>
 #include <stack>
 #include <cerrno>
@@ -350,18 +351,33 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   }
   // ----- driver error: request error and end program -----
   if (nErr != ERR_OK) {
+    if (effective_settings!=NULL) delete effective_settings;
+    effective_settings=NULL;
+    for (std::vector<short int*>::iterator i=fifobuffers.begin(); i!=fifobuffers.end(); ++i) free(*i);
+    fifobuffers.clear();
+    // create an error message
     int32   lErrorCode, lErrorReg, lErrorValue;
     SpcGetParam (deviceno, SPC_LASTERRORCODE,   &lErrorCode);
     SpcGetParam (deviceno, SPC_LASTERRORREG,    &lErrorReg);
     SpcGetParam (deviceno, SPC_LASTERRORVALUE,  &lErrorValue);
     char error_message[256];
     snprintf(error_message, sizeof(error_message),"Configuration error %d in register %d at value %d", lErrorCode, lErrorReg, lErrorValue);
-    for (std::vector<short int*>::iterator i=fifobuffers.begin(); i!=fifobuffers.end(); ++i) free(*i);
-    fifobuffers.clear();
     throw SpectrumMI40xxSeries_error(error_message);
   }
   
 }
+
+double SpectrumMI40xxSeries::get_sample_clock_frequency() const{
+  
+  if (effective_settings==NULL ||
+      effective_settings->samplefreq<=0 ||
+      effective_settings->data_structure==NULL ||
+      effective_settings->data_structure->size()==0)
+    return 0;
+
+  return effective_settings->samplefreq;
+}
+
 
 static void* SpectrumMI40xxSeries_TimeoutThread(void* data) {
   return (void*)((SpectrumMI40xxSeries*)data)->TimeoutThread();

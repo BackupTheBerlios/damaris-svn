@@ -143,6 +143,15 @@ public:
   virtual void set_daq(state & exp);
 
 
+  /**
+     for syncronization purposes with sample clock
+   */
+  double get_sample_clock_frequency() const;
+
+  /**
+     get results from transient recorder
+     timeout: 0.0 return immediately
+  */
   virtual result* get_samples(double timeout=0.0);
 
   /**
