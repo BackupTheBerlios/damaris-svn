@@ -69,7 +69,7 @@ class SpinCorePulseBlasterDDSIII: public frequgen, public SpinCorePulseBlaster {
   /**
      initialises the PulseblasterDDSIII of Spincore
    */
-  SpinCorePulseBlasterDDSIII(double the_clock=1e8);
+  SpinCorePulseBlasterDDSIII(int the_id=0, double the_clock=1e8, unsigned int _sync_mask=0);
 
 #if 1
   /**

@@ -313,7 +313,9 @@ PulseBlasterCommand* PulseBlasterDDSIIIProgram::create_command(const PulseBlaste
 
 *********************************************************************/
 
-SpinCorePulseBlasterDDSIII::SpinCorePulseBlasterDDSIII(double the_clock): SpinCorePulseBlaster(10,the_clock)  {
+SpinCorePulseBlasterDDSIII::SpinCorePulseBlasterDDSIII(int the_id, double the_clock, unsigned int _sync_mask): SpinCorePulseBlaster(10,the_clock) {
+  sync_mask=_sync_mask;
+  ttl_device_id=the_id;
   freq_regno=16;
   phase_regno=16;
 }
