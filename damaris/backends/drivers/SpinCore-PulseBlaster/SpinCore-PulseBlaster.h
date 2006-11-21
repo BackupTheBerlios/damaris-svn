@@ -178,6 +178,17 @@ class SpinCorePulseBlaster: protected SpinCorePulseBlasterLowlevel, public pulse
        nonzero if pulseprogram is running
     */
     double duration;
+    /**
+       id of ttlout sections affecting this device
+     */
+    int ttl_device_id;
+    
+    /**
+       bit mask to set while WAIT command for syncronization is executed
+       
+       no syncronization when zero.
+     */
+    unsigned int sync_mask;
 
 public:
 
@@ -222,7 +233,14 @@ public:
   /**
      run a experiment given as state sequence
    */
-  virtual void run_pulse_program(state& exp);
+  virtual void run_pulse_program(state& exp) {
+    run_pulse_program_w_sync(exp,0);
+  }
+
+  /**
+     run a experiment given as state sequence
+   */
+  virtual void run_pulse_program_w_sync(state& exp, double sync_freq);
 
   /**
      needed by run_pulse_program method

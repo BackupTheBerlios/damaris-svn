@@ -122,7 +122,7 @@ void SpinCorePulseBlaster::set_program(const std::string& data) {
 }
 
 
-void SpinCorePulseBlaster::run_pulse_program(state& exp) {
+void SpinCorePulseBlaster::run_pulse_program_w_sync(state& exp, double sync_freq) {
   // set duration
   state_sequent* seq=dynamic_cast<state_sequent*>(&exp);
   if (seq==NULL)
@@ -133,22 +133,42 @@ void SpinCorePulseBlaster::run_pulse_program(state& exp) {
 #if SP_DEBUG
   fprintf(stderr, "caluclated time of pulse program is %g\n",duration);
 #endif
-  PulseBlasterProgram* c=create_program(exp);
-  if (c==NULL)
+  PulseBlasterProgram* prog=create_program(exp);
+  if (prog==NULL)
     throw pulse_exception("could not create PulseBlasterProgram");
+  // some initialisiation...
   // one short "do nothing" state at beginning, because Pulseblaster has some problems with first command
-  c->push_front(c->create_command());
+  PulseBlasterCommand* c;
+  c=prog->create_command();
+  c->ttls=0x0;
+  c->instruction=SpinCorePulseBlaster::CONTINUE;
+  c->length=9;
+  prog->push_front(c);
+  if (sync_freq>0 && sync_mask!=0) {
+    // syncronization
+    c=prog->create_command();
+    c->ttls=sync_mask;
+    c->instruction=SpinCorePulseBlaster::CONTINUE;
+    c->length=9;
+    prog->push_front(c);
+    c=prog->create_command();
+    c->ttls=sync_mask;
+    c->instruction=SpinCorePulseBlaster::WAIT;
+    c->length=9;
+    prog->push_front(c);
+    duration+=2.0*shortest_pulse/clock+1.0/sync_freq;
+  }
   // end: clear flags and stop pulseblaster
-  c->push_back(c->create_command());
-  c->push_back(c->create_command());
-  c->back()->instruction=STOP;
+  prog->push_back(prog->create_command());
+  prog->push_back(prog->create_command());
+  prog->back()->instruction=STOP;
 #if SP_DEBUG
-  c->write_to_file(stderr);
+  prog->write_to_file(stderr);
 #endif
-  run_pulse_program(*c);
+  run_pulse_program(*prog);
   time_running.start();
   duration+=3.0*shortest_pulse/clock;
-  delete c;
+  delete prog;
 }
 
 
