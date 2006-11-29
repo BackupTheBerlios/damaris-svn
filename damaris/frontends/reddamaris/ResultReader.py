@@ -103,7 +103,32 @@ class ResultReader:
         except xml.parsers.expat.ExpatError:
             print "ToDo: proper parser error message"
             self.result = None
-        self.xml_parser = None
+
+        self.xml_parser.StartElementHandler=None
+        self.xml_parser.EndElementHandler=None
+        self.xml_parser.CharacterDataHandler=None
+        del self.xml_parser
+
+        # prepare result data
+        if self.result is not None and \
+               self.__filetype == ResultReader.ADCDATA_TYPE and \
+               self.adc_result_sample_counter>0:
+            # fill the ADC_Result with collected data
+            self.result.x=numarray.arange(self.adc_result_sample_counter, type="Float64")/\
+                           self.result.get_sampling_rate()
+            self.result.y=[]
+            self.result.index=[]
+            for i in xrange(2):
+                self.result.y.append(numarray.array(shape=(self.adc_result_sample_counter,), type="Int16"))
+            tmp_sample_counter=0
+            while self.adc_result_parts:
+                tmp_part=self.adc_result_parts.pop(0)
+                tmp_size=tmp_part.size()/2
+                self.result.y[0][tmp_sample_counter:tmp_sample_counter+tmp_size]=tmp_part[::2]
+                self.result.y[1][tmp_sample_counter:tmp_sample_counter+tmp_size]=tmp_part[1::2]
+                self.result.index.append((tmp_sample_counter,tmp_sample_counter+tmp_size-1))
+                tmp_sample_counter+=tmp_size
+            self.result.cont_data=True
 
     # Callback when a xml start tag is found
     def __xmlStartTagFound(self, in_name, in_attribute):
@@ -121,16 +146,16 @@ class ResultReader:
         elif in_name == "adcdata":
             self.__filetype = ResultReader.ADCDATA_TYPE
 
-            self.adc_result_current_channel = 0
             self.adc_result_trailing_chars = ""
-            self.try_base64 = True 
 
             if self.result is None:
                 self.result = ADC_Result()
+                # None: new guess for adc data encoding
+                # "a": ascii
+                # "b": base64
+                self.adc_data_encoding = None
 
                 # Change number of channels of your adc-card here
-                channels = 2
-                self.result.create_data_space(channels, int(in_attribute["samples"]))
                 
                 self.result.set_sampling_rate(float(in_attribute["rate"]))
                 self.result.set_job_id(self.result_job_number)
@@ -144,9 +169,13 @@ class ResultReader:
                 self.result.set_title(title)
                 self.result_description=None
                 self.adc_result_sample_counter = 0
+                self.adc_result_parts=[] # will contain arrays of sampled intervals, assumes same sample rate
             else:
-                self.result.add_sample_space(int(in_attribute["samples"]))
-                
+                if float(in_attribute["rate"])!=self.result.get_sampling_rate():
+                    print "sample rate different in ADC_Result, found %f, former value %f"%\
+                          (float(in_attribute["rate"]),self.result.get_sampling_rate())
+            self.adc_result_sample_counter += int(in_attribute["samples"])
+
         # Error_Results
         elif in_name == "error":
             self.__filetype = ResultReader.ERROR_TYPE
@@ -177,26 +206,7 @@ class ResultReader:
 
         # ADC_Result
         if self.__filetype == ResultReader.ADCDATA_TYPE:
-            if self.try_base64:
-                self.adc_result_trailing_chars+=in_cdata
-            else:
-                try:
-                    values=(self.adc_result_trailing_chars+in_cdata).split()
-                    if not in_cdata[-1].isspace():
-                        self.adc_result_trailing_chars=values.pop()
-                    else:
-                        self.adc_result_trailing_chars=""
-
-                        for i in values:
-                            self.result.set_ydata(self.adc_result_current_channel, self.adc_result_sample_counter, int(i))
-                            # print "added value " + str(i) + " at: " + str(self.current_channel) + ", " + str(self.current_pos)
-                            self.adc_result_current_channel = (self.adc_result_current_channel + 1) % self.result.get_number_of_channels()
-                            if self.adc_result_current_channel == 0:
-                                self.result.set_xdata(self.adc_result_sample_counter, self.adc_result_sample_counter / self.result.get_sampling_rate())
-                                self.adc_result_sample_counter += 1
-                except ValueError:
-                    self.try_base64=True
-                    self.adc_result_trailing_chars=in_cdata
+            self.adc_result_trailing_chars+=in_cdata
 
         # Error_Result
         elif self.__filetype == ResultReader.ERROR_TYPE:
@@ -214,25 +224,51 @@ class ResultReader:
         elif self.__filetype == ResultReader.CONFIG_TYPE:
             pass
 
-
-
     def __xmlEndTagFound(self, in_name):
         if in_name == "adcdata":
 
             # ADC_Result
             if self.__filetype == ResultReader.ADCDATA_TYPE:
-                if self.try_base64:
+                # detect type of data encoding from first line
+                if self.adc_data_encoding is None:
+                    self.adc_result_trailing_chars=self.adc_result_trailing_chars.strip()
+                    first_line_end=self.adc_result_trailing_chars.find("\n")
+                    first_line=""
+                    if first_line_end!=-1:
+                        first_line=self.adc_result_trailing_chars[:first_line_end]
+                    else:
+                        first_line=self.adc_result_trailing_chars
+                    if len(first_line.lstrip("-0123456789 \t\n\r"))==0:
+                        try:
+                            map(int,filter(len,first_line.split()))
+                        except ValueError,e:
+                            pass
+                        else:
+                            self.adc_data_encoding="a"
+                    if self.adc_data_encoding is None and len(first_line)%4==0:
+                        try:
+                            base64.standard_b64decode(first_line)
+                        except TypeError:
+                            pass
+                        else:
+                            self.adc_data_encoding="b"
+                    if self.adc_data_encoding is None:
+                        print "unknown ADC data format \"%s\""%first_line
+                
+                tmp=None
+                if self.adc_data_encoding=="a":
+                    values=map(int,self.adc_result_trailing_chars.split())
+                    tmp=numarray.array(values, type=numarray.Int16,)
+                elif self.adc_data_encoding=="b":
                     tmp_string=base64.standard_b64decode(self.adc_result_trailing_chars)
-                    self.adc_result_trailing_chars=""
                     tmp=numarray.fromstring(tmp_string, numarray.Int16,(len(tmp_string)/2))
                     del tmp_string
-                    self.result.x[self.adc_result_sample_counter:]=(numarray.arange(tmp.size()/2)+self.adc_result_sample_counter)/self.result.get_sampling_rate()
-                    self.result.y[0][self.adc_result_sample_counter:]=tmp[::2]
-                    self.result.y[1][self.adc_result_sample_counter:]=tmp[1::2]
-                    self.adc_result_sample_counter+=tmp.size()/2
                 else:
-                    if self.adc_result_trailing_chars!="":
-                        self.__xmlCharacterDataFound(" ")
+                    print "unknown ADC data format"
+
+                self.adc_result_trailing_chars=""
+                self.adc_result_parts.append(tmp)
+                del tmp
             return
 
         elif in_name == "result":
