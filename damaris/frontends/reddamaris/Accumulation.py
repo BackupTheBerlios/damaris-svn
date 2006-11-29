@@ -524,7 +524,7 @@ class Accumulation(Errorable, Drawable):
         elif str(other.__class__) == "ADC_Result.ADC_Result":
 
             # Other empty (return)
-            if not other.contains_data(): return
+            if not other.contains_data(): return self
 
             # Self empty (copy)
             if not self.contains_data():

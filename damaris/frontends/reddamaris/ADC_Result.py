@@ -274,7 +274,7 @@ class ADC_Result(Resultable, Drawable):
             self.lock.release()
             return r
         else:
-            raise ValueError("ValueError: Cannot add \"%s\" to ADC-Result!") % str(other.__class__)
+            raise ValueError("ValueError: Cannot add \"%s\" to ADC-Result!" % str(other.__class__))
 
 
     def __radd__(self, other):
