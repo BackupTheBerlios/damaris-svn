@@ -1836,6 +1836,10 @@ class MonitorWidgets:
             # Any title to be set?
             in_result_title=in_result.get_title()
             if in_result_title is not None:
+                col=101
+                while len(in_result_title)-col>10:
+                    in_result_title=in_result_title[:col]+"\n"+in_result_title[col:]
+                    col+=101
                 self.matplot_axes.set_title(in_result_title)
             else:
                 self.matplot_axes.set_title("")
