@@ -111,8 +111,17 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
     # get the selected item, if it does not exist, create an empty one
     def __getitem__(self, key):
         if key not in self:
-            self[key]=AccumulatedValue()
-        return UserDict.UserDict.__getitem__(self, key)
+            a=AccumulatedValue()
+            UserDict.UserDict.__setitem__(self, key, a)
+            return a
+        else:
+            return UserDict.UserDict.__getitem__(self, key)
+
+    def __setitem__(self,key,value):
+        if isinstance(value, int) or isinstance(value,float):
+            return UserDict.UserDict.__setitem__(self,key,AccumulatedValue(value))
+        else:
+            return UserDict.UserDict.__setitem__(self,key,value)
 
     def __add__(self, right_value):
         if right_value==0:
