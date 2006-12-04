@@ -1448,8 +1448,9 @@ class MonitorWidgets:
         self.display_source_combobox.pack_start(display_source_cell, True)
         self.display_source_combobox.add_attribute(display_source_cell, 'text', 0)
         self.source_list_reset()
+        self.display_source_path_label = self.xml_gui.get_widget("display_source_path_label")
         
-        # display scaling
+        # display scaling: ToDo enable scaling
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
         self.display_x_scaling_combobox.set_sensitive(False)
@@ -1473,20 +1474,6 @@ class MonitorWidgets:
     def source_list_reset(self):
         self.display_source_liststore.clear()
         self.source_list_add('None')
-
-        # Test code. Disable for "release".
-        if False:
-            i = self.display_source_liststore.get_iter_first()
-            self.source_list_add('Child of None', i)
-            self.source_list_add('Another child of None', i)
-            self.source_list_add('master')
-            self.source_list_add('master/master-child')
-            self.source_list_add('master/master-child/childchild')
-            self.source_list_add('master/sibling')
-            self.source_list_add('double//slahes')
-            self.source_list_add('to-remove/to-be-deleted')
-            self.source_list_remove('to-remove/to-be-deleted')
-
         self.display_source_combobox.set_active(0)
 
     def source_list_find_one(self, model, iter, what):
@@ -1524,6 +1511,7 @@ class MonitorWidgets:
         
     def source_list_remove(self, source_name):
         namelist = source_name.split("/")
+        pwd = namelist[:]
         iter = self.source_list_find(namelist)
         if iter is None:
             print "source_list_remove: WARNING: Not found"
@@ -1535,12 +1523,16 @@ class MonitorWidgets:
         while True:
             parent = model.iter_parent(iter)
             model.remove(iter)
+            pwd.pop()
+            # We now test, if we want to remove parent too
             if parent is None:
                 return
             if model.iter_has_child(parent):
+                # The parent has other children
                 return
-            # if self.data_pool.has_key(...)
-            #    return
+            if "/".join(pwd) in self.data_pool:
+                # The parent has data connected to it
+                return
             iter = parent
 
     def source_list_current(self):
@@ -1708,6 +1700,7 @@ class MonitorWidgets:
     ######################## events from buttons
 
     def display_source_changed_event(self, widget, data=None):
+        
         new_data_name = self.source_list_current()
         if (self.displayed_data[0] is None and new_data_name=="None"): return
         if (self.displayed_data[0]==new_data_name): return
@@ -1715,15 +1708,22 @@ class MonitorWidgets:
             self.displayed_data[1].unregister_listener(self.datastructures_listener)
             self.displayed_data[1]=None
             # register new one
-        if self.data_pool is None or new_data_name=="None" or new_data_name not in self.data_pool:
+        if new_data_name=="None":
+            self.display_source_path_label.set_label(u"")
             self.displayed_data=[None,None]
             self.clear_display()
+        elif self.data_pool is None or new_data_name not in self.data_pool:
             self.display_source_combobox.set_active(0)
         else:
             new_data_struct=self.data_pool[new_data_name]
             if "register_listener" in dir(new_data_struct):
                 new_data_struct.register_listener(self.datastructures_listener)
             self.displayed_data=[new_data_name,new_data_struct]
+            dirpart=new_data_name.rfind("/")
+            if dirpart>=0:
+                self.display_source_path_label.set_label(u"in "+new_data_name[:dirpart])
+            else:
+                self.display_source_path_label.set_label(u"")                
             self.renew_display()
 
     def display_autoscaling_toggled(self, widget, data=None):
