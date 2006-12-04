@@ -1441,17 +1441,14 @@ class MonitorWidgets:
         # /Mathplot --------------------------------------------------------------------------------
 
         # display source
-        self.display_source_liststore = gtk.ListStore(gobject.TYPE_STRING)
-        self.display_source_combobox = gtk.ComboBox(self.display_source_liststore)
-
-        self.display_source_cell = gtk.CellRendererText()
-        self.display_source_combobox.pack_start(self.display_source_cell, True)
-        self.display_source_combobox.add_attribute(self.display_source_cell, 'text', 0)
-        self.display_source_liststore.append(['None'])
-        self.display_source_combobox.set_active(0)
-        self.display_source_combobox.set_add_tearoffs(1)
-        self.display_settings_frame.attach(self.display_source_combobox, 1, 2, 0, 1,  gtk.FILL, gtk.FILL, 3, 0)
-
+        self.display_source_combobox = self.xml_gui.get_widget("display_source_combobox")
+        self.display_source_liststore = gtk.TreeStore(gobject.TYPE_STRING)
+        self.display_source_combobox.set_model(self.display_source_liststore)
+        display_source_cell = gtk.CellRendererText()
+        self.display_source_combobox.pack_start(display_source_cell, True)
+        self.display_source_combobox.add_attribute(display_source_cell, 'text', 0)
+        self.source_list_reset()
+        
         # display scaling
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
@@ -1473,6 +1470,90 @@ class MonitorWidgets:
         self.__rescale=True
         self.update_counter=0
 
+    def source_list_reset(self):
+        self.display_source_liststore.clear()
+        self.source_list_add('None')
+
+        # Test code. Disable for "release".
+        if False:
+            i = self.display_source_liststore.get_iter_first()
+            self.source_list_add('Child of None', i)
+            self.source_list_add('Another child of None', i)
+            self.source_list_add('master')
+            self.source_list_add('master/master-child')
+            self.source_list_add('master/master-child/childchild')
+            self.source_list_add('master/sibling')
+            self.source_list_add('double//slahes')
+            self.source_list_add('to-remove/to-be-deleted')
+            self.source_list_remove('to-remove/to-be-deleted')
+
+        self.display_source_combobox.set_active(0)
+
+    def source_list_find_one(self, model, iter, what):
+        """find node in subcategory"""
+        while iter is not None:
+            if model.get(iter,0)[0] == what:
+                return iter
+            iter = model.iter_next(iter)
+        return iter
+
+    def source_list_find(self, namelist):
+        """
+        namelist sequence of names, e.g. ["a", "b", "c" ] for "a/b/c"
+        """
+        model = self.display_source_liststore
+        retval = None
+        iter = model.get_iter_root()
+        while iter is not None and len(namelist) > 0:
+            name = namelist[0]
+            iter = self.source_list_find_one(model, iter, name)
+            if iter is not None:
+                retval = iter
+                namelist.pop(0)
+                iter = model.iter_children(retval)
+        return retval
+
+    def source_list_add(self, source_name, parent=None):
+        namelist = source_name.split("/")
+        found = self.source_list_find(namelist)
+        if parent is None:
+            parent = found
+        for rest_name in namelist:
+            # append() returns iter for the new row
+            parent = self.display_source_liststore.append(parent, [rest_name])
+        
+    def source_list_remove(self, source_name):
+        namelist = source_name.split("/")
+        iter = self.source_list_find(namelist)
+        if iter is None:
+            print "source_list_remove: WARNING: Not found"
+            return
+        if len(namelist) > 0:
+            print "source_list_remove: WARNING: Request to delete a tree"
+            return
+        model = self.display_source_liststore
+        while True:
+            parent = model.iter_parent(iter)
+            model.remove(iter)
+            if parent is None:
+                return
+            if model.iter_has_child(parent):
+                return
+            # if self.data_pool.has_key(...)
+            #    return
+            iter = parent
+
+    def source_list_current(self):
+        ai = self.display_source_combobox.get_active_iter()
+        namelist = []
+        while ai is not None:
+            namelist.insert(0, str(self.display_source_liststore.get(ai,0)[0]))
+            ai = self.display_source_liststore.iter_parent(ai)
+        cur_source_name = "/".join(namelist)
+        # debug:
+        #print cur_source_name
+        return cur_source_name
+
     def observe_data_pool(self, data_pool):
         """
         register a listener and save reference to data
@@ -1488,9 +1569,7 @@ class MonitorWidgets:
             self.data_pool.unregister_listener(self.datapool_listener)
             self.data_pool=None
 
-            self.display_source_liststore.clear()
-            self.display_source_liststore.append(['None'])
-            self.display_source_combobox.set_active(0)
+            self.source_list_reset()
             self.clear_display()
             self.update_counter=0
 
@@ -1591,7 +1670,7 @@ class MonitorWidgets:
         elif event.what==DataPool.DataPool.Event.new_key:
             # update combo-box by inserting and rely on consistent information
             gtk.gdk.threads_enter()
-            self.display_source_liststore.append([event.subject])
+            self.source_list_add(event.subject)
             gtk.gdk.threads_leave()
         elif event.what==DataPool.DataPool.Event.deleted_key:
             # update combo-box by removing and rely on consistent information
@@ -1601,18 +1680,11 @@ class MonitorWidgets:
                 self.displayed_data=[None,None]
                 self.display_source_combobox.set_active(0)
                 self.clear_display()
-            i=self.display_source_liststore.get_iter_first()
-            while not i is None:
-                if self.display_source_liststore.get(i,0)[0]==event.subject:
-                    self.display_source_liststore.remove(i)
-                    break
-                i=self.display_source_liststore.iter_next(i)
+            self.source_list_remove(event.subject)
             gtk.gdk.threads_leave()
         elif event.what==DataPool.DataPool.Event.destroy:
             gtk.gdk.threads_enter()
-            self.display_source_liststore.clear()
-            self.display_source_liststore.append(['None'])
-            self.display_source_combobox.set_active(0)
+            self.source_list_reset('None')
             self.displayed_data=[None,None]
             self.clear_display()
             gtk.gdk.threads_leave()
@@ -1636,17 +1708,17 @@ class MonitorWidgets:
     ######################## events from buttons
 
     def display_source_changed_event(self, widget, data=None):
-        ai=self.display_source_combobox.get_active_iter()
-        new_data_name=str(self.display_source_liststore.get(ai,0)[0])
+        new_data_name = self.source_list_current()
         if (self.displayed_data[0] is None and new_data_name=="None"): return
         if (self.displayed_data[0]==new_data_name): return
         if self.displayed_data[1] is not None and "unregister_listener" in dir(self.displayed_data[1]):
             self.displayed_data[1].unregister_listener(self.datastructures_listener)
             self.displayed_data[1]=None
             # register new one
-        if new_data_name=="None":
+        if self.data_pool is None or new_data_name=="None" or new_data_name not in self.data_pool:
             self.displayed_data=[None,None]
             self.clear_display()
+            self.display_source_combobox.set_active(0)
         else:
             new_data_struct=self.data_pool[new_data_name]
             if "register_listener" in dir(new_data_struct):
