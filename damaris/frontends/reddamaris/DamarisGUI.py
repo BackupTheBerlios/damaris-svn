@@ -1442,8 +1442,8 @@ class MonitorWidgets:
 
         # display source
         self.display_source_combobox = self.xml_gui.get_widget("display_source_combobox")
-        self.display_source_liststore = gtk.TreeStore(gobject.TYPE_STRING)
-        self.display_source_combobox.set_model(self.display_source_liststore)
+        self.display_source_treestore = gtk.TreeStore(gobject.TYPE_STRING)
+        self.display_source_combobox.set_model(self.display_source_treestore)
         display_source_cell = gtk.CellRendererText()
         self.display_source_combobox.pack_start(display_source_cell, True)
         self.display_source_combobox.add_attribute(display_source_cell, 'text', 0)
@@ -1472,7 +1472,7 @@ class MonitorWidgets:
         self.update_counter=0
 
     def source_list_reset(self):
-        self.display_source_liststore.clear()
+        self.display_source_treestore.clear()
         self.source_list_add('None')
         self.display_source_combobox.set_active(0)
 
@@ -1488,7 +1488,7 @@ class MonitorWidgets:
         """
         namelist sequence of names, e.g. ["a", "b", "c" ] for "a/b/c"
         """
-        model = self.display_source_liststore
+        model = self.display_source_treestore
         retval = None
         iter = model.get_iter_root()
         while iter is not None and len(namelist) > 0:
@@ -1507,19 +1507,19 @@ class MonitorWidgets:
             parent = found
         for rest_name in namelist:
             # append() returns iter for the new row
-            parent = self.display_source_liststore.append(parent, [rest_name])
+            parent = self.display_source_treestore.append(parent, [rest_name])
         
     def source_list_remove(self, source_name):
         namelist = source_name.split("/")
         pwd = namelist[:]
         iter = self.source_list_find(namelist)
-        if iter is None:
+        if iter is None or len(namelist) > 0:
             print "source_list_remove: WARNING: Not found"
             return
-        if len(namelist) > 0:
+        model = self.display_source_treestore
+        if model.iter_has_child(iter):
             print "source_list_remove: WARNING: Request to delete a tree"
             return
-        model = self.display_source_liststore
         while True:
             parent = model.iter_parent(iter)
             model.remove(iter)
@@ -1539,11 +1539,9 @@ class MonitorWidgets:
         ai = self.display_source_combobox.get_active_iter()
         namelist = []
         while ai is not None:
-            namelist.insert(0, str(self.display_source_liststore.get(ai,0)[0]))
-            ai = self.display_source_liststore.iter_parent(ai)
+            namelist.insert(0, str(self.display_source_treestore.get(ai,0)[0]))
+            ai = self.display_source_treestore.iter_parent(ai)
         cur_source_name = "/".join(namelist)
-        # debug:
-        #print cur_source_name
         return cur_source_name
 
     def observe_data_pool(self, data_pool):
