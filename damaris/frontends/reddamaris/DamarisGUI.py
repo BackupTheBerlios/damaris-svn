@@ -109,7 +109,16 @@ class DamarisGUI:
         # my notebook
         self.main_notebook = self.xml_gui.get_widget("main_notebook")
         
+        self.log=LogWindow(self.xml_gui)
+
         self.sw=ScriptWidgets(self.xml_gui)
+
+        self.toolbar_init()
+
+        self.monitor=MonitorWidgets(self.xml_gui)
+
+        self.config=ConfigTab(self.xml_gui)
+
         exp_script=u""
         if exp_script_filename is not None and exp_script_filename!="":
             self.sw.exp_script_filename=exp_script_filename[:]
@@ -127,16 +136,7 @@ class DamarisGUI:
                 for line in script_file:
                     res_script += unicode(line,encoding="iso-8859-15", errors="replace")
                 script_file.close()
-
         self.sw.set_scripts(exp_script, res_script)
-
-        self.toolbar_init()
-
-        self.monitor=MonitorWidgets(self.xml_gui)
-
-        self.config=ConfigTab(self.xml_gui)
-
-        self.log=LogWindow(self.xml_gui)
 
         self.statusbar_init()
 
@@ -166,6 +166,15 @@ class DamarisGUI:
         self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
         self.toolbar_pause_button = self.xml_gui.get_widget("toolbar_pause_button")
         self.toolbar_exec_with_options_togglebutton = self.xml_gui.get_widget("toolbar_execute_with_options_button")
+
+        # print button
+        self.toolbar_print_button=self.xml_gui.get_widget("toolbar_print_button")
+        if "PrintOperation" not in dir(gtk):
+            self.toolbar_print_button.set_sensitive(False)
+            print "Printing is not supported by GTK+ version in use"
+        else:
+            self.toolbar_print_button.set_sensitive(True)
+            self.xml_gui.signal_connect("on_toolbar_print_button_clicked", self.print_button_switch)
 
         # prepare for edit state
         self.toolbar_run_button.set_sensitive(True)
@@ -581,6 +590,52 @@ class DamarisGUI:
                 r.quit_flag.set()
             self.state=DamarisGUI.Stop_State
 
+    def print_button_switch(self, widget):
+        """
+        decides what to print... and prints, layout is done by responsible class
+        """
+        if "PrintOperation" not in dir(gtk):
+            return
+
+
+        # copied and modified from pygtk-2.10.1/examples/pygtk-demo/demos/print_editor.py
+
+        print_ = gtk.PrintOperation()
+
+        # will come from config
+        settings=None
+        if settings is not None:
+            print_.set_print_settings(settings)
+
+        page_setup=None
+        if page_setup is not None:
+            print_.set_default_page_setup(page_setup)
+
+
+        print_.set_property("allow_async",True)
+        current_page=self.main_notebook.get_current_page()
+        if current_page in [0,1]:
+            print_data = {}
+            print_.connect("begin_print", self.sw.begin_print, print_data)
+            print_.connect("draw_page", self.sw.draw_page, print_data)
+        else:
+            return
+        
+        try:
+            res = print_.run(gtk.PRINT_OPERATION_ACTION_PRINT_DIALOG, self.main_window)
+        except gobject.GError, ex:
+            error_dialog = gtk.MessageDialog(self.main_window,
+                                             gtk.DIALOG_DESTROY_WITH_PARENT,
+                                             gtk._MESSAGE_ERROR,
+                                             gtk.BUTTONS_CLOSE,
+                                             ("Error printing file:\n%s" % str(ex)))
+            error_dialog.connect("response", gtk.Widget.destroy)
+            error_dialog.show()
+        else:
+            if res == gtk.PRINT_OPERATION_RESULT_APPLY:
+                settings = print_.get_print_settings()
+
+
 class LogWindow:
     """
     writes messages to the log window
@@ -637,9 +692,7 @@ class ScriptWidgets:
         self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
         self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
         self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
-        # modify script fonts
-        self.experiment_script_textview.modify_font(pango.FontDescription("Courier 14"))
-        self.data_handling_textview.modify_font(pango.FontDescription("Courier 14"))
+        # script fonts are atlered by configuration
         # clipboard
         self.main_clipboard = gtk.Clipboard(selection = "CLIPBOARD")
 
@@ -1123,6 +1176,99 @@ class ScriptWidgets:
             self.res_script_filename=None
         self.set_toolbuttons_status()
 
+    def begin_print(self, operation, context, print_data):
+        """
+        layout of all pages
+        """
+        # copied from pygtk/demo
+        # Determining the tab which is currently open
+
+        current_page=self.main_notebook.get_current_page()
+        filename=""
+        if current_page == 0:
+            filename=self.exp_script_filename
+        elif current_page == 1:
+            filename=self.res_script_filename
+
+        script=""
+        # get script text
+        if current_page==0:
+            script=self.get_scripts()[0]
+        elif current_page==1:
+            script=self.get_scripts()[1]
+        
+        print >>sys.__stdout__, "Here, before context"
+        width = context.get_width()
+        height = context.get_height()
+        print >>sys.__stdout__, "Here, before layout"
+        layout = context.create_pango_layout()
+        layout = set_font_description(pango.FontDescription("Sans 12"))
+        layout = set_width(int(width*pango.SCALE))
+        print >>sys.__stdout__, "Here, before set_text"
+        layout.set_text(script)
+        num_lines = layout.get_line_count()
+
+        page_breaks = []
+        page_height = 0
+
+        print >>sys.__stdout__, "Here", num_lines
+        for line in xrange(num_lines):
+            print >>sys.__stdout__, "Here2"
+            layout_line = layout.get_line(line)
+            print >>sys.__stdout__, "Here3"
+            ink_rect, logical_rect = layout_line.get_extents()
+            print >>sys.__stdout__, "Here4"
+            lx, ly, lwidth, lheight = logical_rect
+            line_height = lheight / 1024.0
+            if page_height + line_height > height:
+                page_breaks.append(line)
+                page_height = 0
+            page_height += line_height
+            print >>sys.__stdout__, len(page_breaks) + 1
+
+        operation.set_n_pages(len(page_breaks) + 1)
+        print_data["page_breaks"] = page_breaks
+        print_data["layout"]=layout
+
+    def draw_page(self, operation, context, page_nr, print_data):
+        """
+        render a single page
+        """
+        # copied from pygtk/demo
+        assert isinstance(print_data["page_breaks"], list)
+        print >>sys.__stdout__,"draw_page", page_nr
+        if page_nr == 0:
+            start = 0
+        else:
+            start = print_data["page_breaks"][page_nr - 1]
+
+        try:
+            end = print_data["page_breaks"][page_nr]
+        except IndexError:
+            end = print_data["layout"].get_line_count()
+    
+        cr = context.get_cairo_context()
+
+        cr.set_source_rgb(0, 0, 0)
+  
+        i = 0
+        start_pos = 0
+        iter = print_data["layout"].get_iter()
+        while 1:
+            if i >= start:
+                line = iter.get_line()
+                _, logical_rect = iter.get_line_extents()
+                lx, ly, lwidth, lheight = logical_rect
+                baseline = iter.get_baseline()
+                if i == start:
+                    start_pos = ly / 1024.0;
+                cr.move_to(lx / 1024.0, baseline / 1024.0 - start_pos)
+                cr.show_layout_line(line)
+            i += 1
+            if not (i < end and iter.next_line()):
+                break
+
+
 class ConfigTab:
     """
     by now all values are saved in the GUI widgets
@@ -1145,19 +1291,36 @@ class ConfigTab:
         self.config_data_pool_complib=self.xml_gui.get_widget("CompLibs")
         self.config_data_pool_comprate=self.xml_gui.get_widget("CompRatio")
         self.config_info_textview=self.xml_gui.get_widget("info_textview")
+        self.config_script_font_button=self.xml_gui.get_widget("script_fontbutton")
+        self.config_printer_setup_button=self.xml_gui.get_widget("printer_setup_button")
+        if "print_run_page_setup_dialog" not in dir(gtk):
+            self.config_printer_setup_button.set_sensitive(False)
 
         # insert version informations
         components_text=u"""
 operating system %(os)s
+gtk version %(gtk)s
+glib version %(glib)s
 python version %(python)s
 matplotlib version %(matplotlib)s, using %(matplotlib_numerix)s
 numarray version %(numarray)s
 pytables version %(pytables)s, using %(pytables_libs)s
 pygtk version %(pygtk)s
-gtk version %(gtk)s
+pygobject version %(pygobject)s
 """
+        if "glib_version" in dir(gobject):
+            glib_version="%d.%d.%d"%gobject.glib_version
+        else:
+            glib_version="? (no pygobject module)"
+        if "pygobject_version" in dir(gobject):
+            pygobject_version="%d.%d.%d"%gobject.pygobject_version
+        else:
+            pygobject_version="? (no gobject module)"
+            
         components_versions = {
             "os":         platform.platform() ,
+            "gtk":        "%d.%d.%d"%gtk.gtk_version,
+            "glib":       glib_version,
             "python":     sys.version ,
             "matplotlib": matplotlib.__version__,
             "matplotlib_numerix": matplotlib.rcParams["numerix"],
@@ -1165,7 +1328,7 @@ gtk version %(gtk)s
             "pytables":   tables.getPyTablesVersion(),
             "pytables_libs": "",
             "pygtk":      "%d.%d.%d"%gtk.pygtk_version,
-            "gtk":        "%d.%d.%d"%gtk.gtk_version
+            "pygobject":  pygobject_version
             }
 
         # pytables modules:
@@ -1205,6 +1368,8 @@ gtk version %(gtk)s
         self.xml_gui.signal_connect("on_config_load_button_clicked", self.load_config_handler)
         self.xml_gui.signal_connect("on_backend_executable_browse_button_clicked",
                                     self.browse_backend_executable_dialog)
+        self.xml_gui.signal_connect("on_fontbutton_font_set",self.set_script_font_handler)
+        self.xml_gui.signal_connect("on_printer_setup_button_clicked", self.printer_setup_handler)
 
         if os.path.isfile(self.defaultfilename) and os.access(self.defaultfilename,os.R_OK):
             self.load_config()
@@ -1226,7 +1391,8 @@ gtk version %(gtk)s
             "del_jobs_after_execution" : self.config_del_jobs_after_execution_checkbutton.get_active(),
             "data_pool_write_interval" : self.config_data_pool_write_interval_entry.get_text(),
             "data_pool_complib": complib,
-            "data_pool_comprate": self.config_data_pool_comprate.get_value_as_int()
+            "data_pool_comprate": self.config_data_pool_comprate.get_value_as_int(),
+            "script_font": self.config_script_font_button.get_font_name()
             }
 
     def set(self, config):
@@ -1250,6 +1416,9 @@ gtk version %(gtk)s
             self.config_data_pool_name_entry.set_text(config["data_pool_name"])
         if "data_pool_comprate" in config:
             self.config_data_pool_comprate.set_value(float(config["data_pool_comprate"]))
+        if "script_font" in config:
+            self.config_script_font_button.set_font_name(config["script_font"])
+            self.set_script_font_handler(None)
         if "data_pool_complib" in config:
             # find combo-box entry and make it active...
             model=self.config_data_pool_complib.get_model()
@@ -1268,6 +1437,35 @@ gtk version %(gtk)s
 
     def save_config_handler(self, widget):
         self.save_config()
+
+    def set_script_font_handler(self, widget):
+        """
+        handles changes in font name
+        also sets the fonts to the text views (fast implementation: breaking encapsulation)
+        """
+        font=self.config_script_font_button.get_font_name()
+        experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
+        if experiment_script_textview:
+            experiment_script_textview.modify_font(pango.FontDescription(font))
+        data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
+        if data_handling_textview:
+            data_handling_textview.modify_font(pango.FontDescription(font))
+
+    def printer_setup_handler(self, widget):
+        """
+        changes to printer setup
+        """
+        if "PrintSettings" not in dir(gtk) or "print_run_page_setup_dialog" not in dir(gtk):
+            return
+        if "printer_setup" not in dir(self):
+            self.printer_setup = gtk.PrintSettings()
+
+        if "page_setup" not in dir(self):
+            self.page_setup = None
+
+        self.page_setup = gtk.print_run_page_setup_dialog(self.xml_gui.get_widget("main_window"),
+                                                          self.page_setup, self.printer_setup)
+
 
     def browse_backend_executable_dialog(self, widget):
         """
@@ -1350,18 +1548,17 @@ gtk version %(gtk)s
         p.ParseFile(file(filename,"r"))
 
         self.set(config)
-        
 
     def save_config(self, filename=None):
         """
         write config as an xml file
         """
+        config=self.get()
         if filename is None:
             filename=self.defaultfilename
         configfile=file(filename, "w")
         configfile.write("<?xml version='1.0'?>\n")
         configfile.write("<damaris>\n")
-        config=self.get()
         for k,v in config.iteritems():
             val=""
             typename=""
