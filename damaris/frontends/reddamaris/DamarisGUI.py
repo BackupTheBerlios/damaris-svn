@@ -597,7 +597,6 @@ class DamarisGUI:
         if "PrintOperation" not in dir(gtk):
             return
 
-
         # copied and modified from pygtk-2.10.1/examples/pygtk-demo/demos/print_editor.py
 
         print_ = gtk.PrintOperation()
@@ -612,7 +611,7 @@ class DamarisGUI:
             print_.set_default_page_setup(page_setup)
 
 
-        print_.set_property("allow_async",True)
+        #print_.set_property("allow_async",True)
         current_page=self.main_notebook.get_current_page()
         if current_page in [0,1]:
             print_data = {}
@@ -1180,16 +1179,10 @@ class ScriptWidgets:
         """
         layout of all pages
         """
-        # copied from pygtk/demo
+        # copied and modified from pygtk-2.10.1/examples/pygtk-demo/demos/print_editor.py
+
         # Determining the tab which is currently open
-
         current_page=self.main_notebook.get_current_page()
-        filename=""
-        if current_page == 0:
-            filename=self.exp_script_filename
-        elif current_page == 1:
-            filename=self.res_script_filename
-
         script=""
         # get script text
         if current_page==0:
@@ -1197,34 +1190,26 @@ class ScriptWidgets:
         elif current_page==1:
             script=self.get_scripts()[1]
         
-        print >>sys.__stdout__, "Here, before context"
         width = context.get_width()
         height = context.get_height()
-        print >>sys.__stdout__, "Here, before layout"
         layout = context.create_pango_layout()
-        layout = set_font_description(pango.FontDescription("Sans 12"))
-        layout = set_width(int(width*pango.SCALE))
-        print >>sys.__stdout__, "Here, before set_text"
+        layout.set_font_description(pango.FontDescription("Monospace 12"))
+        layout.set_width(int(width*pango.SCALE))
         layout.set_text(script)
         num_lines = layout.get_line_count()
 
         page_breaks = []
         page_height = 0
 
-        print >>sys.__stdout__, "Here", num_lines
         for line in xrange(num_lines):
-            print >>sys.__stdout__, "Here2"
             layout_line = layout.get_line(line)
-            print >>sys.__stdout__, "Here3"
             ink_rect, logical_rect = layout_line.get_extents()
-            print >>sys.__stdout__, "Here4"
             lx, ly, lwidth, lheight = logical_rect
             line_height = lheight / 1024.0
             if page_height + line_height > height:
                 page_breaks.append(line)
                 page_height = 0
             page_height += line_height
-            print >>sys.__stdout__, len(page_breaks) + 1
 
         operation.set_n_pages(len(page_breaks) + 1)
         print_data["page_breaks"] = page_breaks
@@ -1234,9 +1219,8 @@ class ScriptWidgets:
         """
         render a single page
         """
-        # copied from pygtk/demo
+        # copied and modified from pygtk-2.10.1/examples/pygtk-demo/demos/print_editor.py
         assert isinstance(print_data["page_breaks"], list)
-        print >>sys.__stdout__,"draw_page", page_nr
         if page_nr == 0:
             start = 0
         else:
@@ -1267,7 +1251,6 @@ class ScriptWidgets:
             i += 1
             if not (i < end and iter.next_line()):
                 break
-
 
 class ConfigTab:
     """
