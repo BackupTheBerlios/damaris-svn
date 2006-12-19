@@ -243,7 +243,6 @@ class DamarisGUI:
             not actual_config["start_experiment_script"]):
             return
 
-        self.data = None
 
         # prepare to run
         self.state=DamarisGUI.Run_State
@@ -262,7 +261,9 @@ class DamarisGUI:
         backend=actual_config["backend_executable"]
         if not actual_config["start_backend"]:
             backend=""
-        
+
+        # delete old data
+        self.data = None
         self.monitor.observe_data_pool(self.data)
         
         # start experiment
@@ -1748,14 +1749,16 @@ class MonitorWidgets:
             self.clear_display()
             self.update_counter=0
 
+        # display states
+        self.__rescale=True
+        self.displayed_data=[None,None]
+        self.display_source_path_label.set_label(u"")
+
         if data_pool is not None:
             # keep track of data
             self.data_pool=data_pool
             self.data_pool.register_listener(self.datapool_listener)
 
-        # display states
-        self.__rescale=True
-        self.displayed_data=[None,None]
 
     #################### observing data structures and produce idle events
 
@@ -1897,6 +1900,7 @@ class MonitorWidgets:
             self.clear_display()
         elif self.data_pool is None or new_data_name not in self.data_pool:
             self.display_source_combobox.set_active(0)
+            self.display_source_path_label.set_label(u"")
         else:
             new_data_struct=self.data_pool[new_data_name]
             if hasattr(new_data_struct, "register_listener"):
@@ -1906,7 +1910,7 @@ class MonitorWidgets:
             if dirpart>=0:
                 self.display_source_path_label.set_label(u"in "+new_data_name[:dirpart])
             else:
-                self.display_source_path_label.set_label(u"")                
+                self.display_source_path_label.set_label(u"")
             self.renew_display()
 
     def display_autoscaling_toggled(self, widget, data=None):
