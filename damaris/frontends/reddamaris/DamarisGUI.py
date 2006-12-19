@@ -21,6 +21,8 @@ import gtk
 import gtk.glade
 import gobject
 import pango
+import cairo
+import matplotlib.backends.backend_cairo
 
 # array math
 import numarray
@@ -169,7 +171,7 @@ class DamarisGUI:
 
         # print button
         self.toolbar_print_button=self.xml_gui.get_widget("toolbar_print_button")
-        if "PrintOperation" not in dir(gtk):
+        if not hasattr(gtk, "PrintOperation"):
             self.toolbar_print_button.set_sensitive(False)
             print "Printing is not supported by GTK+ version in use"
         else:
@@ -413,7 +415,7 @@ class DamarisGUI:
             if not self.dump_states_event_id is None:
                 gobject.source_remove(self.dump_states_event_id)
                 self.dump_states_event_id=None
-            if "dump_thread" not in dir(self) or self.dump_thread is None:
+            if not hasattr(self,"dump_thread") or self.dump_thread is None:
                 print "all subprocesses ended..."
                 print "saving data pool",
                 self.dump_start_time=time.time()
@@ -427,7 +429,7 @@ class DamarisGUI:
             if len(still_running)!=0:
                 print "subprocesses still running:", map(lambda s:s.getName(),still_running)
                 return True
-            if "dump_thread" in dir(self) and self.dump_thread is not None:
+            if hasattr(self,"dump_thread") and self.dump_thread is not None:
                 if self.dump_thread.isAlive():
                     print ".",
                     return True
@@ -594,7 +596,7 @@ class DamarisGUI:
         """
         decides what to print... and prints, layout is done by responsible class
         """
-        if "PrintOperation" not in dir(gtk):
+        if not hasattr(gtk, "PrintOperation"):
             return
 
         # copied and modified from pygtk-2.10.1/examples/pygtk-demo/demos/print_editor.py
@@ -613,10 +615,13 @@ class DamarisGUI:
 
         #print_.set_property("allow_async",True)
         current_page=self.main_notebook.get_current_page()
+        print_data = {}
         if current_page in [0,1]:
-            print_data = {}
             print_.connect("begin_print", self.sw.begin_print, print_data)
             print_.connect("draw_page", self.sw.draw_page, print_data)
+        elif current_page == 2:
+            print_.connect("begin_print", self.monitor.begin_print, print_data)
+            print_.connect("draw_page", self.monitor.draw_page, print_data)
         else:
             return
         
@@ -1276,7 +1281,7 @@ class ConfigTab:
         self.config_info_textview=self.xml_gui.get_widget("info_textview")
         self.config_script_font_button=self.xml_gui.get_widget("script_fontbutton")
         self.config_printer_setup_button=self.xml_gui.get_widget("printer_setup_button")
-        if "print_run_page_setup_dialog" not in dir(gtk):
+        if not hasattr(gtk, "print_run_page_setup_dialog" ):
             self.config_printer_setup_button.set_sensitive(False)
 
         # insert version informations
@@ -1291,11 +1296,11 @@ pytables version %(pytables)s, using %(pytables_libs)s
 pygtk version %(pygtk)s
 pygobject version %(pygobject)s
 """
-        if "glib_version" in dir(gobject):
+        if hasattr(gobject, "glib_version"):
             glib_version="%d.%d.%d"%gobject.glib_version
         else:
             glib_version="? (no pygobject module)"
-        if "pygobject_version" in dir(gobject):
+        if hasattr(gobject, "pygobject_version"):
             pygobject_version="%d.%d.%d"%gobject.pygobject_version
         else:
             pygobject_version="? (no gobject module)"
@@ -1438,12 +1443,12 @@ pygobject version %(pygobject)s
         """
         changes to printer setup
         """
-        if "PrintSettings" not in dir(gtk) or "print_run_page_setup_dialog" not in dir(gtk):
+        if not (hasattr(gtk, "PrintSettings") and hasattr(gtk, "print_run_page_setup_dialog")):
             return
-        if "printer_setup" not in dir(self):
+        if not hasattr(self, "printer_setup"):
             self.printer_setup = gtk.PrintSettings()
 
-        if "page_setup" not in dir(self):
+        if not hasattr(self, "page_setup"):
             self.page_setup = None
 
         self.page_setup = gtk.print_run_page_setup_dialog(self.xml_gui.get_widget("main_window"),
@@ -1732,7 +1737,7 @@ class MonitorWidgets:
         if not self.data_pool is None:
             # maybe some extra cleanup needed
             print "ToDo: cleanup widgets"
-            if self.displayed_data[1] is not None and "unregister_listener" in dir(self.displayed_data[1]):
+            if self.displayed_data[1] is not None and hasattr(self.displayed_data[1], "unregister_listener"):
                     self.displayed_data[1].unregister_listener(self.datastructures_listener)
                     self.displayed_data[1]=None
             self.displayed_data=[None,None]
@@ -1821,11 +1826,11 @@ class MonitorWidgets:
                             gtk.gdk.threads_leave()
                 else:
                     # unregister old one
-                    if self.displayed_data[1] is not None and "unregister_listener" in dir(self.displayed_data[1]):
+                    if self.displayed_data[1] is not None and hasattr(self.displayed_data[1], "unregister_listener"):
                         self.displayed_data[1].unregister_listener(self.datastructures_listener)
                         self.displayed_data[1]=None
                     # register new one
-                    if "register_listener" in dir(new_data_struct):
+                    if hasattr(new_data_struct, "register_listener"):
                         new_data_struct.register_listener(self.datastructures_listener)
                     self.displayed_data[1]=new_data_struct
                     if self.update_counter>10:
@@ -1882,7 +1887,7 @@ class MonitorWidgets:
         new_data_name = self.source_list_current()
         if (self.displayed_data[0] is None and new_data_name=="None"): return
         if (self.displayed_data[0]==new_data_name): return
-        if self.displayed_data[1] is not None and "unregister_listener" in dir(self.displayed_data[1]):
+        if self.displayed_data[1] is not None and hasattr(self.displayed_data[1], "unregister_listener"):
             self.displayed_data[1].unregister_listener(self.datastructures_listener)
             self.displayed_data[1]=None
             # register new one
@@ -1894,7 +1899,7 @@ class MonitorWidgets:
             self.display_source_combobox.set_active(0)
         else:
             new_data_struct=self.data_pool[new_data_name]
-            if "register_listener" in dir(new_data_struct):
+            if hasattr(new_data_struct, "register_listener"):
                 new_data_struct.register_listener(self.datastructures_listener)
             self.displayed_data=[new_data_name,new_data_struct]
             dirpart=new_data_name.rfind("/")
@@ -1920,7 +1925,7 @@ class MonitorWidgets:
         if self.displayed_data[1] is None:
             # nothing to save
             return
-        if "write_as_csv" not in dir(data_to_save[1]):
+        if not hasattr(data_to_save[1], "write_as_csv"):
             log("do not know how to save %s of class/type %s"%(data_to_save[0],type(data_to_save[1])))
             return
 
@@ -1976,9 +1981,9 @@ class MonitorWidgets:
         unconditionally throw away everything
         we are inside gtk/gdk lock
         """
-        if "__rescale" not in dir(self):
+        if not hasattr(self, "__rescale"):
             self.__rescale = True
-        if "measurementresultgraph" not in dir(self):
+        if not hasattr(self,"measurementresultgraph"):
             self.measurementresultgraph=None
         elif self.measurementresultgraph is not None:
             # clear errorbars
@@ -1988,7 +1993,7 @@ class MonitorWidgets:
             self.measurementresultgraph=None
             self.matplot_axes.clear()
             self.matplot_axes.grid(True)
-        if "graphen" not in dir(self):
+        if not hasattr(self,"graphen"):
             self.graphen=[]
         elif self.graphen:
             for l in self.graphen:
@@ -2169,7 +2174,49 @@ class MonitorWidgets:
         if to_draw is None: return
         self.update_display()
 
+    def begin_print(self, operation, context, print_data):
+        """
+        layout of one page with matplotlib graph
+        """
+        operation.set_n_pages( 1 )
 
+
+    def draw_page(self, operation, context, page_nr, print_data):
+        """
+        render a single page
+        """
+        # copied and modified from pygtk-2.10.1/examples/pygtk-demo/demos/print_editor.py
+
+        if page_nr != 0:
+            return
+
+        # check page dimensions
+        # all lengths in inch: name *_in
+        dpi=context.get_dpi_x()
+        if dpi!=context.get_dpi_y():
+            print "draw_page: dpi_x!=dpi_y, I am not prepared for that"
+        freewidth_in = float(context.get_width())/dpi
+        freeheight_in = float(context.get_height())/dpi
+        
+        fc = self.matplot_canvas.switch_backends(matplotlib.backends.backend_cairo.FigureCanvasCairo)
+        fc.figure.dpi.set(dpi)
+        w_in, h_in = fc.figure.get_size_inches()
+        # scale to maximum
+        scale=min(freewidth_in/w_in, freeheight_in/h_in)
+        w_in*=scale
+        h_in*=scale
+        fc.figure.set_size_inches(w_in, h_in)
+        width_in_points, height_in_points = w_in * dpi, h_in * dpi
+        renderer = matplotlib.backends.backend_cairo.RendererCairo (fc.figure.dpi)
+        renderer.ctx = context.get_cairo_context()
+        renderer.set_width_height (freewidth_in*dpi, freeheight_in*dpi)
+
+        # todo: rotate, move graph to fit to paper and remove background
+        #renderer.ctx.rotate (math.pi/2)
+        #renderer.ctx.translate (0, -height_in_points)
+        fc.figure.draw(renderer)
+        
+        
 class ScriptInterface:
     
     def __init__(self, exp_script=None, res_script=None, backend_executable=None, spool_dir="spool", clear_jobs=True, clear_results=True):
