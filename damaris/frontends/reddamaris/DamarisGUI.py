@@ -2196,30 +2196,45 @@ class MonitorWidgets:
 
         # check page dimensions
         # all lengths in inch: name *_in
+        page_setup=context.get_page_setup()
         dpi=context.get_dpi_x()
         if dpi!=context.get_dpi_y():
             print "draw_page: dpi_x!=dpi_y, I am not prepared for that"
         freewidth_in = float(context.get_width())/dpi
         freeheight_in = float(context.get_height())/dpi
-        
         fc = self.matplot_canvas.switch_backends(matplotlib.backends.backend_cairo.FigureCanvasCairo)
         fc.figure.dpi.set(dpi)
-        w_in, h_in = fc.figure.get_size_inches()
-        # scale to maximum
-        scale=min(freewidth_in/w_in, freeheight_in/h_in)
-        w_in*=scale
-        h_in*=scale
-        fc.figure.set_size_inches(w_in, h_in)
-        width_in_points, height_in_points = w_in * dpi, h_in * dpi
-        renderer = matplotlib.backends.backend_cairo.RendererCairo (fc.figure.dpi)
-        renderer.ctx = context.get_cairo_context()
-        renderer.set_width_height (freewidth_in*dpi, freeheight_in*dpi)
+        orig_w_in, orig_h_in = fc.figure.get_size_inches()
+        orig_f_color=fc.figure.get_facecolor()
+        orig_e_color=fc.figure.get_edgecolor()
 
-        # todo: rotate, move graph to fit to paper and remove background
-        #renderer.ctx.rotate (math.pi/2)
-        #renderer.ctx.translate (0, -height_in_points)
-        fc.figure.draw(renderer)
+        # scale to maximum
+        fc.figure.set_facecolor("w")
+        fc.figure.set_edgecolor("w")
+
+        #  maximum scale with constant aspect
+        scale=min(freewidth_in/orig_w_in, freeheight_in/orig_h_in)
+        fc.figure.set_size_inches(orig_w_in*scale, orig_h_in*scale)
+        width_in_points, height_in_points = orig_w_in * dpi * scale, orig_h_in * dpi * scale
+        renderer = matplotlib.backends.backend_cairo.RendererCairo (fc.figure.dpi)
+        renderer.width  = width_in_points
+        renderer.height = height_in_points
+        # centered picture
+        renderer.matrix_flipy = cairo.Matrix (yy=-1,xx=1,
+                                              y0=page_setup.get_top_margin(gtk.UNIT_POINTS)+(height_in_points+freeheight_in*dpi)/2.0,
+                                              x0=page_setup.get_left_margin(gtk.UNIT_POINTS)+(freewidth_in*dpi-width_in_points)/2.0)
         
+        renderer.set_ctx_from_surface (context.get_cairo_context().get_target())
+        # unfortunateley there is need for extra treatment of text
+        renderer.ctx.translate(page_setup.get_left_margin(gtk.UNIT_POINTS)+(freewidth_in*dpi-width_in_points)/2.0,
+                               page_setup.get_top_margin(gtk.UNIT_POINTS)-height_in_points/2.0+freeheight_in*dpi/2.0)
+        renderer.ctx.save() # important! there will be no effect of previous statement without save
+        fc.figure.draw(renderer)
+
+        # restore the figure's settings
+        fc.figure.set_size_inches(orig_w_in, orig_h_in)
+        fc.figure.set_facecolor(orig_f_color)
+        fc.figure.set_edgecolor(orig_e_color)
         
 class ScriptInterface:
     
