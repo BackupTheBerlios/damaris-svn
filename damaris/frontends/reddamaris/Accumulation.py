@@ -208,18 +208,31 @@ class Accumulation(Errorable, Drawable):
         else:
             raise Exception("sorry destination %s is not valid"%(repr(destination)))
 
-        the_destination.write("# accumulation %d\n"%self.n)
-        the_destination.write("# t y_mean y_err ...\n")
         self.lock.acquire()
         try:
-            xdata=self.get_xdata()
+            the_destination.write("# accumulation %d\n"%self.n)
+            if self.common_descriptions is not None:
+                for (key,value) in self.common_descriptions.iteritems():
+                    the_destination.write("# %s : %s\n"%(key, str(value)))
+            the_destination.write("# t")
             ch_no=self.get_number_of_channels()
+            if self.use_error:
+                for i in xrange(ch_no): the_destination.write(" ch%d_mean ch%d_err"%(i,i))
+            else:
+                for i in xrange(ch_no): the_destination.write(" ch%d_mean"%i)
+            the_destination.write("\n")
+            xdata=self.get_xdata()
             ydata=map(self.get_ydata, xrange(ch_no))
-            yerr=map(self.get_yerr, xrange(ch_no))
+            yerr=None
+            if self.use_error:
+                yerr=map(self.get_yerr, xrange(ch_no))
             for i in xrange(len(xdata)):
                 the_destination.write("%g"%xdata[i])
                 for j in xrange(ch_no):
-                    the_destination.write(" %g %g"%(ydata[j][i],yerr[j][i]))
+                    if self.use_error:
+                        the_destination.write(" %g %g"%(ydata[j][i],yerr[j][i]))
+                    else:
+                        the_destination.write(" %g"%ydata[j][i])                        
                 the_destination.write("\n")
             the_destination=None
             xdata=yerr=ydata=None
