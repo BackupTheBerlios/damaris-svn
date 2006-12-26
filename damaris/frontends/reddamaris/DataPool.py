@@ -17,6 +17,19 @@ class DataPool(UserDict.DictMixin):
     dictionary with sending change events
     """
 
+    # supports tranlation from dictionary keys to pytables hdf node names
+    # taken from: Python Ref Manual Section 2.3: Identifiers and keywords
+    # things are always prefixed by "dir_" or "dict_"
+    translation_table=""
+    for i in xrange(256):
+        c=chr(i)
+        if (c>="a" and c<="z") or \
+           (c>="A" and c<="Z") or \
+           (c>="0" and c<="9"):
+            translation_table+=c
+        else:
+            translation_table+="_"
+
     class Event:
         access=0
         updated_value=1
@@ -98,19 +111,30 @@ class DataPool(UserDict.DictMixin):
         try:
             for key in dict_keys:
                 if key[:2]=="__": continue
-                # convert key to a valid name
-                group_keyname="dict_"
-                for character in key:
-                    if ((character>='a' and character<='z') or
-                        (character>='A' and character<='Z') or
-                        (character>='0' and character<='9')):
-                        group_keyname+=character
+                dump_dir=dump_group
+                # walk along the given path and create groups if necessary
+                namelist = key.split("/")
+                for part in namelist[:-1]:
+                    dir_part="dir_"+part.translate(DataPool.translation_table)
+                    if not dir_part in dump_dir:
+                        dump_dir=dump_file.createGroup(dump_dir,name=dir_part,title=part)
                     else:
-                        group_keyname+="_"
+                        if dump_dir._v_children[dir_part]._v_title==part:
+                            dump_dir=dump_dir._v_children[dir_part]
+                        else:
+                            extension_count=0
+                            while dir_part+"_%03d"%extension_count in dump_dir:
+                                extension_count+=1
+                            dump_dir=dump_file.createGroup(dump_dir,
+                                                           name=dir_part+"_%03d"%extension_count,
+                                                           title=part)
+                
+                # convert last part of key to a valid name
+                group_keyname="dict_"+namelist[-1].translate(DataPool.translation_table)
                 # avoid double names by adding number extension
-                if group_keyname in dump_group:
+                if group_keyname in dump_dir:
                     extension_count=0
-                    while group_keyname+"_%03d"%extension_count in dump_group:
+                    while group_keyname+"_%03d"%extension_count in dump_dir:
                         extension_count+=1
                     group_keyname+="_%03d"%extension_count
                 self.__dictlock.acquire()
@@ -124,7 +148,7 @@ class DataPool(UserDict.DictMixin):
                 if "write_to_hdf" in dir(value):
                     try:
                         value.write_to_hdf(hdffile=dump_file,
-                                           where=dump_group,
+                                           where=dump_dir,
                                            name=group_keyname,
                                            title=key,
                                            complib=complib,
