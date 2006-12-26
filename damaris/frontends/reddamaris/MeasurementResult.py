@@ -189,18 +189,23 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
 
 
     def write_to_hdf(self, hdffile, where, name, title, complib=None, complevel=None):
-        if complib is not None or complib=="None":
-            print "ToDo: compression is not implemented in MeasurementResult.write_to_hdf"
+
         h5_table_format= {
             "x" : tables.Float64Col(),
             "y_mean" : tables.Float64Col(),
             "y_sigma" : tables.Float64Col(),
             "n" : tables.Int64Col()
             }
+        filter=None
+        if complib is not None:
+            if complevel is None:
+                complevel=9
+            filter=tables.Filters(complevel=complevel,complib=complib,shuffle=1)
 
         mr_table=hdffile.createTable(where=where,name=name,
                                      description=h5_table_format,
                                      title=title,
+                                     filters=filter,
                                      expectedrows=len(self))
         mr_table.attrs.damaris_type="MeasurementResult"
         self.lock.acquire()

@@ -241,7 +241,7 @@ class Accumulation(Errorable, Drawable):
             
 
 
-    def write_to_hdf(self, hdffile, where, name, title, complib=None, complevel=None):
+    def write_to_hdf_old_style(self, hdffile, where, name, title, complib=None, complevel=None):
         accu_group=hdffile.createGroup(where=where,name=name,title=title)
         accu_group._v_attrs.damaris_type="Accumulation"
         if self.contains_data():
@@ -321,6 +321,109 @@ class Accumulation(Errorable, Drawable):
                 time_slice_data=None
                 accu_group=None
                 self.lock.release()
+
+    def write_to_hdf_new_style(self, hdffile, where, name, title, complib=None, complevel=None):
+        accu_group=hdffile.createGroup(where=where,name=name,title=title)
+        accu_group._v_attrs.damaris_type="Accumulation"
+        if self.contains_data():
+            self.lock.acquire()
+            try:
+                # save time stamps
+                if self.time_period is not None and len(self.time_period)>0:
+                    accu_group._v_attrs.earliest_time="%04d%02d%02d %02d:%02d:%02d.%03d"%(self.time_period[0].year,
+                                                                                          self.time_period[0].month,
+                                                                                          self.time_period[0].day,
+                                                                                          self.time_period[0].hour,
+                                                                                          self.time_period[0].minute,
+                                                                                          self.time_period[0].second,
+                                                                                          self.time_period[0].microsecond/1000)
+                    accu_group._v_attrs.oldest_time="%04d%02d%02d %02d:%02d:%02d.%03d"%(self.time_period[1].year,
+                                                                                        self.time_period[1].month,
+                                                                                        self.time_period[1].day,
+                                                                                        self.time_period[1].hour,
+                                                                                        self.time_period[1].minute,
+                                                                                        self.time_period[1].second,
+                                                                                        self.time_period[1].microsecond/1000)
+                if self.common_descriptions is not None:
+                    for (key,value) in self.common_descriptions.iteritems():
+                        accu_group._v_attrs.__setattr__("description_"+key,str(value))
+
+
+                # save interval information
+                filter=None
+                if complib is not None:
+                    if complevel is None:
+                        complevel=9
+                    filter=tables.Filters(complevel=complevel,complib=complib,shuffle=1)
+
+                # tried compression filter, but no effect...
+                index_table=hdffile.createTable(where=accu_group,
+                                                name="indices",
+                                                description={"start": tables.UInt64Col(),
+                                                             "length": tables.UInt64Col(),
+                                                             "start_time": tables.Float64Col(),
+                                                             "dwelltime": tables.Float64Col(),
+                                                             "number": tables.UInt64Col()},
+                                                title="indices of adc data intervals",
+                                                filters=filter,
+                                                expectedrows=len(self.index))
+
+                # save interval data
+                new_row=index_table.row
+                for i in xrange(len(self.index)):
+                    new_row["start"]=self.index[i][0]
+                    new_row["dwelltime"]=1.0/self.sampling_rate
+                    new_row["start_time"]=1.0/self.sampling_rate*self.index[i][0]
+                    new_row["length"]=self.index[i][1]-self.index[i][0]+1
+                    new_row["number"]=self.n
+                    new_row.append()
+
+                index_table.flush()
+                new_row=None
+                index_table=None
+
+                # prepare saving data
+                channel_no=len(self.y)
+                timedata=numarray.array(shape = (len(self.y[0]),channel_no*2),
+                                        type = numarray.Float64)
+                for ch in xrange(channel_no):
+                    timedata[:,ch*2]=self.get_ydata(ch)
+                    if self.uses_statistics():
+                        timedata[:,ch*2+1]=self.get_yerr(ch)
+                    else:
+                        timedata[:,ch*2+1]=numarray.zeros(type = numarray.Float64,
+                                                          shape = (len(self.y[0]),))
+                
+                # save data
+                time_slice_data=None
+                if filter is not None:
+                    chunkshape=timedata.getshape()
+                    if len(chunkshape) <= 1:
+                        chunkshape = (min(chunkshape[0],1024*8),)
+                    else:
+                        chunkshape = (min(chunkshape[0],1024*8), chunkshape[1])
+                    time_slice_data=hdffile.createCArray(accu_group,
+                                                         name="accu_data",
+                                                         shape=timedata.getshape(),
+                                                         atom=tables.Float64Atom(shape=chunkshape,
+                                                                                 flavor="numarray"),
+                                                         filters=filter,
+                                                         title="accu data")
+                    time_slice_data[:]=timedata
+                else:
+                    time_slice_data=hdffile.createArray(accu_group,
+                                                        name="accu_data",
+                                                        object=timedata,
+                                                        title="accu data")
+
+
+
+            finally:
+                time_slice_data=None
+                accu_group=None
+                self.lock.release()
+
+    write_to_hdf=write_to_hdf_new_style
 
     # / Schnittstellen nach Außen ------------------------------------------------------------------
     
