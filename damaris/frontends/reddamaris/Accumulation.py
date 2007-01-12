@@ -747,6 +747,12 @@ class Accumulation(Errorable, Drawable):
                 
                 return self
 
+        elif other is None:
+            # Convenience: ignore add of None
+            return self
+        else:
+            raise ValueError("can not add "+repr(type(other))+" to Accumulation")
+
 
     def __isub__(self, other):
         "Redefining self -= other"
