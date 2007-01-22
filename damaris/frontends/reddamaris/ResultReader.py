@@ -61,7 +61,15 @@ class ResultReader:
         get result object
         """
         # class-intern result-object currently being processed
-        result_file = file(in_filename, "r")
+        retries=0
+        while retries<10:
+            try:
+                result_file = file(in_filename, "r")
+                break
+            except IOError, e:
+                retries+=1
+                print e, "retry", retries
+                time.sleep(0.05)
 
         # get date of last modification 
         self.result_job_date = datetime.fromtimestamp(os.stat(in_filename)[8])
