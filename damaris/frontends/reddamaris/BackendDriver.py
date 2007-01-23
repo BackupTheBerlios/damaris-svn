@@ -60,7 +60,7 @@ class BackendDriver(threading.Thread):
                 os.rename(self.core_output_filename+".%02d"%(i-j-1),self.core_output_filename+".%02d"%(i-j))
             os.rename(self.core_output_filename, self.core_output_filename+".%02d"%0)
         # create logfile
-        file(self.core_output_filename,"w")
+        self.core_output=file(self.core_output_filename,"w")
 
         print "todo: move away all state files"
         if sys.platform[:5]=="linux":
@@ -71,7 +71,7 @@ class BackendDriver(threading.Thread):
             cygwin_root_key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/")
             cygwin_path=_winreg.QueryValueEx(cygwin_root_key,"native")[0]
             os.environ["PATH"]+=";"+os.path.join(cygwin_path,"bin")+";"+os.path.join(cygwin_path,"lib")
-            self.core_input=subprocess.Popen("\"" + self.executable + "\"" + " --spool "+self.spool_dir+" >"+self.core_output_filename+" 2>&1")
+            self.core_input=subprocess.Popen("\"" + self.executable + "\"" + " --spool "+self.spool_dir, stdout=self.core_output, stderr=self.core_output)
 
         # look out for state file
         timeout=10
@@ -90,6 +90,8 @@ class BackendDriver(threading.Thread):
                     if not log_message:
                         log_message="no error message from core"
                 self.quit_flag.set()
+                self.core_output.close()
+                self.core_ouptut_file=None
                 raise AssertionError("state file %s did not show up or backend died away:\n%s"%(statefilename,log_message))
             time.sleep(0.05)
             timeout-=0.05
@@ -118,7 +120,7 @@ class BackendDriver(threading.Thread):
 
 
         # now open output file
-        self.core_output=file(self.core_output_filename,"r")
+        #self.core_output=file(self.core_output_filename,"r")
 
         # wait on flag and look for backend
         while not self.quit_flag.isSet() and self.is_busy():
@@ -208,3 +210,4 @@ class BackendDriver(threading.Thread):
             except OSError:
                 pass
         self.core_input=None
+        self.core_output=None
