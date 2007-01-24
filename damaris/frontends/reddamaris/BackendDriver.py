@@ -64,9 +64,10 @@ class BackendDriver(threading.Thread):
 
         print "todo: move away all state files"
         if sys.platform[:5]=="linux":
-            #self.core_input=os.popen(self.executable+" --spool "+self.spool_dir+" >"+self.core_output_filename+" 2>&1","w")
-            self.core_input=subprocess.Popen("\""+self.executable+"\" --spool \""+self.spool_dir+"\" >"+self.core_output_filename+" 2>&1", shell=True)
-            
+            self.core_input=subprocess.Popen([self.executable, "--spool", self.spool_dir],
+                                             stdout=self.core_output,
+                                             stderr=self.core_output)
+
         if sys.platform=="win32":
             cygwin_root_key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/")
             cygwin_path=_winreg.QueryValueEx(cygwin_root_key,"native")[0]
