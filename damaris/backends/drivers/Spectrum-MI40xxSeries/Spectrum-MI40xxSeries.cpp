@@ -1,4 +1,3 @@
-
 #include <cmath>
 #include <stack>
 #include <cerrno>
@@ -182,26 +181,58 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
                 else
                     settings.sensitivity=inputs.front()->sensitivity;
 
-		// adapt the pulse program for gated sampling
-		if (a_state->length<1.0*inputs.front()->samples/settings.samplefreq) {
-		    throw ADC_exception("state is shorter than acquisition time");
+		// adapt sample count
+		if (inputs.front()->samples%4!=0) {
+		    throw ADC_exception("number of samples must be multiple of four");
 		}
-		else if (a_state->length > 1.0*inputs.front()->samples/settings.samplefreq) {
-		    // state is too long... create new one with proper time
-		    state* gated_sampling_pulse=new state(*a_state);
-		    double new_length=(inputs.front()->samples+3)/settings.samplefreq;
-		    // align to lower 10ns step
-		    new_length=floor(1e8*new_length)/1e8;
-		    gated_sampling_pulse->length=new_length;
-		    gated_sampling_pulse->push_back(trigger_line.copy_new());
-		    // insert after me
-		    exp.insert(i,(state_atom*)gated_sampling_pulse);
-		    // shorten this state
-		    a_state->length-=new_length;
+
+		// calculate the time required
+		double delayed_gating_time;
+		// the gating time has an offset, which was found to be 1.5 dwelltimes for <2.5MHz and 4.5 dwelltimes for >=2.5MHz
+		double gating_time;
+		if (settings.samplefreq<2.5e6) {
+		  // if sampling rate is <2.5MHz, there is another data handling mode,
+		  // we have to wait 6 dwelltimes before the gating pulse
+		  // see MI4021 manual page 79: "Accquisition Delay: -6 Samples"
+		  // it might be necessary to add 0.1 dwelltime to shift the sampling start a little more...
+		  gating_time=(inputs.front()->samples+1.5)/settings.samplefreq;
+		  delayed_gating_time=ceil(1e8*6.0/settings.samplefreq)/1e8;
 		}
 		else {
-		    // state has proper length
-		    a_state->push_back(trigger_line.copy_new());
+		  gating_time=(inputs.front()->samples+4.5)/settings.samplefreq;
+		  delayed_gating_time=0.0;
+		}
+		
+		gating_time=round(1e8*gating_time)/1e8;
+		double time_required=delayed_gating_time+gating_time;
+		// check time requirements
+		if (a_state->length<time_required) {
+		    throw ADC_exception("state is shorter than acquisition time");
+		}
+
+		// if necessary, add the gating pulse delay...
+		if (delayed_gating_time!=0.0) {
+		  state* delayed_gating_state=new state(*a_state);
+		  delayed_gating_state->length=delayed_gating_time;
+		  // insert before me
+		  exp.insert(i,(state_atom*)delayed_gating_state);
+		}
+
+		// adapt the pulse program for gated sampling
+		if (a_state->length == gating_time) {
+		  // state has proper length
+		  a_state->push_back(trigger_line.copy_new());
+		}
+		else {
+		  // state is too long... 
+		  // create new one with proper time and gated sampling pulse
+		  state* gated_sampling_pulse=new state(*a_state);
+		  gated_sampling_pulse->length=gating_time;
+		  gated_sampling_pulse->push_back(trigger_line.copy_new());
+		  // insert gate pulse state before remaining (original) state
+		  exp.insert(i,(state_atom*)gated_sampling_pulse);
+		  // shorten this state
+		  a_state->length-=time_required;
 		}
 
 		/* save sampleno */
@@ -284,6 +315,11 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
          conf->sensitivity=5.0; // set sensitvity to minimum (maximum voltage)
      else
          conf->sensitivity=10.0; // dto.
+  }
+
+  if (sampleno<16 || sampleno%16!=0) {
+      delete conf;
+      throw SpectrumMI40xxSeries_error("total number of samples must be multiple of 16 and at least 16");
   }
 
   effective_settings=conf;
