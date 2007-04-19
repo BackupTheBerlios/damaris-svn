@@ -53,7 +53,7 @@ public:
       the_fg=my_pts;
   }
 
-  result* Mobile_hardware::experiment(const state& exp) {
+  result* experiment(const state& exp) {
     result* r=NULL;
     for(size_t tries=0; r==NULL && core::term_signal==0 &&  tries<102; ++tries) {
       state* work_copy=exp.copy_flat();
