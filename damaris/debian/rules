@@ -98,6 +98,8 @@ install: build
 			find $$MODULEBUILDDIR -type f -exec dh_install -pdamaris-backends {} $$MODULESDIR \; ; \
 		fi ; \
 	done; true
+	dh_install
+
 
 # init script
 	cp backends/tools/nmr_drivers.sh debian/damaris-backends.init
@@ -111,7 +113,6 @@ binary-indep: build install
 	dh_installdocs -i
 	dh_installexamples -i
 	dh_installmenu -i
-	dh_installinit -a -pdamaris-backends
 #	dh_installman -i
 	dh_link -i
 	dh_compress -i
@@ -128,6 +129,7 @@ binary-arch: build install
 	dh_installchangelogs -a
 	dh_installdocs -a
 	dh_installexamples -a
+	dh_installinit -a -pdamaris-backends
 #	dh_installmenu -a
 #	dh_installman -a
 	dh_strip -a
