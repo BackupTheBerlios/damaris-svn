@@ -1,0 +1,10 @@
+#! /bin/sh
+
+if grep nmr /etc/group >/dev/null; then
+     echo "deleting group nmr" ;
+     groupdel nmr
+else
+     echo "group nmr already removed" ;
+fi
+
+#DEBHELPER#

@@ -1,0 +1,27 @@
+Source: damaris
+Section: science
+Priority: optional
+Maintainer: Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>
+Build-Depends: debhelper, python-dev, g++, libxerces27-dev, libexpat-dev|libexpat1-dev, linux-headers-2.6, make, python-central, dpkg-dev
+Standards-Version: 3.7.2
+
+Package: python-damaris
+Architecture: all
+XS-Python-Version: >=2.4
+XB-Python-Version: ${python:Versions}
+Provides:  ${python:Provides}, damaris-frontend
+Depends: ${python:Depends}, python-numarray (>=0.80), python-numarray-ext (>=0.80), python-gtk2 (>=2.8.0), python-glade2, python-matplotlib, python-tables, python-scipy, python-numpy, python-numpy-ext
+Suggests: damaris-backends
+Description: python frontend for damaris project
+
+Package: damaris-frontend-labview
+Architecture: all
+Provides: damaris-frontend
+Suggests: damaris-backends
+Description: LabView frontend for damaris project
+
+Package: damaris-backends
+Architecture: i386 amd64
+Depends: libxerces27, libexpat1, linux-image-2.6
+Suggests: damaris-frontend
+Description: packend package
