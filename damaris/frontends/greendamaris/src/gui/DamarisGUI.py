@@ -36,18 +36,17 @@ import matplotlib.figure
 from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
 from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTK as NavigationToolbar
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 # import our own stuff
-from gui import ExperimentWriter
-from gui import ExperimentHandling
-from gui import ResultReader
-from gui import ResultHandling
-from gui import BackendDriver
-from data import DataPool
-from data import Accumulation
-from data import ADC_Result
-from data import Drawable
-from data import MeasurementResult
+from damaris.gui import ExperimentWriter
+from damaris.gui import ExperimentHandling
+from damaris.gui import ResultReader
+from damaris.gui import ResultHandling
+from damaris.gui import BackendDriver
+from damaris.data import DataPool
+from damaris.data import Accumulation
+from damaris.data import ADC_Result
+from damaris.data import Drawable
+from damaris.data import MeasurementResult
 
 class logstream:
     gui_log=None

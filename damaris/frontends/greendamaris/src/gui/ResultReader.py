@@ -17,10 +17,10 @@ import xml.parsers.expat
 import threading
 from datetime import datetime
 
-from data.ADC_Result import ADC_Result
-from data.Error_Result import Error_Result
-from data.Temp_Result import Temp_Result
-from data.Config_Result import Config_Result
+from damaris.data.ADC_Result import ADC_Result
+from damaris.data.Error_Result import Error_Result
+from damaris.data.Temp_Result import Temp_Result
+from damaris.data.Config_Result import Config_Result
 
 class ResultReader:
     """

@@ -480,7 +480,7 @@ class Accumulation(Errorable, Drawable):
                 return r
 
         # ADC_Result
-        elif str(other.__class__) == "ADC_Result.ADC_Result":
+        elif str(other.__class__) == "damaris.data.ADC_Result.ADC_Result":
 
             # Other empty (return)
             if not other.contains_data(): return
@@ -540,7 +540,7 @@ class Accumulation(Errorable, Drawable):
                 return r
 
         # Accumulation
-        elif str(other.__class__) == "Accumulation.Accumulation":
+        elif str(other.__class__) == "damaris.data.Accumulation.Accumulation":
 
             # Other empty (return)
             if not other.contains_data(): return
@@ -637,7 +637,7 @@ class Accumulation(Errorable, Drawable):
                 return self
 
         # ADC_Result
-        elif str(other.__class__) == "ADC_Result.ADC_Result":
+        elif str(other.__class__) == "damaris.data.ADC_Result.ADC_Result":
 
             # Other empty (return)
             if not other.contains_data(): return self
@@ -692,7 +692,7 @@ class Accumulation(Errorable, Drawable):
                 return self
 
         # Accumulation
-        elif str(other.__class__) == "Accumulation.Accumulation":
+        elif str(other.__class__) == "damaris.data.Accumulation.Accumulation":
 
             # Other empty (return)
             if not other.contains_data(): return

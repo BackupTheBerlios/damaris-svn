@@ -4,7 +4,7 @@ import sys
 import os
 import os.path
 import traceback
-from data import Resultable
+from damaris.data import Resultable
 
 class ResultHandling(threading.Thread):
     """

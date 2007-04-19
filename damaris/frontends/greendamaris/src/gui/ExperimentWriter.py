@@ -1,7 +1,7 @@
 import os
 import os.path
 import shutil
-from experiments import Experiment
+from damaris.experiments import Experiment
 
 class ExperimentWriter:
     """

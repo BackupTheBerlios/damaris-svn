@@ -3,7 +3,7 @@ import StringIO
 import traceback
 import sys
 import time
-from experiments import Experiment
+from damaris.experiments import Experiment
 
 class ExperimentHandling(threading.Thread):
     """
