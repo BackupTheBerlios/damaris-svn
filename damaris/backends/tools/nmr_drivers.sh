@@ -12,19 +12,32 @@
 
 RETVAL=0
 
-NMR_MODULE_DIR=/lib/modules/`uname -r`/nmr
-SPECTRUM_MOD=$NMR_MODULE_DIR/spc.ko
-PULSEBLASTER_MOD=$NMR_MODULE_DIR/pulseblaster.ko
+NMR_MODULE_DIR=/lib/modules/`uname -r`/kernel/damaris
+NMR_GROUP="nmr"
+
+# tools
 LSMOD=/sbin/lsmod
 RMMOD=/sbin/rmmod
 INSMOD=/sbin/insmod
 LSPCI=/sbin/lspci
+KERNELCONF=/boot/config-`uname -r`
+
+# spectrum related stuff
+CONFIG_SMP="`grep 'CONFIG_SMP *=' $KERNELCONF | sed 's/.*=//'`"
+if test "x$CONFIG_SMP" = "xy"; then
+  SPECTRUM_SMP_EXT="_smp";
+else
+  SPECTRUM_SMP_EXT="";
+fi
+SPECTRUM_DEV="/dev/spc0"
+SPECTRUM_MAJOR=""
+SPECTRUM_MOD=$NMR_MODULE_DIR/spc$SPECTRUM_SMP_EXT.ko
+
+# pulseblaster related stuff
+PULSEBLASTER_MOD=$NMR_MODULE_DIR/pulseblaster.ko
 PULSEBLASTER_IOPORT=""
 PULSEBLASTER_DEV="/dev/pulseblaster"
 PULSEBLASTER_MAJOR=""
-SPECTRUM_DEV="/dev/spc0"
-SPECTRUM_MAJOR=""
-NMR_GROUP="nmr"
 
 pb_findio() {
 	lspci -vn |
@@ -49,6 +62,7 @@ start() {
 	fi
 	if test \! \( -f $SPECTRUM_MOD -a -f $PULSEBLASTER_MOD \); then
 	    printf "pulseblaster or specturm module not available...\n"
+	    RETVAL=2
 	    return
 	fi
 	PULSEBLASTER_IOPORT=`pb_findio`
@@ -64,10 +78,14 @@ start() {
 	PULSEBLASTER_MAJOR=`find_major "pulseblaster"`
 	if test -z "$PULSEBLASTER_MAJOR"; then
 	    printf "could not determine pulseblaster's major device number"
+	    RETVAL=2
+	    return
 	fi
 	SPECTRUM_MAJOR=`find_major "spec"`
 	if test -z "$SPECTRUM_MAJOR"; then
 	    printf "could not determine spectrum's major device number"
+	    RETVAL=2
+	    return
 	fi
 	
 	mknod $PULSEBLASTER_DEV c $PULSEBLASTER_MAJOR 0
@@ -85,8 +103,8 @@ start() {
 }
 
 stop() {
-	if $LSMOD | egrep "^spc ">/dev/null ; then
-	  $RMMOD spc
+	if $LSMOD | egrep "^spc$SPECTRUM_SMP_EXT ">/dev/null ; then
+	  $RMMOD spc$SPECTRUM_SMP_EXT
 	  test -c $SPECTRUM_DEV && rm $SPECTRUM_DEV
 	fi
 	if $LSMOD | egrep "^pulseblaster ">/dev/null ; then
@@ -97,7 +115,7 @@ stop() {
 }
 
 status () {
-	if $LSMOD | egrep "^spc ">/dev/null ; then
+	if $LSMOD | egrep "^spc$SPECTRUM_SMP_EXT ">/dev/null ; then
 	   echo spectrum module loaded
 	else
 	   echo spectrum module not loaded
