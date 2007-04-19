@@ -378,7 +378,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
 	throw SpectrumMI40xxSeries_error("could not allocate buffers for fifo mode");
       }
       fifobuffers[i]=(short int*)newbuffer;
-      SpcSetParam(deviceno,SPC_FIFO_BUFADR0+i,(int)newbuffer);
+      SpcSetAdr(deviceno,SPC_FIFO_BUFADR0+i,newbuffer);
     }
     // start fifo aquisition
     nErr=SpcSetParam(deviceno, SPC_COMMAND, SPC_FIFOSTART);
