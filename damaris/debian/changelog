@@ -3,3 +3,11 @@ damaris (0.9-0.0) experimental; urgency=medium
   * started debianization
 
  -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Fri,  13 Apr 2007 14:12:12 +0100
+
+damaris (0.9-0.1) experimental; urgency=medium
+
+  * added i386 and amd64 targets and kernel modules
+  * fixed class prefixes in damaris modules
+  * adapted init script to new spectrum modules
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Thu,  19 Apr 2007 14:00:00 +0100
