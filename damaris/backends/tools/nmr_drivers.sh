@@ -31,6 +31,7 @@ else
 fi
 SPECTRUM_DEV="/dev/spc0"
 SPECTRUM_MAJOR=""
+SPECTRUM_MINOR=""
 SPECTRUM_MOD=$NMR_MODULE_DIR/spc$SPECTRUM_SMP_EXT.ko
 
 # pulseblaster related stuff
@@ -38,6 +39,7 @@ PULSEBLASTER_MOD=$NMR_MODULE_DIR/pulseblaster.ko
 PULSEBLASTER_IOPORT=""
 PULSEBLASTER_DEV="/dev/pulseblaster"
 PULSEBLASTER_MAJOR=""
+PULSEBLASTER_MINOR=""
 
 pb_findio() {
 	lspci -vn |
@@ -54,6 +56,11 @@ pb_findio() {
 find_major() {
  grep " $1\$" /proc/devices |sed "s/ *\([0-9]*\) $1/\1/"
 }
+
+find_minor_misc() {
+ grep " $1\$" /proc/misc |sed "s/ *\([0-9]*\) $1/\1/"
+}
+
 
 start() {
 	if $LSMOD | egrep "^spc|^pulseblaster">/dev/null ; then
@@ -76,25 +83,34 @@ start() {
 
 	# now find major device numbers
 	PULSEBLASTER_MAJOR=`find_major "pulseblaster"`
+        PULSEBLASTER_MINOR=0
 	if test -z "$PULSEBLASTER_MAJOR"; then
 	    printf "could not determine pulseblaster's major device number"
 	    RETVAL=2
 	    return
 	fi
-	SPECTRUM_MAJOR=`find_major "spec"`
-	if test -z "$SPECTRUM_MAJOR"; then
-	    printf "could not determine spectrum's major device number"
-	    RETVAL=2
-	    return
-	fi
+
+# 	SPECTRUM_MAJOR=`find_major "spec"`
+# 	if test -z "$SPECTRUM_MAJOR"; then
+# 	    # second chance: misc
+# 	    SPECTRUM_MAJOR=`find_major "misc"`
+# 	    SPECTRUM_MINOR=`find_minor_misc spc0`
+# 	    if test -z "$SPECTRUM_MINOR"; then
+# 		printf "could not determine spectrum's device numbers"
+# 		RETVAL=2
+# 		return
+# 	    fi
+# 	else
+# 	    SPECTRUM_MINOR=0
+# 	fi
 	
-	mknod $PULSEBLASTER_DEV c $PULSEBLASTER_MAJOR 0
-	mknod $SPECTRUM_DEV c $SPECTRUM_MAJOR 0
+	mknod $PULSEBLASTER_DEV c $PULSEBLASTER_MAJOR $PULSEBLASTER_MINOR
+#	mknod $SPECTRUM_DEV c $SPECTRUM_MAJOR $SPECTRUM_MINOR
 	if grep "^$NMR_GROUP:" /etc/group>/dev/null; then
 	    chgrp $NMR_GROUP $PULSEBLASTER_DEV
 	    chgrp $NMR_GROUP $SPECTRUM_DEV
 	    chmod g=rw,o= $PULSEBLASTER_DEV
-	    chmod g=rw,o= $SPECTRUM_DEV	     
+	    chmod g=rw,o= $SPECTRUM_DEV
 	else
 	    echo It is recommended to create a group named $NMR_GROUP
 	    chmod a=rw $PULSEBLASTER_DEV
@@ -105,7 +121,7 @@ start() {
 stop() {
 	if $LSMOD | egrep "^spc$SPECTRUM_SMP_EXT ">/dev/null ; then
 	  $RMMOD spc$SPECTRUM_SMP_EXT
-	  test -c $SPECTRUM_DEV && rm $SPECTRUM_DEV
+	  #test -c $SPECTRUM_DEV && rm $SPECTRUM_DEV
 	fi
 	if $LSMOD | egrep "^pulseblaster ">/dev/null ; then
 	  $RMMOD pulseblaster
