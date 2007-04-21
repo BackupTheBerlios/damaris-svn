@@ -48,13 +48,15 @@ from damaris.data import ADC_Result
 from damaris.data import Drawable
 from damaris.data import MeasurementResult
 
+debug = False
+
 class logstream:
     gui_log=None
     text_log=sys.__stdout__
 
     def write(self, message):
         # default for stdout and stderr
-        if self.gui_log is not None:
+        if self.gui_log is not None and not debug:
             self.gui_log(message)
         else:
             self.text_log.write(message)
@@ -168,7 +170,7 @@ class DamarisGUI:
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
         self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
         self.toolbar_pause_button = self.xml_gui.get_widget("toolbar_pause_button")
-        self.toolbar_exec_with_options_togglebutton = self.xml_gui.get_widget("toolbar_execute_with_options_button")
+        #self.toolbar_exec_with_options_togglebutton = self.xml_gui.get_widget("toolbar_execute_with_options_button")
 
         # print button
         self.toolbar_print_button=self.xml_gui.get_widget("toolbar_print_button")
@@ -188,7 +190,7 @@ class DamarisGUI:
         self.xml_gui.signal_connect("on_toolbar_run_button_clicked", self.start_experiment)
         self.xml_gui.signal_connect("on_toolbar_pause_button_toggled", self.pause_experiment)
         self.xml_gui.signal_connect("on_toolbar_stop_button_clicked", self.stop_experiment)
-        self.xml_gui.signal_connect("on_toolbar_execute_with_options_button_clicked", self.start_experiment_with_options)
+        #self.xml_gui.signal_connect("on_toolbar_execute_with_options_button_clicked", self.start_experiment_with_options)
 
     def run(self):
         # prolong lifetime of clipboard till the very end (avoid error message)
@@ -1771,7 +1773,7 @@ class MonitorWidgets:
             # print "sleeping to find time for updates"
             threading.Event().wait(0.1)
         if event.subject[:2]=="__": return
-        if event.what==DataPool.DataPool.Event.updated_value:
+        if event.what==DataPool.Event.updated_value:
             if self.displayed_data[0] is None or event.subject!=self.displayed_data[0]:
                 # do nothing, forget it
                 return
@@ -1782,7 +1784,7 @@ class MonitorWidgets:
             self.update_counter+=1
             gobject.idle_add(self.datapool_idle_listener,event,priority=gobject.PRIORITY_DEFAULT_IDLE)
         else:
-            if event.what==DataPool.DataPool.Event.updated_value and \
+            if event.what==DataPool.Event.updated_value and \
                    (displayed_object is object_to_display or displayed_object.__class__ is object_to_display.__class__):
                 # oh, another category
                 self.update_counter+=1
@@ -1814,7 +1816,7 @@ class MonitorWidgets:
         """
         self.update_counter-=1
         # print "datapool listener", self.update_counter
-        if event.what==DataPool.DataPool.Event.updated_value:
+        if event.what==DataPool.Event.updated_value:
             if (self.displayed_data[0] is not None and
                 self.displayed_data[0]==event.subject):
                 new_data_struct=self.data_pool[self.displayed_data[0]]
@@ -1846,12 +1848,12 @@ class MonitorWidgets:
                         finally:
                             gtk.gdk.threads_leave()
                 new_data_struct=None
-        elif event.what==DataPool.DataPool.Event.new_key:
+        elif event.what==DataPool.Event.new_key:
             # update combo-box by inserting and rely on consistent information
             gtk.gdk.threads_enter()
             self.source_list_add(event.subject)
             gtk.gdk.threads_leave()
-        elif event.what==DataPool.DataPool.Event.deleted_key:
+        elif event.what==DataPool.Event.deleted_key:
             # update combo-box by removing and rely on consistent information
             gtk.gdk.threads_enter()
             if (not self.displayed_data[0] is None and
@@ -1861,7 +1863,7 @@ class MonitorWidgets:
                 self.clear_display()
             self.source_list_remove(event.subject)
             gtk.gdk.threads_leave()
-        elif event.what==DataPool.DataPool.Event.destroy:
+        elif event.what==DataPool.Event.destroy:
             gtk.gdk.threads_enter()
             self.source_list_reset('None')
             self.displayed_data=[None,None]
@@ -2020,7 +2022,7 @@ class MonitorWidgets:
         if in_result is None:
             self.clear_display()
             return
-        if isinstance(in_result, Accumulation.Accumulation) or isinstance(in_result, ADC_Result.ADC_Result):
+        if isinstance(in_result, Accumulation) or isinstance(in_result, ADC_Result):
             # directly taken from bluedamaris
 
             xmin = in_result.get_xmin()
@@ -2121,7 +2123,7 @@ class MonitorWidgets:
             gtk.gdk.flush()
             in_result=None
             
-        elif isinstance(in_result, MeasurementResult.MeasurementResult):
+        elif isinstance(in_result, MeasurementResult):
             # directly taken from bluedamaris
             # remove lines and error bars
             if self.measurementresultgraph is not None:
@@ -2266,7 +2268,7 @@ class ScriptInterface:
             if self.exp_script: self.exp_writer=ExperimentWriter.ExperimentWriter(spool_dir)
             if self.res_script: self.res_reader=ResultReader.ResultReader(spool_dir, clear_jobs=self.clear_jobs, clear_results=self.clear_results)
 
-        self.data=DataPool.DataPool()
+        self.data=DataPool()
 
 
     def runScripts(self):

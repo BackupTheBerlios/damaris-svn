@@ -23,6 +23,11 @@ class ResultHandling(threading.Thread):
     def run(self):
         # execute it
         dataspace={}
+	data_classes = __import__('damaris.data', dataspace, dataspace, ['*'])
+	for name in dir(data_classes):
+            if name[:2]=="__" and name[-2:]=="__": continue
+            dataspace[name]=data_classes.__dict__[name]
+        del data_classes
         dataspace["results"]=self
         dataspace["data"]=self.data_space
         self.raised_exception=None

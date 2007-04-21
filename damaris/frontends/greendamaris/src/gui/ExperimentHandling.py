@@ -3,6 +3,7 @@ import StringIO
 import traceback
 import sys
 import time
+from damaris.experiments.Experiment import Quit
 from damaris.experiments import Experiment
 
 class ExperimentHandling(threading.Thread):
@@ -25,6 +26,12 @@ class ExperimentHandling(threading.Thread):
 
     def run(self):
         dataspace={}
+	exp_classes = __import__('damaris.experiments', dataspace, dataspace, ['Experiment'])
+	for name in dir(exp_classes):
+            if name[:2]=="__" and name[-2:]=="__": continue
+            dataspace[name]=exp_classes.__dict__[name]
+        del exp_classes
+
         dataspace["data"]=self.data
         dataspace["synchronize"]=self.synchronize
         self.raised_exception = None
@@ -68,14 +75,14 @@ class ExperimentHandling(threading.Thread):
             # send it
             self.writer.send_next(job)
             # write a note
-            if isinstance(job, Experiment.Experiment):
+            if isinstance(job, Experiment):
                 if self.data is not None:
                     self.data["__recentexperiment"]=job.job_id+0
                 if self.quit_flag.isSet():
                     data_sapce=None
                     exp_itterator=None
                     return
-        job=Experiment.Quit()
+        job=Quit()
         self.writer.send_next(job)
         # do not count quit job (is this a good idea?)
         dataspace=None
