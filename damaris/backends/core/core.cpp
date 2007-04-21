@@ -58,9 +58,18 @@ core::core(const core_config& configuration) {
   size_t cwd_buffer_size=1024;
   char* cwd_buffer=(char*)malloc(cwd_buffer_size);
   char* getcwd_returnval=NULL;
-  while (NULL==(getcwd_returnval=getcwd(cwd_buffer, cwd_buffer_size)) && errno==ERANGE) {
+  char* cwd_buffer_retval=cwd_buffer;
+  while (cwd_buffer!=NULL && cwd_buffer_retval!=NULL && 
+	 NULL==(getcwd_returnval=getcwd(cwd_buffer, cwd_buffer_size)) && errno==ERANGE) {
       cwd_buffer_size*=2;
-      realloc(&cwd_buffer,cwd_buffer_size);
+      cwd_buffer_retval=(char*)realloc(&cwd_buffer,cwd_buffer_size);
+  }
+  if (cwd_buffer==NULL) {
+    throw core_exception("can not allocate memory for cwd");    
+  }
+  if (cwd_buffer_retval==NULL) {
+    free(cwd_buffer);
+    throw core_exception("can not reallocate memory for cwd");
   }
   if (getcwd_returnval==NULL) {
       free(cwd_buffer);
