@@ -9,6 +9,10 @@
 #include <xercesc/dom/DOMWriter.hpp>
 #include <xercesc/framework/MemBufFormatTarget.hpp>
 
+#ifndef SIZETPRINTFLETTER
+#  define SIZETPRINTFLETTER "u"
+#endif
+
 /* ***************************************************************************************************
 
 here starts the reader implementation
