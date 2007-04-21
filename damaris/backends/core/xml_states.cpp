@@ -241,7 +241,7 @@ int xml_state_writer::write_states(FILE* output, const state_atom& states_to_wri
     if (ss->repeat==1)
       fprintf(output,"%s<sequent>\n",indent_string.c_str());
     else
-      fprintf(output,"%s<sequent repeat=\"%u\">\n",indent_string.c_str(),ss->repeat);
+      fprintf(output,"%s<sequent repeat=\"%" SIZETPRINTFLETTER "\">\n",indent_string.c_str(),ss->repeat);
     for (state::const_iterator i=ss->begin();i!=ss->end(); i++) {
       write_states(output,**i,0,indent_size+indent_increase);
     }
@@ -289,7 +289,7 @@ int xml_state_writer::write_states(FILE* output, const state_atom& states_to_wri
   const analogin* ai=dynamic_cast<const analogin*>(&states_to_write);
   if (ai!=NULL) {
     fprintf(output,
-	    "%s<analogin id=\"%d\" samples=\"%u\" sample_frequency=\"%g\" channels=\"%lu\" sensitivity=\"%g\" resolution=\"%u\"/>\n",
+	    "%s<analogin id=\"%d\" samples=\"%" SIZETPRINTFLETTER "\" sample_frequency=\"%g\" channels=\"%lu\" sensitivity=\"%g\" resolution=\"%" SIZETPRINTFLETTER "\"/>\n",
 	    indent_string.c_str(),
 	    ai->id,
 	    ai->samples,

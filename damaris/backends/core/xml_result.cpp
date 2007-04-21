@@ -296,7 +296,7 @@ public:
       return;
     }
     for (size_t i=0; i<bufferno; i++) {
-      fprintf(f,"%u: %u samples %f Hz frequency\n",i,sampleno[i],frequencies[i]);
+      fprintf(f,"%" SIZETPRINTFLETTER ": %" SIZETPRINTFLETTER " samples %f Hz frequency\n",i,sampleno[i],frequencies[i]);
       if (buffers[i]!=NULL) {
 	for (size_t j=0; j<sampleno[i]; j++) {
 	  short int a=buffers[i][j*2];
@@ -436,7 +436,7 @@ int xml_result_writer::write_unknown_to_file(const std::string& filename, const 
   FILE* out=fopen(filename.c_str(),"w");
   if (out==0) fprintf(stderr,"could not open file %s\n",filename.c_str());
   fprintf(out,"<?xml version=\"1.0\"?>\n");
-  fprintf(out,"<result job=\"%u\">\n",res->job_no);
+  fprintf(out,"<result job=\"%" SIZETPRINTFLETTER "\">\n",res->job_no);
   if (res==NULL)
       fprintf(out,"<!-- got NULL pointer result... -->\n");
   else
@@ -449,14 +449,14 @@ int xml_result_writer::write_unknown_to_file(const std::string& filename, const 
 
 int xml_result_writer::write_error_to_file(const std::string& filename, const error_result* res) const {
   /* write an extra message to stderr */
-  fprintf(stderr,"job %u: %s\n",res->job_no,res->error_message.c_str());
+  fprintf(stderr,"job %" SIZETPRINTFLETTER ": %s\n",res->job_no,res->error_message.c_str());
   FILE* out=fopen(filename.c_str(),"w");
   if (out==0) {
     fprintf(stderr,"could not open file %s\n",filename.c_str());
     return 0;
   }
   fprintf(out,"<?xml version=\"1.0\"?>\n");
-  fprintf(out,"<result job=\"%u\">\n",res->job_no);
+  fprintf(out,"<result job=\"%" SIZETPRINTFLETTER "\">\n",res->job_no);
   fprintf(out," <error>%s</error>\n",res->error_message.c_str());
   fprintf(out,"</result>");
   fclose(out);
@@ -467,7 +467,7 @@ int xml_result_writer::write_configuration_results_to_file(const std::string& fi
 
   FILE* out=fopen(filename.c_str(),"w");
   fprintf(out,"<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-  fprintf(out,"<result job=\"%u\">\n<configuration>\n",ress.job_no);
+  fprintf(out,"<result job=\"%" SIZETPRINTFLETTER "\">\n<configuration>\n",ress.job_no);
   XMLCh tempStr[100];
   XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("LS", tempStr, 99);
   XERCES_CPP_NAMESPACE_QUALIFIER DOMImplementation *impl2=XERCES_CPP_NAMESPACE_QUALIFIER DOMImplementationRegistry::getDOMImplementation(tempStr);
@@ -497,7 +497,7 @@ int xml_result_writer::write_adcs_to_file(const std::string& filename, const adc
     return 0;
   }
   fprintf(out,"<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-  fprintf(out,"<result job=\"%u\">\n",ress->job_no);
+  fprintf(out,"<result job=\"%" SIZETPRINTFLETTER "\">\n",ress->job_no);
   fwrite(ress->description.c_str(),ress->description.size(),1,out);
   fprintf(out,"\n");
   int num_res=0;
@@ -507,7 +507,7 @@ int xml_result_writer::write_adcs_to_file(const std::string& filename, const adc
       {
 	// write separate data file
 	char result_filename[1<<10];
-	snprintf(result_filename,sizeof(result_filename),"adc.%09u.%d.bin",ress->job_no,num_res);
+	snprintf(result_filename,sizeof(result_filename),"adc.%09" SIZETPRINTFLETTER ".%d.bin",ress->job_no,num_res);
 	write_adcdata_separate(out, std::string(result_filename), *res);
       }
       break;
@@ -541,7 +541,7 @@ int xml_result_writer::write_adc_to_file(const std::string& filename, const adc_
     return 0;
   }
   fprintf(out,"<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n");
-  fprintf(out,"<result job=\"%u\">\n",res->job_no);
+  fprintf(out,"<result job=\"%" SIZETPRINTFLETTER "\">\n",res->job_no);
   fwrite(res->description.c_str(),res->description.size(),1,out);
   fprintf(out,"\n");
   switch (how) {
@@ -579,7 +579,7 @@ int xml_result_writer::write_adcdata_separate(FILE* out, const std::string& data
   fwrite(res->data, 2*sizeof(short int), res->samples, binout);
   fclose(binout);
   fprintf(out,
-	  "<adcdatafile path=\"%s\" samples=\"%u\" rate=\"%g\"/>\n",
+	  "<adcdatafile path=\"%s\" samples=\"%" SIZETPRINTFLETTER "\" rate=\"%g\"/>\n",
 	  datafilename.c_str(),
 	  res->samples,
 	  res->sampling_frequency);
@@ -587,7 +587,7 @@ int xml_result_writer::write_adcdata_separate(FILE* out, const std::string& data
 }
 
 int xml_result_writer::write_adcdata_formated(FILE* out, const std::string& format, const adc_result* res) const {
-  fprintf(out,"<adcdata samples=\"%u\" rate=\"%g\">\n",res->samples,res->sampling_frequency);
+  fprintf(out,"<adcdata samples=\"%" SIZETPRINTFLETTER "\" rate=\"%g\">\n",res->samples,res->sampling_frequency);
   for(size_t i=0;i<res->samples;++i) {
     int data_real=res->data[i*2];
     int data_imag=res->data[i*2+1];
@@ -598,7 +598,7 @@ int xml_result_writer::write_adcdata_formated(FILE* out, const std::string& form
 }
 
 int xml_result_writer::write_adcdata_base64(FILE* out, const adc_result* res) const {
-  fprintf(out,"<adcdata samples=\"%u\" rate=\"%g\">\n",res->samples,res->sampling_frequency);
+  fprintf(out,"<adcdata samples=\"%" SIZETPRINTFLETTER "\" rate=\"%g\">\n",res->samples,res->sampling_frequency);
   unsigned int base64length=0;
   XMLByte* base64buffer=XERCES_CPP_NAMESPACE_QUALIFIER Base64::encode((XMLByte*)res->data,res->samples*2*sizeof(short int),&base64length);
   fwrite(base64buffer,1,base64length,out);

@@ -397,9 +397,9 @@ result* experiment::do_it(hardware* hw) {
   if (experiment_states==NULL) {
     return new error_result(job_no,"did not find any states in job file");
   }
-  fprintf(stderr,"performing experiment job no %u\n",job_no);
+  fprintf(stderr,"performing experiment job no %" SIZETPRINTFLETTER "\n",job_no);
   result* data=hw->experiment(*experiment_states);
-  fprintf(stderr,"finished experiment job no %u\n\n",job_no);
+  fprintf(stderr,"finished experiment job no %" SIZETPRINTFLETTER "\n\n",job_no);
   if (data==NULL)
     return new error_result(job_no,"did not get a result from method result* hardware::experiment(const state&) ");
   data->description=description;

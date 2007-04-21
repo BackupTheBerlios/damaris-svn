@@ -45,7 +45,7 @@ void job_receiver::setFilenamePattern(const std::string& filenamepattern) {
 job* job_receiver::receive(size_t no) {
   snprintf(jobfilename,jobfilenamesize+20,jobfilenamepattern.c_str(),no);
   job* new_job=receive(std::string(jobfilename));
-  if (new_job->no()!=no) fprintf(stderr, "expected job number %ud and specified number %ud are different\n", no, new_job->no() );
+  if (new_job->no()!=no) fprintf(stderr, "expected job number %" SIZETPRINTFLETTER " and specified number %" SIZETPRINTFLETTER " are different\n", no, new_job->no() );
   new_job->job_no=no;
   return new_job;
 }
@@ -102,7 +102,7 @@ job* job_receiver::receive(const std::string& filename) {
     XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&docnoname);
   }
   size_t no=0;
-  if (jobno_attr==NULL) fprintf(stderr,"Warning: job %d: root element has no job number\n",no);
+  if (jobno_attr==NULL) fprintf(stderr,"Warning: job %" SIZETPRINTFLETTER ": root element has no job number\n",no);
   else {
     char* docno=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(jobno_attr->getNodeValue());
     no=strtoul(docno,NULL,0);

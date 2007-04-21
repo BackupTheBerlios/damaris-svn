@@ -16,6 +16,9 @@
 #include "core/result.h"
 #include "core/states.h"
 
+#ifndef SIZETPRINTFLETTER
+#  define SIZETPRINTFLETTER "u"
+#endif
 
 class core;
 /**
@@ -57,7 +60,7 @@ class job {
   }
 
   virtual int print() const{
-    printf("job no %u\n",job_no);
+    printf("job no %" SIZETPRINTFLETTER "\n", job_no);
     return 0;
   }
 

@@ -6,8 +6,14 @@
 #############################################################################
 
 
+SIZETTYPE=$(shell echo __SIZE_TYPE__ | cpp |grep -v "^\#")
+
+ifeq ($(SIZETTYPE),long unsigned int)
+SIZEPRINTFFLAG = -DSIZETPRINTFLETTER=\"lu\"
+endif
+
 CXX=g++
-CXXFLAGS= -g -O0 -I. -I.. -I/opt/local/include -Wshadow -Wall -pedantic
+CXXFLAGS= $(SIZEPRINTFFLAG) -g -O0 -I. -I.. -I/opt/local/include -Wshadow -Wall -pedantic
 LIBS=-lexpat -L/opt/local/lib
 AR= ar
 
