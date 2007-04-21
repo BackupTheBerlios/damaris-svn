@@ -52,7 +52,7 @@ clean:
 # Add here commands to clean up after the build process.
 	-$(MAKE) -C backends clean
 	find backends/drivers -name "pulseblaster-module-*" -type d|xargs -r rm -r
-	(cd frontends/greendamaris && $(PY_INTERPRETER) setup.py clean)
+	(cd frontends/greendamaris && $(PY_INTERPRETER) setup.py clean -a )
 	rm -f debian/damaris-backends.init
 
 	rm -f build-stamp
@@ -99,7 +99,6 @@ install: build
 		fi ; \
 	done; true
 	dh_install
-
 
 # init script
 	cp backends/tools/nmr_drivers.sh debian/damaris-backends.init
