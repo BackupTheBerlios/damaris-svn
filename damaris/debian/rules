@@ -39,8 +39,8 @@ build-stamp:
 		fi; \
 	done )
 # Add here commands to compile the package.
-	$(MAKE) -C backends
-	$(MAKE) -C backends/machines $(BACKENDSMACHINES)
+	$(MAKE) CXXFLAGS=-O2 -C backends
+	$(MAKE) CXXFLAGS=-O2 -C backends/machines $(BACKENDSMACHINES)
 
 	touch build-stamp
 
@@ -78,7 +78,16 @@ install: build
 # backend executables
 	dh_installdirs -pdamaris-backends usr/lib/damaris/backends ; \
 	for i in $(BACKENDSMACHINES); do \
-		test -x "backends/machines/$$i" && dh_install -pdamaris-backends "backends/machines/$$i" "usr/lib/damaris/backends" ; \
+		if test -x "backends/machines/$$i" ; then \
+		  MACHINENAME="`echo $$i|sed 's/\.exe$$//'`" ; \
+		  if test "$$MACHINENAME" = "$$i"; then \
+		     dh_install -pdamaris-backends "backends/machines/$$i" "usr/lib/damaris/backends" ; \
+		  else \
+		     cp "backends/machines/$$i" "backends/machines/$$MACHINENAME" && \
+		     dh_install -pdamaris-backends "backends/machines/$$MACHINENAME" "usr/lib/damaris/backends" && \
+		     rm "backends/machines/$$MACHINENAME" ; \
+		  fi ; \
+		fi ; \
 	done;
 
 # compiled kernel modules
