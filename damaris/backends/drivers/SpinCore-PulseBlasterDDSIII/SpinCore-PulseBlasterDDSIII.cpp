@@ -323,8 +323,11 @@ SpinCorePulseBlasterDDSIII::SpinCorePulseBlasterDDSIII(int the_id, double the_cl
 void SpinCorePulseBlasterDDSIII::set_registers(int device, unsigned int register_size, double multiplier, const std::vector<double>& values) {
   if (values.size()>register_size)
     throw SpinCorePulseBlaster_error("to many data for registers");
-  unsigned char data[4*register_size];
-  
+  unsigned char* data=(unsigned char*)malloc(4*register_size);
+  if (data==NULL) {
+    throw SpinCorePulseBlaster_error("could not allocate memory for register data");
+  }
+
   for (unsigned int reg=0; reg<register_size; ++reg) {
     if (values.size()>reg) {
       double temp=values[reg]*multiplier;
@@ -348,6 +351,7 @@ void SpinCorePulseBlasterDDSIII::set_registers(int device, unsigned int register
   write_register(3,device); // dev to program
   write_register(4,0); //reset address counter
   write_data(data,4*register_size);
+  free(data);
 }
 
 void SpinCorePulseBlasterDDSIII::set_phase_registers(std::vector<double> rx_phases, std::vector<double> tx_phases) {
