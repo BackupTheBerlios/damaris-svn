@@ -6,7 +6,8 @@
 #############################################################################
 
 CXX=g++
-CXXFLAGS=-g -O0 -I. -I../..
+CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic
+CXXCPPFLAGS=-I. -I../..
 LDFLAGS=../../core/core.a -lexpat
 
 .PHONY: all clean install
@@ -20,10 +21,10 @@ all: PTS.o PTS_test.exe
 	$(MAKE) -C ../../core core.a
 
 PTS.o: PTS.cpp ../frequgen.h
-	$(CXX) -c $(CXXFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) -o $@ $<
 
 PTS_test.o: PTS_test.cpp PTS.h
-	$(CXX) -c $(CXXFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) -o $@ $<
 
 PTS_test.exe: PTS_test.o PTS.o
 	$(CXX) -o $@ $^ $(LDFLAGS)

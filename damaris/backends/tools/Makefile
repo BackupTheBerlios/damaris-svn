@@ -7,7 +7,8 @@
 
 
 CXX=g++
-CXXFLAGS=-g -O0 -I. -I.. -Wshadow -Wall
+CXXFLAGS=-g -O0 -Wshadow -Wall
+CXXCPPFLAGS=-I. -I..
 LIBS=-lexpat -lxerces-c
 
 .PHONY: all clean install
@@ -15,7 +16,7 @@ LIBS=-lexpat -lxerces-c
 all: restart_core.exe ../core/core_config.o add_endline.exe
 
 restart_core.o:  restart_core.cpp ../core/core_config.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXCPPFLAGS) $(CXXFLAGS) -c $< -o $@
 
 restart_core.exe: restart_core.o ../core/core_config.o
 	$(CXX) $^ -o $@ $(LIBS)

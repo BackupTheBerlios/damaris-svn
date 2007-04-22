@@ -14,21 +14,21 @@ endif
 THISDIR=$(shell cd . >/dev/null; pwd)
 LIBS=-lm -lxerces-c -lexpat
 CXXFLAGS=-DSP_DEBUG=0 -g -O0 -Wall -Wshadow -pedantic
-CPPFLAGS=-I../..
+CXXCPPFLAGS=-I../..
 
 all: PulseBlasterProgram.o SpinCore-PulseBlaster.o
 
 pulseblaster_test: pulseblaster_test.cpp SpinCore-PulseBlaster.o
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o$@ $^ $(LIBS)
+	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -o$@ $^ $(LIBS)
 
 TestCase: TestCase.cpp SpinCore-PulseBlaster.o ../../core/core.a
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -I. -o$@ $^ $(LIBS)
+	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -I. -o$@ $^ $(LIBS)
 
 PulseBlasterProgram.o: PulseBlasterProgram.cpp PulseBlasterProgram.h
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o$@ $<
+	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -c -o$@ $<
 
 SpinCore-PulseBlaster.o: SpinCore-PulseBlaster.cpp SpinCore-PulseBlaster.h
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o$@ $<
+	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -c -o$@ $<
 
 ../../core/core.a:
 	$(MAKE) -C ../../core core.a

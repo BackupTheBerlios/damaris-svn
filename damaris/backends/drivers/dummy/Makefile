@@ -7,7 +7,8 @@
 
 
 CXX=g++
-CXXFLAGS=-Wall -Wshadow -pedantic -g -O0 -I. -I../..
+CXXFLAGS=-Wall -Wshadow -pedantic -g -O0
+CXXCPPFLAGS=-I. -I../..
 LIBS=-lpthread
 
 .PHONY: clean install all
@@ -21,7 +22,7 @@ all:	dummy.o
 	$(MAKE) -C ../core core.a
 
 dummy.o: dummy.h dummy.cpp ../tempcont.h ../ADC.h ../pulsegen.h ../frequgen.h
-	$(CXX) $(CXXFLAGS) -c -o dummy.o dummy.cpp
+	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -c -o dummy.o dummy.cpp
 
 temperature_dummy.exe: temperature_dummy.cpp dummy.o ../tempcont.o ../../core/core.a
 	$(CXX) $(CXXFLAGS) -o temperature_dummy.exe temperature_dummy.cpp dummy.o ../tempcont.o ../../core/core.a $(LIBS)

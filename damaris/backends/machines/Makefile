@@ -7,7 +7,8 @@
 
 
 CXX=g++
-CXXFLAGS=-g -O0 -I. -I.. -I/opt/local/include
+CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic
+CXXCPPFLAGS= -I. -I.. -I/opt/local/include
 LDFLAGS=
 LIBS=-lexpat -lxerces-c -lm -L/opt/local/lib
 
@@ -69,7 +70,7 @@ endif
 	$(MAKE) -C ../core core.a
 
 hardware.o: hardware.cpp hardware.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
 
 Mobilecore.exe: Mobilecore.o hardware.o \
@@ -81,7 +82,7 @@ Mobilecore.exe: Mobilecore.o hardware.o \
 Mobilecore.o: Mobilecore.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
 
 bg_backend: bg_backend.o hardware.o \
@@ -93,7 +94,7 @@ bg_backend: bg_backend.o hardware.o \
 bg_backend.o: bg_backend.cpp  ../drivers/PTS-Synthesizer/PTS.h \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
 
 magnexgrad_backend: magnexgrad_backend.o hardware.o \
@@ -105,12 +106,12 @@ magnexgrad_backend: magnexgrad_backend.o hardware.o \
 magnexgrad_backend.o: magnexgrad_backend.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
 deuteron_backend.o: deuteron_backend.cpp \
 ../drivers/SpinCore-PulseBlasterDDSIII/SpinCore-PulseBlasterDDSIII.h \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
 deuteron_backend.exe: deuteron_backend.o hardware.o \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
@@ -119,7 +120,7 @@ deuteron_backend.exe: deuteron_backend.o hardware.o \
 	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
 
 dummycore.o: dummycore.cpp ../drivers/dummy/dummy.o
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
 dummycore.exe: dummycore.o  ../drivers/dummy/dummy.o hardware.o ../drivers/tempcont.o ../core/core.a
 	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
@@ -140,4 +141,4 @@ PFGcore.exe: PFGcore.o hardware.o \
 PFGcore.o: PFGcore.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h ../drivers/Tecmag-DAC20/DAC20.h\
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@

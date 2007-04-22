@@ -6,7 +6,8 @@
 #############################################################################
 
 CXX=g++
-CXXFLAGS=-O0 -g -I. -I..
+CXXFLAGS=-O0 -g -Wall -Wshadow -pedantic
+CXXCPPFLAGS=-I. -I..
 
 #ToDo PBP-HS3-test.exe
 SUBDIRS:=SpinCore-PulseBlaster SpinCore-PulseBlaster24Bit SpinCore-PulseBlasterDDSIII PTS-Synthesizer Eurotherm-2000Series dummy Spectrum-MI40xxSeries Tecmag-DAC20
@@ -23,7 +24,7 @@ all:
 .PHONY: SpinCore-PulseBlasterDDSIII/SpinCore-PulseBlasterDDSIII.o TiePie-HS3/TiePie-HS3.a Eurotherm-2000Series/Eurotherm-2000Series.o clean install
 
 tempcont.o: tempcont.cpp tempcont.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -c $< -o $@
 
 SpinCore-PulseBlasterDDSIII/SpinCore-PulseBlasterDDSIII.o:
 	$(MAKE) -C SpinCore-PulseBlasterDDSIII SpinCore-PulseBlasterDDSIII.o

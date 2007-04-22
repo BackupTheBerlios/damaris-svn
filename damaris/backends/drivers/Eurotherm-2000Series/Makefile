@@ -6,7 +6,8 @@
 #############################################################################
 
 CXX=g++
-CXXFLAGS=-O0 -g -I. -I../..
+CXXFLAGS=-O0 -g -Wall -Wshadow -pedantic
+CXXCPPFLAGS=-I. -I../..
 LIBS=-lpthread
 
 .PHONY: all clean
@@ -20,13 +21,13 @@ all:	Eurotherm-2000Series.o
 	$(MAKE) -C .. tempcont.o
 
 Eurotherm-2000Series.o: Eurotherm-2000Series.cpp Eurotherm-2000Series.h ../tempcont.h
-	$(CXX) -c $(CXXFLAGS) $< -o $@
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
 test.exe: test.cpp Eurotherm-2000Series.o Eurotherm-2000Series.h  ../tempcont.o
-	$(CXX) $(CXXFLAGS) -o $@ $< Eurotherm-2000Series.o ../tempcont.o $(LIBS)
+	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -o $@ $< Eurotherm-2000Series.o ../tempcont.o $(LIBS)
 
 gnuplot_output.exe: gnuplot_output.cpp Eurotherm-2000Series.o  ../tempcont.o
-	$(CXX) $(CXXFLAGS) -o $@ $< Eurotherm-2000Series.o ../tempcont.o $(LIBS)
+	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -o $@ $< Eurotherm-2000Series.o ../tempcont.o $(LIBS)
 
 clean: ../../tools/add_endline.exe
 	for f in Eurotherm-2000Series.cpp Eurotherm-2000Series.h test.cpp Makefile; do ../../tools/add_endline.exe $$f; done; \

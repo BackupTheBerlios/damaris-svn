@@ -1,11 +1,11 @@
 CXXFLAGS=-g -O0 -Wshadow -Wall -pedantic
-CPPFLAGS=-I../..
+CXXCPPFLAGS=-I../..
 CXX=g++
 
 all: SpinCore-PulseBlaster24Bit.o
 
 test: test.cpp SpinCore-PulseBlaster24Bit.o ../SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../SpinCore-PulseBlaster/PulseBlasterProgram.o ../../core/core.a
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ $^ -lm -lexpat -lxerces-c
+	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -o $@ $^ -lm -lexpat -lxerces-c
 
 ../SpinCore-PulseBlaster/SpinCore-PulseBlaster.o: ../SpinCore-PulseBlaster/SpinCore-PulseBlaster.cpp ../SpinCore-PulseBlaster/SpinCore-PulseBlaster.h
 	$(MAKE) -C ../SpinCore-PulseBlaster SpinCore-PulseBlaster.o
@@ -17,7 +17,7 @@ test: test.cpp SpinCore-PulseBlaster24Bit.o ../SpinCore-PulseBlaster/SpinCore-Pu
 	$(MAKE) -C ../../core core.a
 
 SpinCore-PulseBlaster24Bit.o: SpinCore-PulseBlaster24Bit.cpp SpinCore-PulseBlaster24Bit.h
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -c -o $@ $<
 
 clean:
 	rm -f *.o *~ test

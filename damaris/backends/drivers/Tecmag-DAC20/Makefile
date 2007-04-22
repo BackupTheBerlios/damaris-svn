@@ -1,5 +1,6 @@
 CXX=g++
-CXXFLAGS=-g -O0 -I. -I../.. -I/opt/local/include
+CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic
+CXXCPPFLAGS=-I. -I../.. -I/opt/local/include
 LDFLAGS=-lexpat -lxerces-c -L/opt/local/lib
 
 .PHONY: all clean install
@@ -17,7 +18,10 @@ clean: ../../tools/add_endline.exe
 	rm -f *.exe *.o *~ core.*
 
 DAC20.o: DAC20.cpp DAC20.h
-	$(CXX) -c $(CXXFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) -o $@ $<
+
+DAC_test.o: DAC_test.cpp
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) -o $@ $<
 
 DAC_test.exe: DAC_test.o DAC20.o ../../core/core.a
 	$(CXX) $(LDFLAGS) -o $@ $^
