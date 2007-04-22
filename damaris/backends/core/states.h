@@ -7,10 +7,6 @@
 #ifndef STATES_H
 #define STATES_H
 
-#ifndef SIZETPRINTFLETTER
-#  define SIZETPRINTFLETTER "u"
-#endif
-
 #include <list>
 #include <bitset>
 

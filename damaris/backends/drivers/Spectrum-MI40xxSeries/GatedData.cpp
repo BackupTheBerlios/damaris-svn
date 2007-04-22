@@ -1,6 +1,16 @@
 #include "GatedData.h"
 #include <cstring>
 #include <cassert>
+
+#ifndef SIZETPRINTFLETTER
+#  ifndef __LP64__
+#    define SIZETPRINTFLETTER "u"
+#  else
+#    define SIZETPRINTFLETTER "lu"
+#  endif
+#endif
+
+
 /*
    size of all childrens' data
 */
@@ -62,9 +72,9 @@ void DataManagementNode::print(FILE* f,size_t indent) {
   memset(indent_space,' ',indent);
   indent_space[indent]=0;
   if (child==NULL)
-    fprintf(f,"%s%d samples\n",indent_space, n);
+    fprintf(f,"%s%" SIZETPRINTFLETTER " samples\n",indent_space, n);
   else {
-    fprintf(f,"%s%d:\n",indent_space, n);
+    fprintf(f,"%s%" SIZETPRINTFLETTER ":\n",indent_space, n);
     child->print(f,indent+6);
   }
   delete indent_space;

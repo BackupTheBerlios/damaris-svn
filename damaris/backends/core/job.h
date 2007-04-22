@@ -17,7 +17,11 @@
 #include "core/states.h"
 
 #ifndef SIZETPRINTFLETTER
-#  define SIZETPRINTFLETTER "u"
+#  ifndef __LP64__
+#    define SIZETPRINTFLETTER "u"
+#  else
+#    define SIZETPRINTFLETTER "lu"
+#  endif
 #endif
 
 class core;

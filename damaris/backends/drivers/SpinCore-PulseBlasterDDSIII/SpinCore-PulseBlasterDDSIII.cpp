@@ -74,13 +74,13 @@ int PulseBlasterDDSIIICommand::write_to_file(FILE* out, size_t indent) const {
     fprintf(out,"inst=\"LONG_DELAY\" instdata=\"%d\"",loop_count);
     break;
   case SpinCorePulseBlaster::BRANCH:
-    fprintf(out,"inst=\"BRANCH\" instdata=\"%d\"",std::distance(program->begin(),jump));
+    fprintf(out,"inst=\"BRANCH\" instdata=\"%" SIZETPRINTFLETTER "\"",std::distance(program->begin(),jump));
     break;
   case SpinCorePulseBlaster::END_LOOP:
-    fprintf(out,"inst=\"END_LOOP\" instdata=\"%d\"",std::distance(program->begin(),jump));
+    fprintf(out,"inst=\"END_LOOP\" instdata=\"%" SIZETPRINTFLETTER "\"",std::distance(program->begin(),jump));
     break;
   case SpinCorePulseBlaster::JSR:
-    fprintf(out,"inst=\"JSR\" instdata=\"%d\"",std::distance(program->begin(),jump));
+    fprintf(out,"inst=\"JSR\" instdata=\"%" SIZETPRINTFLETTER "\"",std::distance(program->begin(),jump));
     break;
   case SpinCorePulseBlaster::CONTINUE:
     fprintf(out,"inst=\"CONTINUE\"");

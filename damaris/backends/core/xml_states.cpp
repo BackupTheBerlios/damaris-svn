@@ -10,6 +10,14 @@
 #include <unistd.h>
 #include <stdarg.h>
 
+#ifndef SIZETPRINTFLETTER
+#  ifndef __LP64__
+#    define SIZETPRINTFLETTER "u"
+#  else
+#    define SIZETPRINTFLETTER "lu"
+#  endif
+#endif
+
 void xml_state_reader_startelement_handler(xml_state_reader* self,
 					   const XML_Char *name,
 					   const XML_Char **atts ) {

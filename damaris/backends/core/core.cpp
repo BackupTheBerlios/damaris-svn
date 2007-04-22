@@ -18,6 +18,14 @@
 #include "job_receiver.h"
 #include "xml_result.h"
 
+#ifndef SIZETPRINTFLETTER
+#  ifndef __LP64__
+#    define SIZETPRINTFLETTER "u"
+#  else
+#    define SIZETPRINTFLETTER "lu"
+#  endif
+#endif
+
 volatile int core::triggered_restart=0;
 volatile int core::quit_signal=0;
 volatile int core::term_signal=0;

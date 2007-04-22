@@ -9,15 +9,18 @@
 #include <xercesc/dom/DOMWriter.hpp>
 #include <xercesc/framework/MemBufFormatTarget.hpp>
 
-#ifndef SIZETPRINTFLETTER
-#  define SIZETPRINTFLETTER "u"
-#endif
-
 /* ***************************************************************************************************
 
 here starts the reader implementation
 
 *****************************************************************************************************/
+#ifndef SIZETPRINTFLETTER
+#  ifndef __LP64__
+#    define SIZETPRINTFLETTER "u"
+#  else
+#    define SIZETPRINTFLETTER "lu"
+#  endif
+#endif
 
 void start_element_stub(void* userdata,const XML_Char* name, const XML_Char** attrs );
 void end_element_stub(void* userdata,const XML_Char* name);

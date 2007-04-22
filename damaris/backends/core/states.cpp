@@ -6,6 +6,7 @@
 ****************************************************************************/
 #include "states.h"
 #include "xml_states.h"
+
 state* state_parallel::copy_flat(size_t enroll) const {
   return copy_new();
 }

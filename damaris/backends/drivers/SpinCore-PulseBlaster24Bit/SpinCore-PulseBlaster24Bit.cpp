@@ -10,6 +10,14 @@
 #include <typeinfo>
 #include <iterator>
 
+#ifndef SIZETPRINTFLETTER
+#  ifndef __LP64__
+#    define SIZETPRINTFLETTER "u"
+#  else
+#    define SIZETPRINTFLETTER "lu"
+#  endif
+#endif
+
 /*********************************************************************
 
                     PulseBlaster24BitCommand
@@ -41,13 +49,13 @@ int PulseBlaster24BitCommand::write_to_file(FILE* out, size_t indent) const {
     fprintf(out,"inst=\"LONG_DELAY\" loops=\"%d\"",loop_count);
     break;
   case SpinCorePulseBlaster::BRANCH:
-    fprintf(out,"inst=\"BRANCH\" address=\"%d\"",std::distance(program->begin(),jump));
+    fprintf(out,"inst=\"BRANCH\" address=\"%" SIZETPRINTFLETTER "\"",std::distance(program->begin(),jump));
     break;
   case SpinCorePulseBlaster::END_LOOP:
-    fprintf(out,"inst=\"END_LOOP\" address=\"%d\"",std::distance(program->begin(),jump));
+    fprintf(out,"inst=\"END_LOOP\" address=\"%" SIZETPRINTFLETTER "\"",std::distance(program->begin(),jump));
     break;
   case SpinCorePulseBlaster::JSR:
-    fprintf(out,"inst=\"JSR\" address=\"%d\"",std::distance(program->begin(),jump));
+    fprintf(out,"inst=\"JSR\" address=\"%" SIZETPRINTFLETTER "\"",std::distance(program->begin(),jump));
     break;
   case SpinCorePulseBlaster::CONTINUE:
     fprintf(out,"inst=\"CONTINUE\"");

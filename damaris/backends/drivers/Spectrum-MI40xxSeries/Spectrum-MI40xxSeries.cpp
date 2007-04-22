@@ -12,6 +12,13 @@
 #ifndef SPC_DEBUG
 # define SPC_DEBUG 0
 #endif
+#ifndef SIZETPRINTFLETTER
+#  ifndef __LP64__
+#    define SIZETPRINTFLETTER "u"
+#  else
+#    define SIZETPRINTFLETTER "lu"
+#  endif
+#endif
 
 void SpectrumMI40xxSeries::Configuration::print(FILE* f) {
   fprintf(f, "Spectrum MI40xx Series Configuration:\n");
@@ -354,14 +361,14 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   int16 nErr=ERR_OK;
   if (sampleno<fifo_minimal_size) {
 #if SPC_DEBUG
-      fprintf(stderr, "expecting %u samples in normal mode\n",sampleno);
+      fprintf(stderr, "expecting %" SIZETPRINTFLETTER " samples in normal mode\n",sampleno);
 #endif
       SpcSetParam (deviceno, SPC_MEMSIZE,             sampleno);      // Memory size
       // ----- start the board -----
       nErr = SpcSetParam (deviceno, SPC_COMMAND,      SPC_START);     // start the board
   }
   else {
-      fprintf(stderr, "expecting %u samples in fifo mode\n",sampleno);
+      fprintf(stderr, "expecting %" SIZETPRINTFLETTER " samples in fifo mode\n",sampleno);
     // ToDo: do some magic calculations
     fifobufferno=16;
     fifobufferlen=1<<20;
@@ -378,7 +385,14 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
 	throw SpectrumMI40xxSeries_error("could not allocate buffers for fifo mode");
       }
       fifobuffers[i]=(short int*)newbuffer;
-      SpcSetAdr(deviceno,SPC_FIFO_BUFADR0+i,newbuffer);
+      // todo: check for errors
+#ifndef _LINUX64
+      SpcSetParam (deviceno, SPC_FIFO_BUFADR0+i, (int32) newbuffer);
+#else
+      // 64 bit Linux needs SetAdr function, 32 bit linux can also use this if driver build > 1093
+      SpcSetAdr (deviceno, SPC_FIFO_BUFADR0+i, newbuffer);
+#endif
+
     }
     // start fifo aquisition
     nErr=SpcSetParam(deviceno, SPC_COMMAND, SPC_FIFOSTART);
@@ -479,7 +493,7 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
     if (fifobuffers.empty()) {
 	// simple version: standard acquisition, wait and get...
 #if SPC_DEBUG
-	fprintf(stderr, "fetching %u samples in normal mode (timeout is %g)\n",sampleno,timeout);
+	fprintf(stderr, "fetching %" SIZETPRINTFLETTER " samples in normal mode (timeout is %g)\n",sampleno,timeout);
 #endif
 	stopwatch adc_timer;
 	adc_timer.start();
@@ -505,7 +519,7 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 # if defined __linux__
 	size_t data_length=SpcGetData (deviceno, 0, 0, 2 * sampleno, 2, (dataptr) adc_data);
 # if SPC_DEBUG
-	fprintf(stderr, "SpcGetData returned %d, got %u samples, expected %u\n", data_length, data_length/sizeof(short int)/2, sampleno);
+	fprintf(stderr, "SpcGetData returned %" SIZETPRINTFLETTER ", got %" SIZETPRINTFLETTER " samples, expected %" SIZETPRINTFLETTER "\n", data_length, data_length/sizeof(short int)/2, sampleno);
 # endif
 	if (2*sizeof(short int)*sampleno!=data_length) {
 	    free(adc_data);
@@ -536,7 +550,7 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
   }
   else {
     adc_result* the_result=NULL;
-    fprintf(stderr, "fetching %u samples in fifo mode (timeout is %g)\n",sampleno,timeout);
+    fprintf(stderr, "fetching %" SIZETPRINTFLETTER " samples in fifo mode (timeout is %g)\n",sampleno,timeout);
     // FIFO method
     // need another thread, that stops my process
     pthread_attr_t timeout_pt_attrs;
