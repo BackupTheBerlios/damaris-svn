@@ -31,12 +31,12 @@ void SpectrumMI40xxSeries::Configuration::print(FILE* f) {
 }
 
 
-SpectrumMI40xxSeries::SpectrumMI40xxSeries(const ttlout& t_line) {
+SpectrumMI40xxSeries::SpectrumMI40xxSeries(const ttlout& t_line, float impedance) {
   // to be configured
   device_id=0;
   trigger_line=t_line;
 
-  default_settings.impedance=1e6; // Ohm
+  default_settings.impedance=impedance; // Ohm
   default_settings.sensitivity=5; // Volts
   effective_settings=NULL;
   

@@ -136,7 +136,7 @@ class SpectrumMI40xxSeries: public ADC {
   void collect_config_recursive(state_sequent& exp, SpectrumMI40xxSeries::Configuration& settings);
 
 public:
-  SpectrumMI40xxSeries(const ttlout& t_line);
+  SpectrumMI40xxSeries(const ttlout& t_line, float impedance=1e6 );
 
   virtual void sample_after_external_trigger(double rate, size_t samples, double sensitivity=5.0, size_t resolution=14);
 
