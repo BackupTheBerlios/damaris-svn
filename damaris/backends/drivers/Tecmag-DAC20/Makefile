@@ -1,7 +1,7 @@
 CXX=g++
 CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic
-CXXCPPFLAGS=-I. -I../.. -I/opt/local/include
-LDFLAGS=-lexpat -lxerces-c -L/opt/local/lib
+CXXCPPFLAGS=-I. -I../..
+LDFLAGS=-lexpat -lxerces-c
 
 .PHONY: all clean install
 
@@ -24,4 +24,4 @@ DAC_test.o: DAC_test.cpp
 	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) -o $@ $<
 
 DAC_test.exe: DAC_test.o DAC20.o ../../core/core.a
-	$(CXX) $(LDFLAGS) -o $@ $^
+	$(CXX)  -o $@ $^ $(LDFLAGS)

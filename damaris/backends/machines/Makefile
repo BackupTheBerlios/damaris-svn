@@ -8,9 +8,9 @@
 
 CXX=g++
 CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic
-CXXCPPFLAGS= -I. -I.. -I/opt/local/include
+CXXCPPFLAGS= -I. -I..
 LDFLAGS=
-LIBS=-lexpat -lxerces-c -lm -L/opt/local/lib
+LIBS=-lexpat -lxerces-c -lm
 
 MACHINE=dummy
 
