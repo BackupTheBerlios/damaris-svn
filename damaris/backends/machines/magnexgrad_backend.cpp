@@ -4,6 +4,7 @@
  Created: June 2004
 
 ****************************************************************************/
+#include <unistd.h>
 #include "machines/hardware.h"
 #include "core/core.h"
 #include "drivers/Eurotherm-2000Series/Eurotherm-2000Series.h"
@@ -25,8 +26,10 @@
 /**
    line 0 for gate
    line 1 for pulse
-   line 2 for trigger
+   line 2 free
    line 3 free
+   line 16 for trigger
+   line 17 for syncronization
  */
 class magnexgrad_hardware: public hardware {
 
@@ -34,9 +37,9 @@ public:
   magnexgrad_hardware(){
       ttlout trigger;
       trigger.id=0;
-      trigger.ttls=4; /* line 2 */
-      the_adc=new SpectrumMI40xxSeries(trigger);
-      the_pg=new SpinCorePulseBlaster24Bit();
+      trigger.ttls=1<<16; /* line 16 */
+      the_adc=new SpectrumMI40xxSeries(trigger, 50); // 50 Ohm termination
+      the_pg=new SpinCorePulseBlaster24Bit(0, 1e8, 1<<17); //sync line on bit 17
       PTS* my_pts=new PTS_latched(0);
       the_fg=my_pts;
       the_tc=new Eurotherm2000Series("/dev/ttyS0",2,0x0);
@@ -65,10 +68,10 @@ public:
     if (the_tc!=NULL) {
       try {
 	double temp=the_tc->get_temperature();
-	fprintf(stdout, "%s.%03d temperature=%f\n",timestamp_string, exact_time.tv_usec/1000, temp);
+	fprintf(stdout, "%s.%03ld temperature=%f\n",timestamp_string, exact_time.tv_usec/1000, temp);
       }
       catch (Eurotherm2000Series_error e) {
-	fprintf(stdout, "%s.%03d temperature=0.0 (error %s)\n",timestamp_string, exact_time.tv_usec/1000, e.c_str());
+	fprintf(stdout, "%s.%03ld temperature=0.0 (error %s)\n",timestamp_string, exact_time.tv_usec/1000, e.c_str());
       }
       fflush(stdout);
     }
@@ -105,6 +108,17 @@ public:
 
 int main(int argc, const char** argv) {
   int return_result=0;
+  // renice and strip of suid rights
+
+  if (nice(-10)==-1) {
+    fprintf(stderr, "warning: could not increase priority (no setuid?)\n");
+  }
+
+  if (getuid()!=geteuid()) {
+    if (setuid(getuid())!=0) {
+      fprintf(stderr, "warning: could not switch back to uid=%d\n",getuid());
+    }
+  }
   try {
       core_config my_conf(argv, argc);
       // setup input and output

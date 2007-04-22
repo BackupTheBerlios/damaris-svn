@@ -75,7 +75,6 @@ configuration_results* hardware::configure(const std::list<configuration_device_
   }
 
   // go through this list again and again, until all devices returned at least something...
-  int run=0;
   for (int run=0; !to_configure.empty(); ++run) {
 
     std::list<const configuration_device_section*>::iterator i=to_configure.begin();
