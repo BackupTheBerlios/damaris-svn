@@ -1,6 +1,6 @@
 /* ***************************************************************************
 
- Author: Achim Gädke
+ Author: Achim Gaedke
  Created: October 2004
 
 **************************************************************************** */
@@ -20,7 +20,7 @@
 */
 
 /**
-   \brief %PTS Synthesizer driver for phase and preselected frequency
+   \brief PTS Synthesizer driver for phase and preselected frequency
 
    The driver can switch phase during experiment, the accuracy is determined by the number of connected phase selector lines.
    Frequency support will be soon available, one frequency can be selected, which is configured before the experiment.
@@ -60,9 +60,9 @@ class PTS: public frequgen {
   unsigned int phase_ttl_values(double phase) const;
   
   /**
-     \brief transform frequency to ttl values, return them in long unsigned int bits: 0 - 35
+     \brief transform frequency to ttl values, return them in long unsigned int bits: 0 - 40
    */
-  long long unsigned int frequency_ttl_values(double frequency) const;
+  long unsigned int frequency_ttl_values(double frequency) const;
   /**
      \brief add ttl instructions according to the phase
    */

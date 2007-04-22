@@ -75,7 +75,7 @@ public:
   }
 
   void freq_digit_translation_test() {
-    printf("270e6: %llx\n",p.frequency_ttl_values(270e6));    
+    printf("270e6: %lx\n",p.frequency_ttl_values(270e6));    
   }
 
 };

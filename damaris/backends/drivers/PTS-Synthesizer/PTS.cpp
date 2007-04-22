@@ -24,10 +24,10 @@ PTS::~PTS() {
 
 }
 
-unsigned int PTS::phase_ttl_values(double phase) const {
+unsigned int PTS::phase_ttl_values(double p) const {
   // break down to [0;360[
-  phase-=floor(phase/360.0)*360.0;
-  unsigned int phasesteps=(unsigned int)fabs(round(phase/0.225));
+  p-=floor(p/360.0)*360.0;
+  unsigned int phasesteps=(unsigned int)fabs(round(p/0.225));
   int bcd_part=phasesteps/100;
   unsigned int ttl_value=bcd_part<<8;
   phasesteps-=bcd_part*100;
@@ -38,8 +38,8 @@ unsigned int PTS::phase_ttl_values(double phase) const {
   return ttl_value;
 }
 
-void PTS::phase_add_ttls(state& the_state,double phase) const {
-  unsigned int binary_code=phase_ttl_values(phase);
+void PTS::phase_add_ttls(state& the_state, double p) const {
+  unsigned int binary_code=phase_ttl_values(p);
   std::vector<ttlout>::const_iterator mask=ttl_masks.begin();
   while (mask!=ttl_masks.end()) {
     /* obeye negative logic */
@@ -48,13 +48,16 @@ void PTS::phase_add_ttls(state& the_state,double phase) const {
     binary_code&=0xFFF;
     ++mask;
   }
-  if (binary_code!=0) fprintf(stderr,"Warning! Insufficient phase precision for %f\n",phase);
+  if (binary_code!=0) fprintf(stderr,"Warning! Insufficient phase precision for %f\n",p);
 }
 
-long long unsigned int PTS::frequency_ttl_values(double frequency) const {
-  long long unsigned int frequency_int=(long long unsigned int)fabs(floor(frequency));
-  long long unsigned int freq_bcd=0;
-  for (long long unsigned int divider=100000000; divider>0; divider/=10) {
+long unsigned int PTS::frequency_ttl_values(double f) const {
+  long unsigned int frequency_int=(long unsigned int)fabs(floor(f));
+  long unsigned int freq_bcd=0;
+  if (sizeof(freq_bcd)<8) {
+    fprintf(stderr, "warning! possible overflow (f=%f)\n", f);
+  }
+  for (long unsigned int divider=100000000; divider>0; divider/=10) {
     int part_freq=frequency_int/divider;
     freq_bcd<<=4;
     freq_bcd|=part_freq;
@@ -208,7 +211,10 @@ void PTS_latched::set_frequency_recursive(state_sequent& the_sequence, state::it
 	register_ttls->ttls&=0x7fff;
 	the_sequence.insert(the_state,register_state->copy_new());
 	// in 0.1 Hz units !
-	unsigned long long int frequency_int=(unsigned long long int)floorl(fabs(pts_aout->frequency)*10.0+0.5);
+	unsigned long int frequency_int=(unsigned long int)floorl(fabs(pts_aout->frequency)*10.0+0.5);
+	if (sizeof(frequency_int)<8 && pts_aout->frequency>4e8) {
+	  fprintf(stderr, "warning! possible overflow (f=%f)\n",pts_aout->frequency);
+	}
 	/* 100MHz and 10MHz */
 	register_ttls->ttls=(frequency_int/1000000000)%10<<8|((frequency_int/100000000)%10)<<4|15<<12;
 	the_sequence.insert(the_state,register_state->copy_new());
