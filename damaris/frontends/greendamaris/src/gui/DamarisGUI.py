@@ -345,16 +345,16 @@ class DamarisGUI:
             self.dump_complevel=0
             
         self.dump_states(init=True)
+        self.dump_thread=None
+        self.save_thread=None
+        self.last_dumped=time.time()
         # and observe it...
-        gobject.timeout_add(200,self.observe_running_experiment)
-        dump_timeinterval=60*60*10
+        self.dump_timeinterval=60*60*10
         try:
-            dump_timeinterval=int(60*float(actual_config["data_pool_write_interval"]))
+            self.dump_timeinterval=int(60*float(actual_config["data_pool_write_interval"]))
         except ValueError,e:
             print "configuration provides non-number for dump interval: "+str(e)
-        self.dump_states_event_id=None
-        if dump_timeinterval>0:
-            self.dump_states_event_id=gobject.timeout_add(dump_timeinterval*1000, self.dump_states)
+        gobject.timeout_add(200, self.observe_running_experiment)
 
     def observe_running_experiment(self):
         """
@@ -404,6 +404,20 @@ class DamarisGUI:
                 self.si.back_driver.join()
                 self.si.back_driver = None
 
+        if self.dump_thread is not None:
+            if self.dump_thread.isAlive():
+                print ".",
+                self.dump_dots+=1
+                if self.dump_dots>80:
+                    print
+                    self.dump_dots=0
+            else:
+                self.dump_thread.join()
+                self.dump_thread=None
+                print "done (%f s)"%(time.time()-self.dump_start_time)
+                self.last_dumped=time.time()
+
+
         gtk.gdk.threads_enter()
         if e_text:
             self.experiment_script_statusbar_label.set_text(e_text)
@@ -413,34 +427,32 @@ class DamarisGUI:
                 self.backend_statusbar_label.set_text(b_text)
         gtk.gdk.threads_leave()
 
-
-        still_running=filter(None,[self.si.exp_handling, self.si.res_handling, self.si.back_driver])
+        still_running=filter(None,[self.si.exp_handling, self.si.res_handling, self.si.back_driver, self.dump_thread])
         if len(still_running)==0:
-            if not self.dump_states_event_id is None:
-                gobject.source_remove(self.dump_states_event_id)
-                self.dump_states_event_id=None
-            if not hasattr(self,"dump_thread") or self.dump_thread is None:
-                print "all subprocesses ended..."
-                print "saving data pool",
-                self.dump_start_time=time.time()
+            if self.save_thread is None:
+                print "all subprocesses ended, saving data pool",
                 # thread to save data...
-                self.dump_thread=threading.Thread(target=self.dump_states, name="dump states")
-
-                self.dump_thread.start()
+                self.save_thread=threading.Thread(target=self.dump_states, name="dump states")
+                self.save_thread.start()
+                self.dump_start_time=time.time()
+                self.dump_dots=0
             self.state = DamarisGUI.Stop_State
 
         if self.state == DamarisGUI.Stop_State:
             if len(still_running)!=0:
-                print "subprocesses still running:", map(lambda s:s.getName(),still_running)
+                print "subprocess(es) still running:", map(lambda s:s.getName(),still_running)
                 return True
-            if hasattr(self,"dump_thread") and self.dump_thread is not None:
-                if self.dump_thread.isAlive():
+            else:
+                if self.save_thread.isAlive():
                     print ".",
+                    self.dump_dots+=1
+                    if self.dump_dots>80:
+                        print
+                        self.dump_dots=0
                     return True
-                self.dump_thread.join()
-                self.dump_thread=None
-                print "done"
-                print "dump time %f s"%(time.time()-self.dump_start_time)
+                self.save_thread.join()
+                self.save_thread=None
+                print "done (%f s)"%(time.time()-self.dump_start_time)
 
             # now everything is stopped
             self.state=DamarisGUI.Edit_State
@@ -455,6 +467,16 @@ class DamarisGUI:
             self.si=None
 
             return False
+
+        # dump states?
+        if self.dump_thread is None and self.dump_timeinterval!=0 and \
+               self.last_dumped+self.dump_timeinterval<time.time():
+            print "dumping data pool",
+            self.dump_start_time=time.time()
+            self.dump_dots=0
+            # thread to save data...
+            self.dump_thread=threading.Thread(target=self.dump_states, name="dump states")
+            self.dump_thread.start()
 
         # or look at them again
         return True
@@ -498,8 +520,8 @@ class DamarisGUI:
                     last_backup-=1
                 os.rename(self.dump_filename,dump_filename_pattern%0)
                 if cummulated_size>(1<<30):
-                    print "Warning: the cummulated backups size of '%s' is %d MByte"%(self.dump_filename, cummulated_size/(1<<20))                
-
+                    print "Warning: the cummulated backups size of '%s' is %d MByte"%(self.dump_filename,
+                                                                                      cummulated_size/(1<<20))
             # dump all information to a file
             dump_file=tables.openFile(self.dump_filename,mode="w",title="DAMARIS experiment data")
             if dump_file.isUndoEnabled():
