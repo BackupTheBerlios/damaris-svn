@@ -1,10 +1,7 @@
 #!/usr/bin/make -f
-# Sample debian/rules that uses debhelper. 
-# This file is public domain software, originally written by Joey Hess.
-#
-# This version is for a hypothetical package that builds an
-# architecture-dependant package, as well as an architecture-independent
-# package.
+
+# Achim Gaedke
+# April 2007
 
 # Uncomment this to turn on verbose mode. 
 export DH_VERBOSE=1
@@ -17,9 +14,9 @@ KERNELVERSION=$(shell uname -r)
 KERNELVERSIONS=$(shell uname -r)
 DEB_BUILD_ARCH=$(strip $(shell dpkg-architecture -qDEB_BUILD_ARCH))
 
-#ifeq ($(DEB_BUILD_ARCH),amd64)
+ifeq ($(DEB_BUILD_ARCH),amd64)
   KERNELVERSIONS=$(shell echo `uname -r|sed 's/\(.*\)-.*/\1/'`-amd64 )
-#endif
+endif
 ifeq ($(DEB_BUILD_ARCH),i386)
   KERNELVERSIONS=$(shell echo `uname -r|sed 's/\(.*\)-.*/\1/'`-\{k7,686,486\} )
 endif

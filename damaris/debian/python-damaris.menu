@@ -1,6 +1,1 @@
-?package(damaris-frontend-python):
-    needs="X11" \
-    section="Apps/Science" \
-    title="DAMARIS" \
-    command="DAMARIS" \
-    icon="/usr/lib/python2.4/site-packages/damaris/gui/DAMARIS.png"
+?package(python-damaris): needs="X11" section="Apps/Science" title="DAMARIS" command="DAMARIS" icon="/usr/lib/python2.4/site-packages/damaris/gui/DAMARIS.png"
