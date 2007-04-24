@@ -4,13 +4,14 @@ damaris (0.9-0.2) experimental; urgency=high
   * backends: postrm removes nmr group while purging
   * python-gui: classes of experiments and data modules are directly available (eg damaris.data.Accumulation)
   * python-gui: automatic import of experiment classes to experiment script and data classes to result script
+  * python-gui: periodic dumping in extra thread without stopping measurement
   * core: taking care of realloc return value
   * python-gui renewed glade file, added missing alignment information
   * backends: optimization for backend -O2 (makefile changes)
   * backends: printf issue for size_t solved
   * backends: striped .exe suffix from executables (linux not windows!)
 
- -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Sun, 22 Apr 2007 13:58:40 +0200
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Tue, 24 Apr 2007 15:58:40 +0200
 
 damaris (0.9-0.1) experimental; urgency=medium
 
