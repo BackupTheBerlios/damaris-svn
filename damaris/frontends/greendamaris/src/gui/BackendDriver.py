@@ -25,27 +25,54 @@ class BackendDriver(threading.Thread):
         threading.Thread.__init__(self, name="Backend Driver")
         self.core_pid = None
         self.core_input = None
-        self.statefilename=None
+        self.core_output = None
+        self.statefilename = None
 
         self.executable=str(executable)
         self.spool_dir=spool
-        self.core_state_file = "PFG core.state"
         self.experiment_pattern="job.%09d"
         self.result_pattern=self.experiment_pattern+".result"
-        self.experiment_writer = ExperimentWriter.ExperimentWriterWithCleanup(self.spool_dir, no=0, job_pattern=self.experiment_pattern)
-        self.result_reader = ResultReader.BlockingResultReader(self.spool_dir, no=0, result_pattern=self.result_pattern, clear_jobs=clear_jobs, clear_results=clear_results)
-        self.quit_flag=threading.Event()
 
         if not os.path.isfile(self.executable):
             raise AssertionError("could not find backend %s "%self.executable)
         if not os.access(self.executable,os.X_OK):
             raise AssertionError("insufficient rights for backend %s execution"%self.executable)
         if not os.path.isdir(self.spool_dir):
-            raise AssertionError("could not find backend's spool directory %s "%self.spool_dir)        
+            raise AssertionError("could not find backend's spool directory %s "%self.spool_dir)
+        
+
+        # remove stale state filenames
+        if sys.platform.startswith("linux"):
+            old_state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
+            statelinepattern=re.compile("<state name=\"([^\"]+)\" pid=\"([^\"]+)\" starttime=\"([^\"]+)\">")
+            for statefilename in old_state_files:
+                statefile=file(statefilename,"r")
+                statelines=statefile.readlines()
+                statefile.close
+                del statefile
+                core_pid=None
+                for l in statelines:
+                    matched=statelinepattern.match(l)
+                    if matched:
+                        core_pid=int(matched.group(2))
+                        break
+                if core_pid is not None:
+                    if os.path.isdir("/proc/%d"%core_pid):
+                        raise AssertionError("found backend with pid %d (state file %s) in same spool dir"%(core_pid,statefilename))
+                    else:
+                        print "removing stale backend state file", statefilename
+                        os.remove(statefilename)
+        else:
+            print "todo: take care of existing backend state files"
+
+        self.experiment_writer = ExperimentWriter.ExperimentWriterWithCleanup(self.spool_dir, no=0, job_pattern=self.experiment_pattern)
+        self.result_reader = ResultReader.BlockingResultReader(self.spool_dir, no=0, result_pattern=self.result_pattern, clear_jobs=clear_jobs, clear_results=clear_results)
+
+        self.quit_flag=threading.Event()
+        self.raised_exception=None
+
 
     def run(self):
-        # Free remaining handle on file
-        self.core_output = None
         # take care of older logfiles
         self.core_output_filename=os.path.join(self.spool_dir,"logdata")
         if os.path.isfile(self.core_output_filename):
@@ -62,8 +89,15 @@ class BackendDriver(threading.Thread):
         # create logfile
         self.core_output=file(self.core_output_filename,"w")
 
-        print "todo: move away all state files"
-        if sys.platform[:5]=="linux":
+        # again look out for existing state files
+        state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
+        if state_files:
+            self.raised_exception="found other state file(s) in spool directory: "+",".join(state_files)
+            self.quit_flag.set()
+            return
+
+        # start backend
+        if sys.platform.startswith("linux"):
             self.core_input=subprocess.Popen([self.executable, "--spool", self.spool_dir],
                                              stdout=self.core_output,
                                              stderr=self.core_output)
@@ -72,15 +106,16 @@ class BackendDriver(threading.Thread):
             cygwin_root_key=_winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE, "SOFTWARE\\Cygnus Solutions\\Cygwin\\mounts v2\\/")
             cygwin_path=_winreg.QueryValueEx(cygwin_root_key,"native")[0]
             os.environ["PATH"]+=";"+os.path.join(cygwin_path,"bin")+";"+os.path.join(cygwin_path,"lib")
-            self.core_input=subprocess.Popen("\"" + self.executable + "\"" + " --spool "+self.spool_dir, stdout=self.core_output, stderr=self.core_output)
+            self.core_input=subprocess.Popen("\"" + self.executable + "\"" + " --spool "+self.spool_dir,
+                                             stdout=self.core_output,
+                                             stderr=self.core_output)
 
-        # look out for state file
+        # wait till state file shows up
         timeout=10
         # to do: how should I know core's state name????!!!!!
         self.statefilename=None
-        statefilename=os.path.join(self.spool_dir,self.core_state_file)
         state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
-        while not os.path.isfile(statefilename) and len(state_files)==0:
+        while len(state_files)==0:
             if timeout<0 or self.core_input is None or self.core_input.poll() is not None or self.quit_flag.isSet():
                 # look into core log file and include contents
                 log_message=''
@@ -90,22 +125,20 @@ class BackendDriver(threading.Thread):
                     log_message=''.join(file(self.core_output_filename,"r").readlines()[:10])
                     if not log_message:
                         log_message="no error message from core"
-                self.quit_flag.set()
                 self.core_output.close()
-                self.core_ouptut_file=None
-                raise AssertionError("state file %s did not show up or backend died away:\n%s"%(statefilename,log_message))
+                self.raised_exception="state file %s did not show up or backend died away:\n%s"%(statefilename,
+                                                                                                 log_message)
+                print self.raised_exception
+                self.quit_flag.set()
+                return
             time.sleep(0.05)
             timeout-=0.05
             state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
 
         # save the one
-        if statefilename in state_files:
-            self.statefilename=statefilename
-        elif len(state_files)>0:
-            print "found other state file(s)", state_files,  " taking first one"
-            self.statefilename=state_files[0]
-        else:
-            raise AssertionError("did not find anything (should not happen) and no timeout?!")
+        if len(state_files)>1:
+            print "did find more than one state file, taking first one!"
+        self.statefilename=state_files[0]
 
         # read state file
         statefile=file(self.statefilename,"r")
@@ -119,11 +152,7 @@ class BackendDriver(threading.Thread):
                 self.core_pid=int(matched.group(2))
                 break
 
-
-        # now open output file
-        #self.core_output=file(self.core_output_filename,"r")
-
-        # wait on flag and look for backend
+        # wait on flag and look after backend
         while not self.quit_flag.isSet() and self.is_busy():
             self.quit_flag.wait(0.1)
         if self.quit_flag.isSet():
@@ -138,8 +167,7 @@ class BackendDriver(threading.Thread):
             self.result_reader.poll_time=-1
             self.result_reader=None
             self.experiment_writer=None
-            
-            
+             
     def clear_job(self,no):
         jobfilename=os.path.join(self.spool_dir,"job.%09d")
         resultfilename=os.path.join(self.spool_dir,"job.%09d.result")
@@ -211,4 +239,6 @@ class BackendDriver(threading.Thread):
             except OSError:
                 pass
         self.core_input=None
-        self.core_output=None
+        if self.core_output:
+            self.core_output.close()
+            self.core_output=None

@@ -305,6 +305,7 @@ class BlockingResultReader(ResultReader):
         ResultReader.__init__(self, spool_dir, no, result_pattern, clear_jobs=clear_jobs, clear_results=clear_results)
         self.stop_no=None # end of job queue
         self.poll_time=0.1 # sleep interval for polling results, <0 means no polling and stop
+        self.in_advance=0
 
     def __iter__(self):
         """
@@ -326,10 +327,18 @@ class BlockingResultReader(ResultReader):
                 if os.path.isfile(expected_filename): os.remove(expected_filename)
             if self.clear_jobs:
                 if os.path.isfile(expected_filename[:-7]): os.remove(expected_filename[:-7])
-            if self.quit_flag.isSet(): break
             self.no+=1
+
             expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
-            
+            in_advance_filename=expected_filename
+            while os.access(in_advance_filename, os.R_OK):
+                if self.stop_no is not None and self.stop_no<=self.in_advance:
+                    break
+                if self.quit_flag.isSet() and self.in_advance>self.no+100:
+                    break
+                self.in_advance+=1
+                in_advance_filename=os.path.join(self.spool_dir,self.result_pattern%(self.in_advance))
+
         return
 
     def quit(self):

@@ -20,6 +20,10 @@ gobject.threads_init()
 import pygtk
 pygtk.require("2.0")
 import gtk
+gtk_version_missmatch=gtk.check_version(2, 8, 0)
+if gtk_version_missmatch:
+    raise Exception("insufficient gtk version: "+gtk_version_missmatch)
+
 import gtk.gdk
 gtk.gdk.threads_init()
 import gtk.glade
@@ -50,7 +54,8 @@ else:
 import matplotlib.axes
 import matplotlib.figure
 #for printing issues
-import matplotlib.backends.backend_cairo
+if hasattr(gtk, "PrintOperation"):
+    import matplotlib.backends.backend_cairo
 
 # import our own stuff
 from damaris.gui import ExperimentWriter, ExperimentHandling
@@ -63,7 +68,7 @@ from damaris.data import DataPool, Accumulation, ADC_Result, MeasurementResult
 debug=False
 
 # version info
-__version__="0.10"
+__version__="0.9"
 
 # gtk_gdk_flush=gtk.gdk.flush
 gtk_gdk_flush=lambda :True
@@ -171,7 +176,8 @@ class DamarisGUI:
         self.main_window = self.xml_gui.get_widget("main_window")
         self.main_window.connect("delete-event", self.quit_event)
         self.main_window.set_icon_from_file(os.path.join(os.path.dirname(__file__),"DAMARIS.png"))
-
+        self.main_window.set_title(u"DAMARIS-%s"%__version__)
+        
     def statusbar_init(self):
         """
         experiment and result thread status, backend state
@@ -246,9 +252,6 @@ class DamarisGUI:
 
     # toolbar related events:
 
-    def start_experiment_with_options(self, widget, data = None):
-        print "ToDo: start_experiment_with_options"
-        
     def start_experiment(self, widget, data = None):
         
         # something running?
@@ -381,6 +384,7 @@ class DamarisGUI:
         # test whether backend and scripts are done
         e=self.si.data.get("__recentexperiment",-1)+1
         r=self.si.data.get("__recentresult",-1)+1
+        b=self.si.data.get("__resultsinadvance",-1)
         e_text=None
         r_text=None
         b_text=None
@@ -417,9 +421,16 @@ class DamarisGUI:
 
         if self.si.back_driver is not None:
             if not self.si.back_driver.isAlive():
-                b_text="Backend Finished"
+                if self.si.back_driver.raised_exception:
+                    b_text="Backend Failed"
+                else:
+                    b_text="Backend Finished"
                 self.si.back_driver.join()
                 self.si.back_driver = None
+            else:
+                b_text="Backend Running"
+            if b!=-1:
+                b_text+=" (%d)"%b
 
         if self.dump_thread is not None:
             if self.dump_thread.isAlive():
@@ -878,7 +889,7 @@ class ScriptWidgets:
             res_titlename=unicode(os.path.basename(self.res_script_filename))
         else:
             res_titlename=u"unnamed"
-        window_title=u"DAMARIS %s,%s"%(exp_titlename, res_titlename)
+        window_title=u"DAMARIS-%s %s,%s"%(__version__, exp_titlename, res_titlename)
         self.xml_gui.get_widget("main_window").set_title(window_title)
 
     # text widget related events
@@ -1392,6 +1403,7 @@ pygobject version %(pygobject)s
 
         # debug message
         if debug:
+            print "DAMARIS", __version__
             print components_text%components_versions
         
         # set no compression as default...
@@ -1535,6 +1547,9 @@ pygobject version %(pygobject)s
         dialog.set_default_response(gtk.RESPONSE_OK)
         dialog.set_select_multiple(False)
         dialog.set_filename(os.path.abspath(self.config_backend_executable_entry.get_text()))
+        system_backend_folder="/usr/lib/damaris/backends/"
+        if os.path.isdir(system_backend_folder) and os.access(system_backend_folder, os.R_OK):
+            dialog.add_shortcut_folder(system_backend_folder)
         # Event-Handler for responce-signal (when one of the button is pressed)
         dialog.connect("response", response, self)
         f=gtk.FileFilter()
@@ -1708,6 +1723,7 @@ class MonitorWidgets:
         self.displayed_data=[None,None]
         self.__rescale=True
         self.update_counter=0
+        self.update_counter_lock=threading.Lock()
 
     def source_list_reset(self):
         self.display_source_treestore.clear()
@@ -1801,7 +1817,9 @@ class MonitorWidgets:
 
             self.source_list_reset()
             self.clear_display()
+            self.update_counter_lock.acquire()
             self.update_counter=0
+            self.update_counter_lock.release()
 
         # display states
         self.__rescale=True
@@ -1820,13 +1838,15 @@ class MonitorWidgets:
         """
         sort data as fast as possible and get rid of non-interesting data
         """
+        if event.subject.startswith("__"): return
         if debug and self.update_counter<0:
             print "negative event count!", self.update_counter
-        while self.update_counter>10:
-            if debug or True:
+        if self.update_counter>5:
+            if debug:
                 print "sleeping to find time for grapics updates"
             threading.Event().wait(0.05)
-        if event.subject.startswith("__"): return
+            while self.update_counter>15:
+                threading.Event().wait(0.05)
         if event.what==DataPool.Event.updated_value:
             if self.displayed_data[0] is None or event.subject!=self.displayed_data[0]:
                 # do nothing, forget it
@@ -1835,7 +1855,9 @@ class MonitorWidgets:
         displayed_object=self.displayed_data[1]
         object_to_display=self.data_pool.get(event.subject)
         if displayed_object is None or object_to_display is None:
+            self.update_counter_lock.acquire()
             self.update_counter+=1
+            self.update_counter_lock.release()
             gobject.idle_add(self.datapool_idle_listener,event,priority=gobject.PRIORITY_DEFAULT_IDLE)
         else:
             if event.what==DataPool.Event.updated_value and \
@@ -1845,7 +1867,9 @@ class MonitorWidgets:
                 gobject.idle_add(self.update_display_idle_event,self.displayed_data[0][:],
                                  priority=gobject.PRIORITY_DEFAULT_IDLE)
             else:
+                self.update_counter_lock.acquire()
                 self.update_counter+=1
+                self.update_counter_lock.release()
                 gobject.idle_add(self.datapool_idle_listener,event,priority=gobject.PRIORITY_DEFAULT_IDLE)
 
         del displayed_object
@@ -1857,12 +1881,16 @@ class MonitorWidgets:
         """
         if debug and self.update_counter<0:
             print "negative event count!", self.update_counter
-        while self.update_counter>10:
+        if self.update_counter>5:
             if debug:
                 print "sleeping to find time for graphics updates"
             threading.Event().wait(0.05)
+            while self.update_counter>15:
+                threading.Event().wait(0.05)
         if event.origin is not self.displayed_data[1]: return
+        self.update_counter_lock.acquire()
         self.update_counter+=1
+        self.update_counter_lock.release()
         gobject.idle_add(self.update_display_idle_event,self.displayed_data[0][:],priority=gobject.PRIORITY_DEFAULT_IDLE)
 
     ################### consume idle events
@@ -1871,8 +1899,11 @@ class MonitorWidgets:
         """
         here dictionary changes are done
         """
+
+        self.update_counter_lock.acquire()
         self.update_counter-=1
-        # print "datapool listener", self.update_counter
+        self.update_counter_lock.release()
+
         if event.what==DataPool.Event.updated_value:
             if (self.displayed_data[0] is not None and
                 self.displayed_data[0]==event.subject):
@@ -1929,7 +1960,10 @@ class MonitorWidgets:
         return
 
     def update_display_idle_event(self, subject=None):
+
+        self.update_counter_lock.acquire()
         self.update_counter-=1
+        self.update_counter_lock.release()
         # print "update display", self.update_counter
         if self.update_counter>10:
             print "update queue too long (%d>10): skipping one update"%self.update_counter
@@ -2324,11 +2358,10 @@ class ScriptInterface:
             self.back_driver=None
             if self.exp_script: self.exp_writer=ExperimentWriter.ExperimentWriter(spool_dir)
             if self.res_script: self.res_reader=ResultReader.ResultReader(spool_dir, clear_jobs=self.clear_jobs, clear_results=self.clear_results)
-
         self.data=DataPool()
 
-
     def runScripts(self):
+
         try:
             # get script engines
             self.exp_handling=self.res_handling=None
@@ -2340,8 +2373,6 @@ class ScriptInterface:
             # start them
             if self.back_driver is not None:
                 self.back_driver.start()
-                while not (self.back_driver.is_busy() or self.back_driver.quit_flag.isSet()):
-                    time.sleep(0.05)
             if self.exp_handling: self.exp_handling.start()
             if self.res_handling: self.res_handling.start()
         finally:

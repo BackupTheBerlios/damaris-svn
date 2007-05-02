@@ -61,6 +61,8 @@ class ResultHandling(threading.Thread):
             self.results=None
             return
         for i in self.results:
+            if hasattr(self.results, "in_advance"):
+                self.data_space["__resultsinadvance"]=self.results.in_advance
             if self.quit_flag.isSet():
                 self.results=None
                 return
