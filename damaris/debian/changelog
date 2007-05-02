@@ -1,3 +1,14 @@
+damaris (0.9-0.3) experimental; urgency=high
+
+  * checked all lock issues for threads
+  * basic debugging features --debug flag
+  * removed gtk.gdk.flush() command
+  * matplotlib backend can be chosen via -d option (recommending GTKCairo)
+  * be more careful with stop button: delayed change to insensitvity
+  * changed delay parameters to slow down scripts while observing the results
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Wed,  2 May 2007 12:46:10 +0200
+
 damaris (0.9-0.2) experimental; urgency=high
 
   * python-gui: full cleanup in greendamaris

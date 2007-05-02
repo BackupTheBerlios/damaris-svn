@@ -15,40 +15,53 @@ import threading
 
 # import 3rd party modules
 # gui graphics
+import gobject
+gobject.threads_init()
 import pygtk
 pygtk.require("2.0")
 import gtk
+import gtk.gdk
+gtk.gdk.threads_init()
 import gtk.glade
-import gobject
+
 import pango
 import cairo
-import matplotlib.backends.backend_cairo
 
 # array math
 import numarray
 
 # math graphics
 import matplotlib
-# force use of numarray
+# force noninteractive and use of numarray
 matplotlib.rcParams["numerix"]="numarray"
+matplotlib.rcParams["interactive"]="False"
+
+if matplotlib.rcParams["backend"]=="GTKCairo":
+    from matplotlib.backends.backend_gtkcairo import FigureCanvasGTKCairo as FigureCanvas
+    from matplotlib.backends.backend_gtkcairo import NavigationToolbar2GTK as NavigationToolbar
+elif matplotlib.rcParams["backend"]=="GTK":
+    from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
+    from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
+else:
+    from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
+    from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTK as NavigationToolbar
+
 import matplotlib.axes
 import matplotlib.figure
-from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
-from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTK as NavigationToolbar
+#for printing issues
+import matplotlib.backends.backend_cairo
 
 # import our own stuff
-from damaris.gui import ExperimentWriter
-from damaris.gui import ExperimentHandling
-from damaris.gui import ResultReader
-from damaris.gui import ResultHandling
+from damaris.gui import ExperimentWriter, ExperimentHandling
+from damaris.gui import ResultReader, ResultHandling
 from damaris.gui import BackendDriver
-from damaris.data import DataPool
-from damaris.data import Accumulation
-from damaris.data import ADC_Result
-from damaris.data import Drawable
-from damaris.data import MeasurementResult
+#from damaris.data import Drawable # this is a base class, it should be used...
+from damaris.data import DataPool, Accumulation, ADC_Result, MeasurementResult
 
-debug = False
+# default, can be set to true from start script
+debug=False
+# gtk_gdk_flush=gtk.gdk.flush
+gtk_gdk_flush=lambda :True
 
 class logstream:
     gui_log=None
@@ -96,7 +109,6 @@ class DamarisGUI:
 
     def __init__(self, exp_script_filename=None, res_script_filename=None):
 
-        gtk.gdk.threads_init()
 
         # state: edit, run, stop, quit
         # state transitions:
@@ -406,7 +418,7 @@ class DamarisGUI:
 
         if self.dump_thread is not None:
             if self.dump_thread.isAlive():
-                print ".",
+                sys.stdout.write(".")
                 self.dump_dots+=1
                 if self.dump_dots>80:
                     print
@@ -414,7 +426,7 @@ class DamarisGUI:
             else:
                 self.dump_thread.join()
                 self.dump_thread=None
-                print "done (%f s)"%(time.time()-self.dump_start_time)
+                print "done (%.01f s)"%(time.time()-self.dump_start_time)
                 self.last_dumped=time.time()
 
 
@@ -425,12 +437,13 @@ class DamarisGUI:
                 self.data_handling_statusbar_label.set_text(r_text)
         if b_text:
                 self.backend_statusbar_label.set_text(b_text)
+        gtk_gdk_flush()
         gtk.gdk.threads_leave()
 
         still_running=filter(None,[self.si.exp_handling, self.si.res_handling, self.si.back_driver, self.dump_thread])
         if len(still_running)==0:
             if self.save_thread is None:
-                print "all subprocesses ended, saving data pool",
+                print "all subprocesses ended, saving data pool"
                 # thread to save data...
                 self.save_thread=threading.Thread(target=self.dump_states, name="dump states")
                 self.save_thread.start()
@@ -439,12 +452,16 @@ class DamarisGUI:
             self.state = DamarisGUI.Stop_State
 
         if self.state == DamarisGUI.Stop_State:
+            gtk.gdk.threads_enter()
+            self.toolbar_pause_button.set_sensitive(False)
+            self.toolbar_stop_button.set_sensitive(False)
+            gtk.gdk.threads_leave()
             if len(still_running)!=0:
-                print "subprocess(es) still running:", map(lambda s:s.getName(),still_running)
+                print "subprocess(es) still running: "+', '.join(map(lambda s:s.getName(),still_running))
                 return True
             else:
                 if self.save_thread.isAlive():
-                    print ".",
+                    sys.stdout.write(".")
                     self.dump_dots+=1
                     if self.dump_dots>80:
                         print
@@ -452,7 +469,7 @@ class DamarisGUI:
                     return True
                 self.save_thread.join()
                 self.save_thread=None
-                print "done (%f s)"%(time.time()-self.dump_start_time)
+                print "done (%.01f s)"%(time.time()-self.dump_start_time)
 
             # now everything is stopped
             self.state=DamarisGUI.Edit_State
@@ -461,6 +478,7 @@ class DamarisGUI:
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_stop_button.set_sensitive(False)
             self.toolbar_pause_button.set_sensitive(False)
+            gtk_gdk_flush()
             gtk.gdk.threads_leave()
 
             # keep data to display but throw away everything else
@@ -471,7 +489,7 @@ class DamarisGUI:
         # dump states?
         if self.dump_thread is None and self.dump_timeinterval!=0 and \
                self.last_dumped+self.dump_timeinterval<time.time():
-            print "dumping data pool",
+            print "dumping data pool"
             self.dump_start_time=time.time()
             self.dump_dots=0
             # thread to save data...
@@ -610,8 +628,6 @@ class DamarisGUI:
 
     def stop_experiment(self, widget, data = None):
         if self.state in [DamarisGUI.Run_State, DamarisGUI.Pause_State]:
-            self.toolbar_pause_button.set_sensitive(False)
-            self.toolbar_stop_button.set_sensitive(False)
             if self.si is None: return
             still_running=filter(None,[self.si.exp_handling,self.si.res_handling,self.si.back_driver])
             for r in still_running:
@@ -695,6 +711,7 @@ class LogWindow:
         self.textbuffer.place_cursor(self.textbuffer.get_end_iter())
         self.textbuffer.insert_at_cursor(date_tag+unicode(message))
         self.textview.scroll_to_mark(self.textbuffer.get_insert(),0.1)
+        gtk_gdk_flush()
         gtk.gdk.threads_leave()
 
     def __del__(self):
@@ -1316,7 +1333,7 @@ operating system %(os)s
 gtk version %(gtk)s
 glib version %(glib)s
 python version %(python)s
-matplotlib version %(matplotlib)s, using %(matplotlib_numerix)s
+matplotlib version %(matplotlib)s, using %(matplotlib_numerix)s, %(matplotlib_backend)s
 numarray version %(numarray)s
 pytables version %(pytables)s, using %(pytables_libs)s
 pygtk version %(pygtk)s
@@ -1338,6 +1355,7 @@ pygobject version %(pygobject)s
             "python":     sys.version ,
             "matplotlib": matplotlib.__version__,
             "matplotlib_numerix": matplotlib.rcParams["numerix"],
+            "matplotlib_backend": matplotlib.rcParams["backend"],
             "numarray":   numarray.__version__,
             "pytables":   tables.getPyTablesVersion(),
             "pytables_libs": "",
@@ -1366,6 +1384,11 @@ pygobject version %(pygobject)s
                     else:
                         print "cannot append compression lib name to %s"%model.__class__.__name__
 
+
+        # debug message
+        if debug:
+            print components_text%components_versions
+        
         # set no compression as default...
         self.config_data_pool_complib.set_active(0)
 
@@ -1616,9 +1639,9 @@ class MonitorWidgets:
         # Neue Abbildung erstellen
         self.matplot_figure = matplotlib.figure.Figure()
 
-        # Standartplot erstellen (1 Reihe, 1 Zeile, Beginnend beim 1.) und der Abbildung
-        self.matplot_axes = self.matplot_figure.add_subplot(111)
-
+        # the plot area surrounded by axes
+        self.matplot_axes = self.matplot_figure.add_axes([0.1,0.15,0.8,0.7])
+        
         # Achsen beschriften & Gitternetzlinien sichtbar machen
         self.matplot_axes.grid(True)
 
@@ -1636,14 +1659,13 @@ class MonitorWidgets:
         self.matplot_axes.set_xscale("linear")
 
         # Matplot in einen GTK-Rahmen stopfen
-        self.matplot_canvas = matplotlib.backends.backend_gtkagg.FigureCanvasGTKAgg(self.matplot_figure)
+        self.matplot_canvas = FigureCanvas(self.matplot_figure)
 
         self.display_table = self.xml_gui.get_widget("display_table")
         self.display_table.attach(self.matplot_canvas, 0, 6, 0, 1, gtk.EXPAND | gtk.FILL, gtk.EXPAND | gtk.FILL, 0, 0)
         self.matplot_canvas.show()
 
         # Matplot Toolbar hinzufuegen (Display_Table, 2. Zeile) 
-
         self.matplot_toolbar = matplotlib.backends.backend_gtk.NavigationToolbar2GTK(self.matplot_canvas, self.main_window)
         
         self.display_table.attach(self.matplot_toolbar, 0, 1, 1, 2, gtk.FILL | gtk.EXPAND, 0, 0, 0)
@@ -1719,7 +1741,8 @@ class MonitorWidgets:
         for rest_name in namelist:
             # append() returns iter for the new row
             parent = self.display_source_treestore.append(parent, [rest_name])
-        
+        gtk_gdk_flush()
+ 
     def source_list_remove(self, source_name):
         namelist = source_name.split("/")
         pwd = namelist[:]
@@ -1737,14 +1760,15 @@ class MonitorWidgets:
             pwd.pop()
             # We now test, if we want to remove parent too
             if parent is None:
-                return
+                break
             if model.iter_has_child(parent):
                 # The parent has other children
-                return
+                break
             if "/".join(pwd) in self.data_pool:
                 # The parent has data connected to it
-                return
+                break
             iter = parent
+        gtk_gdk_flush()
 
     def source_list_current(self):
         ai = self.display_source_combobox.get_active_iter()
@@ -1791,10 +1815,13 @@ class MonitorWidgets:
         """
         sort data as fast as possible and get rid of non-interesting data
         """
-        while self.update_counter>5:
-            # print "sleeping to find time for updates"
-            threading.Event().wait(0.1)
-        if event.subject[:2]=="__": return
+        if debug and self.update_counter<0:
+            print "negative event count!", self.update_counter
+        while self.update_counter>10:
+            if debug or True:
+                print "sleeping to find time for grapics updates"
+            threading.Event().wait(0.05)
+        if event.subject.startswith("__"): return
         if event.what==DataPool.Event.updated_value:
             if self.displayed_data[0] is None or event.subject!=self.displayed_data[0]:
                 # do nothing, forget it
@@ -1823,9 +1850,12 @@ class MonitorWidgets:
         """
         do fast work selecting important events
         """
-        while self.update_counter>5:
-            # print "sleeping to find time for updates"
-            threading.Event().wait(0.1)
+        if debug and self.update_counter<0:
+            print "negative event count!", self.update_counter
+        while self.update_counter>10:
+            if debug:
+                print "sleeping to find time for graphics updates"
+            threading.Event().wait(0.05)
         if event.origin is not self.displayed_data[1]: return
         self.update_counter+=1
         gobject.idle_add(self.update_display_idle_event,self.displayed_data[0][:],priority=gobject.PRIORITY_DEFAULT_IDLE)
@@ -2030,8 +2060,8 @@ class MonitorWidgets:
             self.graphen=[]
             self.matplot_axes.clear()
             self.matplot_axes.grid(True)
-        self.matplot_canvas.draw()
-        gtk.gdk.flush()
+        self.matplot_canvas.draw_idle()
+        gtk_gdk_flush()
 
 
     def update_display(self, subject=None):
@@ -2141,8 +2171,8 @@ class MonitorWidgets:
                 self.matplot_axes.set_ylabel("")
 
             # Draw it!
-            self.matplot_canvas.draw()
-            gtk.gdk.flush()
+            self.matplot_canvas.draw_idle()
+            gtk_gdk_flush()
             in_result=None
             
         elif isinstance(in_result, MeasurementResult):
@@ -2188,8 +2218,8 @@ class MonitorWidgets:
             else:
                 self.matplot_axes.set_title("")
 
-            self.matplot_canvas.draw()
-            gtk.gdk.flush()
+            self.matplot_canvas.draw_idle()
+            gtk_gdk_flush()
             in_result=None        
 
     def renew_display(self):
