@@ -384,7 +384,7 @@ class DamarisGUI:
         # test whether backend and scripts are done
         e=self.si.data.get("__recentexperiment",-1)+1
         r=self.si.data.get("__recentresult",-1)+1
-        b=self.si.data.get("__resultsinadvance",-1)
+        b=self.si.data.get("__resultsinadvance",-1)+1
         e_text=None
         r_text=None
         b_text=None
@@ -429,7 +429,7 @@ class DamarisGUI:
                 self.si.back_driver = None
             else:
                 b_text="Backend Running"
-            if b!=-1:
+            if b!=0:
                 b_text+=" (%d)"%b
 
         if self.dump_thread is not None:
