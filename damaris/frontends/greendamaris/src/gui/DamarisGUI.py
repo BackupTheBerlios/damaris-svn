@@ -36,15 +36,16 @@ import matplotlib
 matplotlib.rcParams["numerix"]="numarray"
 matplotlib.rcParams["interactive"]="False"
 
-if matplotlib.rcParams["backend"]=="GTKCairo":
-    from matplotlib.backends.backend_gtkcairo import FigureCanvasGTKCairo as FigureCanvas
-    from matplotlib.backends.backend_gtkcairo import NavigationToolbar2GTK as NavigationToolbar
-elif matplotlib.rcParams["backend"]=="GTK":
+if matplotlib.rcParams["backend"]=="GTK":
     from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
     from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
-else:
+elif matplotlib.rcParams["backend"]=="GTKAgg":
     from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
     from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTK as NavigationToolbar
+else:
+    # default
+    from matplotlib.backends.backend_gtkcairo import FigureCanvasGTKCairo as FigureCanvas
+    from matplotlib.backends.backend_gtkcairo import NavigationToolbar2GTK as NavigationToolbar
 
 import matplotlib.axes
 import matplotlib.figure
@@ -60,6 +61,10 @@ from damaris.data import DataPool, Accumulation, ADC_Result, MeasurementResult
 
 # default, can be set to true from start script
 debug=False
+
+# version info
+__version__="0.10"
+
 # gtk_gdk_flush=gtk.gdk.flush
 gtk_gdk_flush=lambda :True
 
@@ -69,9 +74,9 @@ class logstream:
 
     def write(self, message):
         # default for stdout and stderr
-        if self.gui_log is not None and not debug:
+        if self.gui_log is not None:
             self.gui_log(message)
-        else:
+        if debug or self.gui_log is None:
             self.text_log.write(message)
             self.text_log.flush()
 
@@ -1346,7 +1351,7 @@ pygobject version %(pygobject)s
         if hasattr(gobject, "pygobject_version"):
             pygobject_version="%d.%d.%d"%gobject.pygobject_version
         else:
-            pygobject_version="? (no gobject module)"
+            pygobject_version="? (no gobject version number)"
             
         components_versions = {
             "os":         platform.platform() ,
@@ -1355,7 +1360,7 @@ pygobject version %(pygobject)s
             "python":     sys.version ,
             "matplotlib": matplotlib.__version__,
             "matplotlib_numerix": matplotlib.rcParams["numerix"],
-            "matplotlib_backend": matplotlib.rcParams["backend"],
+            "matplotlib_backend": FigureCanvas.__name__[12:],
             "numarray":   numarray.__version__,
             "pytables":   tables.getPyTablesVersion(),
             "pytables_libs": "",
@@ -1394,7 +1399,7 @@ pygobject version %(pygobject)s
 
         info_textbuffer=self.config_info_textview.get_buffer()
         info_text=info_textbuffer.get_text(info_textbuffer.get_start_iter(),info_textbuffer.get_end_iter())
-        info_text%={"moduleversions": components_text%components_versions}
+        info_text%={"moduleversions": components_text%components_versions, "damarisversion": __version__ }
         info_textbuffer.set_text(info_text)
         del info_textbuffer, info_text, components_text, components_versions
         

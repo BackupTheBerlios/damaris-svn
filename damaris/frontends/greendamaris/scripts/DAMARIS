@@ -1,12 +1,13 @@
 #!/usr/bin/python
 
 import sys
+import os.path
 import damaris.gui.DamarisGUI
 import matplotlib
 
 # argv is already parsed by gtk initialisation
 myargs=sys.argv[1:]
-myname=sys.argv[0]
+myname=os.path.basename(sys.argv[0])
 
 # find debug flag:
 if "--debug" in myargs:
@@ -17,7 +18,7 @@ if "--debug" in myargs:
         resource.setrlimit(resource.RLIMIT_CORE, (-1,-1))
     except ImportError:
         pass
-
+    matplotlib.rcParams["verbose.level"]="debug"
     myargs.remove("--debug")
 
 # remove matplotlib flags
