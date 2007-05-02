@@ -329,8 +329,8 @@ class BlockingResultReader(ResultReader):
                 if os.path.isfile(expected_filename[:-7]): os.remove(expected_filename[:-7])
             self.no+=1
 
-            expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
-            in_advance_filename=expected_filename
+            self.in_advance=max(self.no, self.in_advance)
+            in_advance_filename=os.path.join(self.spool_dir,self.result_pattern%(self.in_advance))
             while os.access(in_advance_filename, os.R_OK):
                 if self.stop_no is not None and self.stop_no<=self.in_advance:
                     break
@@ -338,6 +338,8 @@ class BlockingResultReader(ResultReader):
                     break
                 self.in_advance+=1
                 in_advance_filename=os.path.join(self.spool_dir,self.result_pattern%(self.in_advance))
+
+            expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
 
         return
 
