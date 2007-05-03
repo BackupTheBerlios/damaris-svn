@@ -8,7 +8,7 @@ else
 fi
 
 find /usr/lib/damaris/backends -type f \
-\! -name dummycore.exe \
+\! -name dummycore \
 -exec chgrp nmr {} \; \
 -exec chmod u+s,o= {} \;
 

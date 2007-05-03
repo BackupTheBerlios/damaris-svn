@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 # Achim Gaedke
-# April 2007
+# May 2007
 
 # Uncomment this to turn on verbose mode. 
 export DH_VERBOSE=1
