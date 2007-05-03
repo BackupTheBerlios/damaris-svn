@@ -65,12 +65,18 @@ class BackendDriver(threading.Thread):
         else:
             print "todo: take care of existing backend state files"
 
-        self.experiment_writer = ExperimentWriter.ExperimentWriterWithCleanup(self.spool_dir, no=0, job_pattern=self.experiment_pattern)
-        self.result_reader = ResultReader.BlockingResultReader(self.spool_dir, no=0, result_pattern=self.result_pattern, clear_jobs=clear_jobs, clear_results=clear_results)
+        self.result_reader = ResultReader.BlockingResultReader(self.spool_dir,
+                                                               no=0,
+                                                               result_pattern=self.result_pattern,
+                                                               clear_jobs=clear_jobs,
+                                                               clear_results=clear_results)
+        self.experiment_writer = ExperimentWriter.ExperimentWriterWithCleanup(self.spool_dir,
+                                                                              no=0,
+                                                                              job_pattern=self.experiment_pattern,
+                                                                              inform_last_job=self.result_reader)
 
         self.quit_flag=threading.Event()
         self.raised_exception=None
-
 
     def run(self):
         # take care of older logfiles
@@ -122,12 +128,11 @@ class BackendDriver(threading.Thread):
                 self.core_input=None
                 if os.path.isfile(self.core_output_filename):
                     # to do include log data
-                    log_message=''.join(file(self.core_output_filename,"r").readlines()[:10])
+                    log_message='\n'+''.join(file(self.core_output_filename,"r").readlines()[:10])
                     if not log_message:
-                        log_message="no error message from core"
+                        log_message=" no error message from core"
                 self.core_output.close()
-                self.raised_exception="state file %s did not show up or backend died away:\n%s"%(statefilename,
-                                                                                                 log_message)
+                self.raised_exception="no state file appeared or backend died away:"+log_message
                 print self.raised_exception
                 self.quit_flag.set()
                 return
@@ -163,7 +168,7 @@ class BackendDriver(threading.Thread):
         if not self.is_busy():
             self.core_pid = None
             # tell result reader, game is over...
-            self.result_reader.stop_no=self.experiment_writer.no
+            #self.result_reader.stop_no=self.experiment_writer.no
             self.result_reader.poll_time=-1
             self.result_reader=None
             self.experiment_writer=None
