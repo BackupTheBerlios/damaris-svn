@@ -11,6 +11,8 @@
 # adapted from Mandrake Linux 10.1 scripts
 
 RETVAL=0
+# failure value for nonexisting hardware
+HARDWARE_FAIL_RETVAL=0
 
 NMR_MODULE_DIR=/lib/modules/`uname -r`/kernel/damaris
 NMR_GROUP="nmr"
@@ -75,10 +77,14 @@ start() {
 	PULSEBLASTER_IOPORT=`pb_findio`
 	if test -z "$PULSEBLASTER_IOPORT"; then
 	    printf "pulseblaster IO ports not found...\n"
-	    RETVAL=2
+	    RETVAL=$HARDWARE_FAIL_RETVAL
 	    return
 	fi
-	$INSMOD $SPECTRUM_MOD
+	if ! $INSMOD $SPECTRUM_MOD >/dev/null 2>&1; then
+	    RETVAL=$HARDWARE_FAIL_RETVAL
+	    return
+       fi
+          
 	$INSMOD $PULSEBLASTER_MOD base_address=$PULSEBLASTER_IOPORT
 
 	# now find major device numbers
