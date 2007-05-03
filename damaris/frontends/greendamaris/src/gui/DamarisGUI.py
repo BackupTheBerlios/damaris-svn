@@ -382,9 +382,9 @@ class DamarisGUI:
         """
         # look at components and update them
         # test whether backend and scripts are done
-        e=self.si.data.get("__recentexperiment",-1)+1
         r=self.si.data.get("__recentresult",-1)+1
         b=self.si.data.get("__resultsinadvance",-1)+1
+        e=self.si.data.get("__recentexperiment",-1)+1
         e_text=None
         r_text=None
         b_text=None
