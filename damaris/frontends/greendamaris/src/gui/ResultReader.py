@@ -327,18 +327,22 @@ class BlockingResultReader(ResultReader):
                 if os.path.isfile(expected_filename): os.remove(expected_filename)
             if self.clear_jobs:
                 if os.path.isfile(expected_filename[:-7]): os.remove(expected_filename[:-7])
-            self.no+=1
 
             self.in_advance=max(self.no, self.in_advance)
-            in_advance_filename=os.path.join(self.spool_dir,self.result_pattern%(self.in_advance))
+
+            in_advance_filename=os.path.join(self.spool_dir,self.result_pattern%(self.in_advance+1))
             while os.access(in_advance_filename, os.R_OK):
                 if self.stop_no is not None and self.stop_no<=self.in_advance:
+                    # stop if end is announced
                     break
-                if self.quit_flag.isSet() and self.in_advance>self.no+100:
+                if self.quit_flag.isSet() or self.in_advance>self.no+100:
+                    # stop on flag
+                    # and do not more than 100 results in advance at one glance
                     break
                 self.in_advance+=1
-                in_advance_filename=os.path.join(self.spool_dir,self.result_pattern%(self.in_advance))
+                in_advance_filename=os.path.join(self.spool_dir,self.result_pattern%(self.in_advance+1))
 
+            self.no+=1
             expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
 
         return
