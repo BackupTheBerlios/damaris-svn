@@ -313,34 +313,33 @@ class BlockingResultReader(ResultReader):
         block until result is available
         """
         expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
-        while not self.quit_flag.isSet() and (self.stop_no is None or self.stop_no>self.no):
+        while (not self.quit_flag.isSet()) and (self.stop_no is None or self.stop_no>self.no):
             if not os.access(expected_filename,os.R_OK):
                 # stop polling, if required
-                if self.poll_time<0:
-                    break
+                if self.poll_time<0: break
                 self.quit_flag.wait(self.poll_time)
                 continue
+
+            # find pending results
+            self.in_advance=max(self.no,self.in_advance)
+            in_advance_filename=os.path.join(self.spool_dir,self.result_pattern%(self.in_advance+1))
+            while os.access(in_advance_filename, os.R_OK) and (self.stop_no is None or self.stop_no>self.in_advance+1):
+                # do not more than 100 results in advance at one glance
+                if self.in_advance>self.no+100: break
+                self.in_advance+=1
+                in_advance_filename=os.path.join(self.spool_dir,self.result_pattern%(self.in_advance+1))
+
+            if self.quit_flag.isSet(): break
             r=self.get_result_object(expected_filename)
             if self.quit_flag.isSet(): break
+            
+            if self.quit_flag.isSet(): break
             yield r
+            
             if self.clear_results:
                 if os.path.isfile(expected_filename): os.remove(expected_filename)
             if self.clear_jobs:
                 if os.path.isfile(expected_filename[:-7]): os.remove(expected_filename[:-7])
-
-            self.in_advance=max(self.no, self.in_advance)
-
-            in_advance_filename=os.path.join(self.spool_dir,self.result_pattern%(self.in_advance+1))
-            while os.access(in_advance_filename, os.R_OK):
-                if self.stop_no is not None and self.stop_no<=self.in_advance:
-                    # stop if end is announced
-                    break
-                if self.quit_flag.isSet() or self.in_advance>self.no+100:
-                    # stop on flag
-                    # and do not more than 100 results in advance at one glance
-                    break
-                self.in_advance+=1
-                in_advance_filename=os.path.join(self.spool_dir,self.result_pattern%(self.in_advance+1))
 
             self.no+=1
             expected_filename=os.path.join(self.spool_dir,self.result_pattern%(self.no))
