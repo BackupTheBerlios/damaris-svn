@@ -16,9 +16,12 @@ class ExperimentWriter:
         if not os.path.isdir(spool):
             os.mkdir(spool)
 
-    def send_next(self, job):
+    def send_next(self, job, quit=False):
         """
         """
+        if quit and self.inform_last_job is not None:
+            self.inform_last_job.stop_no=self.no
+            self.inform_last_job=None
         job.job_id=self.no
         job_filename=os.path.join(self.spool,self.job_pattern%self.no)
 	f=file(job_filename+".tmp","w")
@@ -38,7 +41,7 @@ class ExperimentWriter:
 
     def __del__(self):
         if self.inform_last_job is not None:
-            self.inform_last_job.stop_no=self.no
+            self.inform_last_job.stop_no=self.no-1
             self.inform_last_job=None
 
 class ExperimentWriterWithCleanup(ExperimentWriter):
@@ -49,9 +52,9 @@ class ExperimentWriterWithCleanup(ExperimentWriter):
         ExperimentWriter.__init__(self, spool, no, job_pattern, inform_last_job=inform_last_job)
         self.delete_no_files(self.no)
 
-    def send_next(self, job):
+    def send_next(self, job, quit=False):
         self.delete_no_files(self.no+1)
-        ExperimentWriter.send_next(self,job)
+        ExperimentWriter.send_next(self,job,quit)
 
     def delete_no_files(self,no):
         """
