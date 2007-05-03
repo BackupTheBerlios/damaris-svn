@@ -78,15 +78,15 @@ class ExperimentHandling(threading.Thread):
             if isinstance(job, Experiment):
                 if self.data is not None:
                     self.data["__recentexperiment"]=job.job_id+0
-                    # wait a while
+                    # relax for a short time
                     if "__resultsinadvance" in self.data and self.data["__resultsinadvance"]+100<job.job_id:
                         self.quit_flag.wait(0.05)
                 if self.quit_flag.isSet():
                     data_sapce=None
-                    exp_itterator=None
-                    return
-        job=Quit()
-        self.writer.send_next(job)
+                    exp_iterator=None
+                    break
+
+        self.writer.send_next(Quit(), quit=True)
         # do not count quit job (is this a good idea?)
         dataspace=None
         self.exp_iterator=None
