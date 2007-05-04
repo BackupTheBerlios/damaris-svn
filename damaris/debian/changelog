@@ -1,3 +1,13 @@
+damaris (0.9-0.4) experimental; urgency=low
+
+  * DAMARIS version information
+  * correct matplotlib choice and recognition
+  * counter for results produced by backend
+  * clean up of internal counters and start/stop mechanisms
+  * pulseblaster-module directory removed with cleanup
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Thu,  5 May 2007 01:00:00 +0200
+
 damaris (0.9-0.3) experimental; urgency=high
 
   * checked all lock issues for threads

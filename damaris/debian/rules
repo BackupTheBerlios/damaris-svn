@@ -51,7 +51,7 @@ clean:
 	find backends/drivers -name "pulseblaster-module-*" -type d|xargs -r rm -r
 	(cd frontends/greendamaris && $(PY_INTERPRETER) setup.py clean -a )
 	rm -f debian/damaris-backends.init
-
+	rm -rf backends/drivers/pulseblaster-module
 	rm -f build-stamp
 	dh_clean
 
