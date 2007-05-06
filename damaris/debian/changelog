@@ -1,12 +1,13 @@
 damaris (0.9-0.4) experimental; urgency=low
 
-  * DAMARIS version information
-  * correct matplotlib choice and recognition
-  * counter for results produced by backend
-  * clean up of internal counters and start/stop mechanisms
-  * pulseblaster-module directory removed with cleanup
+  * python-gui: DAMARIS version information
+  * python-gui: correct matplotlib choice and recognition
+  * python-gui: counter for results produced by backend
+  * python-gui: clean up of internal counters and start/stop mechanisms
+  * drivres: pulseblaster-module directory removed with cleanup
+  * python-gui: disable hdf file generation by empty data pool filename
 
- -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Thu,  5 May 2007 01:00:00 +0200
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Sun,  6 May 2007 19:40:08 +0200
 
 damaris (0.9-0.3) experimental; urgency=high
 
