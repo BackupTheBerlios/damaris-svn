@@ -356,24 +356,12 @@ class DamarisGUI:
 
         # start data dump
         self.dump_filename=actual_config["data_pool_name"]
-        self.dump_complib=actual_config.get("data_pool_complib",None)
-        if self.dump_complib=="None":
-            self.dump_complib=None
-        if self.dump_complib is not None:
-            self.dump_complevel=int(actual_config.get("data_pool_comprate",0))
-        else:
-            self.dump_complevel=0
-            
-        self.dump_states(init=True)
+        if self.dump_filename!="":
+            self.dump_states(init=True)
+            self.last_dumped=time.time()
         self.dump_thread=None
         self.save_thread=None
-        self.last_dumped=time.time()
-        # and observe it...
-        self.dump_timeinterval=60*60*10
-        try:
-            self.dump_timeinterval=int(60*float(actual_config["data_pool_write_interval"]))
-        except ValueError,e:
-            print "configuration provides non-number for dump interval: "+str(e)
+
         gobject.timeout_add(200, self.observe_running_experiment)
 
     def observe_running_experiment(self):
@@ -445,7 +433,6 @@ class DamarisGUI:
                 print "done (%.01f s)"%(time.time()-self.dump_start_time)
                 self.last_dumped=time.time()
 
-
         gtk.gdk.threads_enter()
         if e_text:
             self.experiment_script_statusbar_label.set_text(e_text)
@@ -458,7 +445,7 @@ class DamarisGUI:
 
         still_running=filter(None,[self.si.exp_handling, self.si.res_handling, self.si.back_driver, self.dump_thread])
         if len(still_running)==0:
-            if self.save_thread is None:
+            if self.save_thread is None and self.dump_filename!="":
                 print "all subprocesses ended, saving data pool"
                 # thread to save data...
                 self.save_thread=threading.Thread(target=self.dump_states, name="dump states")
@@ -476,16 +463,17 @@ class DamarisGUI:
                 print "subprocess(es) still running: "+', '.join(map(lambda s:s.getName(),still_running))
                 return True
             else:
-                if self.save_thread.isAlive():
-                    sys.stdout.write(".")
-                    self.dump_dots+=1
-                    if self.dump_dots>80:
-                        print
-                        self.dump_dots=0
-                    return True
-                self.save_thread.join()
-                self.save_thread=None
-                print "done (%.01f s)"%(time.time()-self.dump_start_time)
+                if self.save_thread is not None:
+                    if self.save_thread.isAlive():
+                        sys.stdout.write(".")
+                        self.dump_dots+=1
+                        if self.dump_dots>80:
+                            print
+                            self.dump_dots=0
+                        return True
+                    self.save_thread.join()
+                    self.save_thread=None
+                    print "done (%.01f s)"%(time.time()-self.dump_start_time)
 
             # now everything is stopped
             self.state=DamarisGUI.Edit_State
@@ -503,8 +491,8 @@ class DamarisGUI:
             return False
 
         # dump states?
-        if self.dump_thread is None and self.dump_timeinterval!=0 and \
-               self.last_dumped+self.dump_timeinterval<time.time():
+        if self.dump_thread is None and self.dump_filename!="" and \
+           self.dump_timeinterval!=0 and self.last_dumped+self.dump_timeinterval<time.time():
             print "dumping data pool"
             self.dump_start_time=time.time()
             self.dump_dots=0
@@ -531,6 +519,21 @@ class DamarisGUI:
             time=tables.StringCol(length=len("YYYYMMDD HH:MM:SS"))
             experiments=tables.Int64Col()
             results=tables.Int64Col()
+
+        actual_config = self.config.get()
+        self.dump_complib=actual_config.get("data_pool_complib",None)
+        if self.dump_complib=="None":
+            self.dump_complib=None
+        if self.dump_complib is not None:
+            self.dump_complevel=int(actual_config.get("data_pool_comprate",0))
+        else:
+            self.dump_complevel=0
+
+        self.dump_timeinterval=60*60*10
+        try:
+            self.dump_timeinterval=int(60*float(actual_config["data_pool_write_interval"]))
+        except ValueError,e:
+            print "configuration provides non-number for dump interval: "+str(e)
 
         dump_file=None
         if init:
