@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <signal.h>
 #include <math.h>
@@ -201,6 +202,7 @@ job* core::wait_for_input() {
 	return (job*)NULL;
     }
     std::string job_filename;
+    struct stat job_stat;
     // polling loop
     while(1) {
 	if (job_filename.empty()) {
@@ -214,15 +216,18 @@ job* core::wait_for_input() {
 	    job_filename=job_filename_buffer;
 	    free(job_filename_buffer);
 	}
-	int file_access=access(job_filename.c_str(),F_OK);
-	if (0==file_access) {
+	int stat_success=stat(job_filename.c_str(), &job_stat);
+	if (0==stat_success && job_stat.st_size>0) {
+	  int file_access=access(job_filename.c_str(),F_OK);
+	  if (0==file_access) {
 	    // job_reciever creates a job
 	    job* new_job=job_parser->receive(job_filename);
 	    if (new_job->no()!=job_counter) {
-		new_job->job_no=job_counter;
-		fprintf(stderr,"%s : corrected job number\n", job_filename.c_str());
+	      new_job->job_no=job_counter;
+	      fprintf(stderr,"%s : corrected job number\n", job_filename.c_str());
 	    }
 	    return new_job;
+	  }
 	}
 	usleep((size_t)floor(the_configuration.job_poll_wait*1.0e6));
 	// respect triggered restart of program
