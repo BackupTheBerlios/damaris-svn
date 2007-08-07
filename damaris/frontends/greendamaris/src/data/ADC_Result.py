@@ -328,25 +328,27 @@ class ADC_Result(Resultable, Drawable):
     # Überladen von Operatoren und Built-Ins -------------------------------------------------------
 
     def __len__(self):
-        "Redefining len(ADC_Result obj), returns the number of samples in one channel"
-        return len(self.y[0])
+        "Redefining len(ADC_Result obj), returns the number of samples in one channel and 0 without data"
+        if len(self.y)>0:
+            return len(self.y[0])
+        return 0
 
     def __repr__(self):
-        tmp_string = "X:                   " + repr(self.x) + "\n"
-
-        for i in range(self.get_number_of_channels()):
-            tmp_string += ("Y(%d):                " % i) + repr(self.y[i]) + "\n"
-
-        tmp_string += "Indexes:             " + str(self.index) + "\n"
-
-        tmp_string += "Job ID:              " + str(self.job_id) + "\n"
+        """
+        writes job meta data and data to string returned
+        """
+        tmp_string  = "Job ID:              " + str(self.job_id) + "\n"
         tmp_string += "Job Date:            " + str(self.job_date) + "\n"
         tmp_string += "Description:         " + str(self.description) + "\n"
-        tmp_string += "Samples per Channel: " + str(len(self.y[0])) + "\n"
-        tmp_string += "Samplingfrequency:   " + str(self.sampling_rate)
+        if len(self.y)>0:
+            tmp_string += "Indexes:             " + str(self.index) + "\n"
+            tmp_string += "Samples per Channel: " + str(len(self.y[0])) + "\n"
+            tmp_string += "Samplingfrequency:   " + str(self.sampling_rate)
+            tmp_string += "X:                   " + repr(self.x) + "\n"
+            for i in range(self.get_number_of_channels()):
+                tmp_string += ("Y(%d):                " % i) + repr(self.y[i]) + "\n"
 
         return tmp_string
-
 
     def __add__(self, other):
         "Redefining self + other"

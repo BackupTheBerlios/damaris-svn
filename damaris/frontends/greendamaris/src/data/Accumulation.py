@@ -430,8 +430,12 @@ class Accumulation(Errorable, Drawable):
     # Überladen von Operatoren ---------------------------------------------------------------------
 
     def __len__(self):
-        return len(self.y[0])
-
+        """
+        return number of samples per channel, 0 if empty
+        """
+        if len(self.y)>0:
+            return len(self.y[0])
+        return 0
 
     def __repr__(self):
         "Redefining repr(Accumulation)"
