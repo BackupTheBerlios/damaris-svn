@@ -509,14 +509,8 @@ class DamarisGUI:
         compress: optional argument for zlib compression 0-9
         """
 
-        class dump_file_timeline(tables.IsDescription):
-            time=tables.StringCol(length=len("YYYYMMDD HH:MM:SS"))
-            experiments=tables.Int64Col()
-            results=tables.Int64Col()
-
-
         class timeline_tablecols(tables.IsDescription):
-            time=tables.StringCol(length=len("YYYYMMDD HH:MM:SS"))
+            time=tables.StringCol(len("YYYYMMDD HH:MM:SS"))
             experiments=tables.Int64Col()
             results=tables.Int64Col()
 
@@ -537,6 +531,21 @@ class DamarisGUI:
 
         dump_file=None
         if init:
+            if os.path.split(self.dump_filename)[1]=="" or os.path.isdir(self.dump_filename):
+                print "The dump filename is a directory, using filename 'DAMARIS_data_pool.h5'"
+                self.dump_filename+=os.sep+"DAMARIS_data_pool.h5"
+
+            dir_stack=[]
+            dir_trunk=os.path.dirname(self.dump_filename)
+            while not os.path.isdir(dir_trunk):
+                dir_stack.append(os.path.basename(self.dir_trunk))
+                dir_trunk=os.path.dirname(self.dump_filename)
+
+            while dir_stack:
+                dir_trunk+=os.sep+dir_stack.pop()
+                if os.path.isdir(dir_tunk): continue
+                os.mkdir(dir_trunk)
+            
             # move away old file
             if os.path.isfile(self.dump_filename):
                 # create bakup name pattern
@@ -559,6 +568,7 @@ class DamarisGUI:
                 if cummulated_size>(1<<30):
                     print "Warning: the cummulated backups size of '%s' is %d MByte"%(self.dump_filename,
                                                                                       cummulated_size/(1<<20))
+                
             # dump all information to a file
             dump_file=tables.openFile(self.dump_filename,mode="w",title="DAMARIS experiment data")
             if dump_file.isUndoEnabled():
@@ -582,8 +592,8 @@ class DamarisGUI:
             timeline_table.flush()
         else:
             # repack file
-            os.rename(self.dump_filename,self.dump_filename+".bak")
-            old_dump_file=tables.openFile(self.dump_filename+".bak",mode="r+")
+            os.rename(self.dump_filename, self.dump_filename+".bak")
+            old_dump_file=tables.openFile(self.dump_filename+".bak", mode="r+")
             if "data_pool" in old_dump_file.root:
                 old_dump_file.removeNode(where="/", name="data_pool", recursive=True)
             old_dump_file.copyFile(self.dump_filename)

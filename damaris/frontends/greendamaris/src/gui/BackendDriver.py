@@ -160,6 +160,7 @@ class BackendDriver(threading.Thread):
         # wait on flag and look after backend
         while not self.quit_flag.isSet() and self.is_busy():
             self.quit_flag.wait(0.1)
+
         if self.quit_flag.isSet():
             self.stop_queue()
             while self.is_busy():
@@ -167,6 +168,7 @@ class BackendDriver(threading.Thread):
             
         if not self.is_busy():
             self.core_pid = None
+            self.core_input = None
             # tell result reader, game is over...
             #self.result_reader.stop_no=self.experiment_writer.no
             self.result_reader.poll_time=-1
@@ -204,7 +206,9 @@ class BackendDriver(threading.Thread):
         self.core_input=None
 
     def send_signal(self, sig):
-        if self.core_pid is None: return
+        if self.core_pid is None:
+            print "BackendDriver.send_signal is called with core_pid=None"
+            return
         try:
             if sys.platform[:5]=="linux":
                 os.kill(self.core_pid,signal.__dict__[sig])
