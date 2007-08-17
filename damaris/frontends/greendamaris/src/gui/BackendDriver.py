@@ -8,6 +8,7 @@ import glob
 import ExperimentWriter
 import ResultReader
 import threading
+import types
 
 
 if sys.platform[:5]=="linux":
@@ -38,9 +39,12 @@ class BackendDriver(threading.Thread):
         if not os.access(self.executable,os.X_OK):
             raise AssertionError("insufficient rights for backend %s execution"%self.executable)
         if not os.path.isdir(self.spool_dir):
-            raise AssertionError("could not find backend's spool directory %s "%self.spool_dir)
+            try:
+                os.makedirs(os.path.abspath(self.spool_dir))
+            except OSError,e:
+                print e
+                raise AssertionError("could not create backend's spool directory %s "%self.spool_dir)
         
-
         # remove stale state filenames
         if sys.platform.startswith("linux"):
             old_state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
@@ -167,13 +171,34 @@ class BackendDriver(threading.Thread):
                 time.sleep(0.1)
             
         if not self.is_busy():
-            self.core_pid = None
+            if self.core_input is not None:
+                backend_result=self.core_input.poll()
+                if backend_result>0:
+                    print "backend returned ", backend_result
+                elif backend_result<0:
+                    import signal
+                    sig_name=filter(lambda x: x.startswith("SIG") and \
+                                    x[3]!="_" and \
+                                    (type(signal.__dict__[x])is types.IntType) and \
+                                    signal.__dict__[x]==-backend_result,
+                                    dir(signal))
+                    if sig_name:
+                        print "backend was terminated by signal ",sig_name[0]
+                    else:
+                        print "backend was terminated by signal no",-backend_result
             self.core_input = None
+            self.core_pid = None
+
+            # the experiment handler should stop
+            if self.experiment_writer is not None:
+                # self.experiment_writer.
+                self.experiment_writer=None
+
             # tell result reader, game is over...
             #self.result_reader.stop_no=self.experiment_writer.no
-            self.result_reader.poll_time=-1
-            self.result_reader=None
-            self.experiment_writer=None
+            if result_reader is not None:
+                self.result_reader.poll_time=-1
+                self.result_reader=None
              
     def clear_job(self,no):
         jobfilename=os.path.join(self.spool_dir,"job.%09d")
@@ -195,15 +220,15 @@ class BackendDriver(threading.Thread):
     def stop_queue(self):
         self.send_signal("SIGQUIT")
         # assumes success
-        self.core_pid=None
-        self.core_input=None
+        #self.core_pid=None
+        #self.core_input=None
 
     def abort(self):
         # abort execution
         self.send_signal("SIGTERM")
         # assumes success
-        self.core_pid=None
-        self.core_input=None
+        #self.core_pid=None
+        #self.core_input=None
 
     def send_signal(self, sig):
         if self.core_pid is None:
