@@ -535,16 +535,24 @@ class DamarisGUI:
                 print "The dump filename is a directory, using filename 'DAMARIS_data_pool.h5'"
                 self.dump_filename+=os.sep+"DAMARIS_data_pool.h5"
 
+            # create necessary directories
             dir_stack=[]
-            dir_trunk=os.path.dirname(self.dump_filename)
-            while not os.path.isdir(dir_trunk):
-                dir_stack.append(os.path.basename(self.dir_trunk))
-                dir_trunk=os.path.dirname(self.dump_filename)
+            dir_trunk=os.path.dirname(os.path.abspath(self.dump_filename))
+            while dir_trunk!="" and not os.path.isdir(dir_trunk):
+                dir_stack.append(os.path.basename(dir_trunk))
+                dir_trunk=os.path.dirname(dir_trunk)
 
-            while dir_stack:
-                dir_trunk+=os.sep+dir_stack.pop()
-                if os.path.isdir(dir_tunk): continue
-                os.mkdir(dir_trunk)
+            try:
+                while len(dir_stack):
+                    dir_trunk=os.path.join(dir_trunk, dir_stack.pop())
+                    if os.path.isdir(dir_trunk): continue
+                    os.mkdir(dir_trunk)
+            except OSError, e:
+                print e
+                print "coud not create dump file '%s', so hdf5 dumps disabled"%self.dump_filename
+                self.dump_filename=""
+                self.dump_timeinterval=0
+                return True
             
             # move away old file
             if os.path.isfile(self.dump_filename):

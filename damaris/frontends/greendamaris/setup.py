@@ -7,7 +7,7 @@ LONG_DESCRIPTION="""
 DArmstadt MAgnetic Resonance Instrument System
 """
 
-GPL_LICENCE = "feed licence shere"
+GPL_LICENCE = "feed licence here"
 
 setup (
     name = 'DAMARIS',
@@ -18,6 +18,9 @@ setup (
 
     author = 'Achim Gaedke',
     author_email = 'Achim.Gaedke@physik.tu-darmstadt.de',
+
+    maintainer = 'Achim Gaedke',
+    maintainer_email = 'Achim.Gaedke@physik.tu-darmstadt.de',
 
     url = 'http://www.fkp.physik.tu-darmstadt.de/damaris/',
     license = GPL_LICENCE,
