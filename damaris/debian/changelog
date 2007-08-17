@@ -1,3 +1,10 @@
+damaris (0.9-0.5) experimental; urgency=low
+
+  * python-gui: directory creation for dump files
+  * python-gui: release of backend subprocess
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Fri, 17 Aug 2007 11:46:08 +0200
+
 damaris (0.9-0.4) experimental; urgency=low
 
   * python-gui: DAMARIS version information
