@@ -196,7 +196,7 @@ class BackendDriver(threading.Thread):
 
             # tell result reader, game is over...
             #self.result_reader.stop_no=self.experiment_writer.no
-            if result_reader is not None:
+            if self.result_reader is not None:
                 self.result_reader.poll_time=-1
                 self.result_reader=None
              
