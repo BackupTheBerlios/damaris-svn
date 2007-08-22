@@ -12,7 +12,7 @@ import glob
 import time
 import sys
 import base64
-import numarray
+import numpy
 import xml.parsers.expat
 import threading
 from datetime import datetime
@@ -124,16 +124,16 @@ class ResultReader:
                self.__filetype == ResultReader.ADCDATA_TYPE and \
                self.adc_result_sample_counter>0:
             # fill the ADC_Result with collected data
-            self.result.x=numarray.arange(self.adc_result_sample_counter, type="Float64")/\
-                           self.result.get_sampling_rate()
+            self.result.x=numpy.arange(self.adc_result_sample_counter, dtype="Float64")/\
+                                                        self.result.get_sampling_rate()
             self.result.y=[]
             self.result.index=[]
             for i in xrange(2):
-                self.result.y.append(numarray.array(shape=(self.adc_result_sample_counter,), type="Int16"))
+                self.result.y.append(numpy.empty((self.adc_result_sample_counter,), dtype="Int16"))
             tmp_sample_counter=0
             while self.adc_result_parts:
                 tmp_part=self.adc_result_parts.pop(0)
-                tmp_size=tmp_part.size()/2
+                tmp_size=tmp_part.size/2
                 self.result.y[0][tmp_sample_counter:tmp_sample_counter+tmp_size]=tmp_part[::2]
                 self.result.y[1][tmp_sample_counter:tmp_sample_counter+tmp_size]=tmp_part[1::2]
                 self.result.index.append((tmp_sample_counter,tmp_sample_counter+tmp_size-1))
@@ -268,10 +268,10 @@ class ResultReader:
                 tmp=None
                 if self.adc_data_encoding=="a":
                     values=map(int,self.adc_result_trailing_chars.split())
-                    tmp=numarray.array(values, type=numarray.Int16,)
+                    tmp=numpy.array(values, dtype="Int16")
                 elif self.adc_data_encoding=="b":
                     tmp_string=base64.standard_b64decode(self.adc_result_trailing_chars)
-                    tmp=numarray.fromstring(tmp_string, numarray.Int16,(len(tmp_string)/2))
+                    tmp=numpy.fromstring(tmp_string, dtype="Int16")
                     del tmp_string
                 else:
                     print "unknown ADC data format"

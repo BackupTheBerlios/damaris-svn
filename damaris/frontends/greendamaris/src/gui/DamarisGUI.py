@@ -32,12 +32,12 @@ import pango
 import cairo
 
 # array math
-import numarray
+import numpy
 
 # math graphics
 import matplotlib
-# force noninteractive and use of numarray
-matplotlib.rcParams["numerix"]="numarray"
+# force noninteractive and use of numpy
+matplotlib.rcParams["numerix"]="numpy"
 matplotlib.rcParams["interactive"]="False"
 
 if matplotlib.rcParams["backend"]=="GTK":
@@ -1372,6 +1372,7 @@ glib version %(glib)s
 python version %(python)s
 matplotlib version %(matplotlib)s, using %(matplotlib_numerix)s, %(matplotlib_backend)s
 numarray version %(numarray)s
+numpy version %(numpy)s
 pytables version %(pytables)s, using %(pytables_libs)s
 pygtk version %(pygtk)s
 pygobject version %(pygobject)s
@@ -1384,7 +1385,23 @@ pygobject version %(pygobject)s
             pygobject_version="%d.%d.%d"%gobject.pygobject_version
         else:
             pygobject_version="? (no gobject version number)"
-            
+
+        numpy_version="none"
+        try:
+            import numpy
+        except ImportError:
+            pass
+        else:
+            numpy_version=numpy.__version__            
+
+        numarray_version="none"
+        try:
+            import numarray
+        except ImportError:
+            pass
+        else:
+            numarray_version=numarray.__version__            
+
         components_versions = {
             "os":         platform.platform() ,
             "gtk":        "%d.%d.%d"%gtk.gtk_version,
@@ -1393,7 +1410,8 @@ pygobject version %(pygobject)s
             "matplotlib": matplotlib.__version__,
             "matplotlib_numerix": matplotlib.rcParams["numerix"],
             "matplotlib_backend": FigureCanvas.__name__[12:],
-            "numarray":   numarray.__version__,
+            "numarray":   numarray_version,
+            "numpy":      numpy_version,
             "pytables":   tables.getPyTablesVersion(),
             "pytables_libs": "",
             "pygtk":      "%d.%d.%d"%gtk.pygtk_version,

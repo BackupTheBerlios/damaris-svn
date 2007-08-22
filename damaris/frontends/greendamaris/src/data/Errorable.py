@@ -22,7 +22,7 @@ class Errorable:
 
 
     def get_xerr(self):
-        "Returns a reference to x-Error (numarray)"
+        "Returns a reference to x-Error (array)"
         return self.xerr
 
 
@@ -35,7 +35,7 @@ class Errorable:
 
 
     def get_yerr(self, channel):
-        "Returns a list of y-Errors (list of numarrays, corresponding channels)"
+        "Returns a list of y-Errors (list of arrays, corresponding channels)"
         try:
             return self.yerr[channel]
         except:

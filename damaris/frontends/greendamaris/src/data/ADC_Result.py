@@ -5,7 +5,7 @@ from Drawable import Drawable
 from Accumulation import Accumulation
 
 import threading
-import numarray
+import numpy
 import sys
 from types import *
 import tables
@@ -69,9 +69,9 @@ class ADC_Result(Resultable, Drawable):
         if samples <= 0: raise ValueError("ValueError: You cant create an ADC-Result with less than 1 sample!")
         
         for i in range(channels):
-            self.y.append(numarray.zeros((samples,), type="Int16"))
+            self.y.append(numpy.zeros((samples,), dtype="Int16"))
 
-        self.x = numarray.zeros((samples,), type="Float64")
+        self.x = numpy.zeros((samples,), dtype="Float64")
 
         self.index.append((0, samples-1))
         self.cont_data = True
@@ -93,10 +93,10 @@ class ADC_Result(Resultable, Drawable):
 
         length = len(self.y[0])
 
-        self.x = numarray.resize(self.x, (length+samples))
+        self.x = numpy.resize(self.x, (length+samples))
 
         for i in range(self.get_number_of_channels()):
-            self.y[i] = numarray.resize(self.y[i], (length+samples))
+            self.y[i] = numpy.resize(self.y[i], (length+samples))
 
         self.index.append((length, len(self.y[0])-1))
         self.lock.release()
@@ -198,14 +198,14 @@ class ADC_Result(Resultable, Drawable):
                     for index_no in xrange(len(self.index)):
                         index=self.index[index_no]
                         # set time data
-                        timedata=numarray.array(y_mean[index[0]:index[1]+1],
-                                                type = numarray.Int32)
+                        timedata=numpy.array(y_mean[index[0]:index[1]+1],
+                                             dtype = "Int32")
                         
                         time_slice_data=None
                         if complib is not None:
                             if complevel is None:
                                 complevel=9
-                            chunkshape = numarray.shape(timedata)
+                            chunkshape = numpy.shape(timedata)
 			    if len(chunkshape) <= 1:
 				chunkshape = (min(chunkshape[0],1024*8),)
 			    else:
@@ -214,7 +214,7 @@ class ADC_Result(Resultable, Drawable):
                                                                  name="idx%04d_ch%04d"%(index_no,channel_no),
                                                                  shape=timedata.getshape(),
                                                                  atom=tables.Int32Atom(shape=chunkshape,
-                                                                                       flavor="numarray"),
+                                                                                       flavor="numpy"),
                                                                  filters=tables.Filters(complevel=complevel,
                                                                                         complib=complib),
                                                                  title="Index %d, Channel %d"%(index_no,channel_no))
@@ -227,12 +227,12 @@ class ADC_Result(Resultable, Drawable):
 
                         timedata=None
                         # set attributes
-                        time_slice_data._f_setAttr("index",numarray.array(index_no, type=numarray.Int32))
-                        time_slice_data._f_setAttr("channel",numarray.array(channel_no, type=numarray.Int32))
-                        time_slice_data._f_setAttr("dwelltime",numarray.array(1.0/self.sampling_rate,
-                                                                               type=numarray.Float64))
-                        time_slice_data._f_setAttr("start_time",numarray.array(1.0/self.sampling_rate*index[0],
-                                                                                type=numarray.Float64))
+                        time_slice_data._f_setAttr("index",numpy.array(index_no, dtype="Int32"))
+                        time_slice_data._f_setAttr("channel",numpy.array(channel_no, dtype="Int32"))
+                        time_slice_data._f_setAttr("dwelltime",numpy.array(1.0/self.sampling_rate,
+                                                                           dtype="Float64"))
+                        time_slice_data._f_setAttr("start_time",numpy.array(1.0/self.sampling_rate*index[0],
+                                                                            dtype="Float64"))
             finally:
                 time_slice_data=None
                 accu_group=None
@@ -290,15 +290,15 @@ class ADC_Result(Resultable, Drawable):
 
                 # prepare saving data
                 channel_no=len(self.y)
-                timedata=numarray.array(shape = (len(self.y[0]),channel_no),
-                                        type = numarray.Int32)
+                timedata=numpy.empty((len(self.y[0]),channel_no),
+                                     dtype = "Int32")
                 for ch in xrange(channel_no):
                     timedata[:,ch]=self.get_ydata(ch)
                 
                 # save data
                 time_slice_data=None
                 if filter is not None:
-                    chunkshape = numarray.shape(timedata)
+                    chunkshape = numpy.shape(timedata)
                     if len(chunkshape) <= 1:
                         chunkshape = (min(chunkshape[0],1024*8),)
                     else:
@@ -307,7 +307,7 @@ class ADC_Result(Resultable, Drawable):
                                                          name="adc_data",
                                                          shape=timedata.getshape(),
                                                          atom=tables.Int32Atom(shape=chunkshape,
-                                                                               flavor="numarray"),
+                                                                               flavor="numpy"),
                                                          filters=filter,
                                                          title="adc data")
                     time_slice_data[:]=timedata
@@ -357,7 +357,7 @@ class ADC_Result(Resultable, Drawable):
             tmp_y = []
 
             for i in range(self.get_number_of_channels()):
-                tmp_y.append(numarray.array(self.y[i], type="Float64") + other)
+                tmp_y.append(numpy.array(self.y[i], dtype="Float64") + other)
 
             r = ADC_Result(x = self.x+0, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
@@ -378,7 +378,7 @@ class ADC_Result(Resultable, Drawable):
             tmp_y = []
 
             for i in range(self.get_number_of_channels()):
-                tmp_y.append(numarray.array(self.y[i], type="Float64") - other)
+                tmp_y.append(numpy.array(self.y[i], dtype="Float64") - other)
 
             r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
@@ -394,7 +394,7 @@ class ADC_Result(Resultable, Drawable):
             tmp_y = []
 
             for i in range(self.get_number_of_channels()):
-                tmp_y.append(other - numarray.array(self.y[i], type="Float64"))
+                tmp_y.append(other - numpy.array(self.y[i], dtype="Float64"))
 
             r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
@@ -411,7 +411,7 @@ class ADC_Result(Resultable, Drawable):
             tmp_y = []
 
             for i in range(self.get_number_of_channels()):
-                tmp_y.append(numarray.array(self.y[i], type="Float64") * other)
+                tmp_y.append(numpy.array(self.y[i], dtype="Float64") * other)
 
             r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
@@ -431,7 +431,7 @@ class ADC_Result(Resultable, Drawable):
             tmp_y = []
 
             for i in range(self.get_number_of_channels()):
-                tmp_y.append(numarray.array(self.y[i], type="Float64") ** other)
+                tmp_y.append(numpy.array(self.y[i], dtype="Float64") ** other)
 
             r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
@@ -447,7 +447,7 @@ class ADC_Result(Resultable, Drawable):
             tmp_y = []
 
             for i in range(self.get_number_of_channels()):
-                tmp_y.append(numarray.array(self.y[i], type="Float64") / other)
+                tmp_y.append(numpy.array(self.y[i], dtype="Float64") / other)
 
             r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
@@ -463,7 +463,7 @@ class ADC_Result(Resultable, Drawable):
             tmp_y = []
 
             for i in range(self.get_number_of_channels()):
-                tmp_y.append(other / numarray.array(self.y[i], type="Float64"))
+                tmp_y.append(other / numpy.array(self.y[i], dtype="Float64"))
 
             r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
@@ -477,8 +477,8 @@ class ADC_Result(Resultable, Drawable):
         tmp_y = []
 
         for i in range(self.get_number_of_channels()):
-            tmp_y.append(numarray.array(-self.y[i]))
+            tmp_y.append(numpy.array(-self.y[i]))
 
-        r = ADC_Result(x = numarray.array(self.x), y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+        r = ADC_Result(x = numpy.array(self.x), y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
         self.lock.release()
         return r

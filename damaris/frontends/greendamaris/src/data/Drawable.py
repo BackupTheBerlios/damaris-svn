@@ -35,7 +35,7 @@ class Drawable:
 
 
     def get_xdata(self):
-        "Returns a reference to the x-Plotdata (numarray)"
+        "Returns a reference to the x-Plotdata (array)"
         return self.x
 
 
@@ -48,7 +48,7 @@ class Drawable:
 
 
     def get_ydata(self, channel):
-        "Returns the y-Plotdata of channel n (numarray)"
+        "Returns the y-Plotdata of channel n (array)"
         try:
             return self.y[channel]
         except:

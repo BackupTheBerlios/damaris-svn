@@ -3,7 +3,6 @@
 from Resultable import Resultable
 from Drawable import Drawable
 
-import numarray
 from types import *
 
 #############################################################################

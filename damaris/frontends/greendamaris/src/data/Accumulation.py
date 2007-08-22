@@ -16,7 +16,7 @@ import sys
 import threading
 import types
 import tables
-import numarray
+import numpy
 from types import *
 
 class Accumulation(Errorable, Drawable):
@@ -128,7 +128,7 @@ class Accumulation(Errorable, Drawable):
         self.lock.acquire()
         if self.n < 2:
             self.lock.release()
-            return numarray.zeros((len(self.y[0]),),type="Float64")
+            return numpy.zeros((len(self.y[0]),),dtype="Float64")
 
 
         # ( E(X^2) - E(X)^2 )^0.5
@@ -136,7 +136,7 @@ class Accumulation(Errorable, Drawable):
             tmp_yerr = (((self.y_square[channel] / self.n) - ((self.y[channel] / self.n)**2))/self.n) ** 0.5
         except e:
             print "Warning Accumulation.get_yerr(channel): Std-Deviation calculation failed (%s)"%(str(e))
-            tmp_yerr = numarray.zeros((len(self.y[0]),),type="Float64")
+            tmp_yerr = numpy.zeros((len(self.y[0]),),dtype="Float64")
 
         self.lock.release()
         return tmp_yerr
@@ -151,7 +151,7 @@ class Accumulation(Errorable, Drawable):
             tmp_y = self.y[channel] / self.n
         except:
             print "Warning Accumulation.get_ydata(channel): Channel index does not exist."
-            tmp_y = numarray.zeros((len(self.y[0]),),type="Float64")
+            tmp_y = numpy.zeros((len(self.y[0]),),type="Float64")
 
         self.lock.release()
         return tmp_y
@@ -273,21 +273,21 @@ class Accumulation(Errorable, Drawable):
                     for index_no in xrange(len(self.index)):
                         index=self.index[index_no]
                         # set time data
-                        timedata=numarray.array(type = numarray.Float64,
-                                                shape = (2*(index[1]-index[0]+1),))
+                        timedata=numpy.empty((2*(index[1]-index[0]+1),),
+                                             dtype = "Float64")
                             
                         timedata[0::2]=y_mean[index[0]:index[1]+1]
                         if len(y_sigma):
                             timedata[1::2]=y_sigma[index[0]:index[1]+1]
                         else:
-                            timedata[1::2]=numarray.zeros(type = numarray.Float64,
-                                                          shape = ((index[1]-index[0]+1),))
+                            timedata[1::2]=numpy.zeros(((index[1]-index[0]+1),),
+                                                       dtype = "Float64")
                         timedata.setshape((index[1]-index[0]+1,2))
                         time_slice_data=None
                         if complib is not None:
                             if complevel is None:
                                 complevel=9
-                            chunkshape = numarray.shape(timedata)
+                            chunkshape = numpy.shape(timedata)
 			    if len(chunkshape) <= 1:
 				chunkshape = (min(chunkshape[0],1024*8),)
 			    else:
@@ -296,7 +296,7 @@ class Accumulation(Errorable, Drawable):
                                                                  name="idx%04d_ch%04d"%(index_no,channel_no),
                                                                  shape=timedata.getshape(),
                                                                  atom=tables.Float64Atom(shape=chunkshape,
-                                                                                         flavor="numarray"),
+                                                                                         flavor="numpy"),
                                                                  filters=tables.Filters(complevel=complevel,
                                                                                         complib=complib,
 											shuffle=1),
@@ -310,13 +310,13 @@ class Accumulation(Errorable, Drawable):
 
                         timedata=None
                         # set attributes
-                        time_slice_data._f_setAttr("index",numarray.array(index_no, type=numarray.Int32))
-                        time_slice_data._f_setAttr("channel",numarray.array(channel_no, type=numarray.Int32))
-                        time_slice_data._f_setAttr("number",numarray.array(self.n, type=numarray.Int64))
-                        time_slice_data._f_setAttr("dwelltime",numarray.array(1.0/self.sampling_rate,
-                                                                               type=numarray.Float64))
-                        time_slice_data._f_setAttr("start_time",numarray.array(1.0/self.sampling_rate*index[0],
-                                                                                type=numarray.Float64))
+                        time_slice_data._f_setAttr("index",numpy.array(index_no, dtype="Int32"))
+                        time_slice_data._f_setAttr("channel",numpy.array(channel_no, dtype="Int32"))
+                        time_slice_data._f_setAttr("number",numpy.array(self.n, dtype="Int64"))
+                        time_slice_data._f_setAttr("dwelltime",numpy.array(1.0/self.sampling_rate,
+                                                                               dtype="Float64"))
+                        time_slice_data._f_setAttr("start_time",numpy.array(1.0/self.sampling_rate*index[0],
+                                                                                dtype="Float64"))
             finally:
                 time_slice_data=None
                 accu_group=None
@@ -384,15 +384,13 @@ class Accumulation(Errorable, Drawable):
 
                 # prepare saving data
                 channel_no=len(self.y)
-                timedata=numarray.array(shape = (len(self.y[0]),channel_no*2),
-                                        type = numarray.Float64)
+                timedata=numpy.empty((len(self.y[0]),channel_no*2), dtype = "Float64")
                 for ch in xrange(channel_no):
                     timedata[:,ch*2]=self.get_ydata(ch)
                     if self.uses_statistics():
                         timedata[:,ch*2+1]=self.get_yerr(ch)
                     else:
-                        timedata[:,ch*2+1]=numarray.zeros(type = numarray.Float64,
-                                                          shape = (len(self.y[0]),))
+                        timedata[:,ch*2+1]=numpy.zeros((len(self.y[0]),),dtype = "Float64")
                 
                 # save data
                 time_slice_data=None
@@ -406,7 +404,7 @@ class Accumulation(Errorable, Drawable):
                                                          name="accu_data",
                                                          shape=timedata.getshape(),
                                                          atom=tables.Float64Atom(shape=chunkshape,
-                                                                                 flavor="numarray"),
+                                                                                 flavor="numpy"),
                                                          filters=filter,
                                                          title="accu data")
                     time_slice_data[:]=timedata
@@ -476,9 +474,9 @@ class Accumulation(Errorable, Drawable):
                     tmp_y.append(self.y[i] + (other*self.n))
 
                 if self.uses_statistics():
-                    r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = self.n, index = self.index, sampl_freq = self.sampling_rate, error = self.use_error)
+                    r = Accumulation(x = numpy.array(self.x, dtype="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = self.n, index = self.index, sampl_freq = self.sampling_rate, error = self.use_error)
                 else:
-                    r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, n = self.n, index = self.index, sampl_freq = self.sampling_rate, error = self.use_error)
+                    r = Accumulation(x = numpy.array(self.x, dtype="Float64"), y = tmp_y, n = self.n, index = self.index, sampl_freq = self.sampling_rate, error = self.use_error)
 
                 self.lock.release()
                 return r
@@ -498,14 +496,14 @@ class Accumulation(Errorable, Drawable):
                 self.lock.acquire()
 
                 for i in range(other.get_number_of_channels()):
-                    tmp_y.append(numarray.array(other.y[i], type="Float64"))
+                    tmp_y.append(numpy.array(other.y[i], dtype="Float64"))
                     if self.uses_statistics(): tmp_ysquare.append(tmp_y[i] ** 2)
                  
 
                 if self.uses_statistics():
-                    r = Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = 1, index = other.index, sampl_freq = other.sampling_rate, error = True)
+                    r = Accumulation(x = numpy.array(other.x, dtype="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = 1, index = other.index, sampl_freq = other.sampling_rate, error = True)
                 else:
-                    r = Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, n = 1, error = False)
+                    r = Accumulation(x = numpy.array(other.x, dtype="Float64"), y = tmp_y, index = other.index, sampl_freq = other.sampling_rate, n = 1, error = False)
                 r.time_period=[other.job_date,other.job_date]
                 r.common_descriptions=other.description.copy()
                 self.lock.release()
@@ -526,12 +524,12 @@ class Accumulation(Errorable, Drawable):
 
                 for i in range(self.get_number_of_channels()):
                     tmp_y.append(self.y[i] + other.y[i])
-                    if self.uses_statistics(): tmp_ysquare.append(self.y_square[i] + (numarray.array(other.y[i], type="Float64") ** 2))
+                    if self.uses_statistics(): tmp_ysquare.append(self.y_square[i] + (numpy.array(other.y[i], dtype="Float64") ** 2))
 
                 if self.uses_statistics():
-                    r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = self.n + 1, index = self.index, sampl_freq = self.sampling_rate, error = True)
+                    r = Accumulation(x = numpy.array(self.x, dtype="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = self.n + 1, index = self.index, sampl_freq = self.sampling_rate, error = True)
                 else:
-                    r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, n = self.n + 1, index = self.index, sampl_freq = self.sampling_rate, error = False)
+                    r = Accumulation(x = numpy.array(self.x, dtype="Float64"), y = tmp_y, n = self.n + 1, index = self.index, sampl_freq = self.sampling_rate, error = False)
                 r.time_period=[min(self.time_period[0],other.job_date),
                                max(self.time_period[1],other.job_date)]
                 if self.common_descriptions is not None:
@@ -558,9 +556,9 @@ class Accumulation(Errorable, Drawable):
                 self.lock.acquire()
 
                 if self.uses_statistics():
-                    r = Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = other.n, index = other.index, sampl_freq = other.sampling_rate, error = True)
+                    r = Accumulation(x = numpy.array(other.x, dtype="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = other.n, index = other.index, sampl_freq = other.sampling_rate, error = True)
                 else:
-                    r = Accumulation(x = numarray.array(other.x, type="Float64"), y = tmp_y, n = other.n, index = other.index, sampl_freq = other.sampling_rate, error = False)
+                    r = Accumulation(x = numpy.array(other.x, dtype="Float64"), y = tmp_y, n = other.n, index = other.index, sampl_freq = other.sampling_rate, error = False)
                 for i in range(other.get_number_of_channels()):
                     tmp_y.append(other.y[i])
                     tmp_ysquare.append(other.y_square[i])
@@ -592,9 +590,9 @@ class Accumulation(Errorable, Drawable):
                     tmp_ysquare.append(self.y_square[i] + other.y_square[i])
 
                 if self.uses_statistics():
-                    r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = other.n + self.n, index = self.index, sampl_freq = self.sampling_rate, error = True)
+                    r = Accumulation(x = numpy.array(self.x, dtype="Float64"), y = tmp_y, y_2 = tmp_ysquare, n = other.n + self.n, index = self.index, sampl_freq = self.sampling_rate, error = True)
                 else:
-                    r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, n = other.n + self.n, index = self.index, sampl_freq = self.sampling_rate, error = False)
+                    r = Accumulation(x = numpy.array(self.x, dtype="Float64"), y = tmp_y, n = other.n + self.n, index = self.index, sampl_freq = self.sampling_rate, error = False)
 
                 r.time_period=[min(self.time_period[0],other.time_period[0]),
                                max(self.time_period[1],other.time_period[1])]
@@ -652,11 +650,11 @@ class Accumulation(Errorable, Drawable):
                 self.n += 1
                 self.index = other.index[0:]
                 self.sampling_rate = other.sampling_rate
-                self.x = numarray.array(other.x, type="Float64")
+                self.x = numpy.array(other.x, dtype="Float64")
                 self.cont_data = True
 
                 for i in range(other.get_number_of_channels()):
-                    self.y.append(numarray.array(other.y[i], type="Float64"))
+                    self.y.append(numpy.array(other.y[i], dtype="Float64"))
                     if self.uses_statistics(): self.y_square.append(self.y[i] ** 2)
 
                 self.set_title(self.__title_pattern % self.n)
@@ -680,7 +678,7 @@ class Accumulation(Errorable, Drawable):
 
                 for i in range(self.get_number_of_channels()):
                     self.y[i] += other.y[i]
-                    if self.uses_statistics(): self.y_square[i] += numarray.array(other.y[i], type="Float64") ** 2
+                    if self.uses_statistics(): self.y_square[i] += numpy.array(other.y[i], dtype="Float64") ** 2
 
                 self.n += 1
                 self.time_period=[min(self.time_period[0],other.job_date),
@@ -709,11 +707,11 @@ class Accumulation(Errorable, Drawable):
                 self.n += other.n
                 self.index = other.index[0:]
                 self.sampling_rate = other.sampling_rate
-                self.x = numarray.array(other.x, type="Float64")
+                self.x = numpy.array(other.x, dtype="Float64")
                 self.cont_data = True
 
                 for i in range(other.get_number_of_channels()):
-                    self.y.append(numarray.array(other.y[i], type="Float64"))
+                    self.y.append(numpy.array(other.y[i], dtype="Float64"))
                     if self.uses_statistics(): self.y_square.append(self.y[i] ** 2)
 
                 self.set_title(self.__title_pattern % self.n)
@@ -772,11 +770,11 @@ class Accumulation(Errorable, Drawable):
 
         self.lock.acquire()
         for i in range(self.get_number_of_channels()):
-            tmp_y.append(numarray.array(-self.y[i], type="Float64"))
+            tmp_y.append(numpy.array(-self.y[i], dtype="Float64"))
 
         if self.uses_statistics():
-            r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, y_2 = numarray.array(self.y_square), n = self.n, index = self.index, sampl_freq = self.sampling_rate, error = True)
+            r = Accumulation(x = numpy.array(self.x, dtype="Float64"), y = tmp_y, y_2 = numpy.array(self.y_square), n = self.n, index = self.index, sampl_freq = self.sampling_rate, error = True)
         else:
-            r = Accumulation(x = numarray.array(self.x, type="Float64"), y = tmp_y, n = self.n, index = self.index, sampl_freq = self.sampling_rate, error = False)
+            r = Accumulation(x = numpy.array(self.x, dtype="Float64"), y = tmp_y, n = self.n, index = self.index, sampl_freq = self.sampling_rate, error = False)
         self.lock.release()
         return r
