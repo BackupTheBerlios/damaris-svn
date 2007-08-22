@@ -10,18 +10,19 @@ Architecture: all
 XS-Python-Version: >=2.4
 XB-Python-Version: ${python:Versions}
 Provides:  ${python:Provides}, damaris-frontend
-Depends: ${python:Depends}, python-numarray (>=0.80), python-numarray-ext (>=0.80), python-gtk2 (>=2.8.0), python-glade2, python-matplotlib, python-tables, python-scipy, python-numpy, python-numpy-ext
-Suggests: damaris-backends
+Depends: ${python:Depends}, python-numarray (>=0.80), python-numarray-ext (>=0.80), python-gtk2 (>=2.8.0), python-glade2, python-matplotlib, python-tables
+Recommends: damaris-backends, python-scipy, python-numpy, python-numpy-ext
+Suggests: python-doc
 Description: python frontend for damaris project
 
 Package: damaris-frontend-labview
 Architecture: all
 Provides: damaris-frontend
-Suggests: damaris-backends
+Recommends: damaris-backends
 Description: LabView frontend for damaris project
 
 Package: damaris-backends
 Architecture: i386 amd64
-Depends: libxerces27, libexpat1, linux-image-2.6
-Suggests: damaris-frontend
-Description: packend package
+Depends: libxerces27, libexpat1, linux-image-2.6 (=2.6.18-5)
+Recommends: python-damaris|damaris-frontend
+Description: backend package
