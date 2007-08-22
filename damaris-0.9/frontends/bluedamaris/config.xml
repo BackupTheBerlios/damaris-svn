@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<config>
+	<job_writer path="/tmp/dummyspool"/>
+	<data_handling path="/tmp/dummyspool" timeout="None"/>
+	<core exec="/home/markusro/damaris/backends/machines/PFGcore.exe"
+              path="/tmp/dummyspool" core_state="dummy core.state"/>
+</config>

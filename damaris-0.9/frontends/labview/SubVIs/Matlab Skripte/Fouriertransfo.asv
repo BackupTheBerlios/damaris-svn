@@ -1,0 +1,14 @@
+function [frequency,fftRe,fftIm]=Fouriertransfo(time,re,im,phase)
+samples=max(size(re));
+rate=1/(samples*max(time));
+frequency=-rate/2:rate/(samples-1):rate/2;
+
+fid=vectocompl(re,im);
+
+fft1=fftshift(fft(re));
+fft2=fftshift(fft(im));
+
+
+
+
+

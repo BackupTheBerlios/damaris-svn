@@ -1,0 +1,4 @@
+include src/gui/DAMARIS.png
+include src/gui/DAMARIS.ico
+include src/gui/damaris.glade
+include src/gui/damaris.gladep

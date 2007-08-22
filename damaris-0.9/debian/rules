@@ -1,0 +1,152 @@
+#!/usr/bin/make -f
+
+# Achim Gaedke
+# May 2007
+
+# Uncomment this to turn on verbose mode. 
+export DH_VERBOSE=1
+PYBASE=$(shell pwd)/debian/python-damaris
+BACKENDSBASE=$(shell pwd)/debian/damaris-backends
+BACKENDSMACHINES=dummycore.exe deuteron_backend.exe magnexgrad_backend PFGcore.exe bg_backend Mobilecore.exe
+PY_INTERPRETER=/usr/bin/python
+
+KERNELVERSION=$(shell uname -r)
+KERNELVERSIONS=$(shell uname -r)
+DEB_BUILD_ARCH=$(strip $(shell dpkg-architecture -qDEB_BUILD_ARCH))
+
+ifeq ($(DEB_BUILD_ARCH),amd64)
+  KERNELVERSIONS=$(shell echo `uname -r|sed 's/\(.*\)-.*/\1/'`-amd64 )
+endif
+ifeq ($(DEB_BUILD_ARCH),i386)
+  KERNELVERSIONS=$(shell echo `uname -r|sed 's/\(.*\)-.*/\1/'`-\{k7,686,486\} )
+endif
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+
+# kernel related things...
+	(cd backends/drivers/SpinCore-PulseBlaster ; \
+	for i in $(KERNELVERSIONS); do \
+		echo $(DEB_BUILD_ARCH) $$i ;\
+		if test -e /usr/src/linux-headers-$$i/Makefile; then \
+			$(MAKE) -C /usr/src/linux-headers-$$i SUBDIRS=`pwd` clean modules; \
+			install -d ../pulseblaster-module/$$i ; \
+			mv pulseblaster.ko Module.symvers ../pulseblaster-module/$$i ;\
+		fi; \
+	done )
+# Add here commands to compile the package.
+	$(MAKE) CXXFLAGS=-O2 -C backends
+	$(MAKE) CXXFLAGS=-O2 -C backends/machines $(BACKENDSMACHINES)
+
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	dh_installdirs
+
+# Add here commands to clean up after the build process.
+	-$(MAKE) -C backends clean
+	find backends/drivers -name "pulseblaster-module-*" -type d|xargs -r rm -r
+	(cd frontends/greendamaris && $(PY_INTERPRETER) setup.py clean -a )
+	rm -f debian/damaris-backends.init
+	rm -rf backends/drivers/pulseblaster-module
+	rm -f build-stamp
+	dh_clean
+
+install:
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+
+# labview stuff goes here
+	(cd frontends ; \
+	find labview -type d \! -path "*/.svn*" -exec \
+	install -d "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; ; \
+	find labview -type f \! -path "*/.svn*" -iname "*.vi" -exec \
+	install "{}" "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; )
+
+# python stuff goes to private module and starter
+	(cd frontends/greendamaris && $(PY_INTERPRETER) setup.py install --no-compile \
+                --root $(PYBASE) )
+
+# backend executables
+	dh_installdirs -pdamaris-backends usr/lib/damaris/backends ; \
+	for i in $(BACKENDSMACHINES); do \
+		if test -x "backends/machines/$$i" ; then \
+		  MACHINENAME="`echo $$i|sed 's/\.exe$$//'`" ; \
+		  if test "$$MACHINENAME" = "$$i"; then \
+		     dh_install -pdamaris-backends "backends/machines/$$i" "usr/lib/damaris/backends" ; \
+		  else \
+		     cp "backends/machines/$$i" "backends/machines/$$MACHINENAME" && \
+		     dh_install -pdamaris-backends "backends/machines/$$MACHINENAME" "usr/lib/damaris/backends" && \
+		     rm "backends/machines/$$MACHINENAME" ; \
+		  fi ; \
+		fi ; \
+	done;
+
+# compiled kernel modules
+	PBMODULES=`find backends/drivers/pulseblaster-module -type d`; \
+	for i in $$PBMODULES; do \
+		MODULESDIR=lib/modules/`basename $$i`/kernel/damaris ; \
+		dh_installdirs -pdamaris-backends $$MODULESDIR ; \
+		test -f "$$i/pulseblaster.ko" && dh_install -pdamaris-backends "$$i/pulseblaster.ko" "$$MODULESDIR" ; \
+	done;
+
+# provided by Spectrum
+	for i in $(KERNELVERSIONS); do \
+		MODULEBUILDDIR=backends/drivers/Spectrum-MI40xxSeries/modules-$$i ; \
+		if test -d $$MODULEBUILDDIR ; then \
+			MODULESDIR=lib/modules/$$i/kernel/damaris ; \
+			dh_installdirs -pdamaris-backends $$MODULESDIR ; \
+			find $$MODULEBUILDDIR -type f -exec dh_install -pdamaris-backends {} $$MODULESDIR \; ; \
+		fi ; \
+	done; true
+	dh_install
+
+# init script
+	cp backends/tools/nmr_drivers.sh debian/damaris-backends.init
+
+# Build architecture-independent files here.
+binary-indep: build install
+	dh_testdir -i
+	dh_testroot -i
+	dh_installchangelogs -i
+	dh_pycentral -i
+	dh_installdocs -i
+	dh_installexamples -i
+	dh_installmenu -i
+#	dh_installman -i
+	dh_link -i
+	dh_compress -i
+	dh_fixperms -i
+	dh_installdeb -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir -a
+	dh_testroot -a
+	dh_installchangelogs -a
+	dh_installdocs -a
+	dh_installexamples -a
+	dh_installinit -a -pdamaris-backends
+#	dh_installmenu -a
+#	dh_installman -a
+	dh_strip -a
+	dh_link -a
+	dh_compress -a
+	dh_fixperms -a 
+#	dh_makeshlibs -a
+	dh_installdeb -a
+	dh_shlibdeps -a
+	dh_gencontrol -a
+	dh_md5sums -a
+	dh_builddeb -a
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install
