@@ -212,7 +212,7 @@ class ADC_Result(Resultable, Drawable):
 				chunkshape = (min(chunkshape[0],1024*8), chunkshape[1])
                             time_slice_data=hdffile.createCArray(accu_group,
                                                                  name="idx%04d_ch%04d"%(index_no,channel_no),
-                                                                 shape=timedata.getshape(),
+                                                                 shape=timedata.shape,
                                                                  atom=tables.Int32Atom(shape=chunkshape,
                                                                                        flavor="numpy"),
                                                                  filters=tables.Filters(complevel=complevel,
@@ -305,7 +305,7 @@ class ADC_Result(Resultable, Drawable):
                         chunkshape = (min(chunkshape[0],1024*8), chunkshape[1])
                     time_slice_data=hdffile.createCArray(accu_group,
                                                          name="adc_data",
-                                                         shape=timedata.getshape(),
+                                                         shape=timedata.shape,
                                                          atom=tables.Int32Atom(shape=chunkshape,
                                                                                flavor="numpy"),
                                                          filters=filter,

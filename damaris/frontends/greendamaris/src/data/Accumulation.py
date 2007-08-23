@@ -294,7 +294,7 @@ class Accumulation(Errorable, Drawable):
 				chunkshape = (min(chunkshape[0],1024*8), chunkshape[1])
                             time_slice_data=hdffile.createCArray(accu_group,
                                                                  name="idx%04d_ch%04d"%(index_no,channel_no),
-                                                                 shape=timedata.getshape(),
+                                                                 shape=timedata.shape,
                                                                  atom=tables.Float64Atom(shape=chunkshape,
                                                                                          flavor="numpy"),
                                                                  filters=tables.Filters(complevel=complevel,
@@ -395,14 +395,14 @@ class Accumulation(Errorable, Drawable):
                 # save data
                 time_slice_data=None
                 if filter is not None:
-                    chunkshape=timedata.getshape()
+                    chunkshape=timedata.shape
                     if len(chunkshape) <= 1:
                         chunkshape = (min(chunkshape[0],1024*8),)
                     else:
                         chunkshape = (min(chunkshape[0],1024*8), chunkshape[1])
                     time_slice_data=hdffile.createCArray(accu_group,
                                                          name="accu_data",
-                                                         shape=timedata.getshape(),
+                                                         shape=timedata.shape,
                                                          atom=tables.Float64Atom(shape=chunkshape,
                                                                                  flavor="numpy"),
                                                          filters=filter,

@@ -68,7 +68,7 @@ from damaris.data import DataPool, Accumulation, ADC_Result, MeasurementResult
 debug=False
 
 # version info
-__version__="0.9"
+__version__="0.10"
 
 # gtk_gdk_flush=gtk.gdk.flush
 gtk_gdk_flush=lambda :True
