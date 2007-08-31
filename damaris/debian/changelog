@@ -1,3 +1,12 @@
+damaris (0.9-0.5.1) experimental; urgency=low
+
+  * Split kernel modules into new damaris-modules package,
+    in preparation for per kernelversion packages
+  * Fix depedencies of damaris-backends
+  * Add Mobile_wo_sync_backend
+
+ -- Christian Tacke <Christian.Tacke@physik.tu-darmstadt.de>  Fri, 31 Aug 2007 11:15:38 +0200
+
 damaris (0.9-0.5) experimental; urgency=low
 
   * python-gui: directory creation for dump files

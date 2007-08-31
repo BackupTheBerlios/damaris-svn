@@ -7,7 +7,14 @@
 export DH_VERBOSE=1
 PYBASE=$(shell pwd)/debian/python-damaris
 BACKENDSBASE=$(shell pwd)/debian/damaris-backends
-BACKENDSMACHINES=dummycore.exe deuteron_backend.exe magnexgrad_backend PFGcore.exe bg_backend Mobilecore.exe
+BACKENDSMACHINES = \
+	dummycore.exe \
+	deuteron_backend.exe \
+	magnexgrad_backend \
+	PFGcore.exe \
+	bg_backend \
+	Mobilecore.exe \
+	Mobile_wo_sync_backend.exe
 PY_INTERPRETER=/usr/bin/python
 
 KERNELVERSION=$(shell uname -r)
@@ -91,8 +98,8 @@ install: build
 	PBMODULES=`find backends/drivers/pulseblaster-module -type d`; \
 	for i in $$PBMODULES; do \
 		MODULESDIR=lib/modules/`basename $$i`/kernel/damaris ; \
-		dh_installdirs -pdamaris-backends $$MODULESDIR ; \
-		test -f "$$i/pulseblaster.ko" && dh_install -pdamaris-backends "$$i/pulseblaster.ko" "$$MODULESDIR" ; \
+		dh_installdirs -pdamaris-modules $$MODULESDIR ; \
+		test -f "$$i/pulseblaster.ko" && dh_install -pdamaris-modules "$$i/pulseblaster.ko" "$$MODULESDIR" ; \
 	done;
 
 # provided by Spectrum
@@ -100,8 +107,8 @@ install: build
 		MODULEBUILDDIR=backends/drivers/Spectrum-MI40xxSeries/modules-$$i ; \
 		if test -d $$MODULEBUILDDIR ; then \
 			MODULESDIR=lib/modules/$$i/kernel/damaris ; \
-			dh_installdirs -pdamaris-backends $$MODULESDIR ; \
-			find $$MODULEBUILDDIR -type f -exec dh_install -pdamaris-backends {} $$MODULESDIR \; ; \
+			dh_installdirs -pdamaris-modules $$MODULESDIR ; \
+			find $$MODULEBUILDDIR -type f -exec dh_install -pdamaris-modules {} $$MODULESDIR \; ; \
 		fi ; \
 	done; true
 	dh_install

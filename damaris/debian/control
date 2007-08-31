@@ -23,6 +23,12 @@ Description: LabView frontend for damaris project
 
 Package: damaris-backends
 Architecture: i386 amd64
-Depends: libxerces27, libexpat1, linux-image-2.6 (=2.6.18-5)
-Recommends: python-damaris|damaris-frontend
+Depends: ${shlibs:Depends}
+Recommends: python-damaris|damaris-frontend, damaris-modules
 Description: backend package
+
+Package: damaris-modules
+Architecture: i386 amd64
+Recommends: damaris-backends
+Replaces: damaris-backends (<= 0.9-0.5)
+Description: kernel modules for damaris hardware
