@@ -84,6 +84,17 @@ Mobilecore.o: Mobilecore.cpp \
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
 	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
+Mobile_wo_sync_backend.exe: Mobile_wo_sync_backend.o hardware.o \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o \
+../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
+	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
+
+Mobile_wo_sync_backend.o: Mobile_wo_sync_backend.cpp \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \
+../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
+
 
 bg_backend: bg_backend.o hardware.o \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
