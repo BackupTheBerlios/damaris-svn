@@ -1,0 +1,5 @@
+greendamaris (0.10-0.0) experimental; urgency=medium
+
+  * started separate source package of pyhton-damaris
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Thu, 06 Sep 2007 08:54:56 +0200
