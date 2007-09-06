@@ -1,1 +1,0 @@
-?package(python-damaris): needs="X11" section="Apps/Science" title="DAMARIS" longtitle="DArmstadt Magnetic Resonance Instrument Software" command="DAMARIS -dGTKCairo" icon="/usr/lib/python2.4/site-packages/damaris/gui/DAMARIS.png"

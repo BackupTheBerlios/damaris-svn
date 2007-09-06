@@ -5,7 +5,6 @@
 
 # Uncomment this to turn on verbose mode. 
 export DH_VERBOSE=1
-PYBASE=$(shell pwd)/debian/python-damaris
 BACKENDSBASE=$(shell pwd)/debian/damaris-backends
 BACKENDSMACHINES = \
 	dummycore.exe \
@@ -15,7 +14,6 @@ BACKENDSMACHINES = \
 	bg_backend \
 	Mobilecore.exe \
 	Mobile_wo_sync_backend.exe
-PY_INTERPRETER=/usr/bin/python
 
 KERNELVERSION=$(shell uname -r)
 KERNELVERSIONS=$(shell uname -r)
@@ -56,7 +54,6 @@ clean:
 # Add here commands to clean up after the build process.
 	-$(MAKE) -C backends clean
 	find backends/drivers -name "pulseblaster-module-*" -type d|xargs -r rm -r
-	(cd frontends/greendamaris && $(PY_INTERPRETER) setup.py clean -a )
 	rm -f debian/damaris-backends.init
 	rm -rf backends/drivers/pulseblaster-module
 	rm -f build-stamp
@@ -74,10 +71,6 @@ install: build
 	install -d "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; ; \
 	find labview -type f \! -path "*/.svn*" -iname "*.vi" -exec \
 	install "{}" "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; )
-
-# python stuff goes to private module and starter
-	(cd frontends/greendamaris && $(PY_INTERPRETER) setup.py install --no-compile \
-                --root $(PYBASE) )
 
 # backend executables
 	dh_installdirs -pdamaris-backends usr/lib/damaris/backends ; \
@@ -121,10 +114,10 @@ binary-indep: build install
 	dh_testdir -i
 	dh_testroot -i
 	dh_installchangelogs -i
-	dh_pycentral -i
+#	dh_pycentral -i
 	dh_installdocs -i
 	dh_installexamples -i
-	dh_installmenu -i
+#	dh_installmenu -i
 #	dh_installman -i
 	dh_link -i
 	dh_compress -i
