@@ -77,7 +77,8 @@ class ResultReader:
         self.result_job_date = datetime.fromtimestamp(os.stat(in_filename)[8])
             
         self.__parseFile(result_file)
-        
+
+        result_file.close()
         result_file = None
 
         r=self.result
@@ -103,17 +104,32 @@ class ResultReader:
         try:
             # Parsing all cdata as one block
             self.xml_parser.buffer_text = True
-            buffersize=self.xml_parser.buffer_size*2
-            databuffer=in_file.read(buffersize)
-            while databuffer!="":
+            # short version, but pyexpat buffers are awfully small
+            # self.xml_parser.ParseFile(in_file)
+            # read all, at least try
+            databuffer=in_file.read(-1)
+            # test wether really everything was read...
+            databuffer2=in_file.read(self.xml_parser.buffer_size)
+            if databuffer2=="":
+                # parse everything at once
+                self.xml_parser.Parse(databuffer,True)
+            else:
+                # do the first part ...
                 self.xml_parser.Parse(databuffer,False)
-                databuffer=in_file.read(buffersize)
-
-            self.xml_parser.Parse("",True)
-        except xml.parsers.expat.ExpatError:
-            print "ToDo: proper parser error message"
+                databuffer=databuffer2
+                # ... and again and again
+                while databuffer!="":
+                    self.xml_parser.Parse(databuffer,False)
+                    databuffer=in_file.read(-1)
+                self.xml_parser.Parse("",True)
+        except xml.parsers.expat.ExpatError, e:
+            print "result file %d: xml parser '%s' error at line %d, offset %d"%(self.no,
+                                                                                 xml.parsers.expat.ErrorString(e.code),
+                                                                                 e.lineno,
+                                                                                 e.offset)
             self.result = None
 
+        del databuffer
         self.xml_parser.StartElementHandler=None
         self.xml_parser.EndElementHandler=None
         self.xml_parser.CharacterDataHandler=None
