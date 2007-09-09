@@ -100,10 +100,9 @@ class ResultReader:
         self.xml_parser.StartElementHandler = self.__xmlStartTagFound
         self.xml_parser.CharacterDataHandler = self.__xmlCharacterDataFound
         self.xml_parser.EndElementHandler = self.__xmlEndTagFound
+        self.element_stack=[]
 
         try:
-            # Parsing all cdata as one block
-            self.xml_parser.buffer_text = True
             # short version, but pyexpat buffers are awfully small
             # self.xml_parser.ParseFile(in_file)
             # read all, at least try
@@ -181,8 +180,6 @@ class ResultReader:
                 # "b": base64
                 self.adc_data_encoding = None
 
-                # Change number of channels of your adc-card here
-                
                 self.result.set_sampling_rate(float(in_attribute["rate"]))
                 self.result.set_job_id(self.result_job_number)
                 self.result.set_job_date(self.result_job_date)
@@ -200,7 +197,23 @@ class ResultReader:
                 if float(in_attribute["rate"])!=self.result.get_sampling_rate():
                     print "sample rate different in ADC_Result, found %f, former value %f"%\
                           (float(in_attribute["rate"]),self.result.get_sampling_rate())
-            self.adc_result_sample_counter += int(in_attribute["samples"])
+            new_samples=int(in_attribute["samples"])
+            self.adc_result_sample_counter += new_samples
+
+            # version depends on the inclusion of http://bugs.python.org/issue1137
+            if sys.hexversion>=0x020501f0:
+                # extend buffer to expected base64 size (2 channels, 2 byte)
+                required_buffer=int(new_samples*4/45+1)*62
+                if self.xml_parser.buffer_size < required_buffer:
+                    try:
+                        self.xml_parser.buffer_size=required_buffer
+                    except AttributeError:
+                        pass
+
+            # pass all chardata as one block
+            self.xml_parser.buffer_text = True
+            # do not change the contents
+            self.xml_parser.returns_unicode=False
 
         # Error_Results
         elif in_name == "error":
@@ -227,11 +240,14 @@ class ResultReader:
             self.result = Config_Result()
             self.result.set_job_id(self.result_job_number)
             self.result.set_job_date(self.result_job_date)
+            
+        # maintain the stack
+        self.element_stack.append(in_name)
     
     def __xmlCharacterDataFound(self, in_cdata):
 
         # ADC_Result
-        if self.__filetype == ResultReader.ADCDATA_TYPE:
+        if self.__filetype == ResultReader.ADCDATA_TYPE and self.element_stack[-1]=="adcdata":
             self.adc_result_trailing_chars+=in_cdata
 
         # Error_Result
@@ -251,6 +267,10 @@ class ResultReader:
             pass
 
     def __xmlEndTagFound(self, in_name):
+
+        # maintain the stack
+        self.element_stack.pop()
+
         if in_name == "adcdata":
 
             # ADC_Result
