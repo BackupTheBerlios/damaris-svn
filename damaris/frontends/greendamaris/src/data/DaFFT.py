@@ -56,7 +56,7 @@ class FFT:
 		absfft = N.sqrt(fftdata.real**2 + fftdata.imag**2)
 		# create our x axis
 		n = fftdata.size
-		self.the_result.x = F.fftfreq(n,self.sampling_rate) 
+		self.the_result.x = F.fftshift(F.fftfreq(n, 1.0/self.sampling_rate))
 		self.the_result.y[0] = absfft
 		self.the_result.y[1] = N.zeros(n)
 		if write == 'on':
@@ -76,7 +76,7 @@ class FFT:
 		fftdata = F.fftshift(F.fft(data, points))
 		# create our x axis
 		n = fftdata.size
-		self.the_result.x = F.fftshift(F.fftfreq(n,self.sampling_rate))
+		self.the_result.x = F.fftshift(F.fftfreq(n, 1.0/self.sampling_rate))
 		self.the_result.y[0] = fftdata.real
 		self.the_result.y[1] = fftdata.imag
 		if write == 'on':
