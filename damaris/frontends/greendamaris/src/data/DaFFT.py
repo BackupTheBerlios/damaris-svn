@@ -1,5 +1,5 @@
 import numpy as N
-from numpy.fft import fft, fftshift, fftfreq 
+import  numpy.fft as F
 import ADC_Result
 
 class FFT:
@@ -9,26 +9,10 @@ class FFT:
 		self.the_result = one_result + 0
 		self.timepoints = N.array(one_result.x)
 		self.sampling_rate = one_result.get_sampling_rate()
-		self.data_points = one_result.get_ydata(0).size()
+		self.data_points = one_result.get_ydata(0).size
 		self.aquisition_time = self.data_points / float(self.sampling_rate)
 		self.the_result.set_xlabel('Frequency [Hz]')
 			
-		def rearrange(self, an_array):
-			"""
-		Reorder array from 
-	
-		[0,1,2,3...,N,-N...,-3,-2,-1]
-	
-		to 
-	
-		[-N,...,-3,-2,-1,0,1,2,3,...,N]
-		"""
-		new_array = an_array*0
-		n=new_array.size()
-		new_array[n/2:] = an_array[:n/2]
-		new_array[:n/2] = an_array[n/2:]
-		return new_array
-
 	def write_n(self, afile):
 		filename = open(afile,'w')
 		filename = open(afile,'a')
@@ -71,7 +55,7 @@ class FFT:
 		fftdata = F.fftshift(F.fft(data, points))
 		absfft = N.sqrt(fftdata.real**2 + fftdata.imag**2)
 		# create our x axis
-		n = fftdata.size()
+		n = fftdata.size
 		self.the_result.x = F.fftfreq(n,self.sampling_rate) 
 		self.the_result.y[0] = absfft
 		self.the_result.y[1] = N.zeros(n)
@@ -91,8 +75,8 @@ class FFT:
 		data = realdata + 1j*imdata
 		fftdata = F.fftshift(F.fft(data, points))
 		# create our x axis
-		n = fftdata.size()
-		self.the_result.x = F.fftfreq(n,self.sampling_rate) 
+		n = fftdata.size
+		self.the_result.x = F.fftshift(F.fftfreq(n,self.sampling_rate))
 		self.the_result.y[0] = fftdata.real
 		self.the_result.y[1] = fftdata.imag
 		if write == 'on':
