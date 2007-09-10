@@ -3,41 +3,41 @@ from numpy.fft import fft, fftshift, fftfreq
 import ADC_Result
 
 class FFT:
-    def __init__(self, one_result):
-	# create copy of one_result and work only on the copy
-	# also extract some informations
-	self.the_result = one_result + 0
-	self.timepoints = N.array(one_result.x)
-	self.sampling_rate = one_result.get_sampling_rate()
-	self.data_points = one_result.get_ydata(0).size()
-	self.aquisition_time = self.data_points / float(self.sampling_rate)
-	self.the_result.set_xlabel('Frequency [Hz]')
-		
-    def rearrange(self, an_array):
-        """
-	Reorder array from 
+	def __init__(self, one_result):
+		# create copy of one_result and work only on the copy
+		# also extract some informations
+		self.the_result = one_result + 0
+		self.timepoints = N.array(one_result.x)
+		self.sampling_rate = one_result.get_sampling_rate()
+		self.data_points = one_result.get_ydata(0).size()
+		self.aquisition_time = self.data_points / float(self.sampling_rate)
+		self.the_result.set_xlabel('Frequency [Hz]')
+			
+		def rearrange(self, an_array):
+			"""
+		Reorder array from 
+	
+		[0,1,2,3...,N,-N...,-3,-2,-1]
+	
+		to 
+	
+		[-N,...,-3,-2,-1,0,1,2,3,...,N]
+		"""
+		new_array = an_array*0
+		n=new_array.size()
+		new_array[n/2:] = an_array[:n/2]
+		new_array[:n/2] = an_array[n/2:]
+		return new_array
 
-	[0,1,2,3...,N,-N...,-3,-2,-1]
-
-	to 
-
-	[-N,...,-3,-2,-1,0,1,2,3,...,N]
-	"""
-	new_array = an_array*0
-	n=new_array.size()
-	new_array[n/2:] = an_array[:n/2]
-	new_array[:n/2] = an_array[n/2:]
-	return new_array
-
-    def write_n(self, afile):
-	filename = open(afile,'w')
-	filename = open(afile,'a')
-	#print self.the_result.get_description_dictionary()
-	#filename.write('%s'%self.get_description_dictionary())
-	for i in range(self.data_points):
-	    filename.write('%e\t%e\t%e\n'%(self.the_result.x[i], self.the_result.y[0][i], self.the_result.y[1][i]))
-	filename.close()    
-	return self
+	def write_n(self, afile):
+		filename = open(afile,'w')
+		filename = open(afile,'a')
+		#print self.the_result.get_description_dictionary()
+		#filename.write('%s'%self.get_description_dictionary())
+		for i in range(self.data_points):
+			filename.write('%e\t%e\t%e\n'%(self.the_result.x[i], self.the_result.y[0][i], self.the_result.y[1][i]))
+		filename.close()    
+		return self
 
 	def base_corr(self, cutoff=0.3, show=0):
 		"""
