@@ -1,6 +1,5 @@
 import numpy as N
-import  numpy.fft as F
-import ADC_Result
+import numpy.fft as F
 
 class FFT:
 	def __init__(self, one_result):
