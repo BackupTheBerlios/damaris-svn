@@ -2412,6 +2412,9 @@ class ScriptInterface:
             # start them
             if self.back_driver is not None:
                 self.back_driver.start()
+                while (not self.back_driver.quit_flag.isSet() and \
+                       self.back_driver.core_pid is None and self.back_driver.core_pid<=0):
+                    self.back_driver.quit_flag.wait(0.1)
             if self.exp_handling: self.exp_handling.start()
             if self.res_handling: self.res_handling.start()
         finally:
