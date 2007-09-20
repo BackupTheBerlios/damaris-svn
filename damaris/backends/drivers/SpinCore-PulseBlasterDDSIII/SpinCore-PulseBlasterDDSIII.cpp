@@ -251,28 +251,34 @@ PulseBlasterCommand* PulseBlasterDDSIIIProgram::create_command(const state& the_
 	  fabs(state_frequency-ao->frequency)>freq_accuracy)
 	throw pulse_exception("only one frequency for analog outputs possible");
       state_frequency=ao->frequency;
+      double phase=ao->phase;
+      if (phase < 0 || phase >= 360.0) {
+	  phase=fmod(phase, 360.0);
+	  if (phase<0) {phase+=360.0;}
+	}
+	assert(phase>=0 && phase<360.0);
       switch(ao->id) {
       case 0:
 	if (id0_specified) throw pulse_exception("rx channel (DAC_OUT_0) channel already set");
 	//if (rx_enable!=SpinCorePulseBlasterDDSIII::ANALOG_OFF) throw pulse_exception("rx channel already set");
 	// rx is identified with channel 0
-	if (id2_specified && fabs(ao->phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of TX (DAC_OUT_2) channel\n");
-	tx_phase=ao->phase;
+	if (id2_specified && fabs(phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of TX (DAC_OUT_2) channel\n");
+	tx_phase=phase;
 	rx_enable=SpinCorePulseBlasterDDSIII::ANALOG_ON;
 	id0_specified=1;
 	break;
       case 1:
 	if (id1_specified) throw pulse_exception("rx channel (DAC_OUT_1) channel already set");
 	// tx is identified with channel 1
-	rx_phase=ao->phase;
+	rx_phase=phase;
 	rx_enable=SpinCorePulseBlasterDDSIII::ANALOG_ON;
 	id1_specified=1;
 	break;
       case 2:
 	if (id2_specified || tx_enable==SpinCorePulseBlasterDDSIII::ANALOG_ON) throw pulse_exception("tx channel (DAC_OUT_2) already set");
 	// tx is identified with channel 1
-	if (id0_specified && fabs(ao->phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of RX (DAC_OUT_0) channel\n");
-	tx_phase=ao->phase;
+	if (id0_specified && fabs(phase-tx_phase)>phase_accuracy) fprintf(stderr, "WARNING from PulseBlaster DDSIII: redefining phase of RX (DAC_OUT_0) channel\n");
+	tx_phase=phase;
 	tx_enable=SpinCorePulseBlasterDDSIII::ANALOG_ON;
 	id2_specified=1;
 	break;
