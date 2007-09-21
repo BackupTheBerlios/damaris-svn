@@ -109,17 +109,17 @@ int PulseBlasterDDSIIICommand::write_to_file(FILE* out, size_t indent) const {
 
 
 PulseBlasterDDSIIIProgram::PulseBlasterDDSIIIProgram() {
-  freq_accuracy=1e-6;
-  phase_accuracy=1e-3;
-  internal_clock_freq=100.0e6;
-  minimum_interval=9;
+  internal_clock_freq=100.0e6;                  // Hz
+  phase_accuracy=360.0/pow(2,12);               // degree, manual page 8
+  freq_accuracy=internal_clock_freq/pow(2,28);  // Hz, manual page 8
+  minimum_interval=9;                           // in clock cycles
 }
 
 PulseBlasterDDSIIIProgram::PulseBlasterDDSIIIProgram(const SpinCorePulseBlasterDDSIII& pbddsiii) {
-  freq_accuracy=1e-6;
-  phase_accuracy=1e-3;
-  internal_clock_freq=pbddsiii.clock;
-  minimum_interval=pbddsiii.shortest_pulse;
+  internal_clock_freq=pbddsiii.clock;           // Hz
+  minimum_interval=pbddsiii.shortest_pulse;     // in clock cycles
+  phase_accuracy=360.0/pow(2,12);               // degree, manual page 8
+  freq_accuracy=internal_clock_freq/pow(2,28);  // Hz, manual page 8
 }
 
 PulseBlasterDDSIIIProgram::PulseBlasterDDSIIIProgram(const PulseBlasterDDSIIIProgram& orig): PulseBlasterProgram(orig) {

@@ -175,7 +175,7 @@ class SpinCorePulseBlaster: protected SpinCorePulseBlasterLowlevel, public pulse
     stopwatch time_running;
 
     /**
-       nonzero if pulseprogram is running
+       expected duration in seconds, nonzero if pulseprogram is running
     */
     double duration;
     /**
