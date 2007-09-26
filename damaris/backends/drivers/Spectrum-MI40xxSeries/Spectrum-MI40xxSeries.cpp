@@ -214,7 +214,14 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 		double time_required=delayed_gating_time+gating_time;
 		// check time requirements
 		if (a_state->length<time_required) {
-		    throw ADC_exception("state is shorter than acquisition time");
+		  char parameter_info[512];
+		  snprintf(parameter_info,sizeof(parameter_info),
+			   "(%d samples, %f samplerate, %f time required, %f state time)",
+			   inputs.front()->samples,
+			   settings.samplefreq,
+			   time_required,
+			   a_state->length);
+		  throw ADC_exception(std::string("state is shorter than acquisition time")+parameter_info);
 		}
 
 		// if necessary, add the gating pulse delay...
@@ -299,8 +306,13 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
 
   state_sequent* exp_sequence=dynamic_cast<state_sequent*>(&exp);
   if (exp_sequence==NULL)
-    throw ADC_exception("Spectrum-MI40xxSeries: only working on sequences");
- 
+    throw ADC_exception("Spectrum-MI40xxSeries::set_daq only working on sequences");
+
+# ifdef SPC_DEBUG
+  fprintf(stderr, "working on sequence:\n");
+  xml_state_writer().write_states(stderr, *exp_sequence);
+# endif
+
   /* find out what to do */
   Configuration* conf=new Configuration();
   collect_config_recursive(*exp_sequence, *conf);
