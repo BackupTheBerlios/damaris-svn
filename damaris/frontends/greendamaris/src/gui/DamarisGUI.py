@@ -12,6 +12,7 @@ import compiler
 import types
 import xml.parsers.expat
 import threading
+import webbrowser
 
 # import 3rd party modules
 # gui graphics
@@ -193,7 +194,6 @@ class DamarisGUI:
         self.toolbar_stop_button = self.xml_gui.get_widget("toolbar_stop_button")
         self.toolbar_run_button = self.xml_gui.get_widget("toolbar_run_button")
         self.toolbar_pause_button = self.xml_gui.get_widget("toolbar_pause_button")
-        #self.toolbar_exec_with_options_togglebutton = self.xml_gui.get_widget("toolbar_execute_with_options_button")
 
         # print button
         self.toolbar_print_button=self.xml_gui.get_widget("toolbar_print_button")
@@ -213,7 +213,8 @@ class DamarisGUI:
         self.xml_gui.signal_connect("on_toolbar_run_button_clicked", self.start_experiment)
         self.xml_gui.signal_connect("on_toolbar_pause_button_toggled", self.pause_experiment)
         self.xml_gui.signal_connect("on_toolbar_stop_button_clicked", self.stop_experiment)
-        #self.xml_gui.signal_connect("on_toolbar_execute_with_options_button_clicked", self.start_experiment_with_options)
+        self.xml_gui.signal_connect("on_doc_menu_activate",self.show_doc_menu)
+        self.xml_gui.signal_connect("on_toolbar_manual_button_clicked",self.show_manual)
 
     def run(self):
         # prolong lifetime of clipboard till the very end (avoid error message)
@@ -718,6 +719,64 @@ class DamarisGUI:
             if res == gtk.PRINT_OPERATION_RESULT_APPLY:
                 settings = print_.get_print_settings()
 
+    def show_manual(self, widget, data=None):
+        """
+        show python-damaris documentation that is shipped with this package
+        """
+        start_browser("file:/usr/share/doc/python-damaris/").start()
+
+    def show_doc_menu(self, widget, data=None):
+        """
+        offer a wide variety of docs, prefer local installations
+        """
+        doc_urls={
+            "Python DAMARIS": "file:/usr/share/doc/python-damaris/",
+            "DAMARIS homepage": "http://www.fkp.physik.tu-darmstadt.de/damariswiki",
+            "Python": "http://www.python.org/doc/%d.%d/"%(sys.version_info[:2]),
+            "numpy": "http://www.scipy.org/Documentation#head-9013a0c8c345747e0b152f5125afe50b63177ad6",
+            "scipy": "http://www.scipy.org/Documentation#head-737c779c5566aaed848449e5e365542664fb274a",
+            "pytables": "http://www.pytables.org/docs/manual/",
+            "DAMARIS backednds": None,
+            "DAMARIS Repository": "http://element.fkp.physik.tu-darmstadt.de/cgi-bin/viewcvs.cgi/damaris/"
+            }
+        if os.path.isdir("/usr/share/doc/python%d.%d-doc/html"%(sys.version_info[:2])):
+            doc_urls["Python"]="file:/usr/share/doc/python%d.%d-doc/html/index.html"%(sys.version_info[:2])
+
+        if os.path.isdir("/usr/share/doc/python-tables-doc/html"):
+            doc_urls["pytables"]="file:/usr/share/doc/python-tables-doc/html/index.html"
+                    
+        requested_doc=widget.get_child().get_text()
+        if requested_doc in doc_urls and doc_urls[requested_doc] is not None:
+            start_browser(doc_urls[requested_doc]).start()
+        else:
+            print "missing docs for '%s'"%(requested_doc)
+
+class start_browser(threading.Thread):
+
+    def __init__(self, url):
+        threading.Thread.__init__(self, name="manual browser")
+        self.my_webbrowser=None
+        self.start_url=url
+                
+    def run(self):
+        """
+        start a webbrowser
+        """
+        if sys.hexversion>=0x02050000:
+            # this is what it should be everywhere!
+            self.my_webbrowser=webbrowser.get("x-www-browser")
+            if self.my_webbrowser is not None:
+                self.my_webbrowser.open(self.start_url)
+                print "web browser started (module webbrowser)"
+                return True
+
+        os.spawnl(os.P_NOWAIT,
+                  sys.executable,
+                  os.path.basename(sys.executable),
+                  "-c",
+                  "import webbrowser\nwebbrowser.open('%s')"%self.start_url)
+        print "web browser started (webbrowser.py)"
+        return True
 
 class LogWindow:
     """
@@ -935,7 +994,6 @@ class ScriptWidgets:
                 self.data_handling_textview.scroll_to_iter(new_place, 0.2, False, 0,0)
         except Exception, e:
             print "Compilation Error:\n"+str(e)+"\n(ToDo: Dialog)"
-
 
     def notebook_page_switched(self, notebook, page, pagenumber):
         self.set_toolbuttons_status()
