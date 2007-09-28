@@ -730,8 +730,9 @@ class DamarisGUI:
         offer a wide variety of docs, prefer local installations
         """
         doc_urls={
+            # todo package installation relative!
             "Python DAMARIS": "file:/usr/share/doc/python-damaris/",
-            "DAMARIS homepage": "http://www.fkp.physik.tu-darmstadt.de/damariswiki",
+            "DAMARIS Homepage": "http://www.fkp.physik.tu-darmstadt.de/damariswiki",
             "Python": "http://www.python.org/doc/%d.%d/"%(sys.version_info[:2]),
             "numpy": "http://www.scipy.org/Documentation#head-9013a0c8c345747e0b152f5125afe50b63177ad6",
             "scipy": "http://www.scipy.org/Documentation#head-737c779c5566aaed848449e5e365542664fb274a",
@@ -755,7 +756,6 @@ class start_browser(threading.Thread):
 
     def __init__(self, url):
         threading.Thread.__init__(self, name="manual browser")
-        self.my_webbrowser=None
         self.start_url=url
                 
     def run(self):
@@ -763,13 +763,18 @@ class start_browser(threading.Thread):
         start a webbrowser
         """
         if sys.hexversion>=0x02050000:
-            # this is what it should be everywhere!
-            self.my_webbrowser=webbrowser.get("x-www-browser")
+            self.my_webbrowser=None
+            if sys.platform=="linux2":
+                # Debian Linux way
+                self.my_webbrowser=webbrowser.get("x-www-browser")
+            if self.my_webbrowser is None:
+                # this is what it should be everywhere!
+                self.my_webbrowser=webbrowser.get()
             if self.my_webbrowser is not None:
                 self.my_webbrowser.open(self.start_url)
                 print "web browser started (module webbrowser)"
                 return True
-
+        # last resort
         os.spawnl(os.P_NOWAIT,
                   sys.executable,
                   os.path.basename(sys.executable),
