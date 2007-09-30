@@ -2258,6 +2258,18 @@ class MonitorWidgets:
             xdata=in_result.get_xdata()
             ydata0=in_result.get_ydata(0)
             ydata1=in_result.get_ydata(1)
+            moving_average=data_slice=None
+            max_points=1<<15 # limit is not sure!
+            if len(xdata)>=max_points:
+                print "decimating data to %d points by moving average (prevent crash of matplotlib)"%max_points
+                n=numpy.ceil(len(xdata)/max_points)
+                moving_average=numpy.ones(n, dtype="float")/n
+                data_slice=numpy.array(numpy.floor(numpy.arange(max_points,dtype="float")/max_points*len(xdata)),
+                                       dtype="int")
+                xdata=xdata.take(data_slice) # no average !?
+                ydata0=numpy.convolve(ydata0, moving_average, "same").take(data_slice)
+                ydata1=numpy.convolve(ydata1, moving_average, "same").take(data_slice)
+
             if len(self.graphen)==0:
                 self.graphen.extend(self.matplot_axes.plot(xdata, ydata0, "b-", linewidth = 2))
                 self.graphen.extend(self.matplot_axes.plot(xdata, ydata1, "r-", linewidth = 2))
@@ -2272,12 +2284,18 @@ class MonitorWidgets:
             # Statistics activated?
             if (self.display_statistics_checkbutton.get_active() and
                 in_result.uses_statistics() and in_result.ready_for_drawing_error()):
+                yerr0=in_result.get_yerr(0)
+                yerr1=in_result.get_yerr(1)
+                if moving_average is not None:
+                    yerr0=numpy.convolve(yerr0, moving_average, "same").take(data_slice)
+                    yerr1=numpy.convolve(yerr1, moving_average, "same").take(data_slice)
                 # Real-Fehler
-                self.graphen[2].set_data(xdata, ydata0 + in_result.get_yerr(0))
-                self.graphen[3].set_data(xdata, ydata0 - in_result.get_yerr(0))
+                self.graphen[2].set_data(xdata, ydata0 + yerr0)
+                self.graphen[3].set_data(xdata, ydata0 - yerr0)
                 # Img-Fehler
-                self.graphen[4].set_data(xdata, ydata1 + in_result.get_yerr(1))
-                self.graphen[5].set_data(xdata, ydata1 - in_result.get_yerr(1))
+                self.graphen[4].set_data(xdata, ydata1 + yerr1)
+                self.graphen[5].set_data(xdata, ydata1 - yerr1)
+                yerr0=yerr1=None
             else:
                 # Maybe theres a better place for deleting the error-lines
                 # Real-Fehler
@@ -2286,6 +2304,7 @@ class MonitorWidgets:
                 # Img-Fehler
                 self.graphen[4].set_data([0.0],[0.0])
                 self.graphen[5].set_data([0.0],[0.0])
+            moving_average=data_mask=None
             xdata=ydata0=ydata1=None
 
             # Any title to be set?
