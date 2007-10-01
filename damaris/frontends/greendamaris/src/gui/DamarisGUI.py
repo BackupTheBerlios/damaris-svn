@@ -44,13 +44,16 @@ matplotlib.rcParams["interactive"]="False"
 if matplotlib.rcParams["backend"]=="GTK":
     from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
     from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
+    max_points_to_display=0 # no limit
 elif matplotlib.rcParams["backend"]=="GTKAgg":
     from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
     from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTK as NavigationToolbar
+    max_points_to_display=0 # no limit
 else:
     # default
     from matplotlib.backends.backend_gtkcairo import FigureCanvasGTKCairo as FigureCanvas
     from matplotlib.backends.backend_gtkcairo import NavigationToolbar2GTK as NavigationToolbar
+    max_points_to_display=1<<14
 
 import matplotlib.axes
 import matplotlib.figure
@@ -2259,12 +2262,12 @@ class MonitorWidgets:
             ydata0=in_result.get_ydata(0)
             ydata1=in_result.get_ydata(1)
             moving_average=data_slice=None
-            max_points=1<<15 # limit is not sure!
-            if len(xdata)>=max_points:
-                print "decimating data to %d points by moving average (prevent crash of matplotlib)"%max_points
-                n=numpy.ceil(len(xdata)/max_points)
+            if max_points_to_display>0 and len(xdata)>max_points_to_display:
+                print "decimating data to %d points by moving average (prevent crash of matplotlib)"%max_points_to_display
+                n=numpy.ceil(len(xdata)/max_points_to_display)
                 moving_average=numpy.ones(n, dtype="float")/n
-                data_slice=numpy.array(numpy.floor(numpy.arange(max_points,dtype="float")/max_points*len(xdata)),
+                data_slice=numpy.array(numpy.floor(numpy.arange(max_points_to_display, dtype="float") \
+                                                   /max_points_to_display*len(xdata)),
                                        dtype="int")
                 xdata=xdata.take(data_slice) # no average !?
                 ydata0=numpy.convolve(ydata0, moving_average, "same").take(data_slice)
