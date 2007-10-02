@@ -68,15 +68,17 @@ distribution_data_files = [[ "share", []],
                            [os.path.join("share", "python-damaris"), []],
                            [distribution_doc_prefix, ['doc/index.html']]]
 
-# no subdirs, work can be done in simple way
-distribution_data_files.append([os.path.join(distribution_doc_prefix, 'reference-html'),
-                                [os.path.join('doc', 'reference-html', f)
-                                 for f in os.listdir(os.path.join('doc', 'reference-html'))]])
+if os.path.isdir(os.path.join("doc","reference-html")):
+    # no subdirs, work can be done in simple way
+    distribution_data_files.append([os.path.join(distribution_doc_prefix, 'reference-html'),
+                                    [os.path.join('doc', 'reference-html', f)
+                                     for f in os.listdir(os.path.join('doc', 'reference-html'))]])
 
-# here, modern style file and attachment directories should be handled
-for d in os.walk(os.path.join("doc","tutorial-html")):
-    distribution_data_files.append([os.path.join(os.path.dirname(distribution_doc_prefix),d[0]),
-                                    [os.path.join(d[0], f) for f in d[2]]])
+if os.path.isdir(os.path.join("doc","tutorial-html")):
+    # here, modern style file and attachment directories should be handled
+    for d in os.walk(os.path.join("doc","tutorial-html")):
+        distribution_data_files.append([os.path.join(os.path.dirname(distribution_doc_prefix),d[0]),
+                                        [os.path.join(d[0], f) for f in d[2]]])
 
 LONG_DESCRIPTION="""
 DArmstadt MAgnetic Resonance Instrument Software
@@ -85,7 +87,7 @@ DArmstadt MAgnetic Resonance Instrument Software
 GPL_LICENCE = "feed licence here"
 
 setup (
-    name = 'DAMARIS',
+    name = 'python-damaris',
     version = "0.10",
     description = 'python frontend for DAMARIS (DArmstadt MAgnetic Resonance Instrument Software)',
     long_description = LONG_DESCRIPTION,

@@ -38,6 +38,7 @@ install-ext-%:
 	-mv $(PYBASE)/usr/bin/DAMARIS.new $(PYBASE)/usr/bin/DAMARIS
 
 binary-indep: build install
+	dh_link usr/share/python-damaris/doc usr/share/doc/python-damaris/html
 	dh_testdir -i
 	dh_testroot -i
 	dh_installchangelogs -i

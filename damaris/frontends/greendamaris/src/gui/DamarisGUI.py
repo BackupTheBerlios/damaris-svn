@@ -735,9 +735,9 @@ class DamarisGUI:
         if os.path.isfile(os.path.join(installation_base, "share", "python-damaris", "doc", "index.html")):
             doc_index_url=os.path.join(installation_base, "share", "python-damaris", "doc", "index.html")
 
-        if doc_index_url is None and os.path.isfile("/usr/share/doc/python-damaris/index.html"):
-            # debian location
-            doc_index_url="file:///usr/share/doc/python-damaris/index.html"
+        if doc_index_url is None and os.path.isfile("/usr/share/doc/python-damaris/html/index.html"):
+            # check generic debian location
+            doc_index_url="file:///usr/share/doc/python-damaris/html/index.html"
 
         if doc_index_url is None:
             # last resort
