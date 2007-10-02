@@ -1,3 +1,12 @@
+greendamaris (0.10-0.1) experimental; urgency=low
+
+  * added docs and browser button for docs
+  * limited number of points to display for GTKCairo backend
+  * numarray replaced by numpy
+  * adapted width of window to fit even gnome icon size
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Tue, 02 Oct 2007 19:11:33 +0200
+
 greendamaris (0.10-0.0) experimental; urgency=medium
 
   * started separate source package of pyhton-damaris
@@ -5,11 +14,3 @@ greendamaris (0.10-0.0) experimental; urgency=medium
 
  -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Sat, 08 Sep 2007 12:56:06 +0200
 
-greendamaris (0.10-1.0) experimental; urgency=medium
-
-  * added docs and browser button for docs
-  * limited number of points to display for GTKCairo backend
-  * numarray replaced by numpy
-  * adapted width of window to fit even gnome icon size
-
- -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Tue, 02 Oct 2007 14:11:06 +0200

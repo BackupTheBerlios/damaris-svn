@@ -86,7 +86,7 @@ WARN_LOGFILE           =
 # configuration options related to the input files
 #---------------------------------------------------------------------------
 INPUT                  = damaris
-INPUT_ENCODING         = UTF-8
+INPUT_ENCODING         = ISO-8859-15
 FILE_PATTERNS          = *.py \
                          *.PY
 RECURSIVE              = YES
