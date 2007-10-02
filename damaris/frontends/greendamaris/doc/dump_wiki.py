@@ -107,8 +107,9 @@ class Config(DefaultConfig):
         pages.sort()
 
         # extract a list of pages to be extracted
+        # trial session to fat!!!
         try:
-            pages_match = re.compile("^(trial session|Tutorial|auxiliary tools|overview|installation|code snippets)")
+            pages_match = re.compile("^(Tutorial|auxiliary tools|overview|installation|code snippets)")
             pages = [page for page in pages if pages_match.match(page)]
         except:
             print "did not find suitable pages"

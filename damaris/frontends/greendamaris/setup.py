@@ -61,10 +61,11 @@ class build_damaris_scripts(_build_scripts):
         outf.close()
         os.remove(outfile+".bak")
 
-
 # create doc data file information
 distribution_doc_prefix=os.path.join("share","python-damaris","doc")
 distribution_data_files = [[ "share", []],
+                           [os.path.join("share", "python-damaris", "images"),
+                            ["src/gui/DAMARIS.png", "src/gui/DAMARIS.ico"]],
                            [os.path.join("share", "python-damaris"), []],
                            [distribution_doc_prefix, ['doc/index.html']]]
 

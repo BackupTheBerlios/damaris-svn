@@ -4,3 +4,12 @@ greendamaris (0.10-0.0) experimental; urgency=medium
   * pycentral used to support both python 2.4 and 2.5
 
  -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Sat, 08 Sep 2007 12:56:06 +0200
+
+greendamaris (0.10-1.0) experimental; urgency=medium
+
+  * added docs and browser button for docs
+  * limited number of points to display for GTKCairo backend
+  * numarray replaced by numpy
+  * adapted width of window to fit even gnome icon size
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Tue, 02 Oct 2007 14:11:06 +0200
