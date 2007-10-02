@@ -61,42 +61,52 @@ class build_damaris_scripts(_build_scripts):
         outf.close()
         os.remove(outfile+".bak")
 
+
+# create doc data file information
+distribution_doc_prefix=os.path.join("share","python-damaris","doc")
+distribution_data_files = [[ "share", []],
+                           [os.path.join("share", "python-damaris"), []],
+                           [distribution_doc_prefix, ['doc/index.html']]]
+
+# no subdirs, work can be done in simple way
+distribution_data_files.append([os.path.join(distribution_doc_prefix, 'reference-html'),
+                                [os.path.join('doc', 'reference-html', f)
+                                 for f in os.listdir(os.path.join('doc', 'reference-html'))]])
+
+# here, modern style file and attachment directories should be handled
+for d in os.walk(os.path.join("doc","tutorial-html")):
+    distribution_data_files.append([os.path.join(os.path.dirname(distribution_doc_prefix),d[0]),
+                                    [os.path.join(d[0], f) for f in d[2]]])
+
 LONG_DESCRIPTION="""
-DArmstadt MAgnetic Resonance Instrument System
+DArmstadt MAgnetic Resonance Instrument Software
 """
 
 GPL_LICENCE = "feed licence here"
 
 setup (
     name = 'DAMARIS',
-    version = "0.9",
-
-    description = 'DArmstadt MAgnetic Resonance Instrument System',
+    version = "0.10",
+    description = 'python frontend for DAMARIS (DArmstadt MAgnetic Resonance Instrument Software)',
     long_description = LONG_DESCRIPTION,
-
     author = 'Achim Gaedke',
     author_email = 'Achim.Gaedke@physik.tu-darmstadt.de',
-
     maintainer = 'Achim Gaedke',
     maintainer_email = 'Achim.Gaedke@physik.tu-darmstadt.de',
-
     url = 'http://www.fkp.physik.tu-darmstadt.de/damaris/',
     license = GPL_LICENCE,
-
     platforms = ('Any',),
     keywords = ('NMR', 'data-processing'),
-
     packages = [ 'damaris',
                  'damaris.data',
                  'damaris.experiments',
                  'damaris.gui'],
-    
     package_dir = { 'damaris': 'src',
                     'damaris.data': 'src/data',
                     'damaris.experiments': 'src/experiments',
                     'damaris.gui': 'src/gui'},
     package_data = { 'damaris.gui': ['DAMARIS.png', 'DAMARIS.ico', 'damaris.glade',  'damaris.gladep']},
     scripts = ['scripts/DAMARIS'],
-    cmdclass={"build_scripts": build_damaris_scripts}
-    
+    cmdclass={"build_scripts": build_damaris_scripts},
+    data_files = distribution_data_files
     )

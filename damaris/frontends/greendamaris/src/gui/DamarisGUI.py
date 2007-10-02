@@ -726,15 +726,34 @@ class DamarisGUI:
         """
         show python-damaris documentation that is shipped with this package
         """
-        start_browser("file:/usr/share/doc/python-damaris/").start()
+
+        doc_index_url=None
+        # local installation
+        installation_base=__file__
+        for i in xrange(5):
+            installation_base=os.path.dirname(installation_base)
+        if os.path.isfile(os.path.join(installation_base, "share", "python-damaris", "doc", "index.html")):
+            doc_index_url=os.path.join(installation_base, "share", "python-damaris", "doc", "index.html")
+
+        if doc_index_url is None and os.path.isfile("/usr/share/doc/python-damaris/index.html"):
+            # debian location
+            doc_index_url="file:///usr/share/doc/python-damaris/index.html"
+
+        if doc_index_url is None:
+            # last resort
+            doc_index_url="http://www.fkp.physik.tu-darmstadt.de/damariswiki/Tutorial"
+
+        start_browser(doc_index_url).start()
 
     def show_doc_menu(self, widget, data=None):
         """
         offer a wide variety of docs, prefer local installations
         """
+        requested_doc=widget.get_child().get_text()
+        if requested_doc=="Python DAMARIS":
+            return self.show_manual(widget, data)
+
         doc_urls={
-            # todo package installation relative!
-            "Python DAMARIS": "file:/usr/share/doc/python-damaris/",
             "DAMARIS Homepage": "http://www.fkp.physik.tu-darmstadt.de/damariswiki",
             "Python": "http://www.python.org/doc/%d.%d/"%(sys.version_info[:2]),
             "numpy": "http://www.scipy.org/Documentation#head-9013a0c8c345747e0b152f5125afe50b63177ad6",
@@ -743,13 +762,13 @@ class DamarisGUI:
             "DAMARIS backednds": None,
             "DAMARIS Repository": "http://element.fkp.physik.tu-darmstadt.de/cgi-bin/viewcvs.cgi/damaris/"
             }
+
         if os.path.isdir("/usr/share/doc/python%d.%d-doc/html"%(sys.version_info[:2])):
-            doc_urls["Python"]="file:/usr/share/doc/python%d.%d-doc/html/index.html"%(sys.version_info[:2])
+            doc_urls["Python"]="file:///usr/share/doc/python%d.%d-doc/html/index.html"%(sys.version_info[:2])
 
         if os.path.isdir("/usr/share/doc/python-tables-doc/html"):
-            doc_urls["pytables"]="file:/usr/share/doc/python-tables-doc/html/index.html"
+            doc_urls["pytables"]="file:///usr/share/doc/python-tables-doc/html/index.html"
                     
-        requested_doc=widget.get_child().get_text()
         if requested_doc in doc_urls and doc_urls[requested_doc] is not None:
             start_browser(doc_urls[requested_doc]).start()
         else:
