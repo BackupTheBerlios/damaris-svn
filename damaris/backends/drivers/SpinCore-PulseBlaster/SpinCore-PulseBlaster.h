@@ -165,6 +165,11 @@ class SpinCorePulseBlaster: protected SpinCorePulseBlasterLowlevel, public pulse
     unsigned int shortest_pulse;
 
     /**
+       maximum number of commands
+     */
+    unsigned int max_commands;
+
+    /**
        command/flags wordlength
     */
     unsigned int command_length;
@@ -198,6 +203,7 @@ public:
     clock=the_clock;
     shortest_pulse=9;
     command_length=c_length;
+    max_commands=1<<15;
   }
 
   void reset_flags(unsigned int flags=0);

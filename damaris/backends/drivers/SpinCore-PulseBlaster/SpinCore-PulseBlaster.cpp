@@ -103,16 +103,18 @@ void SpinCorePulseBlaster::reset_flags(unsigned int flags) {
 
 void SpinCorePulseBlaster::set_program(const std::string& data) {
   if (command_length==0)
-    throw SpinCorePulseBlaster_error("command length not set");      
+    throw SpinCorePulseBlaster_error("command length not set");
   if (data.size()%command_length!=0)
-    throw SpinCorePulseBlaster_error("command data length does not match");
+    throw SpinCorePulseBlaster_error("program data length does not match command length");
+  if (data.size()/command_length>max_commands) {
+    throw SpinCorePulseBlaster_error("program length exceeds maximum command number");
+  }
   write_register(0,0); // dev reset
   write_register(2,command_length); // bytes per word
   write_register(3,0); // dev to program
   write_register(4,0); //reset address counter
   write_data(data);
 }
-
 
 void SpinCorePulseBlaster::run_pulse_program_w_sync(state& exp, double sync_freq) {
   // set duration
