@@ -23,7 +23,7 @@ build: build-stamp
 build-stamp:
 	dh_testdir
 
-# kernel related things...
+# kernel related things... pulseblaster
 	(cd backends/drivers/SpinCore-PulseBlaster ; \
 	for i in $(KERNELVERSIONS); do \
 		echo $(DEB_BUILD_ARCH) $$i ;\
@@ -33,6 +33,20 @@ build-stamp:
 			mv pulseblaster.ko Module.symvers ../pulseblaster-module/$$i ;\
 		fi; \
 	done )
+# kernel related things... spectrum
+	echo $$SPC_SOURCE
+	if test -e $$SPC_SOURCE/Makefile; then \
+	(cd backends/drivers/Spectrum-MI40xxSeries ; \
+	for i in $(KERNELVERSIONS); do \
+		echo $(DEB_BUILD_ARCH) $$i ;\
+		if test -e /usr/src/linux-headers-$$i/Makefile; then \
+			$(MAKE) -C /usr/src/linux-headers-$$i SUBDIRS=$$SPC_SOURCE clean modules && \
+			install -d modules-$$i && \
+			mv $$SPC_SOURCE/spc*.ko $$SPC_SOURCE/Module.symvers modules-$$i ;\
+		fi; \
+	done ) \
+	fi
+
 # Add here commands to compile the package.
 	$(MAKE) CXXFLAGS=-O2 -C backends
 	$(MAKE) CXXFLAGS=-O2 -C backends/machines $(BACKENDSMACHINES)
