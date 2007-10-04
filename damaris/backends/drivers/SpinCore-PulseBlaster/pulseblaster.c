@@ -270,17 +270,19 @@ static int device_release(struct inode *inode, struct file *file)
   /*
    * reset device
    */
-  amcc_outb(0,0); // dev reset
-  amcc_outb(4,2); // bytes per word
-  amcc_outb(0xFF,3); // dev to program
-  amcc_outb(0,4); //reset address counter
-  amcc_outb(0, 6); //data out
-  amcc_outb(0, 6); //data out
-  amcc_outb(0, 6); //data out
-  amcc_outb(0, 6); //data out
-  amcc_outb(0,5); //strobe clock
-  amcc_outb(0,5); //strobe clock
-
+  if (0) {
+    // this procedure works only on DDS cards
+    amcc_outb(   0, 0); //dev reset
+    amcc_outb(   4, 2); //bytes per word
+    amcc_outb(0xFF, 3); //dev to program
+    amcc_outb(   0, 4); //reset address counter
+    amcc_outb(   0, 6); //data out
+    amcc_outb(   0, 6); //data out
+    amcc_outb(   0, 6); //data out
+    amcc_outb(   0, 6); //data out
+    amcc_outb(   0, 5); //strobe clock
+    amcc_outb(   0, 5); //strobe clock
+  }
 
   /* 
    * We're now ready for our next caller 
