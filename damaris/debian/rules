@@ -46,7 +46,6 @@ clean:
 
 # Add here commands to clean up after the build process.
 	-$(MAKE) -C backends clean
-	find backends/drivers -name "pulseblaster-module-*" -type d|xargs -r rm -r
 	rm -f debian/damaris-backends.init
 	rm -rf backends/drivers/pulseblaster-module
 	rm -f build-stamp
@@ -84,8 +83,9 @@ install: build
 	PBMODULES=`find backends/drivers/pulseblaster-module -type d`; \
 	for i in $$PBMODULES; do \
 		MODULESDIR=lib/modules/`basename $$i`/kernel/damaris ; \
-		dh_installdirs -pdamaris-modules $$MODULESDIR ; \
-		test -f "$$i/pulseblaster.ko" && dh_install -pdamaris-modules "$$i/pulseblaster.ko" "$$MODULESDIR" ; \
+		test -f "$$i/pulseblaster.ko" && \
+		dh_installdirs -pdamaris-modules $$MODULESDIR && \
+		dh_install -pdamaris-modules "$$i/pulseblaster.ko" "$$MODULESDIR" ; \
 	done;
 
 # provided by Spectrum
