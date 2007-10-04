@@ -2,7 +2,7 @@ Source: damaris
 Section: science
 Priority: optional
 Maintainer: Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>
-Build-Depends: debhelper, g++, libxerces27-dev, libexpat-dev|libexpat1-dev, linux-headers-2.6, make, dpkg-dev
+Build-Depends: debhelper, libxerces27-dev, libexpat-dev|libexpat1-dev, linux-headers-2.6-all | linux-headers-2.6.18-5-all
 Standards-Version: 3.7.2
 
 Package: damaris-frontend-labview

@@ -15,16 +15,9 @@ BACKENDSMACHINES = \
 	Mobilecore.exe \
 	Mobile_wo_sync_backend.exe
 
-KERNELVERSION=$(shell uname -r)
-KERNELVERSIONS=$(shell uname -r)
+tmp_kernel_makefiles = $(wildcard /lib/modules/*/build/Makefile)
+KERNELVERSIONS = $(tmp_kernel_makefiles:/lib/modules/%/build/Makefile=%)
 DEB_BUILD_ARCH=$(strip $(shell dpkg-architecture -qDEB_BUILD_ARCH))
-
-ifeq ($(DEB_BUILD_ARCH),amd64)
-  KERNELVERSIONS=$(shell echo `uname -r|sed 's/\(.*\)-.*/\1/'`-amd64 )
-endif
-ifeq ($(DEB_BUILD_ARCH),i386)
-  KERNELVERSIONS=$(shell echo `uname -r|sed 's/\(.*\)-.*/\1/'`-\{k7,686,486\} )
-endif
 
 build: build-stamp
 build-stamp:
@@ -97,11 +90,15 @@ install: build
 
 # provided by Spectrum
 	for i in $(KERNELVERSIONS); do \
+		MODULESDIR=lib/modules/$$i/kernel/damaris ; \
 		MODULEBUILDDIR=backends/drivers/Spectrum-MI40xxSeries/modules-$$i ; \
+		if test \! -d $$MODULEBUILDDIR -a -e /$$MODULESDIR/*spc*.*o; then \
+			MODULEBUILDDIR=/$$MODULESDIR; \
+		fi; \
 		if test -d $$MODULEBUILDDIR ; then \
-			MODULESDIR=lib/modules/$$i/kernel/damaris ; \
 			dh_installdirs -pdamaris-modules $$MODULESDIR ; \
-			find $$MODULEBUILDDIR -type f -exec dh_install -pdamaris-modules {} $$MODULESDIR \; ; \
+			find $$MODULEBUILDDIR -type f -name '*spc*.*o' \
+				 -exec cp -av {} debian/damaris-modules/$$MODULESDIR \; ; \
 		fi ; \
 	done; true
 	dh_install

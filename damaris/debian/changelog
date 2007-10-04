@@ -1,3 +1,18 @@
+damaris (0.10-1) experimental; urgency=low
+
+  [ Achim Gaedke ]
+  * check maximum number of instructions in backend and report proper
+    error
+
+  [ Christian Tacke ]
+  * Bump main version to 0.10
+  * Build-Depend on linux-headers-2.6-all | linux-headers-2.6.18-5-all
+    to really get headers for all subarchs
+  * No need to Build-Depend on g++,make,dpkg-dev as build-essential
+    depends on them
+
+ -- Christian Tacke <Christian.Tacke@physik.tu-darmstadt.de>  Thu,  4 Oct 2007 17:51:42 +0200
+
 damaris (0.9-0.5.2) experimental; urgency=low
 
   * python-gui: separate package in frontends/greendamaris
