@@ -108,6 +108,18 @@ bg_backend.o: bg_backend.cpp  ../drivers/PTS-Synthesizer/PTS.h \
 	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
 
+magnexgrad_backend_dds: magnexgrad_backend_dds.o hardware.o \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
+../drivers/SpinCore-PulseBlasterDDSIII/SpinCore-PulseBlasterDDSIII.o ../drivers/Eurotherm-2000Series/Eurotherm-2000Series.o ../drivers/tempcont.o \
+../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
+	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
+
+magnexgrad_backend_dds.o: magnexgrad_backend_dds.cpp \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
+
+
 magnexgrad_backend: magnexgrad_backend.o hardware.o \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o ../drivers/Eurotherm-2000Series/Eurotherm-2000Series.o ../drivers/tempcont.o \
