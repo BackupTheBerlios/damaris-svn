@@ -8,7 +8,7 @@
 CXX=g++
 CXXFLAGS=-O0 -g -Wall -Wshadow -pedantic
 CXXCPPFLAGS=-I. -I../..
-LIBS=-lpthread
+LIBS=-lpthread -lxerces-c
 
 .PHONY: all clean
 
@@ -25,6 +25,9 @@ Eurotherm-2000Series.o: Eurotherm-2000Series.cpp Eurotherm-2000Series.h ../tempc
 
 test.exe: test.cpp Eurotherm-2000Series.o Eurotherm-2000Series.h  ../tempcont.o
 	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -o $@ $< Eurotherm-2000Series.o ../tempcont.o $(LIBS)
+
+control: control.cpp Eurotherm-2000Series.o Eurotherm-2000Series.h  ../tempcont.o ../../machines/hardware.o ../../core/core.a
+	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -o $@ $< Eurotherm-2000Series.o ../tempcont.o ../../machines/hardware.o ../../core/core.a -lexpat $(LIBS)
 
 gnuplot_output.exe: gnuplot_output.cpp Eurotherm-2000Series.o  ../tempcont.o
 	$(CXX) $(CXXFLAGS) $(CXXCPPFLAGS) -o $@ $< Eurotherm-2000Series.o ../tempcont.o $(LIBS)
