@@ -68,7 +68,7 @@ class Eurotherm2000Series: public tempcont {
      all these strange data formats of Bisynch: hexadecimal values
   */
   std::string hex_format;
-
+ public:
   /**
      reads a value from Eurotherm
   */
@@ -84,6 +84,9 @@ class Eurotherm2000Series: public tempcont {
      the configuration time is quite long (5 to 10 seconds) because of full device reset
    */
   void configure(const std::map<std::string,std::string>& config);
+
+
+  void reset();
 
  public:
   /**

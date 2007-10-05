@@ -83,12 +83,26 @@ void Eurotherm2000Series::configure(const std::map<std::string,std::string>& con
     }
   }
   catch (Eurotherm2000Series_error e) {
-    throw Eurotherm2000Series_error("got error while configuration:"+e);
+    throw Eurotherm2000Series_error("got error while configuration: "+e);
   }
   if (error_message.size()!=0) {
     throw Eurotherm2000Series_error("Could not set "+error_message.substr(0,error_message.size()-1));
   }
  
+}
+
+void Eurotherm2000Series::reset() {
+  set_value("IM","0000.");
+  // read superficial zero byte
+  char buffer[1];
+  while (read(serial_dev,buffer,1)<=0) sleep(1);
+  // wait for restarted communication
+  int timeout=10;
+  while (1) {
+    if (timeout<0) throw Eurotherm2000Series_error("could not establish connection after reset");
+    try {get_summary_status();} catch(Eurotherm2000Series_error){--timeout; sleep(1); continue;}
+    break;
+  }
 }
 
 Eurotherm2000Series::~Eurotherm2000Series() {
@@ -217,7 +231,18 @@ int Eurotherm2000Series::set_value(const std::string& param_name, const std::str
     timeout--;
   }
   pthread_mutex_unlock(&device_lock);
-  if (got_byte!=6) throw Eurotherm2000Series_error("set_value: negative acknoledge");
+  if (got_byte==0x15) {
+    char message_buffer[256];
+    std::string ee_answer;
+    read_value("EE",ee_answer);
+    snprintf(message_buffer, 256, "set_value: negative acknoledge (ee=0x%02x)",ee_answer.c_str()[0]);
+    throw Eurotherm2000Series_error(message_buffer);
+  }
+  if (got_byte!=6) {
+    char message_buffer[256];
+    snprintf(message_buffer,256,"(0x%02x)",got_byte);
+    throw Eurotherm2000Series_error(std::string("set_value: no acknoledge ")+message_buffer);
+  }
   return 0;
 }
 
