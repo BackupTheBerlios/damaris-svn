@@ -752,7 +752,7 @@ class DamarisGUI:
             self.doc_urls["Python DAMARIS"]=os.path.join(installation_base, "share", "python-damaris", "doc", "index.html")
         elif os.path.isfile("/usr/share/doc/python-damaris/html/index.html"):
             # check generic debian location
-            doc_urls["Python DAMARIS"]="file:///usr/share/doc/python-damaris/html/index.html"
+            self.doc_urls["Python DAMARIS"]="file:///usr/share/doc/python-damaris/html/index.html"
         else:
             self.doc_urls["Python DAMARIS"]="http://www.fkp.physik.tu-darmstadt.de/damariswiki/Tutorial"
 
