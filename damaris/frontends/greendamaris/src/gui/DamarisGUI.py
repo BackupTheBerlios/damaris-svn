@@ -146,6 +146,8 @@ class DamarisGUI:
 
         self.toolbar_init()
 
+        self.documentation_init()
+
         self.monitor=MonitorWidgets(self.xml_gui)
 
         self.config=ConfigTab(self.xml_gui)
@@ -189,7 +191,7 @@ class DamarisGUI:
         self.experiment_script_statusbar_label = self.xml_gui.get_widget("statusbar_experiment_script_label")
         self.data_handling_statusbar_label = self.xml_gui.get_widget("statusbar_data_handling_label")
         self.backend_statusbar_label = self.xml_gui.get_widget("statusbar_core_label")
-    
+
     def toolbar_init(self):
         """
         buttons like save and run...
@@ -722,38 +724,10 @@ class DamarisGUI:
             if res == gtk.PRINT_OPERATION_RESULT_APPLY:
                 settings = print_.get_print_settings()
 
-    def show_manual(self, widget, data=None):
-        """
-        show python-damaris documentation that is shipped with this package
-        """
+    def documentation_init(self):
 
-        doc_index_url=None
-        # local installation
-        installation_base=__file__
-        for i in xrange(5):
-            installation_base=os.path.dirname(installation_base)
-        if os.path.isfile(os.path.join(installation_base, "share", "python-damaris", "doc", "index.html")):
-            doc_index_url=os.path.join(installation_base, "share", "python-damaris", "doc", "index.html")
-
-        if doc_index_url is None and os.path.isfile("/usr/share/doc/python-damaris/html/index.html"):
-            # check generic debian location
-            doc_index_url="file:///usr/share/doc/python-damaris/html/index.html"
-
-        if doc_index_url is None:
-            # last resort
-            doc_index_url="http://www.fkp.physik.tu-darmstadt.de/damariswiki/Tutorial"
-
-        start_browser(doc_index_url).start()
-
-    def show_doc_menu(self, widget, data=None):
-        """
-        offer a wide variety of docs, prefer local installations
-        """
-        requested_doc=widget.get_child().get_text()
-        if requested_doc=="Python DAMARIS":
-            return self.show_manual(widget, data)
-
-        doc_urls={
+        self.doc_urls={
+            "Python DAMARIS": None,
             "DAMARIS Homepage": "http://www.fkp.physik.tu-darmstadt.de/damariswiki",
             "Python": "http://www.python.org/doc/%d.%d/"%(sys.version_info[:2]),
             "numpy": "http://www.scipy.org/Documentation#head-9013a0c8c345747e0b152f5125afe50b63177ad6",
@@ -764,20 +738,60 @@ class DamarisGUI:
             }
 
         if os.path.isdir("/usr/share/doc/python%d.%d-doc/html"%(sys.version_info[:2])):
-            doc_urls["Python"]="file:///usr/share/doc/python%d.%d-doc/html/index.html"%(sys.version_info[:2])
+            self.doc_urls["Python"]="file:///usr/share/doc/python%d.%d-doc/html/index.html"%(sys.version_info[:2])
 
         if os.path.isdir("/usr/share/doc/python-tables-doc/html"):
-            doc_urls["pytables"]="file:///usr/share/doc/python-tables-doc/html/index.html"
+            self.doc_urls["pytables"]="file:///usr/share/doc/python-tables-doc/html/index.html"
+
+        doc_index_url=None
+        # local installation
+        installation_base=__file__
+        for i in xrange(5):
+            installation_base=os.path.dirname(installation_base)
+        if os.path.isfile(os.path.join(installation_base, "share", "python-damaris", "doc", "index.html")):
+            self.doc_urls["Python DAMARIS"]=os.path.join(installation_base, "share", "python-damaris", "doc", "index.html")
+        elif os.path.isfile("/usr/share/doc/python-damaris/html/index.html"):
+            # check generic debian location
+            doc_urls["Python DAMARIS"]="file:///usr/share/doc/python-damaris/html/index.html"
+        else:
+            self.doc_urls["Python DAMARIS"]="http://www.fkp.physik.tu-darmstadt.de/damariswiki/Tutorial"
+
+        self.doc_browser=None
+
+    def show_doc_menu(self, widget, data=None):
+        """
+        offer a wide variety of docs, prefer local installations
+        """
+        if type(widget) is gtk.MenuItem:
+            requested_doc=widget.get_child().get_text()
+        else:
+            requested_doc="Python DAMARIS"
                     
-        if requested_doc in doc_urls and doc_urls[requested_doc] is not None:
-            start_browser(doc_urls[requested_doc]).start()
+        if requested_doc in self.doc_urls and self.doc_urls[requested_doc] is not None:
+            if self.doc_browser is not None:
+                if not self.doc_browser.isAlive():
+                    self.doc_browser.join()
+                if self.doc_browser.my_webbrowser is not None:
+                    print "new browser tab"
+                    self.doc_browser.my_webbrowser.open_new_tab(self.doc_urls[requested_doc])
+                else:
+                    del self.doc_browser
+                    self.doc_browser=start_browser(self.doc_urls[requested_doc])
+                    self.doc_browser.start()
+            else:
+                self.doc_browser=start_browser(self.doc_urls[requested_doc])
+                self.doc_browser.start()
         else:
             print "missing docs for '%s'"%(requested_doc)
+
+    show_manual=show_doc_menu
 
 class start_browser(threading.Thread):
 
     def __init__(self, url):
         threading.Thread.__init__(self, name="manual browser")
+        self.my_webbrowser=None
+        self.my_webbrowser_process=None
         self.start_url=url
                 
     def run(self):
@@ -785,9 +799,8 @@ class start_browser(threading.Thread):
         start a webbrowser
         """
         if sys.hexversion>=0x02050000:
-            self.my_webbrowser=None
-            if sys.platform=="linux2":
-                # Debian Linux way
+            if sys.platform=="linux2" and self.my_webbrowser is None:
+                # try for debian linux
                 self.my_webbrowser=webbrowser.get("x-www-browser")
             if self.my_webbrowser is None:
                 # this is what it should be everywhere!
@@ -797,11 +810,11 @@ class start_browser(threading.Thread):
                 print "web browser started (module webbrowser)"
                 return True
         # last resort
-        os.spawnl(os.P_NOWAIT,
-                  sys.executable,
-                  os.path.basename(sys.executable),
-                  "-c",
-                  "import webbrowser\nwebbrowser.open('%s')"%self.start_url)
+        self.my_webbrowser_process=os.spawnl(os.P_WAIT,
+                                             sys.executable,
+                                             os.path.basename(sys.executable),
+                                             "-c",
+                                             "import webbrowser\nwebbrowser.open('%s')"%self.start_url)
         print "web browser started (webbrowser.py)"
         return True
 
