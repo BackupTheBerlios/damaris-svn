@@ -10,6 +10,7 @@ BACKENDSMACHINES = \
 	dummycore.exe \
 	deuteron_backend.exe \
 	magnexgrad_backend \
+	magnexgrad_backend_dds \
 	PFGcore.exe \
 	bg_backend \
 	Mobilecore.exe \
