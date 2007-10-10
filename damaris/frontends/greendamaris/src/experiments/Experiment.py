@@ -229,3 +229,37 @@ def combine_ranges(*ranges):
         for i in r:
             yield i
 
+
+def self_test():
+	e = Experiment()
+	e.set_description("key", "value")
+	e.set_frequency(85e6, 90, ttls=16)
+	e.wait(1e-6)
+	e.rf_pulse(1, 1e-6/3)        # val = 1
+	e.ttl_pulse(1e-6/3, 1)       # val = 2
+	e.ttl_pulse(1e-6/3, None, 7) # val = 7
+	if True:
+		e.loop_start(30)
+		e.set_pfg(dac_value=1024, is_seq = True)
+		e.set_pfg_wt(dac_value=2048)
+		e.loop_start(400)
+		e.set_phase(270, ttls = 32)
+		e.loop_end()
+		e.ttl_pulse(5e-6, channel = 6)
+		e.loop_end()
+	else:
+		l = StateLoop(3)
+		l.append(StateSimple(5e-6, '<ttlout value="1"/>'))
+		e.state_list.append(l)
+	e.record(1024, 20e6)
+	try:
+		e.wait(-1)
+	except AssertionError:
+		pass
+	else:
+		pass # raise AssertionError("An exception should happen")
+	e.set_pts_local()
+	print e.write_xml_string()
+
+if __name__ == '__main__':
+	self_test()
