@@ -74,9 +74,6 @@ debug=False
 # version info
 __version__="0.10"
 
-# gtk_gdk_flush=gtk.gdk.flush
-gtk_gdk_flush=lambda :True
-
 class logstream:
     gui_log=None
     text_log=sys.__stdout__
@@ -251,7 +248,7 @@ class DamarisGUI:
             self.log=None
             # and quit
             gtk.main_quit()
-            return False
+            return True
         else:
             print "Stop Experiment please! (ToDo: Dialog)"
             return True
@@ -446,7 +443,6 @@ class DamarisGUI:
                 self.data_handling_statusbar_label.set_text(r_text)
         if b_text:
                 self.backend_statusbar_label.set_text(b_text)
-        gtk_gdk_flush()
         gtk.gdk.threads_leave()
 
         still_running=filter(None,[self.si.exp_handling, self.si.res_handling, self.si.back_driver, self.dump_thread])
@@ -488,7 +484,6 @@ class DamarisGUI:
             self.toolbar_run_button.set_sensitive(True)
             self.toolbar_stop_button.set_sensitive(False)
             self.toolbar_pause_button.set_sensitive(False)
-            gtk_gdk_flush()
             gtk.gdk.threads_leave()
 
             # keep data to display but throw away everything else
@@ -515,10 +510,10 @@ class DamarisGUI:
         compress: optional argument for zlib compression 0-9
         """
 
-        class timeline_tablecols(tables.IsDescription):
-            time=tables.StringCol(len("YYYYMMDD HH:MM:SS"))
-            experiments=tables.Int64Col()
-            results=tables.Int64Col()
+        timeline_tablecols=numpy.recarray(0,dtype=([("time","S17"),
+                                                    ("experiments","int64"),
+                                                    ("results","int64")])
+                                          )
 
         actual_config = self.config.get()
         self.dump_complib=actual_config.get("data_pool_complib",None)
@@ -847,7 +842,6 @@ class LogWindow:
         self.textbuffer.place_cursor(self.textbuffer.get_end_iter())
         self.textbuffer.insert_at_cursor(date_tag+unicode(message))
         self.textview.scroll_to_mark(self.textbuffer.get_insert(),0.1)
-        gtk_gdk_flush()
         gtk.gdk.threads_leave()
 
     def __del__(self):
@@ -1899,7 +1893,6 @@ class MonitorWidgets:
         for rest_name in namelist:
             # append() returns iter for the new row
             parent = self.display_source_treestore.append(parent, [rest_name])
-        gtk_gdk_flush()
  
     def source_list_remove(self, source_name):
         namelist = source_name.split("/")
@@ -1926,7 +1919,6 @@ class MonitorWidgets:
                 # The parent has data connected to it
                 break
             iter = parent
-        gtk_gdk_flush()
 
     def source_list_current(self):
         ai = self.display_source_combobox.get_active_iter()
@@ -2237,8 +2229,6 @@ class MonitorWidgets:
             self.matplot_axes.clear()
             self.matplot_axes.grid(True)
         self.matplot_canvas.draw_idle()
-        gtk_gdk_flush()
-
 
     def update_display(self, subject=None):
         """
@@ -2367,7 +2357,6 @@ class MonitorWidgets:
 
             # Draw it!
             self.matplot_canvas.draw_idle()
-            gtk_gdk_flush()
             in_result=None
             
         elif isinstance(in_result, MeasurementResult):
@@ -2414,7 +2403,6 @@ class MonitorWidgets:
                 self.matplot_axes.set_title("")
 
             self.matplot_canvas.draw_idle()
-            gtk_gdk_flush()
             in_result=None        
 
     def renew_display(self):
