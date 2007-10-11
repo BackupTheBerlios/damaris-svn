@@ -99,8 +99,6 @@ class Accumulation(Errorable, Drawable):
                 raise
         else: return None
     
-
-
     def contains_data(self):
         return self.cont_data
 
@@ -238,10 +236,8 @@ class Accumulation(Errorable, Drawable):
             xdata=yerr=ydata=None
         finally:
             self.lock.release()
-            
 
-
-    def write_to_hdf_old_style(self, hdffile, where, name, title, complib=None, complevel=None):
+    def write_to_hdf(self, hdffile, where, name, title, complib=None, complevel=None):
         accu_group=hdffile.createGroup(where=where,name=name,title=title)
         accu_group._v_attrs.damaris_type="Accumulation"
         if self.contains_data():
@@ -266,88 +262,6 @@ class Accumulation(Errorable, Drawable):
                 if self.common_descriptions is not None:
                     for (key,value) in self.common_descriptions.iteritems():
                         accu_group._v_attrs.__setattr__("description_"+key,str(value))
-                # save channel data
-                for channel_no in xrange(len(self.y)):
-                    y_mean=self.get_ydata(channel_no)
-                    y_sigma=self.get_yerr(channel_no)
-                    for index_no in xrange(len(self.index)):
-                        index=self.index[index_no]
-                        # set time data
-                        timedata=numpy.empty((2*(index[1]-index[0]+1),),
-                                             dtype = "Float64")
-                            
-                        timedata[0::2]=y_mean[index[0]:index[1]+1]
-                        if len(y_sigma):
-                            timedata[1::2]=y_sigma[index[0]:index[1]+1]
-                        else:
-                            timedata[1::2]=numpy.zeros(((index[1]-index[0]+1),),
-                                                       dtype = "Float64")
-                        timedata.setshape((index[1]-index[0]+1,2))
-                        time_slice_data=None
-                        if complib is not None:
-                            if complevel is None:
-                                complevel=9
-                            chunkshape = numpy.shape(timedata)
-			    if len(chunkshape) <= 1:
-				chunkshape = (min(chunkshape[0],1024*8),)
-			    else:
-				chunkshape = (min(chunkshape[0],1024*8), chunkshape[1])
-                            time_slice_data=hdffile.createCArray(accu_group,
-                                                                 name="idx%04d_ch%04d"%(index_no,channel_no),
-                                                                 shape=timedata.shape,
-                                                                 atom=tables.Float64Atom(shape=chunkshape,
-                                                                                         flavor="numpy"),
-                                                                 filters=tables.Filters(complevel=complevel,
-                                                                                        complib=complib,
-											shuffle=1),
-                                                                 title="Index %d, Channel %d"%(index_no,channel_no))
-                            time_slice_data[:]=timedata
-                        else:
-                            time_slice_data=hdffile.createArray(accu_group,
-                                                                name="idx%04d_ch%04d"%(index_no,channel_no),
-                                                                object=timedata,
-                                                                title="Index %d, Channel %d"%(index_no,channel_no))
-
-                        timedata=None
-                        # set attributes
-                        time_slice_data._f_setAttr("index",numpy.array(index_no, dtype="Int32"))
-                        time_slice_data._f_setAttr("channel",numpy.array(channel_no, dtype="Int32"))
-                        time_slice_data._f_setAttr("number",numpy.array(self.n, dtype="Int64"))
-                        time_slice_data._f_setAttr("dwelltime",numpy.array(1.0/self.sampling_rate,
-                                                                               dtype="Float64"))
-                        time_slice_data._f_setAttr("start_time",numpy.array(1.0/self.sampling_rate*index[0],
-                                                                                dtype="Float64"))
-            finally:
-                time_slice_data=None
-                accu_group=None
-                self.lock.release()
-
-    def write_to_hdf_new_style(self, hdffile, where, name, title, complib=None, complevel=None):
-        accu_group=hdffile.createGroup(where=where,name=name,title=title)
-        accu_group._v_attrs.damaris_type="Accumulation"
-        if self.contains_data():
-            self.lock.acquire()
-            try:
-                # save time stamps
-                if self.time_period is not None and len(self.time_period)>0:
-                    accu_group._v_attrs.earliest_time="%04d%02d%02d %02d:%02d:%02d.%03d"%(self.time_period[0].year,
-                                                                                          self.time_period[0].month,
-                                                                                          self.time_period[0].day,
-                                                                                          self.time_period[0].hour,
-                                                                                          self.time_period[0].minute,
-                                                                                          self.time_period[0].second,
-                                                                                          self.time_period[0].microsecond/1000)
-                    accu_group._v_attrs.oldest_time="%04d%02d%02d %02d:%02d:%02d.%03d"%(self.time_period[1].year,
-                                                                                        self.time_period[1].month,
-                                                                                        self.time_period[1].day,
-                                                                                        self.time_period[1].hour,
-                                                                                        self.time_period[1].minute,
-                                                                                        self.time_period[1].second,
-                                                                                        self.time_period[1].microsecond/1000)
-                if self.common_descriptions is not None:
-                    for (key,value) in self.common_descriptions.iteritems():
-                        accu_group._v_attrs.__setattr__("description_"+key,str(value))
-
 
                 # save interval information
                 filter=None
@@ -400,13 +314,23 @@ class Accumulation(Errorable, Drawable):
                         chunkshape = (min(chunkshape[0],1024*8),)
                     else:
                         chunkshape = (min(chunkshape[0],1024*8), chunkshape[1])
-                    time_slice_data=hdffile.createCArray(accu_group,
-                                                         name="accu_data",
-                                                         shape=timedata.shape,
-                                                         atom=tables.Float64Atom(shape=chunkshape,
-                                                                                 flavor="numpy"),
-                                                         filters=filter,
-                                                         title="accu data")
+                    if tables.__version__[0]=="1":
+                        time_slice_data=hdffile.createCArray(accu_group,
+                                                             name="accu_data",
+                                                             shape=timedata.shape,
+                                                             atom=tables.Float64Atom(shape=chunkshape,
+                                                                                     flavor="numpy"),
+                                                             filters=filter,
+                                                             title="accu data")
+                    else:
+                        time_slice_data=hdffile.createCArray(accu_group,
+                                                             name="accu_data",
+                                                             shape=timedata.shape,
+                                                             chunkshape=chunkshape,
+                                                             atom=tables.Float64Atom(),
+                                                             filters=filter,
+                                                             title="accu data")
+                        
                     time_slice_data[:]=timedata
                 else:
                     time_slice_data=hdffile.createArray(accu_group,
@@ -420,8 +344,6 @@ class Accumulation(Errorable, Drawable):
                 time_slice_data=None
                 accu_group=None
                 self.lock.release()
-
-    write_to_hdf=write_to_hdf_new_style
 
     # / Schnittstellen nach Auﬂen ------------------------------------------------------------------
     
