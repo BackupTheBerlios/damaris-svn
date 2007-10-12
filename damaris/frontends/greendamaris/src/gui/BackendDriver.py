@@ -9,10 +9,8 @@ import ExperimentWriter
 import ResultReader
 import threading
 import types
+import signal
 
-
-if sys.platform[:5]=="linux":
-    import signal
 if sys.platform=="win32":
     import _winreg
 
@@ -173,10 +171,28 @@ class BackendDriver(threading.Thread):
         if not self.is_busy():
             if self.core_input is not None:
                 backend_result=self.core_input.poll()
-                if backend_result>0:
+                wait_loop_counter=0
+                while backend_result is None:
+                    # waiting in tenth of a second
+                    time.sleep(0.1)
+                    wait_loop_counter+=1
+                    backend_result=self.core_input.poll()
+                    if backend_result is not None: break
+                    if wait_loop_counter==10:
+                        print "sending termination signal to backend process"
+                        self.send_signal("SIGTERM")
+                    elif wait_loop_counter==20:
+                        print "sending kill signal to backend process"
+                        self.send_signal("SIGKILL")
+                    elif wait_loop_counter>30:
+                        print "no longer waiting for backend shutdown"
+                        break
+
+                if backend_result is None:
+                    print "backend dit not end properly, please stop it manually"
+                elif backend_result>0:
                     print "backend returned ", backend_result
                 elif backend_result<0:
-                    import signal
                     sig_name=filter(lambda x: x.startswith("SIG") and \
                                     x[3]!="_" and \
                                     (type(signal.__dict__[x])is types.IntType) and \
