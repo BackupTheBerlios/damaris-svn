@@ -806,7 +806,7 @@ class start_browser(threading.Thread):
                 return True
         # last resort
         print "starting web browser (webbrowser.py)"
-        self.my_webbrowser_process=os.spawnl(os.P_WAIT,
+        self.my_webbrowser_process=os.spawnl(os.P_NOWAIT,
                                              sys.executable,
                                              os.path.basename(sys.executable),
                                              "-c",
