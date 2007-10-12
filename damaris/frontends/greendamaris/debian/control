@@ -10,7 +10,7 @@ Package: python-damaris
 Architecture: all
 XB-Python-Version: ${python:Versions}
 Provides:  ${python:Provides}, damaris-frontend
-Depends: ${python:Depends}, python-numpy (>=1.0), python-gtk2 (>=2.8.0), python-glade2, python-matplotlib (>=0.90), python-tables (>=2.0)
+Depends: ${python:Depends}, python-numpy (>=1.0), python-gtk2 (>=2.8.0), python-glade2, python-matplotlib (>=0.90), python-tables (>=1.3.2)
 Recommends: damaris-backends, python-scipy, python-numpy-ext
 Suggests: python-doc, python-tables-doc, python-numpy-doc
 Description: python frontend for damaris project
