@@ -17,7 +17,7 @@ clean:
 	dh_installdirs
 	# Add here commands to clean up after the build process.
 	rm -f *-stamp
-	rm -rf dist build
+	rm -rf dist build $(PYVERS:%=build-ext-%)
 	find . -name *\.py[co] -exec rm {} \;
 	dh_clean
 

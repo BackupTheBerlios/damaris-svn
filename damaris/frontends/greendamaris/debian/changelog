@@ -1,3 +1,11 @@
+greendamaris (0.10-0.2) experimental; urgency=medium
+
+  * increased compatibility with pytables version 1 and 2
+  * sending signals to backend, when it fails to quit properly
+  * correcting quit event return value
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Fri, 12 Oct 2007 13:34:33 +0200
+
 greendamaris (0.10-0.1) experimental; urgency=low
 
   * added docs and browser button for docs
