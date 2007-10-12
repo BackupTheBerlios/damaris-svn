@@ -563,7 +563,7 @@ class DamarisGUI:
                 if ext in [".h5", ".hdf", ".hdf5"]:
                     dump_filename_pattern=filename.replace("%","%%")+"_%d"+ext
                 else:
-                    dump_filename_pattern=dump_filename.replace("%","%%")+"_%d"
+                    dump_filename_pattern=self.dump_filename.replace("%","%%")+"_%d"
                     
                 last_backup=0
                 cummulated_size=os.stat(self.dump_filename).st_size
@@ -801,16 +801,16 @@ class start_browser(threading.Thread):
                 # this is what it should be everywhere!
                 self.my_webbrowser=webbrowser.get()
             if self.my_webbrowser is not None:
+                print "starting web browser (module webbrowser)"
                 self.my_webbrowser.open(self.start_url)
-                print "web browser started (module webbrowser)"
                 return True
         # last resort
+        print "starting web browser (webbrowser.py)"
         self.my_webbrowser_process=os.spawnl(os.P_WAIT,
                                              sys.executable,
                                              os.path.basename(sys.executable),
                                              "-c",
                                              "import webbrowser\nwebbrowser.open('%s')"%self.start_url)
-        print "web browser started (webbrowser.py)"
         return True
 
 class LogWindow:
