@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=DAMARIS
+Comment=Run NMR experiments
+Exec=DAMARIS
+Terminal=false
+Type=Application
+Categories=Science
+Icon=/usr/share/python-damaris/images/DAMARIS.png 
