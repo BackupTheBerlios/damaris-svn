@@ -13,7 +13,7 @@ Description: LabView frontend for damaris project
 
 Package: damaris-backends
 Architecture: i386 amd64
-Depends: ${shlibs:Depends}, bash, pciutils, modutils, coreutils, grep
+Depends: ${shlibs:Depends}, bash, pciutils, modutils|module-init-tools, coreutils, grep
 Recommends: python-damaris|damaris-frontend, damaris-modules
 Description: backend package
 

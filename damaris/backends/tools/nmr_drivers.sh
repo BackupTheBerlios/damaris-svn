@@ -21,7 +21,7 @@ NMR_GROUP="nmr"
 LSMOD=/sbin/lsmod
 RMMOD=/sbin/rmmod
 INSMOD=/sbin/insmod
-LSPCI=/sbin/lspci
+LSPCI=/bin/lspci
 KERNELCONF=/boot/config-`uname -r`
 
 # spectrum related stuff
