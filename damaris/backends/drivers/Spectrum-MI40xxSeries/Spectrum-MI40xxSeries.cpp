@@ -308,7 +308,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   if (exp_sequence==NULL)
     throw ADC_exception("Spectrum-MI40xxSeries::set_daq only working on sequences");
 
-# ifdef SPC_DEBUG
+# if SPC_DEBUG
   fprintf(stderr, "working on sequence:\n");
   xml_state_writer().write_states(stderr, *exp_sequence);
 # endif
