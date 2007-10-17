@@ -1,8 +1,13 @@
 [Desktop Entry]
+Encoding=UTF-8
 Name=DAMARIS
-Comment=Run NMR experiments
-Exec=DAMARIS
+Name[de]=DAMARIS
+Comment=DArmstadt MAgnetic Resonance Instrument Software
+Comment[de]=DArmstadt MAgnetic Resonance Instrument Software
+Exec=DAMARIS %F
+X-MultipleArgs=true
 Terminal=false
+MimeType=text/x-python;application/x-hdf;text/plain
 Type=Application
-Categories=Science
-Icon=/usr/share/python-damaris/images/DAMARIS.png 
+Categories=Science;Physics;Chemistry;Education
+Icon=DAMARIS.png 
