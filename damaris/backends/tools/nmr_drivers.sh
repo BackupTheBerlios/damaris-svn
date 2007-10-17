@@ -44,7 +44,7 @@ PULSEBLASTER_MAJOR=""
 PULSEBLASTER_MINOR=""
 
 pb_findio() {
-	lspci -vn |
+	$LSPCI -vn |
 	     while read line; do
 		if echo "$line"|grep "ff00: 10e8:8852$" >/dev/null; then
 		    read line
@@ -71,7 +71,7 @@ start() {
 	fi
 	if test \! \( -f $SPECTRUM_MOD -a -f $PULSEBLASTER_MOD \); then
 	    printf "pulseblaster or specturm module not available...\n"
-	    RETVAL=2
+	    RETVAL=0
 	    return
 	fi
 	PULSEBLASTER_IOPORT=`pb_findio`

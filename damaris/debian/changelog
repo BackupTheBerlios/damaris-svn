@@ -2,8 +2,10 @@ damaris (0.10-2) experimental; urgency=low
 
   * damaris-modules package contains various modules for testing and stable
   * damaris-modules package has exact dependencies for supported kernel versions
+  * pulseblaster module does not reset device (because reset sequence is device dependent)
+  * damaris-backends hardware init script does not fail when modules are not available
 
- -- Achim Gaedke <achim@dilbert.fkp.physik.tu-darmstadt.de>  Wed, 17 Oct 2007 13:47:44 +0200
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Wed, 17 Oct 2007 14:23:25 +0200
 
 damaris (0.10-1) experimental; urgency=low
 

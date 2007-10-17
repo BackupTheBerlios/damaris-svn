@@ -272,6 +272,7 @@ static int device_release(struct inode *inode, struct file *file)
    */
   if (0) {
     // this procedure works only on DDS cards
+    // DDS Manual
     amcc_outb(   0, 0); //dev reset
     amcc_outb(   4, 2); //bytes per word
     amcc_outb(0xFF, 3); //dev to program
@@ -282,6 +283,29 @@ static int device_release(struct inode *inode, struct file *file)
     amcc_outb(   0, 6); //data out
     amcc_outb(   0, 5); //strobe clock
     amcc_outb(   0, 5); //strobe clock
+  }
+  if (0) {
+    // this procedure is successful for 24Bit cards
+    // SpinCore by mail Oct 10th 2007
+    amcc_outb(0,6);//store 0's to memory
+    amcc_outb(0,6);
+    amcc_outb(0,6);
+    amcc_outb(0,6);
+    amcc_outb(0,6);
+    amcc_outb(0,6);
+    amcc_outb(0,6);
+    amcc_outb(0,6);
+
+    amcc_outb(0,0);//dev reset
+    amcc_outb(4,2);//bytes per word
+    amcc_outb(0,3);//write to internal memory
+    amcc_outb(0,4);//clear address counter
+    amcc_outb(0,6);//data out
+    amcc_outb(0,6);//data out
+    amcc_outb(0,6);//data out
+    amcc_outb(0,6);//data out
+    amcc_outb(7,7);//programming finished
+    amcc_outb(7,1);//trigger
   }
 
   /* 
