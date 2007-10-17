@@ -1,3 +1,10 @@
+damaris (0.10-2) experimental; urgency=low
+
+  * damaris-modules package contains various modules for testing and stable
+  * damaris-modules package has exact dependencies for supported kernel versions
+
+ -- Achim Gaedke <achim@dilbert.fkp.physik.tu-darmstadt.de>  Wed, 17 Oct 2007 13:47:44 +0200
+
 damaris (0.10-1) experimental; urgency=low
 
   [ Achim Gaedke ]

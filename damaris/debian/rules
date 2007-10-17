@@ -35,7 +35,7 @@ build-stamp:
 		fi; \
 	done )
 # kernel related things... spectrum
-	echo $$SPC_SOURCE
+# SPC_SOURCE contains the path to spectrum module sources
 	if test -e $$SPC_SOURCE/Makefile; then \
 	(cd backends/drivers/Spectrum-MI40xxSeries ; \
 	for i in $(KERNELVERSIONS); do \
@@ -113,7 +113,7 @@ install: build
 		if test -d $$MODULEBUILDDIR ; then \
 			dh_installdirs -pdamaris-modules $$MODULESDIR ; \
 			find $$MODULEBUILDDIR -type f -name '*spc*.*o' \
-				 -exec cp -av {} debian/damaris-modules/$$MODULESDIR \; ; \
+				 -exec dh_install -pdamaris-modules {} $$MODULESDIR \; ; \
 		fi ; \
 	done; true
 	dh_install
@@ -156,6 +156,9 @@ binary-arch: build install
 #	dh_makeshlibs -a
 	dh_installdeb -a
 	dh_shlibdeps -a
+# inform about kernel dependencies
+	(echo -n "linux-image:Depends="; for i in $(KERNELVERSIONS); do echo -n linux-image-$$i \|; done; echo)| \
+	sed 's/|$$//' >>debian/damaris-modules.substvars
 	dh_gencontrol -a
 	dh_md5sums -a
 	dh_builddeb -a
