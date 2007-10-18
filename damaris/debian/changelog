@@ -1,3 +1,9 @@
+damaris (0.10-3) experimental; urgency=low
+
+  * PulseBlaster Programs are loaded in chunks, prevents system freeze for seconds
+  
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Thu, 18 Oct 2007 18:07:01 +0200
+
 damaris (0.10-2) experimental; urgency=low
 
   * damaris-modules package contains various modules for testing and stable
