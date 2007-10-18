@@ -15,8 +15,8 @@ ifeq ($(shell /bin/uname -o),Cygwin)
 SUBDIRS+=TiePie-HS3 Datel-PCI416
 endif
 
-all:
-	for i in $(SUBDIRS); do make -C $$i all; done	
+all: tempcont.o
+	for i in $(SUBDIRS); do make -C $$i all; done
 
 ../tools/add_endline.exe: ../tools/add_endline.cpp
 	$(CXX) $< -o $@

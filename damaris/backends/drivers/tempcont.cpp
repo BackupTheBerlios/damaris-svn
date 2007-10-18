@@ -70,7 +70,7 @@ temp_history* tempcont::get_history(size_t seconds_back) const {
   if (result_history==NULL) throw tempcont_error("failed to create new temp_history object");
   if (history_step!=0) {
     pthread_mutex_lock((pthread_mutex_t*)&history_lock);
-    for (int i=0; ((seconds_back==0 || i*history_step<seconds_back) && i<history_used); ++i)
+    for (size_t i=0; ((seconds_back==0 || i*history_step<seconds_back) && i<history_used); ++i)
       result_history->push_back(history_buffer[(history_latest_index+history_length-i)%history_length]);
     pthread_mutex_unlock((pthread_mutex_t*)&history_lock);
     result_history->step=history_step;
@@ -120,7 +120,7 @@ void tempcont::maintain_history() {
     if (history_step!=0) {
       pthread_mutex_lock(&history_lock);
       time_t now=time(NULL);
-      if (history_latest_time+history_step<=now) {
+      if (history_step<=difftime(now, history_latest_time)) {
 	double new_temp;
 	try {
 	  new_temp=get_temperature();
@@ -175,14 +175,14 @@ configuration_result* tempcont::configure(const configuration_device_section& co
     const char* temp_str=set->second.c_str();
     char* temp_str_end=NULL;
     double new_temperature=strtod(temp_str,&temp_str_end);
-    if (temp_str_end-temp_str!=set->second.size()) {
+    if (temp_str_end!=set->second.size()+temp_str) {
       throw tempcont_error("could not read new temperature setpoint from attributes");
     }
     // set the temperature
     double new_temp_return=set_setpoint(new_temperature);
     if (new_temp_return!=new_temperature) {
       char error_message[256];
-      snprintf(error_message, sizeof(error_message), "could not set new temperature setpoint %d!=%d",
+      snprintf(error_message, sizeof(error_message), "could not set new temperature setpoint %f!=%f",
 	       new_temp_return,
 	       new_temperature);
       throw tempcont_error(error_message);
@@ -197,8 +197,7 @@ configuration_result* tempcont::configure(const configuration_device_section& co
     return res;
   }
 
-  
-
+  return NULL;
 }
 
 
