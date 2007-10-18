@@ -85,23 +85,12 @@ protected:
     return result;
   }
 
-  inline int write_data(const unsigned char* data, size_t size) {
-    int result=write(device_file_descriptor, data, size);
-    if (result==-1) throw SpinCorePulseBlaster_error(std::string("write_data: error \"")+strerror(errno)+"\"");
-    if (result<0) {
-      char errorno[256];
-      snprintf(errorno, 256, "%d",result);
-      throw SpinCorePulseBlaster_error(std::string("write_register: ioctl returned negative value = ")+errorno);
-    }
-    if ((unsigned int)result!=size) throw SpinCorePulseBlaster_error("write_data: error while writing");
-    return result;
-  }
+  /**
+     writes data to pulseblaster device
 
-  inline int write_data(const std::string& data) {
-    int result=write(device_file_descriptor, data.c_str(), data.size());
-    if (result<0 || (unsigned int)result!=data.size()) throw SpinCorePulseBlaster_error("write_data: error while writing");
-    return result;
-  }
+     care about buffer length and write in chunks to avoid freeze of user space
+   */
+  int write_data(const unsigned char* data, size_t size);
 
   inline int read_register(int reg) {
     int result=ioctl(device_file_descriptor,IOCTL_INB, reg&0xff);
@@ -132,10 +121,6 @@ protected:
     return i;
   }
 
-  inline int write_data(const std::string& data) {
-    return write_data((const unsigned char*)data.c_str(),data.size());
-  }
-
   inline int read_register(int reg) {
       int result=sp_inp(reg);
       if (result<0) throw SpinCorePulseBlaster_error("read_register: error while reading");
@@ -143,6 +128,9 @@ protected:
   }
 
 #endif
+  inline int write_data(const std::string& data) {
+    return write_data((const unsigned char*)data.c_str(),data.size());
+  }
 
   ~SpinCorePulseBlasterLowlevel();
 

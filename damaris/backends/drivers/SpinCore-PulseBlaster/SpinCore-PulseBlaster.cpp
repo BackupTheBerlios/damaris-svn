@@ -20,6 +20,27 @@ SpinCorePulseBlasterLowlevel::SpinCorePulseBlasterLowlevel() {
 SpinCorePulseBlasterLowlevel::~SpinCorePulseBlasterLowlevel() {
   close(device_file_descriptor);
 }
+
+int SpinCorePulseBlasterLowlevel::write_data(const unsigned char* data, size_t size) {
+  size_t orig_size=size;
+  const unsigned int max_chunk_size=10*1<<10; // 1k commands
+  while (size>0) {
+    int result=write(device_file_descriptor, data, ((size>max_chunk_size)?max_chunk_size:size) );
+    // error handling
+    if (result==-1) throw SpinCorePulseBlaster_error(std::string("write_data: error \"")+strerror(errno)+"\"");
+    if (result<0) {
+      char errorno[256];
+      snprintf(errorno, 256, "%d",result);
+      throw SpinCorePulseBlaster_error(std::string("write_register: ioctl returned negative value = ")+errorno);
+    }
+    // if (result==0) do some retry magic....
+    // success!
+    data+=result;
+    size-=result;
+  }
+  return orig_size;
+}
+
 #endif
 
 #ifdef __CYGWIN__
@@ -100,6 +121,7 @@ void SpinCorePulseBlaster::reset_flags(unsigned int flags) {
   write_register(5,0); //strobe clock
   write_register(5,0); //strobe clock
 }
+
 
 void SpinCorePulseBlaster::set_program(const std::string& data) {
   if (command_length==0)
