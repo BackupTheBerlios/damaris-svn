@@ -293,7 +293,7 @@ class ADC_Result(Resultable, Drawable):
         return tmp_string
 
     def __add__(self, other):
-        "Redefining self + other"
+        "Redefining self + other (scalar)"
         if isinstance(other, IntType) or isinstance(other, FloatType):
             self.lock.acquire()
             tmp_y = []
@@ -301,7 +301,7 @@ class ADC_Result(Resultable, Drawable):
             for i in range(self.get_number_of_channels()):
                 tmp_y.append(numpy.array(self.y[i], dtype="Float64") + other)
 
-            r = ADC_Result(x = self.x+0, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+            r = ADC_Result(x = self.x[:], y = tmp_y, index = self.index[:], sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
             return r
         else:
@@ -309,12 +309,12 @@ class ADC_Result(Resultable, Drawable):
 
 
     def __radd__(self, other):
-        "Redefining other + self"
+        "Redefining other (scalar) + self"
         return self.__add__(other)
 
 
     def __sub__(self, other):
-        "Redefining self - other"
+        "Redefining self - other (scalar)"
         if isinstance(other, IntType) or isinstance(other, FloatType):
             self.lock.acquire()
             tmp_y = []
@@ -322,7 +322,7 @@ class ADC_Result(Resultable, Drawable):
             for i in range(self.get_number_of_channels()):
                 tmp_y.append(numpy.array(self.y[i], dtype="Float64") - other)
 
-            r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+            r = ADC_Result(x = self.x[:], y = tmp_y, index = self.index[:], sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
             return r
         else:
@@ -330,7 +330,7 @@ class ADC_Result(Resultable, Drawable):
 
 
     def __rsub__(self, other):
-        "Redefining other - self"
+        "Redefining other (scalar) - self"
         if isinstance(other, IntType) or isinstance(other, FloatType):
             self.lock.acquire()
             tmp_y = []
@@ -338,7 +338,7 @@ class ADC_Result(Resultable, Drawable):
             for i in range(self.get_number_of_channels()):
                 tmp_y.append(other - numpy.array(self.y[i], dtype="Float64"))
 
-            r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+            r = ADC_Result(x = self.x[:], y = tmp_y, index = self.index[:], sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
             return r
 
@@ -347,7 +347,7 @@ class ADC_Result(Resultable, Drawable):
 
 
     def __mul__(self, other):
-        "Redefining self * other"
+        "Redefining self * other (scalar)"
         if isinstance(other, IntType) or isinstance(other, FloatType):
             self.lock.acquire()
             tmp_y = []
@@ -355,19 +355,19 @@ class ADC_Result(Resultable, Drawable):
             for i in range(self.get_number_of_channels()):
                 tmp_y.append(numpy.array(self.y[i], dtype="Float64") * other)
 
-            r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+            r = ADC_Result(x = self.x[:], y = tmp_y, index = self.index[:], sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
         else:
             raise ValueError("ValueError: Cannot multiply \"%s\" to ADC-Result!") % str(other.__class__)    
 
 
     def __rmul__(self, other):
-        "Redefining other * self"
+        "Redefining other (scalar) * self"
         return self.__mul__(other)
 
 
     def __pow__(self, other):
-        "Redefining self ** other"
+        "Redefining self ** other (scalar)"
         if isinstance(other, IntType) or isinstance(other, FloatType):
             self.lock.acquire()
             tmp_y = []
@@ -375,7 +375,7 @@ class ADC_Result(Resultable, Drawable):
             for i in range(self.get_number_of_channels()):
                 tmp_y.append(numpy.array(self.y[i], dtype="Float64") ** other)
 
-            r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+            r = ADC_Result(x = self.x[:], y = tmp_y, index = self.index[:], sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
             return r
         else:
@@ -383,7 +383,7 @@ class ADC_Result(Resultable, Drawable):
 
         
     def __div__(self, other):
-        "Redefining self / other"
+        "Redefining self / other (scalar)"
         if isinstance(other, IntType) or isinstance(other, FloatType):
             self.lock.acquire()
             tmp_y = []
@@ -391,7 +391,7 @@ class ADC_Result(Resultable, Drawable):
             for i in range(self.get_number_of_channels()):
                 tmp_y.append(numpy.array(self.y[i], dtype="Float64") / other)
 
-            r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+            r = ADC_Result(x = self.x[:], y = tmp_y, index = self.index[:], sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
             return r
         else:
@@ -399,7 +399,7 @@ class ADC_Result(Resultable, Drawable):
 
 
     def __rdiv__(self, other):
-        "Redefining other / self"
+        "Redefining other (scalar) / self"
         if isinstance(other, IntType) or isinstance(other, FloatType):
             self.lock.acquire()
             tmp_y = []
@@ -407,7 +407,7 @@ class ADC_Result(Resultable, Drawable):
             for i in range(self.get_number_of_channels()):
                 tmp_y.append(other / numpy.array(self.y[i], dtype="Float64"))
 
-            r = ADC_Result(x = self.x, y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+            r = ADC_Result(x = self.x[:], y = tmp_y, index = self.index[:], sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
             self.lock.release()
         else:
             raise ValueError("ValueError: Cannot multiply \"%s\" to ADC-Result!") % str(other.__class__)
@@ -421,6 +421,6 @@ class ADC_Result(Resultable, Drawable):
         for i in range(self.get_number_of_channels()):
             tmp_y.append(numpy.array(-self.y[i]))
 
-        r = ADC_Result(x = numpy.array(self.x), y = tmp_y, index = self.index, sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
+        r = ADC_Result(x = self.x[:], y = tmp_y, index = self.index[:], sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
         self.lock.release()
         return r

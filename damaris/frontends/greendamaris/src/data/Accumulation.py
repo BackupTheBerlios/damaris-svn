@@ -407,6 +407,7 @@ class Accumulation(Errorable, Drawable):
         elif str(other.__class__) == "damaris.data.ADC_Result.ADC_Result":
 
             # Other empty (return)
+            # todo: this is seems to be bugy!!!! (Achim)
             if not other.contains_data(): return
 
             # Self empty (copy)
