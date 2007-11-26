@@ -72,7 +72,7 @@ from damaris.data import DataPool, Accumulation, ADC_Result, MeasurementResult
 debug=False
 
 # version info
-__version__="0.10"
+__version__="0.11-devel"
 
 class logstream:
     gui_log=None
@@ -264,19 +264,6 @@ class DamarisGUI:
 
         # get config values:
         actual_config = self.config.get()
-        if (not actual_config["start_backend"] and
-            not actual_config["start_result_script"] and
-            not actual_config["start_experiment_script"]):
-            return
-
-
-        # prepare to run
-        self.state=DamarisGUI.Run_State
-        self.sw.disable_editing()
-        self.toolbar_run_button.set_sensitive(False)
-        self.toolbar_stop_button.set_sensitive(True)
-        self.toolbar_pause_button.set_sensitive(True)
-        self.toolbar_pause_button.set_active(False)
 
         # get scripts and start script interface
         exp_script, res_script=self.sw.get_scripts()
@@ -287,6 +274,49 @@ class DamarisGUI:
         backend=actual_config["backend_executable"]
         if not actual_config["start_backend"]:
             backend=""
+
+        if (backend=="" and exp_script=="" and res_script==""):
+            print "nothing to do...so doing nothing!"
+            return
+
+        exp_code=None
+        # check whether scripts are syntacticaly valid
+        if exp_script!="":
+            try:
+                exp_code=compile(exp_script, "Experiment Script", "exec")
+            except SyntaxError, e:
+                print "Experiment script: %s at line %d, col %d:"%(e.__class__.__name__,e.lineno, e.offset)
+                if e.text!="":
+                    print "\"%s\""%e.text
+                    # print " "*(e.offset+1)+"^" # nice idea, but needs monospaced fonts
+                    pass
+                print e
+
+        res_code=None
+        if res_script!="":
+            try:
+                res_code=compile(res_script, "Result Script", "exec")
+            except SyntaxError, e:
+                print "Result script: %s at line %d, col %d:"%(e.__class__.__name__,e.lineno, e.offset)
+                if e.text!="":
+                    print "\"%s\""%e.text
+                    # print " "*(e.offset+1)+"^" # nice idea, but needs monospaced fonts
+                    pass
+                print e
+
+        # detect error
+        if (exp_script!="" and exp_code is None) or \
+           (res_script!="" and res_code is None):
+            self.main_notebook.set_current_page(DamarisGUI.Log_Display)
+            return
+
+        # prepare to run
+        self.state=DamarisGUI.Run_State
+        self.sw.disable_editing()
+        self.toolbar_run_button.set_sensitive(False)
+        self.toolbar_stop_button.set_sensitive(True)
+        self.toolbar_pause_button.set_sensitive(True)
+        self.toolbar_pause_button.set_active(False)
 
         # delete old data
         self.data = None
