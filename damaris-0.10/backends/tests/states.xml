@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<sequent repeat="3">
+  <state time="3e-3">
+   <ttlout value="4"/>
+   <ttlout channel="2" state="0"/>
+   <analogout channel="1" f="1e6" p="0"/>
+   <analogout channel="2" f="1e6" p="90"/>
+  </state>
+  <sequent repeat="15">
+    <state time="3e-3">
+     <ttlout value="7"/>
+     <analogout channel="1" f="1e6" p="0"/>
+     <analogout channel="2" f="1e6" p="90"/>
+    </state>
+  </sequent>
+</sequent>

@@ -1,0 +1,15 @@
+#! /bin/sh
+
+if grep nmr /etc/group >/dev/null; then
+     echo "group nmr already exists" ;
+else
+     echo "creating group nmr" ;
+     groupadd nmr || echo "failed!"
+fi
+
+find /usr/lib/damaris/backends -type f \
+\! -name dummycore \
+-exec chgrp nmr {} \; \
+-exec chmod u+s,o= {} \;
+
+#DEBHELPER#

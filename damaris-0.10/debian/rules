@@ -1,0 +1,167 @@
+#!/usr/bin/make -f
+
+# Achim Gaedke
+# May 2007
+
+# Uncomment this to turn on verbose mode. 
+export DH_VERBOSE=1
+BACKENDSBASE=$(shell pwd)/debian/damaris-backends
+BACKENDSMACHINES = \
+	dummycore.exe \
+	deuteron_backend.exe \
+	magnexgrad_backend \
+	magnexgrad_backend_dds \
+	PFGcore.exe \
+	bg_backend \
+	Mobilecore.exe \
+	Mobile_wo_sync_backend.exe
+
+tmp_kernel_makefiles = $(wildcard /lib/modules/*/build/Makefile)
+KERNELVERSIONS = $(tmp_kernel_makefiles:/lib/modules/%/build/Makefile=%)
+DEB_BUILD_ARCH=$(strip $(shell dpkg-architecture -qDEB_BUILD_ARCH))
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+
+# kernel related things... pulseblaster
+	(cd backends/drivers/SpinCore-PulseBlaster ; \
+	for i in $(KERNELVERSIONS); do \
+		echo $(DEB_BUILD_ARCH) $$i ;\
+		if test -e /usr/src/linux-headers-$$i/Makefile; then \
+			$(MAKE) -C /usr/src/linux-headers-$$i SUBDIRS=`pwd` clean modules; \
+			install -d ../pulseblaster-module/$$i ; \
+			mv pulseblaster.ko Module.symvers ../pulseblaster-module/$$i ;\
+		fi; \
+	done )
+# kernel related things... spectrum
+# SPC_SOURCE contains the path to spectrum module sources
+	if test -e $$SPC_SOURCE/Makefile; then \
+	(cd backends/drivers/Spectrum-MI40xxSeries ; \
+	for i in $(KERNELVERSIONS); do \
+		echo $(DEB_BUILD_ARCH) $$i ;\
+		if test -e /usr/src/linux-headers-$$i/Makefile; then \
+			$(MAKE) -C /usr/src/linux-headers-$$i SUBDIRS=$$SPC_SOURCE clean modules && \
+			install -d modules-$$i && \
+			mv $$SPC_SOURCE/spc*.ko $$SPC_SOURCE/Module.symvers modules-$$i ;\
+		fi; \
+	done ) \
+	fi
+
+# Add here commands to compile the package.
+	$(MAKE) CXXFLAGS=-O2 -C backends
+	$(MAKE) CXXFLAGS=-O2 -C backends/machines $(BACKENDSMACHINES)
+
+	touch build-stamp
+
+clean:
+	dh_testdir
+	dh_testroot
+	dh_installdirs
+
+# Add here commands to clean up after the build process.
+	-$(MAKE) -C backends clean
+	rm -f debian/damaris-backends.init
+	rm -rf backends/drivers/pulseblaster-module
+	rm -f build-stamp
+	dh_clean
+
+install:
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+
+# labview stuff goes here
+	(cd frontends ; \
+	find labview -type d \! -path "*/.svn*" -exec \
+	install -d "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; ; \
+	find labview -type f \! -path "*/.svn*" -iname "*.vi" -exec \
+	install "{}" "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; )
+
+# backend executables
+	dh_installdirs -pdamaris-backends usr/lib/damaris/backends ; \
+	for i in $(BACKENDSMACHINES); do \
+		if test -x "backends/machines/$$i" ; then \
+		  MACHINENAME="`echo $$i|sed 's/\.exe$$//'`" ; \
+		  if test "$$MACHINENAME" = "$$i"; then \
+		     dh_install -pdamaris-backends "backends/machines/$$i" "usr/lib/damaris/backends" ; \
+		  else \
+		     cp "backends/machines/$$i" "backends/machines/$$MACHINENAME" && \
+		     dh_install -pdamaris-backends "backends/machines/$$MACHINENAME" "usr/lib/damaris/backends" && \
+		     rm "backends/machines/$$MACHINENAME" ; \
+		  fi ; \
+		fi ; \
+	done;
+
+# compiled kernel modules
+	PBMODULES=`find backends/drivers/pulseblaster-module -type d`; \
+	for i in $$PBMODULES; do \
+		MODULESDIR=lib/modules/`basename $$i`/kernel/damaris ; \
+		test -f "$$i/pulseblaster.ko" && \
+		dh_installdirs -pdamaris-modules $$MODULESDIR && \
+		dh_install -pdamaris-modules "$$i/pulseblaster.ko" "$$MODULESDIR" ; \
+	done;
+
+# provided by Spectrum
+	for i in $(KERNELVERSIONS); do \
+		MODULESDIR=lib/modules/$$i/kernel/damaris ; \
+		MODULEBUILDDIR=backends/drivers/Spectrum-MI40xxSeries/modules-$$i ; \
+		if test \! -d $$MODULEBUILDDIR -a -e /$$MODULESDIR/*spc*.*o; then \
+			MODULEBUILDDIR=/$$MODULESDIR; \
+		fi; \
+		if test -d $$MODULEBUILDDIR ; then \
+			dh_installdirs -pdamaris-modules $$MODULESDIR ; \
+			find $$MODULEBUILDDIR -type f -name '*spc*.*o' \
+				 -exec dh_install -pdamaris-modules {} $$MODULESDIR \; ; \
+		fi ; \
+	done; true
+	dh_install
+
+# init script
+	cp backends/tools/nmr_drivers.sh debian/damaris-backends.init
+
+# Build architecture-independent files here.
+binary-indep: build install
+	dh_testdir -i
+	dh_testroot -i
+	dh_installchangelogs -i
+#	dh_pycentral -i
+	dh_installdocs -i
+	dh_installexamples -i
+#	dh_installmenu -i
+#	dh_installman -i
+	dh_link -i
+	dh_compress -i
+	dh_fixperms -i
+	dh_installdeb -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir -a
+	dh_testroot -a
+	dh_installchangelogs -a
+	dh_installdocs -a
+	dh_installexamples -a
+	dh_installinit -a -pdamaris-backends
+#	dh_installmenu -a
+#	dh_installman -a
+	dh_strip -a
+	dh_link -a
+	dh_compress -a
+	dh_fixperms -a 
+#	dh_makeshlibs -a
+	dh_installdeb -a
+	dh_shlibdeps -a
+# inform about kernel dependencies
+	(echo -n "linux-image:Depends="; for i in $(KERNELVERSIONS); do echo -n linux-image-$$i \|; done; echo)| \
+	sed 's/|$$//' >>debian/damaris-modules.substvars
+	dh_gencontrol -a
+	dh_md5sums -a
+	dh_builddeb -a
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install
