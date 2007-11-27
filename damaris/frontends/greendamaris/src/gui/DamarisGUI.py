@@ -266,6 +266,7 @@ class DamarisGUI:
         actual_config = self.config.get()
 
         # get scripts and start script interface
+        self.sw.disable_editing()
         exp_script, res_script=self.sw.get_scripts()
         if not actual_config["start_result_script"]:
             res_script=""
@@ -277,10 +278,12 @@ class DamarisGUI:
 
         if (backend=="" and exp_script=="" and res_script==""):
             print "nothing to do...so doing nothing!"
+            self.sw.enable_editing()
             return
 
-        exp_code=None
         # check whether scripts are syntacticaly valid
+        # should be merged with check script function
+        exp_code=None
         if exp_script!="":
             try:
                 exp_code=compile(exp_script, "Experiment Script", "exec")
@@ -308,11 +311,11 @@ class DamarisGUI:
         if (exp_script!="" and exp_code is None) or \
            (res_script!="" and res_code is None):
             self.main_notebook.set_current_page(DamarisGUI.Log_Display)
+            self.sw.enable_editing()
             return
 
         # prepare to run
         self.state=DamarisGUI.Run_State
-        self.sw.disable_editing()
         self.toolbar_run_button.set_sensitive(False)
         self.toolbar_stop_button.set_sensitive(True)
         self.toolbar_pause_button.set_sensitive(True)
@@ -326,8 +329,8 @@ class DamarisGUI:
         try:
             self.spool_dir=os.path.abspath(actual_config["spool_dir"])
             # setup script engines
-            self.si=ScriptInterface(exp_script,
-                                    res_script,
+            self.si=ScriptInterface(exp_code,
+                                    res_code,
                                     backend,
                                     self.spool_dir,
                                     clear_jobs=actual_config["del_jobs_after_execution"],
@@ -614,10 +617,11 @@ class DamarisGUI:
                 dump_file.disableUndo()
             # write scripts
             scriptgroup=dump_file.createGroup("/","scripts","Used Scripts")
+            exp_text, res_text=self.sw.get_scripts()
             if self.si.exp_script:
-                dump_file.createArray(scriptgroup,"experiment_script", self.si.exp_script)
+                dump_file.createArray(scriptgroup,"experiment_script", exp_text)
             if self.si.res_script:
-                dump_file.createArray(scriptgroup,"result_script", self.si.res_script)
+                dump_file.createArray(scriptgroup,"result_script", res_text)
             if self.si.backend_executable:
                 dump_file.createArray(scriptgroup,"backend_executable", self.si.backend_executable)
             if self.spool_dir:
@@ -912,6 +916,15 @@ class ScriptWidgets:
         self.experiment_script_column_indicator=self.xml_gui.get_widget("experiment_script_column_textfield")
         self.data_handling_line_indicator=self.xml_gui.get_widget("data_handling_line_textfield")
         self.data_handling_column_indicator=self.xml_gui.get_widget("data_handling_column_textfield")
+        # also listen to location values changed
+        self.xml_gui.signal_connect("on_data_handling_column_textfield_value_changed",
+                                    self.colum_line_widgets_changed_event)
+        self.xml_gui.signal_connect("on_data_handling_line_textfield_value_changed",
+                                    self.colum_line_widgets_changed_event)
+        self.xml_gui.signal_connect("on_experiment_script_line_textfield_value_changed",
+                                    self.colum_line_widgets_changed_event)
+        self.xml_gui.signal_connect("on_experiment_script_column_textfield_value_changed",
+                                    self.colum_line_widgets_changed_event)
 
         # some event handlers
         self.experiment_script_textbuffer.connect("modified-changed", self.textviews_modified)
@@ -1062,6 +1075,27 @@ class ScriptWidgets:
     def notebook_page_switched(self, notebook, page, pagenumber):
         self.set_toolbuttons_status()
 
+    def colum_line_widgets_changed_event(self, data=None):
+        widget_name=data.name
+        text_name=None
+        if widget_name.startswith("data_handling"):
+            text_name="data_handling"
+        elif widget_name.startswith("experiment_script"):
+            text_name="experiment_script"
+        else:
+            print "unknown line/column selector"
+            return
+        textview=self.__dict__[text_name+"_textview"]
+        newpos=[self.__dict__[text_name+"_line_indicator"].get_value_as_int(),
+                self.__dict__[text_name+"_column_indicator"].get_value_as_int()]
+        textbuffer=textview.get_buffer()
+        # todo: find out whether chang was issued by program or by user
+        #print newpos
+        # better checking: first version lead to abort
+        #new_place=textbuffer.get_iter_at_line_offset(newpos[0], newpos[1])
+        #textbuffer.place_cursor(new_place)
+        #textview.scroll_to_iter(new_place, 0.2, False, 0,0)
+
     def textviews_modified(self, data = None):
         # mix into toolbar affairs
         self.set_toolbuttons_status()
@@ -1073,12 +1107,13 @@ class ScriptWidgets:
         textbuffer=widget.get_buffer()
         cursor_mark=textbuffer.get_insert()
         cursor_iter=textbuffer.get_iter_at_mark(cursor_mark)
+        # todo limits! indicator.set_range(1, ...)
         if textbuffer==self.experiment_script_textbuffer:
-            self.experiment_script_line_indicator.set_text("%d"%(cursor_iter.get_line()+1))
-            self.experiment_script_column_indicator.set_text("%d"%(cursor_iter.get_line_offset()+1))
+            self.experiment_script_line_indicator.set_value(cursor_iter.get_line()+1)
+            self.experiment_script_column_indicator.set_value(cursor_iter.get_line_offset()+1)
         if textbuffer==self.data_handling_textbuffer:
-            self.data_handling_line_indicator.set_text("%d"%(cursor_iter.get_line()+1))
-            self.data_handling_column_indicator.set_text("%d"%(cursor_iter.get_line_offset()+1))
+            self.data_handling_line_indicator.set_value(cursor_iter.get_line()+1)
+            self.data_handling_column_indicator.set_value(cursor_iter.get_line_offset()+1)
         return False
 
     def textviews_keypress(self, widget, event, data = None):
@@ -2505,6 +2540,9 @@ class MonitorWidgets:
         fc.figure.set_edgecolor(orig_e_color)
         
 class ScriptInterface:
+    """
+    texts or code objects are executed as experiment and result script the backend is started with sufficient arguments
+    """
     
     def __init__(self, exp_script=None, res_script=None, backend_executable=None, spool_dir="spool", clear_jobs=True, clear_results=True):
         """
