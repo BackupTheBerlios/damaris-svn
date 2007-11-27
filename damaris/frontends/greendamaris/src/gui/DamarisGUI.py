@@ -918,13 +918,13 @@ class ScriptWidgets:
         self.data_handling_column_indicator=self.xml_gui.get_widget("data_handling_column_textfield")
         # also listen to location values changed
         self.xml_gui.signal_connect("on_data_handling_column_textfield_value_changed",
-                                    self.colum_line_widgets_changed_event)
+                                    self.column_line_widgets_changed_event)
         self.xml_gui.signal_connect("on_data_handling_line_textfield_value_changed",
-                                    self.colum_line_widgets_changed_event)
+                                    self.column_line_widgets_changed_event)
         self.xml_gui.signal_connect("on_experiment_script_line_textfield_value_changed",
-                                    self.colum_line_widgets_changed_event)
+                                    self.column_line_widgets_changed_event)
         self.xml_gui.signal_connect("on_experiment_script_column_textfield_value_changed",
-                                    self.colum_line_widgets_changed_event)
+                                    self.column_line_widgets_changed_event)
 
         # some event handlers
         self.experiment_script_textbuffer.connect("modified-changed", self.textviews_modified)
@@ -1075,7 +1075,7 @@ class ScriptWidgets:
     def notebook_page_switched(self, notebook, page, pagenumber):
         self.set_toolbuttons_status()
 
-    def colum_line_widgets_changed_event(self, data=None):
+    def column_line_widgets_changed_event(self, data=None):
         widget_name=data.name
         text_name=None
         if widget_name.startswith("data_handling"):
@@ -1086,15 +1086,21 @@ class ScriptWidgets:
             print "unknown line/column selector"
             return
         textview=self.__dict__[text_name+"_textview"]
-        newpos=[self.__dict__[text_name+"_line_indicator"].get_value_as_int(),
-                self.__dict__[text_name+"_column_indicator"].get_value_as_int()]
         textbuffer=textview.get_buffer()
+        newline=self.__dict__[text_name+"_line_indicator"].get_value_as_int()-1
+        #if newline>textbuffer.get_end_iter().get_line():
+        #    return
+        new_place=textbuffer.get_iter_at_line(newline)
+        newcol=self.__dict__[text_name+"_column_indicator"].get_value_as_int()-1
+        if newcol>new_place.get_chars_in_line():
+            new_place.forward_to_line_end()
+        else:
+            new_place.set_line_offset(newcol)
         # todo: find out whether chang was issued by program or by user
-        #print newpos
-        # better checking: first version lead to abort
-        #new_place=textbuffer.get_iter_at_line_offset(newpos[0], newpos[1])
-        #textbuffer.place_cursor(new_place)
-        #textview.scroll_to_iter(new_place, 0.2, False, 0,0)
+        
+        textbuffer.place_cursor(new_place)
+        textview.scroll_to_iter(new_place, 0.2, False, 0,0)
+        textview.grab_focus()
 
     def textviews_modified(self, data = None):
         # mix into toolbar affairs
@@ -1108,12 +1114,17 @@ class ScriptWidgets:
         cursor_mark=textbuffer.get_insert()
         cursor_iter=textbuffer.get_iter_at_mark(cursor_mark)
         # todo limits! indicator.set_range(1, ...)
+        # fortunately set_text does not emit a change value event
         if textbuffer==self.experiment_script_textbuffer:
-            self.experiment_script_line_indicator.set_value(cursor_iter.get_line()+1)
-            self.experiment_script_column_indicator.set_value(cursor_iter.get_line_offset()+1)
+            self.experiment_script_line_indicator.set_text(str(cursor_iter.get_line()+1))
+            self.experiment_script_line_indicator.set_range(1, textbuffer.get_end_iter().get_line()+1)
+            self.experiment_script_column_indicator.set_text(str(cursor_iter.get_line_offset()+1))
+            self.experiment_script_column_indicator.set_range(1,cursor_iter.get_chars_in_line()+1)
         if textbuffer==self.data_handling_textbuffer:
-            self.data_handling_line_indicator.set_value(cursor_iter.get_line()+1)
-            self.data_handling_column_indicator.set_value(cursor_iter.get_line_offset()+1)
+            self.data_handling_line_indicator.set_text(str(cursor_iter.get_line()+1))
+            self.data_handling_line_indicator.set_range(1, textbuffer.get_end_iter().get_line()+1)
+            self.data_handling_column_indicator.set_text(str(cursor_iter.get_line_offset()+1))
+            self.data_handling_column_indicator.set_range(1,cursor_iter.get_chars_in_line()+1)
         return False
 
     def textviews_keypress(self, widget, event, data = None):
@@ -1168,7 +1179,9 @@ class ScriptWidgets:
             cursor_iter=textbuffer.get_iter_at_mark(cursor_mark)
             if (cursor_iter.starts_line()):
                 # backspace with normal function at line start
-                if (event.keyval==0xFF08): return 0
+                if (event.keyval==0xFF08):
+                    self.textviews_moved(widget)
+                    return 0
             # now get iterator at line start
             linestart_iter=cursor_iter.copy()
             linestart_iter.set_line_offset(0)
