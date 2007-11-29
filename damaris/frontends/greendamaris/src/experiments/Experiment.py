@@ -1,5 +1,62 @@
 # -*- coding: ISO-8859-1 -*-
 
+
+class StateBase(object):
+	def __init__(self):
+		pass
+	def to_xml(self, indent = ""):
+		return indent + "<!-- " + repr(self) + " -->"
+
+class StateSimple(StateBase):
+	def __init__(self, time, content=None):
+		super(StateSimple, self).__init__()
+		if time < 0:
+			raise AssertionError("time for state is negative!")
+		self.time = time
+		self.content = content
+
+	def to_xml(self, indent = ""):
+		s = indent + '<state time="%s"' % repr(self.time)
+		if self.content is None:
+			return s + '/>\n'
+		s += '>\n'
+		s += indent + '  ' + str(self.content) + '\n'
+		s += indent + '</state>\n'
+		return s
+	def __repr__(self):
+		return 'StateSimple(%s, %s)' % (self.time, repr(self.content))
+
+class StateList(StateBase):
+	def __init__(self):
+		super(StateList, self).__init__()
+		self.list = []
+	def to_xml(self, indent = "  "):
+		s = ""
+		for k in self.list:
+			if hasattr(k, "to_xml"):
+				s += k.to_xml(indent)
+			else:
+				s += indent + str(k)
+		return s
+	def append(self, val):
+		self.list.append(val)
+
+
+class StateLoop(StateList):
+	"""Represents a loop in the state tree"""
+	def __init__(self, repeat):
+		super(StateLoop, self).__init__()
+		self.repeat = repeat
+	def to_xml(self, indent = ""):
+		s = indent + ('<sequent repeat="%d">\n' % self.repeat)
+		s += super(StateLoop, self).to_xml(indent + "  ")
+		s += indent + '</sequent>\n'
+		return s
+	def __repr__(self):
+		return 'StateLoop(repeat=%d, %s)' \
+			% (self.repeat, repr(self.list))
+
+
 #############################################################
 #                                                           #
 # Class: Experiment                                         #
@@ -18,19 +75,20 @@ class Experiment:
         self.job_id = Experiment.job_id
         Experiment.job_id += 1
 
-        self.state_list = []
+        self.state_list = StateList()
+        self.list_stack = []
         self.description = { }
 
 
     # Commands -------------------------------------------------------------------------------------
 
     def rf_pulse(self, channel, length = None):
+        s_content = '<ttlout value="0x%06x"/>' % channel
+
         if length is None:
-            self.state_list.append('<ttlout value="0x%06x"/>\n' % channel)
-
+            self.state_list.append(s_content)
         else:
-            self.state_list.append('<state time="%s"><ttlout value="0x%06x"/></state>\n' % (repr(length), channel))
-
+            self.state_list.append(StateSimple(length, s_content))
 
     def ttl_pulse(self, length, channel = None, value = None):
         the_value=0
@@ -38,7 +96,8 @@ class Experiment:
             the_value=int(value)
         elif channel is not None:
             the_value=1<<channel
-        self.state_list.append('<state time="%s"><ttlout value="0x%06x"/></state>\n' % (repr(length), the_value))
+        self.state_list.append(StateSimple(length, \
+            '<ttlout value="0x%06x"/>' % the_value))
 
     def state_start(self, time):
         self.state_list.append('<state time="%s">\n' % repr(time))
@@ -49,33 +108,38 @@ class Experiment:
 
 
     def wait(self, time):
-        self.state_list.append('<state time="%s"/>\n' % repr(time))
+        self.state_list.append(StateSimple(time))
 
 
     def record(self, samples, frequency, timelength=None, sensitivity=None):
         attributes='s="%d" f="%g"'%(samples,frequency)
         if sensitivity is not None:
             attributes+=' sensitivity="%f"'%sensitivity
+        s_content = '<analogin %s/>' % attributes
         if timelength is None:
-            self.state_list.append('<state time="%s"><analogin %s/></state>\n' % (repr(samples / float(frequency)*1.01), attributes))
-        else:
-            self.state_list.append('<state time="%s"><analogin %s/></state>\n' %(repr(timelength), attributes))
+            timelength = samples / float(frequency)*1.01
+        self.state_list.append(StateSimple(timelength, s_content))
 
 
     def loop_start(self, iterations):
-        self.state_list.append('<sequent repeat="%d">\n' % iterations)
+        l = StateLoop(iterations)
+        self.state_list.append(l)
+        # (These two lines could probably be guarded by a mutex)
+        self.list_stack.append(self.state_list)
+        self.state_list = l
 
 
     def loop_end(self):
-        self.state_list.append('</sequent>\n')
+        # (This line could probably be guarded by a mutex)
+        self.state_list = self.list_stack.pop(-1)
 
 
     def set_frequency(self, frequency, phase, ttls=0):
         "Sets the frequency generator to a desired frequency (Hz)"
-        if ttls==0:
-            self.state_list.append('<state time="2e-6"><analogout id="0" f="%f" phase="%f"/></state>\n' % (frequency, phase))
-        else:
-            self.state_list.append('<state time="2e-6"><analogout id="0" f="%f" phase="%f"/><ttlout value="%d"/></state>\n' % (frequency, phase, ttls))
+        s_content = '<analogout id="0" f="%f" phase="%f"/>' % (frequency, phase)
+        if ttls != 0:
+            s_content += '<ttlout value="0x%06x"/>' % ttls
+        self.state_list.append(StateSimple(2e-6, s_content))
     
     def set_pfg(self, I_out=None, dac_value=None, length=None, is_seq=0):
 	"""This sets the value for the PFG, it also sets it back automatically.
@@ -93,9 +157,11 @@ class Experiment:
 	if length == None:
 	    # mimimum length
 	    length=42*9e-8
-	self.state_list.append('<state time="%s"><analogout id="1" dac_value="%i"/></state>\n' %(repr(length), dac_value))
+	s_content = '<analogout id="1" dac_value="%i"/>' % dac_value
+	self.state_list.append(StateSimple(length, s_content))
 	if is_seq == 0:
-	    self.state_list.append('<state time="%s"><analogout id="1" dac_value="0"/></state>\n' %(repr(42*9e-8)) )
+	    s_content = '<analogout id="1" dac_value="0"/>'
+	    self.state_list.append(StateSimple(42*9e-8, s_content))
  
     def set_pfg_wt(self, I_out=None, dac_value=None, length=None, is_seq=0, trigger=4):
 	"""This sets the value for the PFG (plus trigger, default=2**2), it also sets it back automatically.
@@ -111,16 +177,20 @@ class Experiment:
 	    print "WARNING: You can't set both, I_out and dac_value! dac_value set to 0"
 	if length==None:
 	    length=42*9e-8
-	self.state_list.append('<state time="%s"><analogout id="1" dac_value="%i"/><ttlout value="%s"/></state>\n' %(repr(length), dac_value, trigger))
+	s_content = '<analogout id="1" dac_value="%i"/><ttlout value="%s"/>' \
+	    % (dac_value, trigger)
+	self.state_list.append(StateSimple(length, s_content))
 	if is_seq == 0:
-	    self.state_list.append('<state time="%s"><analogout id="1" dac_value="0"/><ttlout value="%s"/></state>\n' %(repr(42*9e-8),trigger) )
+	    s_content = '<analogout id="1" dac_value="0"/><ttlout value="%s"/>' \
+	        % trigger
+	    self.state_list.append(StateSimple(42*9e-8, s_content))
 
 
     def set_phase(self, phase, ttls=0):
-        if ttls==0:
-            self.state_list.append('<state time="0.5e-6"><analogout phase="%f" /></state>\n' % (phase))
-        else:
-            self.state_list.append('<state time="0.5e-6"><analogout phase="%f" /><ttlout value="%d"/></state>\n' % (phase,ttls))
+        s_content = '<analogout phase="%f" />' % (phase)
+        if ttls!=0:
+            s_content += '<ttlout value="%d"/>' % ttls
+        self.state_list.append(StateSimple(0.5e-6, s_content))
         
 
     def set_description(self, key, value):
@@ -129,9 +199,11 @@ class Experiment:
             print 'Warning: Overwriting existing description "%s" = "%s" with "%s"' % (key, self.description[key], value)
 
         self.description[key] = value
+
     def set_pts_local(self):
-	self.state_list.append('<state time="1e-6"><ttlout value="0xf000"/></state>\n')
-	self.state_list.append('<state time="1e-6"><ttlout value="0x8000"/></state>\n')
+	self.state_list.append(StateSimple(1e-6, '<ttlout value="0xf000"/>'))
+	self.state_list.append(StateSimple(1e-6, '<ttlout value="0x8000"/>'))
+
     # / Commands -----------------------------------------------------------------------------------
 
 
@@ -153,18 +225,17 @@ class Experiment:
 
         # Descriptions einfügen
         if len(self.description) is 0:
-            xml_string += '<description/>\n'
+            xml_string += '  <description/>\n'
         else:
-            xml_string += '<description'
+            xml_string += '  <description\n'
 
             for key in self.description.keys():
-                xml_string += ' %s="%s"' % (key, str(self.description[key]))
+                xml_string += '    %s="%s"\n' % (key, str(self.description[key]))
 
-            xml_string += "/>\n"
+            xml_string += "  />\n"
 
         # Experiment-Inhalt einfügen
-        for string in self.state_list:
-            xml_string += string
+        xml_string += self.state_list.to_xml(indent = "  ")
 
         # Experiment-End-Tag
         xml_string += '</experiment>\n'
@@ -257,7 +328,7 @@ def self_test():
 	except AssertionError:
 		pass
 	else:
-		pass # raise AssertionError("An exception should happen")
+		raise AssertionError("An exception should happen")
 	e.set_pts_local()
 	print e.write_xml_string()
 
