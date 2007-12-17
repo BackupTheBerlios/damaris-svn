@@ -151,10 +151,10 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
                               isinstance(UserDict.UserDict.__getitem__(self,key), AccumulatedValue)) or
                  type(UserDict.UserDict.__getitem__(self,key)) is types.FloatType,
                  k)
-        k=numpy.array(k, dtype="Float32")
+        k=numpy.array(k, dtype="Float64")
         k.sort()
-        v=numpy.array(map(lambda key: UserDict.UserDict.__getitem__(self,key).mean(),k), dtype="Float32")
-        e=numpy.array(map(lambda key: UserDict.UserDict.__getitem__(self,key).mean_sigma(),k), dtype="Float32")
+        v=numpy.array(map(lambda key: UserDict.UserDict.__getitem__(self,key).mean(),k), dtype="Float64")
+        e=numpy.array(map(lambda key: UserDict.UserDict.__getitem__(self,key).mean_sigma(),k), dtype="Float64")
         return [k,v,e]
 
     def uses_statistics(self):
