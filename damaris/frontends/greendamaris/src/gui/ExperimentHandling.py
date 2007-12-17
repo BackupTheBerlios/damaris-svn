@@ -23,6 +23,8 @@ class ExperimentHandling(threading.Thread):
     def synchronize(self, before=0, waitsteps=0.1):
         while (self.data["__recentexperiment"]>self.data["__recentresult"]+before) and not self.quit_flag.isSet():
             self.quit_flag.wait(waitsteps)
+        if self.quit_flag.isSet():
+            raise StopIteration
 
     def run(self):
         dataspace={}

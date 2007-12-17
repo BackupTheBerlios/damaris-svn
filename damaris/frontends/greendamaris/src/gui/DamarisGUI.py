@@ -1856,7 +1856,7 @@ class MonitorWidgets:
 
         # Display footer:
         self.display_x_scaling_combobox = self.xml_gui.get_widget("display_x_scaling_combobox")
-        self.display_x_scaling_combobox.set_sensitive(False)
+        self.display_x_scaling_combobox.set_sensitive(True)
         self.display_y_scaling_combobox = self.xml_gui.get_widget("display_y_scaling_combobox")
         self.display_y_scaling_combobox.set_sensitive(False)
         self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
@@ -1915,7 +1915,7 @@ class MonitorWidgets:
         # display scaling: ToDo enable scaling
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
-        self.display_x_scaling_combobox.set_sensitive(False)
+        self.display_x_scaling_combobox.set_sensitive(True)
         self.display_y_scaling_combobox.set_sensitive(False)
 
         # and events...
@@ -2206,7 +2206,7 @@ class MonitorWidgets:
             new_data_struct=self.data_pool[new_data_name]
             if hasattr(new_data_struct, "register_listener"):
                 new_data_struct.register_listener(self.datastructures_listener)
-            self.displayed_data=[new_data_name,new_data_struct]
+            self.displayed_data=[new_data_name, new_data_struct]
             dirpart=new_data_name.rfind("/")
             if dirpart>=0:
                 self.display_source_path_label.set_label(u"in "+new_data_name[:dirpart])
@@ -2215,6 +2215,7 @@ class MonitorWidgets:
             self.renew_display()
 
     def display_autoscaling_toggled(self, widget, data=None):
+        self.matplot_axes.set_autoscale_on(self.display_autoscaling_checkbutton.get_active())
         if self.displayed_data[0] is not None:
             self.update_display(self.displayed_data[0][:])
 
@@ -2295,6 +2296,8 @@ class MonitorWidgets:
             self.matplot_axes.lines.remove(self.measurementresultgraph[0])
             for l in self.measurementresultgraph[1]:
                 self.matplot_axes.lines.remove(l)
+            for l in self.measurementresultgraph[2]:
+                self.matplot_axes.collections.remove(l)
             self.measurementresultgraph=None
             self.matplot_axes.clear()
             self.matplot_axes.grid(True)
@@ -2337,7 +2340,7 @@ class MonitorWidgets:
                 self.display_y_scaling_combobox.set_sensitive(False)
                 self.display_y_scaling_combobox.set_active(0)
             else:
-                self.display_y_scaling_combobox.set_sensitive(True)   
+                self.display_y_scaling_combobox.set_sensitive(False)
 
 
             # Initial rescaling needed?
@@ -2421,7 +2424,6 @@ class MonitorWidgets:
             else:
                 self.matplot_axes.set_title("")
 
-
             # Any labels to be set?
             if in_result.get_xlabel() is not None:
                 self.matplot_axes.set_xlabel(in_result.get_xlabel())
@@ -2442,23 +2444,34 @@ class MonitorWidgets:
             # remove lines and error bars
             if self.measurementresultgraph is not None:
                 self.matplot_axes.lines.remove(self.measurementresultgraph[0])
+                # remove caps
                 for l in self.measurementresultgraph[1]:
                     self.matplot_axes.lines.remove(l)
+                # and columns
+                for l in self.measurementresultgraph[2]:
+                    self.matplot_axes.collections.remove(l)
                 self.measurementresultgraph=None
 
             [k,v,e]=in_result.get_errorplotdata()
             # Initial rescaling needed?
+            xmin=xmax=0
+            if len(k):
+                xmin=k.min()
+                xmax=k.max()
             if self.__rescale or self.display_autoscaling_checkbutton.get_active():
                 if len(k):
-                    xmin=min(k)
-                    xmax=max(k)
-                    # fix range and scaling problems
-                    if xmin==xmax: (xmin,xmax)=(xmin-1, xmin+1)
-                    ymin=min(map(lambda i:v[i]-e[i],xrange(len(v))))
-                    ymax=max(map(lambda i:v[i]+e[i],xrange(len(v))))
-                    # fix range and scaling problems
-                    if ymin==ymax: (ymin,ymax)=(ymin-1,ymin+1)
-                    self.__rescale = False
+                    ymin=(v-e).min()
+                    ymax=(v+e).max()
+                    # is there a range problem?
+                    if xmin==xmax or ymin==ymax:
+                        self.__rescale=True
+                        # fix range and scaling problems
+                        if xmin==xmax:
+                            (xmin,xmax)=(xmin-1, xmin+1)
+                        if ymin==ymax:
+                            (ymin,ymax)=(ymin-1,ymin+1)
+                    else:
+                        self.__rescale=False
                 else:
                     xmin=-1
                     xmax=1
@@ -2469,9 +2482,24 @@ class MonitorWidgets:
                 self.matplot_axes.set_xlim(xmin, xmax)
                 self.matplot_axes.set_ylim(ymin, ymax)
 
-            # add error bars
+            if xmin>0:
+                self.display_x_scaling_combobox.set_sensitive(True)
+            else:
+                self.display_x_scaling_combobox.set_sensitive(False)
+                self.display_x_scaling_combobox.set_active(0)
+
+            # decide about x log plot
+            x_scale=self.display_x_scaling_combobox.get_active_text()
+            if x_scale=="log" and xmin>0:
+                self.matplot_axes.set_xscale("log", basex=numpy.e)
+            elif x_scale=="log10" and xmin>0:
+                self.matplot_axes.set_xscale("log", basex=10.0)
+            else:
+                self.matplot_axes.set_xscale("linear")
+
+            # error bar plots
             self.measurementresultgraph=self.matplot_axes.errorbar(x=k, y=v, yerr=e, fmt="b+")
-            k=v=e=None
+            del k,v,e
 
             # Any title to be set?
             title=in_result.get_title()+""

@@ -15,113 +15,8 @@
         <property name="n_rows">3</property>
         <property name="n_columns">1</property>
         <child>
-          <widget class="GtkTable" id="statusbar_table">
-            <property name="visible">True</property>
-            <property name="n_rows">1</property>
-            <property name="n_columns">8</property>
-            <child>
-              <widget class="GtkVSeparator" id="vseparator1">
-                <property name="visible">True</property>
-              </widget>
-              <packing>
-                <property name="left_attach">6</property>
-                <property name="right_attach">7</property>
-                <property name="x_options"></property>
-                <property name="x_padding">5</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkVSeparator" id="statusbar_separator1">
-                <property name="visible">True</property>
-              </widget>
-              <packing>
-                <property name="x_options"></property>
-                <property name="x_padding">3</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkVSeparator" id="vseparator2">
-                <property name="visible">True</property>
-              </widget>
-              <packing>
-                <property name="left_attach">4</property>
-                <property name="right_attach">5</property>
-                <property name="x_options"></property>
-                <property name="x_padding">5</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkVSeparator" id="statusbar_separator2">
-                <property name="visible">True</property>
-              </widget>
-              <packing>
-                <property name="left_attach">2</property>
-                <property name="right_attach">3</property>
-                <property name="x_options"></property>
-                <property name="x_padding">5</property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkLabel" id="statusbar_core_label">
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">Backend: Idle.</property>
-              </widget>
-              <packing>
-                <property name="left_attach">3</property>
-                <property name="right_attach">4</property>
-                <property name="x_options"></property>
-                <property name="y_options"></property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkLabel" id="statusbar_experiment_script_label">
-                <property name="height_request">20</property>
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">Experiment Script: Idle.</property>
-              </widget>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="right_attach">2</property>
-                <property name="x_options"></property>
-                <property name="y_options"></property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkLabel" id="statusbar_data_handling_label">
-                <property name="visible">True</property>
-                <property name="label" translatable="yes">Result Script: Idle.</property>
-              </widget>
-              <packing>
-                <property name="left_attach">5</property>
-                <property name="right_attach">6</property>
-                <property name="x_options"></property>
-                <property name="y_options"></property>
-              </packing>
-            </child>
-            <child>
-              <widget class="GtkLabel" id="label33">
-                <property name="visible">True</property>
-                <property name="xalign">0</property>
-                <property name="label" translatable="yes"> </property>
-              </widget>
-              <packing>
-                <property name="left_attach">7</property>
-                <property name="right_attach">8</property>
-                <property name="y_options"></property>
-              </packing>
-            </child>
-          </widget>
-          <packing>
-            <property name="top_attach">2</property>
-            <property name="bottom_attach">3</property>
-            <property name="x_options">GTK_FILL</property>
-            <property name="y_options"></property>
-          </packing>
-        </child>
-        <child>
           <widget class="GtkToolbar" id="main_toolbar">
             <property name="visible">True</property>
-            <property name="toolbar_style">GTK_TOOLBAR_BOTH</property>
             <child>
               <widget class="GtkToolButton" id="toolbar_new_button">
                 <property name="visible">True</property>
@@ -222,7 +117,6 @@
             <child>
               <widget class="GtkSeparatorToolItem" id="toolbutton2">
                 <property name="visible">True</property>
-                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -303,7 +197,6 @@
             <child>
               <widget class="GtkSeparatorToolItem" id="toolbutton1">
                 <property name="visible">True</property>
-                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
               </widget>
               <packing>
                 <property name="expand">False</property>
@@ -313,9 +206,9 @@
             <child>
               <widget class="GtkMenuToolButton" id="documentation">
                 <property name="visible">True</property>
-                <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
                 <property name="tooltip" translatable="yes">This progam's documentation</property>
                 <property name="label" translatable="yes">Help</property>
+                <property name="use_underline">True</property>
                 <property name="stock_id">gtk-info</property>
                 <property name="menu">documentation_menu</property>
                 <signal name="clicked" handler="on_toolbar_manual_button_clicked"/>
@@ -402,9 +295,8 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                    <property name="max_length">5</property>
-                    <property name="width_chars">5</property>
                     <property name="adjustment">1 1 1 1 10 10</property>
+                    <property name="climb_rate">1</property>
                     <property name="numeric">True</property>
                     <signal name="value_changed" handler="on_experiment_script_line_textfield_value_changed"/>
                   </widget>
@@ -422,9 +314,8 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                    <property name="max_length">5</property>
-                    <property name="width_chars">5</property>
                     <property name="adjustment">1 1 1 1 10 10</property>
+                    <property name="climb_rate">1</property>
                     <property name="snap_to_ticks">True</property>
                     <property name="numeric">True</property>
                     <signal name="value_changed" handler="on_experiment_script_column_textfield_value_changed"/>
@@ -518,9 +409,8 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                    <property name="max_length">5</property>
-                    <property name="width_chars">5</property>
                     <property name="adjustment">1 1 1 1 10 10</property>
+                    <property name="climb_rate">1</property>
                     <property name="numeric">True</property>
                     <signal name="value_changed" handler="on_data_handling_line_textfield_value_changed"/>
                   </widget>
@@ -538,9 +428,8 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                    <property name="max_length">5</property>
-                    <property name="width_chars">5</property>
                     <property name="adjustment">1 1 1 1 10 10</property>
+                    <property name="climb_rate">1</property>
                     <property name="numeric">True</property>
                     <signal name="value_changed" handler="on_data_handling_column_textfield_value_changed"/>
                   </widget>
@@ -608,59 +497,6 @@
                   <placeholder/>
                 </child>
                 <child>
-                  <widget class="GtkButton" id="display_save_data_as_text_button">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="tooltip" translatable="yes">Save figure as text</property>
-                    <property name="response_id">0</property>
-                    <signal name="clicked" handler="on_display_save_data_as_text_button_clicked"/>
-                    <child>
-                      <widget class="GtkAlignment" id="alignment7">
-                        <property name="visible">True</property>
-                        <property name="xscale">0</property>
-                        <property name="yscale">0</property>
-                        <child>
-                          <widget class="GtkHBox" id="hbox18">
-                            <property name="visible">True</property>
-                            <property name="spacing">2</property>
-                            <child>
-                              <widget class="GtkImage" id="image7">
-                                <property name="visible">True</property>
-                                <property name="stock">gtk-justify-fill</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">False</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <widget class="GtkLabel" id="label67">
-                                <property name="visible">True</property>
-                                <property name="xpad">10</property>
-                                <property name="label" translatable="yes">Save as text</property>
-                                <property name="use_underline">True</property>
-                              </widget>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">False</property>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                          </widget>
-                        </child>
-                      </widget>
-                    </child>
-                  </widget>
-                  <packing>
-                    <property name="left_attach">5</property>
-                    <property name="right_attach">6</property>
-                    <property name="top_attach">1</property>
-                    <property name="bottom_attach">2</property>
-                    <property name="x_options">GTK_FILL</property>
-                    <property name="y_options">GTK_FILL</property>
-                  </packing>
-                </child>
-                <child>
                   <widget class="GtkFrame" id="frame1">
                     <property name="visible">True</property>
                     <property name="border_width">1</property>
@@ -708,8 +544,10 @@
                             <child>
                               <widget class="GtkComboBox" id="display_y_scaling_combobox">
                                 <property name="visible">True</property>
+                                <property name="focus_on_click">False</property>
                                 <property name="items" translatable="yes">lin
-log</property>
+log
+log10</property>
                                 <signal name="changed" handler="on_display_y_scaling_combobox_changed"/>
                               </widget>
                               <packing>
@@ -740,8 +578,10 @@ log</property>
                             <child>
                               <widget class="GtkComboBox" id="display_x_scaling_combobox">
                                 <property name="visible">True</property>
+                                <property name="focus_on_click">False</property>
                                 <property name="items" translatable="yes">lin
-log</property>
+log
+log10</property>
                                 <signal name="changed" handler="on_display_x_scaling_combobox_changed"/>
                               </widget>
                               <packing>
@@ -849,6 +689,58 @@ log</property>
                     <property name="y_options"></property>
                     <property name="x_padding">2</property>
                     <property name="y_padding">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <widget class="GtkButton" id="display_save_data_as_text_button">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="tooltip" translatable="yes">Save figure as text</property>
+                    <property name="response_id">0</property>
+                    <signal name="clicked" handler="on_display_save_data_as_text_button_clicked"/>
+                    <child>
+                      <widget class="GtkAlignment" id="alignment7">
+                        <property name="visible">True</property>
+                        <property name="xscale">0</property>
+                        <property name="yscale">0</property>
+                        <child>
+                          <widget class="GtkHBox" id="hbox18">
+                            <property name="visible">True</property>
+                            <property name="spacing">2</property>
+                            <child>
+                              <widget class="GtkImage" id="image7">
+                                <property name="visible">True</property>
+                                <property name="stock">gtk-justify-fill</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">False</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <widget class="GtkLabel" id="label67">
+                                <property name="visible">True</property>
+                                <property name="xpad">10</property>
+                                <property name="label" translatable="yes">Save as text</property>
+                                <property name="use_underline">True</property>
+                              </widget>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </widget>
+                        </child>
+                      </widget>
+                    </child>
+                  </widget>
+                  <packing>
+                    <property name="left_attach">5</property>
+                    <property name="right_attach">6</property>
+                    <property name="top_attach">1</property>
+                    <property name="bottom_attach">2</property>
+                    <property name="x_options"></property>
+                    <property name="y_options">GTK_FILL</property>
                   </packing>
                 </child>
               </widget>
@@ -1011,6 +903,7 @@ log</property>
                               <widget class="GtkEntry" id="backend_executable_entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="invisible_char">*</property>
                                 <property name="text" translatable="yes">backend</property>
                               </widget>
                               <packing>
@@ -1054,6 +947,7 @@ log</property>
                               <widget class="GtkEntry" id="spool_dir_entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="invisible_char">*</property>
                                 <property name="text" translatable="yes">spool</property>
                               </widget>
                               <packing>
@@ -1098,6 +992,7 @@ log</property>
                               <widget class="GtkEntry" id="entry7">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
+                                <property name="invisible_char">*</property>
                                 <property name="text" translatable="yes">logdata</property>
                               </widget>
                               <packing>
@@ -1128,6 +1023,7 @@ log</property>
                                 <property name="can_focus">True</property>
                                 <property name="editable">False</property>
                                 <property name="max_length">4</property>
+                                <property name="invisible_char">*</property>
                                 <property name="width_chars">3</property>
                                 <property name="text" translatable="yes">10</property>
                               </widget>
@@ -1265,6 +1161,7 @@ log</property>
                           <widget class="GtkEntry" id="data_pool_name_entry">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
+                            <property name="invisible_char">*</property>
                             <property name="text" translatable="yes">DAMARIS_data_pool.h5</property>
                           </widget>
                           <packing>
@@ -1294,6 +1191,7 @@ log</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="max_length">10</property>
+                            <property name="invisible_char">*</property>
                             <property name="width_chars">10</property>
                             <property name="text" translatable="yes">60</property>
                           </widget>
@@ -1993,6 +1891,110 @@ Public License instead of this License.
             <property name="bottom_attach">2</property>
           </packing>
         </child>
+        <child>
+          <widget class="GtkTable" id="statusbar_table">
+            <property name="visible">True</property>
+            <property name="n_rows">1</property>
+            <property name="n_columns">8</property>
+            <child>
+              <widget class="GtkVSeparator" id="vseparator1">
+                <property name="visible">True</property>
+              </widget>
+              <packing>
+                <property name="left_attach">6</property>
+                <property name="right_attach">7</property>
+                <property name="x_options"></property>
+                <property name="x_padding">5</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkVSeparator" id="statusbar_separator1">
+                <property name="visible">True</property>
+              </widget>
+              <packing>
+                <property name="x_options"></property>
+                <property name="x_padding">3</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkVSeparator" id="vseparator2">
+                <property name="visible">True</property>
+              </widget>
+              <packing>
+                <property name="left_attach">4</property>
+                <property name="right_attach">5</property>
+                <property name="x_options"></property>
+                <property name="x_padding">5</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkVSeparator" id="statusbar_separator2">
+                <property name="visible">True</property>
+              </widget>
+              <packing>
+                <property name="left_attach">2</property>
+                <property name="right_attach">3</property>
+                <property name="x_options"></property>
+                <property name="x_padding">5</property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="statusbar_core_label">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Backend: Idle.</property>
+              </widget>
+              <packing>
+                <property name="left_attach">3</property>
+                <property name="right_attach">4</property>
+                <property name="x_options"></property>
+                <property name="y_options"></property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="statusbar_experiment_script_label">
+                <property name="height_request">20</property>
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Experiment Script: Idle.</property>
+              </widget>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="right_attach">2</property>
+                <property name="x_options"></property>
+                <property name="y_options"></property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="statusbar_data_handling_label">
+                <property name="visible">True</property>
+                <property name="label" translatable="yes">Result Script: Idle.</property>
+              </widget>
+              <packing>
+                <property name="left_attach">5</property>
+                <property name="right_attach">6</property>
+                <property name="x_options"></property>
+                <property name="y_options"></property>
+              </packing>
+            </child>
+            <child>
+              <widget class="GtkLabel" id="label33">
+                <property name="visible">True</property>
+                <property name="xalign">0</property>
+                <property name="label" translatable="yes"> </property>
+              </widget>
+              <packing>
+                <property name="left_attach">7</property>
+                <property name="right_attach">8</property>
+                <property name="y_options"></property>
+              </packing>
+            </child>
+          </widget>
+          <packing>
+            <property name="top_attach">2</property>
+            <property name="bottom_attach">3</property>
+            <property name="x_options">GTK_FILL</property>
+            <property name="y_options"></property>
+          </packing>
+        </child>
       </widget>
     </child>
   </widget>
@@ -2002,7 +2004,6 @@ Public License instead of this License.
     <child>
       <widget class="GtkMenuItem" id="python_damaris_doc_menu">
         <property name="visible">True</property>
-        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
         <property name="tooltip" translatable="yes">This program's documentation</property>
         <property name="label" translatable="yes">Python DAMARIS</property>
         <property name="use_underline">True</property>
@@ -2012,7 +2013,6 @@ Public License instead of this License.
     <child>
       <widget class="GtkMenuItem" id="damaris_homepage_doc_menu">
         <property name="visible">True</property>
-        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
         <property name="tooltip" translatable="yes">DArmstadt MAgnetic Resonance Instrument Homepage</property>
         <property name="label" translatable="yes">DAMARIS Homepage</property>
         <property name="use_underline">True</property>
@@ -2023,15 +2023,11 @@ Public License instead of this License.
       <widget class="GtkSeparatorMenuItem" id="----------------------">
         <property name="height_request">2</property>
         <property name="visible">True</property>
-        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-        <property name="label" translatable="yes">menuitem1</property>
-        <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="python_doc_menu">
         <property name="visible">True</property>
-        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
         <property name="tooltip" translatable="yes">Python scripting Language</property>
         <property name="label" translatable="yes">Python</property>
         <property name="use_underline">True</property>
@@ -2041,7 +2037,6 @@ Public License instead of this License.
     <child>
       <widget class="GtkMenuItem" id="numpy_doc_menu">
         <property name="visible">True</property>
-        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
         <property name="tooltip" translatable="yes">Array and Numeric Processing Support</property>
         <property name="label" translatable="yes">numpy</property>
         <property name="use_underline">True</property>
@@ -2051,7 +2046,6 @@ Public License instead of this License.
     <child>
       <widget class="GtkMenuItem" id="scipy_doc_menu">
         <property name="visible">True</property>
-        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
         <property name="tooltip" translatable="yes">Scientific Data Processing Support</property>
         <property name="label" translatable="yes">scipy</property>
         <property name="use_underline">True</property>
@@ -2061,7 +2055,6 @@ Public License instead of this License.
     <child>
       <widget class="GtkMenuItem" id="pytables_doc_menu">
         <property name="visible">True</property>
-        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
         <property name="tooltip" translatable="yes">Hierachical Data Format Support</property>
         <property name="label" translatable="yes">pytables</property>
         <property name="use_underline">True</property>
@@ -2072,15 +2065,11 @@ Public License instead of this License.
       <widget class="GtkSeparatorMenuItem" id="----------------------">
         <property name="height_request">2</property>
         <property name="visible">True</property>
-        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-        <property name="label" translatable="yes">menuitem2</property>
-        <property name="use_underline">True</property>
       </widget>
     </child>
     <child>
       <widget class="GtkMenuItem" id="backend_doc_menu">
         <property name="visible">True</property>
-        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
         <property name="tooltip" translatable="yes">(developer's stuff)</property>
         <property name="label" translatable="yes">DAMARIS Backends</property>
         <property name="use_underline">True</property>
@@ -2090,7 +2079,6 @@ Public License instead of this License.
     <child>
       <widget class="GtkMenuItem" id="repository_doc_menu">
         <property name="visible">True</property>
-        <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
         <property name="tooltip" translatable="yes">(developers' stuff)</property>
         <property name="label" translatable="yes">DAMARIS Repository</property>
         <property name="use_underline">True</property>

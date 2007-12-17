@@ -3,6 +3,7 @@ import math
 import types
 import sys
 import tables
+import numpy
 import exceptions
 import UserDict
 import Drawable
@@ -150,9 +151,10 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
                               isinstance(UserDict.UserDict.__getitem__(self,key), AccumulatedValue)) or
                  type(UserDict.UserDict.__getitem__(self,key)) is types.FloatType,
                  k)
+        k=numpy.array(k, dtype="Float32")
         k.sort()
-        v=map(lambda key: UserDict.UserDict.__getitem__(self,key).mean(),k)
-        e=map(lambda key: UserDict.UserDict.__getitem__(self,key).mean_sigma(),k)
+        v=numpy.array(map(lambda key: UserDict.UserDict.__getitem__(self,key).mean(),k), dtype="Float32")
+        e=numpy.array(map(lambda key: UserDict.UserDict.__getitem__(self,key).mean_sigma(),k), dtype="Float32")
         return [k,v,e]
 
     def uses_statistics(self):
