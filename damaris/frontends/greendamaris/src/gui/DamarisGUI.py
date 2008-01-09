@@ -8,7 +8,6 @@ import codecs
 import os.path
 import traceback
 import tables
-import compiler
 import types
 import xml.parsers.expat
 import threading
@@ -1058,17 +1057,21 @@ class ScriptWidgets:
         if not current_page in [0,1]: return 0
         script=self.get_scripts()[current_page]
         try:
-            compiler.parse(script)
+            compile(script, ("Experiment Script", "Result Script")[current_page], "exec")
         except SyntaxError, se:
-            print "Syntax Error:\n%s at line %d, offset %d"%(str(se),se.lineno,se.offset)+"\n(ToDo: Dialog)"
             if current_page==0:
-                new_place=self.experiment_script_textbuffer.get_iter_at_line_offset(se.lineno-1, se.offset-1)
-                self.experiment_script_textbuffer.place_cursor(new_place)
-                self.experiment_script_textview.scroll_to_iter(new_place, 0.2, False, 0,0)
+                tb=self.experiment_script_textbuffer
+                tv=self.experiment_script_textview
             elif current_page==1:
-                new_place=self.data_handling_textbuffer.get_iter_at_line_offset(se.lineno-1, se.offset-1)
-                self.data_handling_textbuffer.place_cursor(new_place)
-                self.data_handling_textview.scroll_to_iter(new_place, 0.2, False, 0,0)
+                tb=self.data_handling_script_textbuffer
+                tv=self.data_handling_script_textview
+            print "Syntax Error:\n%s in %s at line %d, offset %d"%(str(se), se.filename, se.lineno, se.offset)+"\n(ToDo: Dialog)"
+            if se.lineno<=tb.get_line_count():
+                new_place=tb.get_iter_at_line_offset(se.lineno-1,0)
+                if se.offset<=new_place.get_chars_in_line():
+                    new_place.set_line_offset(se.offset)
+                tb.place_cursor(new_place)
+                tv.scroll_to_iter(new_place, 0.2, False, 0,0)
         except Exception, e:
             print "Compilation Error:\n"+str(e)+"\n(ToDo: Dialog)"
 
