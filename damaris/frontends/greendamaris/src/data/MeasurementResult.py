@@ -113,16 +113,18 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
     def __getitem__(self, key):
         if key not in self:
             a=AccumulatedValue()
-            UserDict.UserDict.__setitem__(self, key, a)
+            self.data[float(key)]=a
             return a
         else:
-            return UserDict.UserDict.__getitem__(self, key)
+            return self.data[float(key)]
 
     def __setitem__(self,key,value):
-        if isinstance(value, int) or isinstance(value,float):
-            return UserDict.UserDict.__setitem__(self,key,AccumulatedValue(value))
-        else:
-            return UserDict.UserDict.__setitem__(self,key,value)
+        v=value
+        if type(value) in [types.FloatType, types.IntType, types.LongType]:
+            v=AccumulatedValue(value)
+        return UserDict.UserDict.__setitem__(self,
+                                             float(key),
+                                             v)
 
     def __add__(self, right_value):
         if right_value==0:
@@ -134,27 +136,20 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         return self.quantity_name
 
     def get_xdata(self):
-        k=self.keys()
-        k=filter(lambda key: (type(UserDict.UserDict.__getitem__(self,key)) is types.InstanceType and
-                              isinstance(UserDict.UserDict.__getitem__(self,key), AccumulatedValue)) or
-                 type(UserDict.UserDict.__getitem__(self,key)) is types.FloatType,
-                 k)
+        k=[k for k,v in self.data.iteritems()
+           if (type(v) is types.InstanceType and isinstance(v, AccumulatedValue)) or
+           type(v) in [types.FloatType, types.LongType, types.IntType]]
+        k=numpy.array(k, dtype="Float64")
         k.sort()
         return k
 
     def get_ydata(self):
-        return map(lambda key: UserDict.UserDict.__getitem__(self,key),self.get_xdata())
+        return map(lambda key: self.data[key],self.get_xdata())
 
     def get_errorplotdata(self):
-        k=self.keys()
-        k=filter(lambda key: (type(UserDict.UserDict.__getitem__(self,key)) is types.InstanceType and
-                              isinstance(UserDict.UserDict.__getitem__(self,key), AccumulatedValue)) or
-                 type(UserDict.UserDict.__getitem__(self,key)) is types.FloatType,
-                 k)
-        k=numpy.array(k, dtype="Float64")
-        k.sort()
-        v=numpy.array(map(lambda key: UserDict.UserDict.__getitem__(self,key).mean(),k), dtype="Float64")
-        e=numpy.array(map(lambda key: UserDict.UserDict.__getitem__(self,key).mean_sigma(),k), dtype="Float64")
+        k=self.get_xdata()
+        v=numpy.array(map(lambda key: self.data[key].mean(),k), dtype="Float64")
+        e=numpy.array(map(lambda key: self.data[key].mean_sigma(),k), dtype="Float64")
         return [k,v,e]
 
     def uses_statistics(self):
@@ -181,8 +176,8 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         the_destination.write("# quantity:"+str(self.quantity_name)+"\n")
         the_destination.write("# x y ysigma n\n")
         for x in self.get_xdata():
-            y=UserDict.UserDict.__getitem__(self,x)
-            if type(y) is types.FloatType:
+            y=self.data[x]
+            if type(y) in [types.FloatType, types.IntType, types.LongType]:
                 the_destination.write("%g %g 0 1\n"%(x,y))                
             else:
                 the_destination.write("%g %g %g %d\n"%(x,y.mean(),y.mean_sigma(),y.n))
@@ -216,9 +211,9 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
                 
             row=mr_table.row
             for x in self.get_xdata():
-                y=UserDict.UserDict.__getitem__(self,x)
+                y=self.data[x]
                 row["x"]=x
-                if type(y) is types.FloatType:
+                if type(y) in [types.FloatType, types.IntType, types.LongType]:
                     row["y_mean"]=y
                     row["y_sigma"]=0.0
                     row["n"]=1
@@ -231,3 +226,22 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         finally:
             mr_table.flush()
             self.lock.release()
+
+def read_from_hdf(hdf_node):
+    """
+    reads a MeasurementResult object from the hdf_node
+    or None if the node is not suitable
+    """
+
+    if not isinstance(hdf_node, tables.Table):
+        return None
+
+    if hdf_node._v_attrs.damaris_type!="MeasurementResult":
+        return None
+
+    mr=MeasurementResult(hdf_node._v_attrs.quantity_name)
+    
+    for r in hdf_node.iterrows():
+        mr[r["x"]]=AccumulatedValue(r["y_mean"],r["y_sigma"],r["n"])
+
+    return mr
