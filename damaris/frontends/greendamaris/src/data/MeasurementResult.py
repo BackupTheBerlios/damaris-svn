@@ -10,13 +10,13 @@ import Drawable
 
 class AccumulatedValue:
 
-    def __init__(self, mean=None, sigma=0, n=0):
+    def __init__(self, mean=None, mean_err=0, n=0):
         """
         one value with std. deviation
         can be initialized by:
         No argument: no entries
         one argument: first entry
-        three arguments: already existing statistics defined by mean, sigma, n
+        three arguments: already existing statistics defined by mean, mean's error, n
         """
         if mean is None:
             self.y=0.0
@@ -29,23 +29,29 @@ class AccumulatedValue:
         else:
             self.n=int(n)
             self.y=float(mean*self.n)
-            self.y2=float(self.n*(sigma*sigma+mean*mean))
+            self.y2=float(mean_err)**2*n*(n-1.0)+float(mean)**2*n
 
     def __add__(self,y):
-
-        if (type(y) is instance and issubclass(y,AccumulatedValue)):
-            raise Exception("Not implemented")
+        new_one=AccumulatedValue()
+        if (type(y) is types.InstanceType and isinstance(y, AccumulatedValue)):
+            new_one.y=self.y+y.y
+            new_one.y2=self.y2+y.y2
+            new_one.n=self.n+y.n
         else:
-            new_one=AccumulatedValue()
             new_one.y=self.y+float(y)
             new_one.y2=self.y2+float(y)**2
             new_one.n=self.n+1
-            return new_one
+        return new_one
 
     def __iadd__(self,y):
-        self.y+=float(y)
-        self.y2+=float(y)**2
-        self.n+=1
+        if (type(y) is types.InstanceType and isinstance(y, AccumulatedValue)):
+            self.y+=y.y
+            self.y2+=y.y2
+            self.n+=y.n
+        else:
+            self.y+=float(y)
+            self.y2+=float(y)**2
+            self.n+=1
         return self
 
     def copy(self):
@@ -56,14 +62,20 @@ class AccumulatedValue:
         return a
 
     def mean(self):
+        """
+        returns the mean of all added/accumulated values
+        """
         if self.n is None:
             return None
         else:
             return self.y/self.n
     
     def sigma(self):
+        """
+        returns the standard deviation added/accumulated values
+        """
         if self.n>1:
-            variance=((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0)
+            variance=(self.y2-(self.y**2)/float(self.n))/(self.n-1.0)
             if variance<0:
                 if variance<-1e-20:
                     print "variance=%g<0! assuming 0"%variance
@@ -74,14 +86,17 @@ class AccumulatedValue:
         else:
             return None
 
-    def mean_sigma(self):
+    def mean_error(self):
+        """
+        returns the mean's error (=std.dev/sqrt(n)) of all added/accumulated values
+        """
         if self.n>1:
-            variance=((self.y2)-(self.y*self.y)/float(self.n))/(self.n-1.0)/float(self.n)
+            variance=(self.y2-(self.y**2)/float(self.n))/(self.n-1.0)
             if variance<0:
                 if variance<-1e-20:
                     print "variance=%g<0! assuming 0"%variance
                 return 0.0
-            return math.sqrt(variance)
+            return math.sqrt(variance/self.n)
         elif self.n==1:
             return 0
         else:
@@ -93,7 +108,7 @@ class AccumulatedValue:
         elif self.n==1:
             return str(self.y)
         else:
-            return "%g +/- %g (%d accumulations)"%(self.mean(),self.sigma(),self.n)
+            return "%g +/- %g (%d accumulations)"%(self.mean(),self.mean_error(),self.n)
 
     def __repr__(self):
         return str(self)
@@ -136,6 +151,9 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         return self.quantity_name
 
     def get_xdata(self):
+        """
+        sorted array of all dictionary entries
+        """
         k=[k for k,v in self.data.iteritems()
            if (type(v) is types.InstanceType and isinstance(v, AccumulatedValue)) or
            type(v) in [types.FloatType, types.LongType, types.IntType]]
@@ -144,12 +162,17 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         return k
 
     def get_ydata(self):
-        return map(lambda key: self.data[key],self.get_xdata())
+        return self.get_xydata()[1]
+
+    def get_xydata(self):
+        k=self.get_xdata()
+        v=numpy.array(map(lambda key: self.data[key].mean(),k), dtype="Float64")
+        return [k,v]
 
     def get_errorplotdata(self):
         k=self.get_xdata()
         v=numpy.array(map(lambda key: self.data[key].mean(),k), dtype="Float64")
-        e=numpy.array(map(lambda key: self.data[key].mean_sigma(),k), dtype="Float64")
+        e=numpy.array(map(lambda key: self.data[key].mean_error(),k), dtype="Float64")
         return [k,v,e]
 
     def uses_statistics(self):
@@ -180,7 +203,7 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
             if type(y) in [types.FloatType, types.IntType, types.LongType]:
                 the_destination.write("%g %g 0 1\n"%(x,y))                
             else:
-                the_destination.write("%g %g %g %d\n"%(x,y.mean(),y.mean_sigma(),y.n))
+                the_destination.write("%g %g %g %d\n"%(x,y.mean(),y.mean_error(),y.n))
 
         the_destination=None
 
@@ -189,8 +212,8 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
 
         h5_table_format= {
             "x" : tables.Float64Col(),
-            "y_mean" : tables.Float64Col(),
-            "y_sigma" : tables.Float64Col(),
+            "y" : tables.Float64Col(),
+            "y_err" : tables.Float64Col(),
             "n" : tables.Int64Col()
             }
         filter=None
@@ -214,12 +237,12 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
                 y=self.data[x]
                 row["x"]=x
                 if type(y) in [types.FloatType, types.IntType, types.LongType]:
-                    row["y_mean"]=y
-                    row["y_sigma"]=0.0
+                    row["y"]=y
+                    row["y_err"]=0.0
                     row["n"]=1
                 else:
-                    row["y_mean"]=y.mean()
-                    row["y_sigma"]=y.mean_sigma()
+                    row["y"]=y.mean()
+                    row["y_err"]=y.mean_error()
                     row["n"]=y.n
                 row.append()
 
@@ -242,6 +265,6 @@ def read_from_hdf(hdf_node):
     mr=MeasurementResult(hdf_node._v_attrs.quantity_name)
     
     for r in hdf_node.iterrows():
-        mr[r["x"]]=AccumulatedValue(r["y_mean"],r["y_sigma"],r["n"])
+        mr[r["x"]]=AccumulatedValue(r["y"],r["y_err"],r["n"])
 
     return mr

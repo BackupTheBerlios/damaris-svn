@@ -120,37 +120,40 @@ class Accumulation(Errorable, Drawable):
     # Schnittstellen nach Auﬂen --------------------------------------------------------------------
 
     def get_yerr(self, channel):
+        """
+        return error (std.dev/sqrt(n)) of mean
+        """
 
-        if not self.uses_statistics(): return []
+        if not self.uses_statistics(): return numpy.zeros((len(self.y[0]),),dtype="Float64")
         if not self.contains_data(): return []
 
         self.lock.acquire()
         if self.n < 2:
+            retval=numpy.zeros((len(self.y[0]),),dtype="Float64")
             self.lock.release()
-            return numpy.zeros((len(self.y[0]),),dtype="Float64")
-
-
-        # sample standard deviation
+            return retval
         try:
-            tmp_yerr = ((self.y_square[channel] - (self.y[channel]**2 / self.n))/(self.n-1.0)) ** 0.5
-        except e:
-            print "Warning Accumulation.get_yerr(channel): Std-Deviation calculation failed (%s)"%(str(e))
-            tmp_yerr = numpy.zeros((len(self.y[0]),),dtype="Float64")
-
+            variance_over_n = (self.y_square[channel] - (self.y[channel]**2 / float(self.n)))/float((self.n-1)*self.n)
+        except IndexError:
+            print "Warning Accumulation.get_ydata(channel): Channel index does not exist."
+            variance_over_n = numpy.zeros((len(self.y[0]),), dtype="Float64")
         self.lock.release()
-        return tmp_yerr
-
+        # sample standard deviation / sqrt(n)
+        return numpy.nan_to_num(numpy.sqrt(variance_over_n))
 
     def get_ydata(self, channel):
+        """
+        return mean data
+        """
 
         if not self.contains_data(): return []
         self.lock.acquire()
 
         try:
             tmp_y = self.y[channel] / self.n
-        except:
+        except IndexError:
             print "Warning Accumulation.get_ydata(channel): Channel index does not exist."
-            tmp_y = numpy.zeros((len(self.y[0]),),type="Float64")
+            tmp_y = numpy.zeros((len(self.y[0]),), dtype="Float64")
 
         self.lock.release()
         return tmp_y
@@ -167,7 +170,7 @@ class Accumulation(Errorable, Drawable):
 
         if self.uses_statistics() and self.ready_for_drawing_error():
             for i in range(self.get_number_of_channels()):
-                tmp_min.append((self.get_ydata(i) - self.get_yerr(i)).min())            
+                tmp_min.append((self.get_ydata(i) - self.get_yerr(i)).min())
         self.lock.release()
 
         return min(tmp_min)
@@ -187,7 +190,6 @@ class Accumulation(Errorable, Drawable):
                 tmp_max.append((self.get_ydata(i) + self.get_yerr(i)).max())
         self.lock.release()
         return max(tmp_max)
-
 
     def get_job_id(self):
         return None
@@ -786,7 +788,7 @@ def read_from_hdf(hdf_node):
             accu.y_square.append(numpy.zeros((accu_data.shape[0]) ,dtype="Float64"))
         else:
             accu.use_error=True
-            accu.y_square.append((accu_data[:,ch*2+1]**2)*(accu.n-1.0)+(accu_data[:,ch*2]**2)*accu.n)
+            accu.y_square.append((accu_data[:,ch*2+1]**2)*float((accu.n-1.0)*accu.n)+(accu_data[:,ch*2]**2)*accu.n)
 
     if not accu.use_error:
         del accu.y_square
