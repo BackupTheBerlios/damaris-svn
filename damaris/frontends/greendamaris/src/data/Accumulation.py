@@ -17,6 +17,7 @@ import threading
 import types
 import tables
 import numpy
+import datetime
 from types import *
 
 class Accumulation(Errorable, Drawable):
@@ -129,9 +130,9 @@ class Accumulation(Errorable, Drawable):
             return numpy.zeros((len(self.y[0]),),dtype="Float64")
 
 
-        # ( E(X^2) - E(X)^2 )^0.5
+        # sample standard deviation
         try:
-            tmp_yerr = (((self.y_square[channel] / self.n) - ((self.y[channel] / self.n)**2))/self.n) ** 0.5
+            tmp_yerr = ((self.y_square[channel] - (self.y[channel]**2 / self.n))/(self.n-1.0)) ** 0.5
         except e:
             print "Warning Accumulation.get_yerr(channel): Std-Deviation calculation failed (%s)"%(str(e))
             tmp_yerr = numpy.zeros((len(self.y[0]),),dtype="Float64")
@@ -701,3 +702,93 @@ class Accumulation(Errorable, Drawable):
             r = Accumulation(x = numpy.array(self.x, dtype="Float64"), y = tmp_y, n = self.n, index = self.index, sampl_freq = self.sampling_rate, error = False)
         self.lock.release()
         return r
+
+
+def read_from_hdf(hdf_node):
+    """
+    read accumulation data from HDF node and return it.
+    """
+
+    # first formal checks
+    if not isinstance(hdf_node, tables.Group):
+        return None
+    if hdf_node._v_attrs.damaris_type!="Accumulation":
+        return None
+
+    if not (hdf_node.__contains__("indices") and hdf_node.__contains__("accu_data")):
+        print "no accu data"
+        return None
+
+    accu=Accumulation()
+
+    # populate description dictionary
+    accu.common_descriptions={}
+    for attrname in hdf_node._v_attrs._v_attrnamesuser:
+        if attrname.startswith("description_"):
+            accu.common_descriptions[attrname[12:]]=hdf_node._v_attrs.__getattr__(attrname)
+
+    eariliest_time=None
+    if "earliest_time" in dir(hdf_node._v_attrs):
+        timestring=hdf_node._v_attrs.__getattr__("earliest_time")
+        earliest_time=datetime.datetime(int(timestring[:4]),  # year
+                                        int(timestring[4:6]), # month
+                                        int(timestring[6:8]), # day
+                                        int(timestring[9:11]), # hour
+                                        int(timestring[12:14]), # minute
+                                        int(timestring[15:17]), # second
+                                        int(timestring[18:21])*1000 # microsecond
+                                        )
+
+    oldest_time=None
+    if "oldest_time" in dir(hdf_node._v_attrs):
+        timestring=hdf_node._v_attrs.__getattr__("oldest_time")
+        oldest_time=datetime.datetime(int(timestring[:4]),  # year
+                                      int(timestring[4:6]), # month
+                                      int(timestring[6:8]), # day
+                                      int(timestring[9:11]), # hour
+                                      int(timestring[12:14]), # minute
+                                      int(timestring[15:17]), # second
+                                      int(timestring[18:21])*1000 # microsecond
+                                      )
+
+    if oldest_time is None or earliest_time is None:
+        accu.time_period=None
+        if len(accu.common_descriptions)==0:
+            # no accus inside, so no common description expected
+            accu.common_descriptions=None
+            accu.cont_data=False
+    else:
+        accu.time_period=[oldest_time, earliest_time]
+        accu.cont_data=True
+
+    # start with indices
+    for r in hdf_node.indices.iterrows():
+        accu.index.append((r["start"],r["start"]+r["length"]-1))
+        accu.n=r["number"]
+        accu.sampling_rate=1.0/r["dwelltime"]
+
+    # now really belief there are no data
+    if len(accu.index)==0 or accu.n==0:
+        accu.cont_data=False
+        return accu
+
+    # now do the real data
+    accu_data=hdf_node.accu_data.read()
+    
+    accu.x=numpy.arange(accu_data.shape[0], dtype="Float64")/accu.sampling_rate
+    # assume error information, todo: save this information explicitly
+    accu.y_square=[]
+    accu.use_error=False
+
+    for ch in xrange(accu_data.shape[1]/2):
+        accu.y.append(accu_data[:,ch*2]*accu.n)
+        if accu.n<2 or numpy.all(accu_data[:,ch*2+1]==0.0):
+            accu.y_square.append(numpy.zeros((accu_data.shape[0]) ,dtype="Float64"))
+        else:
+            accu.use_error=True
+            accu.y_square.append((accu_data[:,ch*2+1]**2)*(accu.n-1.0)+(accu_data[:,ch*2]**2)*accu.n)
+
+    if not accu.use_error:
+        del accu.y_square
+
+    return accu
