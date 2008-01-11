@@ -8,6 +8,7 @@ import threading
 import numpy
 import sys
 from types import *
+import datetime
 import tables
 #############################################################################
 #                                                                           #
@@ -175,7 +176,7 @@ class ADC_Result(Resultable, Drawable):
 
     def write_to_hdf(self, hdffile, where, name, title, complib=None, complevel=None):
         accu_group=hdffile.createGroup(where=where,name=name,title=title)
-        accu_group._v_attrs.damaris_type="ADC_result"
+        accu_group._v_attrs.damaris_type="ADC_Result"
         if self.contains_data():
             self.lock.acquire()
             try:
@@ -424,3 +425,60 @@ class ADC_Result(Resultable, Drawable):
         r = ADC_Result(x = self.x[:], y = tmp_y, index = self.index[:], sampl_freq = self.sampling_rate, desc = self.description, job_id = self.job_id, job_date = self.job_date)
         self.lock.release()
         return r
+
+
+def read_from_hdf(hdf_node):
+    """
+    read accumulation data from HDF node and return it.
+    """
+
+    # formal checks first
+    if not isinstance(hdf_node, tables.Group):
+        return None
+
+    if hdf_node._v_attrs.damaris_type!="ADC_Result":
+        return None
+
+    if not (hdf_node.__contains__("indices") and hdf_node.__contains__("adc_data")):
+        return None
+
+    # job id and x,y titles are missing
+    adc=ADC_Result()
+    # populate description dictionary
+    adc.description={}
+    for attrname in hdf_node._v_attrs._v_attrnamesuser:
+        if attrname.startswith("description_"):
+            adc.description[attrname[12:]]=hdf_node._v_attrs.__getattr__(attrname)
+
+    if "time" in dir(hdf_node._v_attrs):
+        timestring=hdf_node._v_attrs.__getattr__("time")
+        adc.job_date=datetime.datetime(int(timestring[:4]),  # year
+                                       int(timestring[4:6]), # month
+                                       int(timestring[6:8]), # day
+                                       int(timestring[9:11]), # hour
+                                       int(timestring[12:14]), # minute
+                                       int(timestring[15:17]), # second
+                                       int(timestring[18:21])*1000 # microsecond
+                                       )
+    
+
+    # start with indices
+    for r in hdf_node.indices.iterrows():
+        adc.index.append((r["start"],r["start"]+r["length"]-1))
+        adc.sampling_rate=1.0/r["dwelltime"]
+
+    # now really belief there are no data
+    if len(adc.index)==0:
+        adc.cont_data=False
+        return adc
+
+    adc.cont_data=True
+    # now do the real data
+    adc_data=hdf_node.adc_data.read()
+    
+    adc.x=numpy.arange(adc_data.shape[0], dtype="Float64")/adc.sampling_rate
+
+    for ch in xrange(adc_data.shape[1]):
+        adc.y.append(adc_data[:,ch])
+
+    return adc
