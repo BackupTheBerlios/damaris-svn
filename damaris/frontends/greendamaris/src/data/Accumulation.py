@@ -711,9 +711,10 @@ def read_from_hdf(hdf_node):
     read accumulation data from HDF node and return it.
     """
 
-    # first formal checks
+    # formal checks first
     if not isinstance(hdf_node, tables.Group):
         return None
+
     if hdf_node._v_attrs.damaris_type!="Accumulation":
         return None
 
