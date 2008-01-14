@@ -210,7 +210,7 @@ class ADC_Result(Resultable, Drawable):
                                                 title="indices of adc data intervals",
                                                 filters=filter,
                                                 expectedrows=len(self.index))
-
+                index_table.flavor="numpy"
                 # save channel data
                 new_row=index_table.row
                 for i in xrange(len(self.index)):

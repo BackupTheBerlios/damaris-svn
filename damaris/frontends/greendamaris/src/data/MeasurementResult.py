@@ -227,6 +227,7 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
                                      title=title,
                                      filters=filter,
                                      expectedrows=len(self))
+        mr_table.flavor="numpy"
         mr_table.attrs.damaris_type="MeasurementResult"
         self.lock.acquire()
         try:
