@@ -287,7 +287,13 @@ class DamarisGUI:
             try:
                 exp_code=compile(exp_script, "Experiment Script", "exec")
             except SyntaxError, e:
-                print "Experiment script: %s at line %d, col %d:"%(e.__class__.__name__,e.lineno, e.offset)
+                ln=e.lineno
+                lo=e.offset
+                if type(ln) is not types.IntType:
+                    ln=0
+                if type(lo) is not types.IntType:
+                    lo=0
+                print "Experiment Script: %s at line %d, col %d:"%(e.__class__.__name__, ln, lo)
                 if e.text!="":
                     print "\"%s\""%e.text
                     # print " "*(e.offset+1)+"^" # nice idea, but needs monospaced fonts
@@ -299,7 +305,13 @@ class DamarisGUI:
             try:
                 res_code=compile(res_script, "Result Script", "exec")
             except SyntaxError, e:
-                print "Result script: %s at line %d, col %d:"%(e.__class__.__name__,e.lineno, e.offset)
+                ln=e.lineno
+                lo=e.offset
+                if type(ln) is not types.IntType:
+                    ln=0
+                if type(lo) is not types.IntType:
+                    lo=0
+                print "Result script: %s at line %d, col %d:"%(e.__class__.__name__,ln, lo)
                 if e.text!="":
                     print "\"%s\""%e.text
                     # print " "*(e.offset+1)+"^" # nice idea, but needs monospaced fonts
@@ -1065,11 +1077,19 @@ class ScriptWidgets:
             elif current_page==1:
                 tb=self.data_handling_script_textbuffer
                 tv=self.data_handling_script_textview
-            print "Syntax Error:\n%s in %s at line %d, offset %d"%(str(se), se.filename, se.lineno, se.offset)+"\n(ToDo: Dialog)"
-            if se.lineno<=tb.get_line_count():
-                new_place=tb.get_iter_at_line_offset(se.lineno-1,0)
-                if se.offset<=new_place.get_chars_in_line():
-                    new_place.set_line_offset(se.offset)
+
+            ln=se.lineno
+            lo=se.offset
+            # reguard http://bugs.python.org/issue1778
+            if type(ln) is not types.IntType:
+                ln=0
+            if type(lo) is not types.IntType:
+                lo=0
+            print "Syntax Error:\n%s in %s at line %d, offset %d"%(str(se), se.filename, ln, lo)+"\n(ToDo: Dialog)"
+            if ln>0 and ln<=tb.get_line_count():
+                new_place=tb.get_iter_at_line_offset(ln-1,0)
+                if lo>0 and lo<=new_place.get_chars_in_line():
+                    new_place.set_line_offset(lo)
                 tb.place_cursor(new_place)
                 tv.scroll_to_iter(new_place, 0.2, False, 0,0)
         except Exception, e:
