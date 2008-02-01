@@ -1,3 +1,9 @@
+damaris (0.10-4) experimental; urgency=low
+
+  * Kernel modules compiled and tested for version 2.6.18-6
+
+ -- Achim Gaedke <achim@eis.fkp.physik.tu-darmstadt.de>  Fri,  1 Feb 2008 17:24:38 +0100
+
 damaris (0.10-3) experimental; urgency=low
 
   * PulseBlaster Programs are loaded in chunks, prevents system freeze for seconds

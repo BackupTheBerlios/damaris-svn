@@ -73,11 +73,11 @@ install: build
 	dh_clean -k
 
 # labview stuff goes here
-	(cd frontends ; \
-	find labview -type d \! -path "*/.svn*" -exec \
-	install -d "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; ; \
-	find labview -type f \! -path "*/.svn*" -iname "*.vi" -exec \
-	install "{}" "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; )
+#	(cd frontends ; \
+#	find labview -type d \! -path "*/.svn*" -exec \
+#	install -d "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; ; \
+#	find labview -type f \! -path "*/.svn*" -iname "*.vi" -exec \
+#	install "{}" "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; )
 
 # backend executables
 	dh_installdirs -pdamaris-backends usr/lib/damaris/backends ; \
