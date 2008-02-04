@@ -117,7 +117,9 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
 
     def __init__(self, quantity_name):
         """
-        convenient accumulation and interface to plot functios
+        convenient accumulation and interface to plot functions
+
+        dictionary must not contain anything but AccumulatedValue instances
         """
         Drawable.Drawable.__init__(self)
         UserDict.UserDict.__init__(self)
@@ -134,12 +136,11 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
             return self.data[float(key)]
 
     def __setitem__(self,key,value):
-        v=value
-        if type(value) in [types.FloatType, types.IntType, types.LongType]:
-            v=AccumulatedValue(value)
+        if not (type(value) is types.InstanceType and isinstance(value, AccumulatedValue)):
+            value=AccumulatedValue(float(value))
         return UserDict.UserDict.__setitem__(self,
                                              float(key),
-                                             v)
+                                             value)
 
     def __add__(self, right_value):
         if right_value==0:
@@ -154,10 +155,7 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         """
         sorted array of all dictionary entries
         """
-        k=[k for k,v in self.data.iteritems()
-           if (type(v) is types.InstanceType and isinstance(v, AccumulatedValue)) or
-           type(v) in [types.FloatType, types.LongType, types.IntType]]
-        k=numpy.array(k, dtype="Float64")
+        k=numpy.array(self.data.keys(), dtype="Float64")
         k.sort()
         return k
 
@@ -234,18 +232,20 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
             mr_table.attrs.quantity_name=self.quantity_name
                 
             row=mr_table.row
-            for x in self.get_xdata():
-                y=self.data[x]
-                row["x"]=x
-                if type(y) in [types.FloatType, types.IntType, types.LongType]:
-                    row["y"]=y
-                    row["y_err"]=0.0
-                    row["n"]=1
-                else:
-                    row["y"]=y.mean()
-                    row["y_err"]=y.mean_error()
-                    row["n"]=y.n
-                row.append()
+            xdata=self.get_xdata()
+            if xdata.shape[0]!=0:
+                for x in self.get_xdata():
+                    y=self.data[x]
+                    row["x"]=x
+                    if type(y) in [types.FloatType, types.IntType, types.LongType]:
+                        row["y"]=y
+                        row["y_err"]=0.0
+                        row["n"]=1
+                    else:
+                        row["y"]=y.mean()
+                        row["y_err"]=y.mean_error()
+                        row["n"]=y.n
+                    row.append()
 
         finally:
             mr_table.flush()

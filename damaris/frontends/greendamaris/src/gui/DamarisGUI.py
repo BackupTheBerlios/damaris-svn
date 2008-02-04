@@ -2478,11 +2478,11 @@ class MonitorWidgets:
             [k,v,e]=in_result.get_errorplotdata()
             # Initial rescaling needed?
             xmin=xmax=0
-            if len(k):
+            if k.shape[0]!=0:
                 xmin=k.min()
                 xmax=k.max()
             if self.__rescale or self.display_autoscaling_checkbutton.get_active():
-                if len(k):
+                if k.shape[0]!=0:
                     ymin=(v-e).min()
                     ymax=(v+e).max()
                     # is there a range problem?
@@ -2521,7 +2521,8 @@ class MonitorWidgets:
                 self.matplot_axes.set_xscale("linear")
 
             # error bar plots
-            self.measurementresultgraph=self.matplot_axes.errorbar(x=k, y=v, yerr=e, fmt="b+")
+            if k.shape[0]>0:
+                self.measurementresultgraph=self.matplot_axes.errorbar(x=k, y=v, yerr=e, fmt="b+")
             del k,v,e
 
             # Any title to be set?
