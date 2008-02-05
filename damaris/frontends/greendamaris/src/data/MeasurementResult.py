@@ -179,30 +179,31 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         """
         return True
 
-    def write_as_csv(self,destination=sys.stdout):
+    def write_as_csv(self,destination=sys.stdout, delimiter=" "):
         """
         writes the data to a file or to sys.stdout
         destination can be a file or a filename
         suitable for further processing
         """
         # write sorted
-        the_destination=None
-        if isinstance(destination,types.FileType):
-            the_destination=destination
-        elif isinstance(destination,types.StringTypes):
-            the_destination=file(destination,"w")
-        else:
-            raise Exception("sorry destination %s is not valid"%(repr(destination)))
+        the_destination=destination
+        if type(destination) in types.StringTypes:
+            the_destination=file(destination, "w")
 
         the_destination.write("# quantity:"+str(self.quantity_name)+"\n")
         the_destination.write("# x y ysigma n\n")
         for x in self.get_xdata():
             y=self.data[x]
             if type(y) in [types.FloatType, types.IntType, types.LongType]:
-                the_destination.write("%g %g 0 1\n"%(x,y))                
+                the_destination.write("%g%s%g%s0%s1\n"%(x, delimiter, y, delimiter, delimiter))
             else:
-                the_destination.write("%g %g %g %d\n"%(x,y.mean(),y.mean_error(),y.n))
-
+                the_destination.write("%g%s%g%s%g%s%d\n"%(x,
+                                                          delimiter,
+                                                          y.mean(),
+                                                          delimiter,
+                                                          y.mean_error(),
+                                                          delimiter,
+                                                          y.n))
         the_destination=None
 
 

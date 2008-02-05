@@ -18,7 +18,6 @@ import types
 import tables
 import numpy
 import datetime
-from types import *
 
 class Accumulation(Errorable, Drawable):
     def __init__(self, x = None, y = None, y_2 = None, n = None, index = None, sampl_freq = None, error = False):
@@ -194,24 +193,20 @@ class Accumulation(Errorable, Drawable):
     def get_job_id(self):
         return None
 
-    def write_as_csv(self, destination=sys.stdout):
+    def write_as_csv(self, destination=sys.stdout, delimiter=" "):
         """
         writes the data to a file or to sys.stdout
         destination can be a file or a filename
         suitable for further processing
         """
-        # write sorted
-        the_destination=None
-        if isinstance(destination,types.FileType):
-            the_destination=destination
-        elif isinstance(destination,types.StringTypes):
-            the_destination=file(destination,"w")
-        else:
-            raise Exception("sorry destination %s is not valid"%(repr(destination)))
 
+        the_destination=destination
+        if type(destination) in types.StringTypes:
+            the_destination=file(destination, "w")
+
+        the_destination.write("# accumulation %d\n"%self.n)
         self.lock.acquire()
         try:
-            the_destination.write("# accumulation %d\n"%self.n)
             if self.common_descriptions is not None:
                 for (key,value) in self.common_descriptions.iteritems():
                     the_destination.write("# %s : %s\n"%(key, str(value)))
@@ -231,9 +226,9 @@ class Accumulation(Errorable, Drawable):
                 the_destination.write("%g"%xdata[i])
                 for j in xrange(ch_no):
                     if self.use_error:
-                        the_destination.write(" %g %g"%(ydata[j][i],yerr[j][i]))
+                        the_destination.write("%s%g%s%g"%(delimiter, ydata[j][i], delimiter, yerr[j][i]))
                     else:
-                        the_destination.write(" %g"%ydata[j][i])                        
+                        the_destination.write("%s%g"%(delimiter,ydata[j][i]))                        
                 the_destination.write("\n")
             the_destination=None
             xdata=yerr=ydata=None
@@ -384,7 +379,7 @@ class Accumulation(Errorable, Drawable):
     def __add__(self, other):
         "Redefining self + other"
         # Float or int
-        if isinstance(other, IntType) or isinstance(other, FloatType):
+        if isinstance(other, types.IntType) or isinstance(other, types.FloatType):
             if not self.contains_data(): raise ValueError("Accumulation: You cant add integers/floats to an empty accumulation")
             else:
 
@@ -551,7 +546,7 @@ class Accumulation(Errorable, Drawable):
     def __iadd__(self, other):
         "Redefining self += other"
         # Float or int
-        if isinstance(other, IntType) or isinstance(other, FloatType):
+        if isinstance(other, types.IntType) or isinstance(other, types.FloatType):
             if not self.contains_data(): raise ValueError("Accumulation: You cant add integers/floats to an empty accumulation")
             else:
                 

@@ -3,7 +3,7 @@ import time
 import math
 import sys
 import platform
-import StringIO
+import cStringIO
 import codecs
 import os.path
 import traceback
@@ -354,7 +354,7 @@ class DamarisGUI:
         except Exception, e:
             #print "ToDo evaluate exception",str(e), "at",traceback.extract_tb(sys.exc_info()[2])[-1][1:3]
             #print "Full traceback:"
-            traceback_file=StringIO.StringIO()
+            traceback_file=cStringIO.StringIO()
             traceback.print_tb(sys.exc_info()[2], None, traceback_file)
             self.main_notebook.set_current_page(DamarisGUI.Log_Display)
             print "Error while executing scripts: %s\n"%str(e)+traceback_file.getvalue()
@@ -399,15 +399,12 @@ class DamarisGUI:
             self.backend_statusbar_label.set_text("Backend Running")
         else:
             self.backend_statusbar_label.set_text("Backend Idle")
-            
 
         # start data dump
-        self.dump_filename=actual_config["data_pool_name"]
-        if self.dump_filename!="":
-            self.dump_states(init=True)
-            self.last_dumped=time.time()
         self.dump_thread=None
         self.save_thread=None
+        if actual_config["data_pool_name"]!="":
+            self.dump_states(init=True)
 
         gobject.timeout_add(200, self.observe_running_experiment)
 
@@ -478,7 +475,6 @@ class DamarisGUI:
                 self.dump_thread.join()
                 self.dump_thread=None
                 print "done (%.01f s)"%(time.time()-self.dump_start_time)
-                self.last_dumped=time.time()
 
         gtk.gdk.threads_enter()
         if e_text:
@@ -554,28 +550,34 @@ class DamarisGUI:
         compress: optional argument for zlib compression 0-9
         """
 
-        timeline_tablecols=numpy.recarray(0,dtype=([("time","S17"),
-                                                    ("experiments","int64"),
-                                                    ("results","int64")])
-                                          )
-
-        actual_config = self.config.get()
-        self.dump_complib=actual_config.get("data_pool_complib",None)
-        if self.dump_complib=="None":
-            self.dump_complib=None
-        if self.dump_complib is not None:
-            self.dump_complevel=int(actual_config.get("data_pool_comprate",0))
-        else:
-            self.dump_complevel=0
-
-        self.dump_timeinterval=60*60*10
-        try:
-            self.dump_timeinterval=int(60*float(actual_config["data_pool_write_interval"]))
-        except ValueError,e:
-            print "configuration provides non-number for dump interval: "+str(e)
-
-        dump_file=None
         if init:
+            actual_config = self.config.get()
+            extensions_dict={"date": time.strftime("%Y-%m-%d"),
+                             "datetime": time.strftime("%Y-%m-%d_%H%M"),
+                             "exp": os.path.splitext(os.path.basename(self.sw.exp_script_filename))[0],
+                             "res": os.path.splitext(os.path.basename(self.sw.res_script_filename))[0]}
+            try:
+                self.dump_filename=actual_config.get("data_pool_name")%extensions_dict
+            except ValueError,e:
+                print "invalid formating character in '"+actual_config.get("data_pool_name")+"'"
+                self.dump_filename="DAMARIS_data_pool.h5"
+                print "reseting dumpfile to "+self.dump_filename
+            del extensions_dict
+
+            self.dump_complib=actual_config.get("data_pool_complib",None)
+            if self.dump_complib=="None":
+                self.dump_complib=None
+            if self.dump_complib is not None:
+                self.dump_complevel=int(actual_config.get("data_pool_comprate",0))
+            else:
+                self.dump_complevel=0
+
+            self.dump_timeinterval=60*60*10
+            try:
+                self.dump_timeinterval=int(60*float(actual_config["data_pool_write_interval"]))
+            except ValueError,e:
+                print "configuration provides non-number for dump interval: "+str(e)
+
             if os.path.split(self.dump_filename)[1]=="" or os.path.isdir(self.dump_filename):
                 print "The dump filename is a directory, using filename 'DAMARIS_data_pool.h5'"
                 self.dump_filename+=os.sep+"DAMARIS_data_pool.h5"
@@ -594,11 +596,11 @@ class DamarisGUI:
                     os.mkdir(dir_trunk)
             except OSError, e:
                 print e
-                print "coud not create dump file '%s', so hdf5 dumps disabled"%self.dump_filename
+                print "coud not create dump directory '%s', so hdf5 dumps disabled"%dir_trunk
                 self.dump_filename=""
                 self.dump_timeinterval=0
                 return True
-            
+
             # move away old file
             if os.path.isfile(self.dump_filename):
                 # create bakup name pattern
@@ -637,6 +639,9 @@ class DamarisGUI:
                 dump_file.createArray(scriptgroup,"backend_executable", self.si.backend_executable)
             if self.spool_dir:
                 dump_file.createArray(scriptgroup,"spool_directory", self.spool_dir)
+            timeline_tablecols=numpy.recarray(0,dtype=([("time","S17"),
+                                                        ("experiments","int64"),
+                                                        ("results","int64")]))
             timeline_table=dump_file.createTable("/","timeline", timeline_tablecols, title="Timeline of Experiment")
             timeline_row=timeline_table.row
             timeline_row["time"]=time.strftime("%Y%m%d %H:%M:%S")
@@ -655,7 +660,7 @@ class DamarisGUI:
             old_dump_file=None
             os.remove(self.dump_filename+".bak")
             # prepare for update
-            dump_file=tables.openFile(self.dump_filename,mode="r+")
+            dump_file=tables.openFile(self.dump_filename, mode="r+")
             if dump_file.isUndoEnabled():
                 dump_file.disableUndo()
             e=self.si.data.get("__recentexperiment",-1)+1
@@ -673,6 +678,7 @@ class DamarisGUI:
         
         dump_file.flush()
         dump_file.close()
+        self.last_dumped=time.time()
         del dump_file
 
         return True
@@ -1050,11 +1056,11 @@ class ScriptWidgets:
             self.toolbar_check_scripts_button.set_sensitive(False)
 
         if self.exp_script_filename:
-            exp_titlename=unicode(os.path.basename(self.exp_script_filename))
+            exp_titlename=unicode(os.path.splitext(os.path.basename(self.exp_script_filename))[0])
         else:
             exp_titlename=u"unnamed"
         if self.res_script_filename:
-            res_titlename=unicode(os.path.basename(self.res_script_filename))
+            res_titlename=unicode(os.path.splitext(os.path.basename(self.res_script_filename))[0])
         else:
             res_titlename=u"unnamed"
         window_title=u"DAMARIS-%s %s,%s"%(__version__, exp_titlename, res_titlename)
@@ -1949,6 +1955,7 @@ class MonitorWidgets:
         self.xml_gui.signal_connect("on_display_x_scaling_combobox_changed", self.display_x_scaling_changed)
         #self.xml_gui.signal_connect("on_display_y_scaling_combobox_changed", self.display_y_scaling_changed)
         self.xml_gui.signal_connect("on_display_save_data_as_text_button_clicked", self.save_display_data_as_text)
+        self.xml_gui.signal_connect("on_display_copy_data_to_clipboard_button_clicked", self.copy_display_data_to_clipboard)
 
         # data to observe
         self.data_pool=None
@@ -2309,6 +2316,31 @@ class MonitorWidgets:
 
         return True
 
+    def copy_display_data_to_clipboard(self, widget, data=None):
+        data_to_save=self.displayed_data[:]
+        if self.displayed_data[1] is None:
+            # nothing to save
+            return
+        if not hasattr(data_to_save[1], "write_as_csv"):
+            log("do not know how to save %s of class/type %s"%(data_to_save[0],type(data_to_save[1])))
+            return
+
+        # tested with qtiplot, labplot, openoffice
+        # tab delimiters necessary
+        # comments are not welcome :-(
+        tmpdata=cStringIO.StringIO()
+        data_to_save[1].write_as_csv(tmpdata, delimiter=u"\t")
+        # cut away comments
+        tmpstring=u""
+        tmpdata.seek(0)
+        for line in tmpdata:
+            if line[0]=="#": continue
+            tmpstring+=line        
+        del tmpdata
+        clipboard=gtk.clipboard_get()
+        clipboard.set_text(tmpstring)
+        del tmpstring, clipboard
+
     ##################### functions to feed display
 
     def clear_display(self):
@@ -2524,9 +2556,10 @@ class MonitorWidgets:
                     self.matplot_axes.set_xlim(xmin, xmax)
                     self.matplot_axes.set_ylim(ymin, ymax)
 
-                    # decide about x log plot
+                    # finally decide about x log plot
                     if x_scale=="log10" and xmin>0:
                         self.matplot_axes.set_xscale("log", basex=10.0)
+                        self.matplot_axes.fmt_xdata = lambda x: "%g" % x
                     #elif x_scale=="log" and xmin>0:
                     # e scaling implementation not really useful
                     #    self.matplot_axes.set_xscale("log", basex=numpy.e)

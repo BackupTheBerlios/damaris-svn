@@ -7,7 +7,7 @@ from Accumulation import Accumulation
 import threading
 import numpy
 import sys
-from types import *
+import types
 import datetime
 import tables
 #############################################################################
@@ -141,20 +141,16 @@ class ADC_Result(Resultable, Drawable):
     def uses_statistics(self):
         return False
 
-    def write_as_csv(self, destination=sys.stdout):
+    def write_as_csv(self, destination=sys.stdout, delimiter=" "):
         """
         writes the data to a file or to sys.stdout
         destination can be a file or a filename
         suitable for further processing
         """
         # write sorted
-        the_destination=None
-        if isinstance(destination,FileType):
-            the_destination=destination
-        elif isinstance(destination,StringTypes):
-            the_destination=file(destination,"w")
-        else:
-            raise Exception("sorry destination %s is not valid"%(repr(destination)))
+        the_destination=destination
+        if type(destination) in types.StringTypes:
+            the_destination=file(destination, "w")
 
         the_destination.write("# adc_result\n")
         the_destination.write("# t y0 y1 ...\n")
@@ -167,7 +163,7 @@ class ADC_Result(Resultable, Drawable):
             for i in xrange(len(xdata)):
                 the_destination.write("%g"%xdata[i])
                 for j in xrange(ch_no):
-                    the_destination.write(" %g"%(ydata[j][i]))
+                    the_destination.write("%s%g"%(delimiter, ydata[j][i]))
                 the_destination.write("\n")
             the_destination=None
             xdata=ydata=None
@@ -295,7 +291,7 @@ class ADC_Result(Resultable, Drawable):
 
     def __add__(self, other):
         "Redefining self + other (scalar)"
-        if isinstance(other, IntType) or isinstance(other, FloatType):
+        if isinstance(other, types.IntType) or isinstance(other, types.FloatType):
             self.lock.acquire()
             tmp_y = []
 
@@ -316,7 +312,7 @@ class ADC_Result(Resultable, Drawable):
 
     def __sub__(self, other):
         "Redefining self - other (scalar)"
-        if isinstance(other, IntType) or isinstance(other, FloatType):
+        if isinstance(other, types.IntType) or isinstance(other, types.FloatType):
             self.lock.acquire()
             tmp_y = []
 
@@ -332,7 +328,7 @@ class ADC_Result(Resultable, Drawable):
 
     def __rsub__(self, other):
         "Redefining other (scalar) - self"
-        if isinstance(other, IntType) or isinstance(other, FloatType):
+        if isinstance(other, types.IntType) or isinstance(other, types.FloatType):
             self.lock.acquire()
             tmp_y = []
 
@@ -349,7 +345,7 @@ class ADC_Result(Resultable, Drawable):
 
     def __mul__(self, other):
         "Redefining self * other (scalar)"
-        if isinstance(other, IntType) or isinstance(other, FloatType):
+        if isinstance(other, types.IntType) or isinstance(other, types.FloatType):
             self.lock.acquire()
             tmp_y = []
 
@@ -369,7 +365,7 @@ class ADC_Result(Resultable, Drawable):
 
     def __pow__(self, other):
         "Redefining self ** other (scalar)"
-        if isinstance(other, IntType) or isinstance(other, FloatType):
+        if isinstance(other, types.IntType) or isinstance(other, types.FloatType):
             self.lock.acquire()
             tmp_y = []
 
@@ -385,7 +381,7 @@ class ADC_Result(Resultable, Drawable):
         
     def __div__(self, other):
         "Redefining self / other (scalar)"
-        if isinstance(other, IntType) or isinstance(other, FloatType):
+        if isinstance(other, types.IntType) or isinstance(other, types.FloatType):
             self.lock.acquire()
             tmp_y = []
 
@@ -401,7 +397,7 @@ class ADC_Result(Resultable, Drawable):
 
     def __rdiv__(self, other):
         "Redefining other (scalar) / self"
-        if isinstance(other, IntType) or isinstance(other, FloatType):
+        if isinstance(other, types.IntType) or isinstance(other, types.FloatType):
             self.lock.acquire()
             tmp_y = []
 
