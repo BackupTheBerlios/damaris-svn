@@ -403,9 +403,9 @@ class DamarisGUI:
         # start data dump
         self.dump_thread=None
         self.save_thread=None
+        self.dump_filename=""
         if actual_config["data_pool_name"]!="":
             self.dump_states(init=True)
-
         gobject.timeout_add(200, self.observe_running_experiment)
 
     def observe_running_experiment(self):
