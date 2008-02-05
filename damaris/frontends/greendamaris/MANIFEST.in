@@ -1,7 +1,0 @@
-include src/gui/DAMARIS.png
-include src/gui/DAMARIS.ico
-include src/gui/damaris.glade
-include src/gui/damaris.gladep
-include doc/index.html
-recursive-include doc/reference-html *.html *.gif *.png *.css
-recursive-include doc/tutorial-html *.html *.gif *.png *.css *.tar.gz *.sh
