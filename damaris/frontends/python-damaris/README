@@ -1,0 +1,17 @@
+
+
+
+Installing into private directory
+=================================
+
+For whatever reason, it might be useful to install the
+python frontend into a private directory.
+Here are some examples on how to do it:
+
+	python setup.py install --home=/opt/damaris-private
+or
+	python setup.py install --home=$HOME/devel/damaris-installed
+
+To start Damaris use for example:
+
+	/opt/damaris-private/bin/DAMARIS

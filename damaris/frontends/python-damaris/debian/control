@@ -1,0 +1,16 @@
+Source: greendamaris
+Section: science
+Priority: optional
+Maintainer: Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>
+Build-Depends: debhelper, python-dev, python-central, dpkg-dev
+Standards-Version: 3.7.2
+XS-Python-Version: all
+
+Package: python-damaris
+Architecture: all
+XB-Python-Version: ${python:Versions}
+Provides:  ${python:Provides}, damaris-frontend
+Depends: ${python:Depends}, python-numpy (>=1.0), python-gtk2 (>=2.8.0), python-glade2, python-matplotlib (>=0.90), python-tables (>=1.3.2)
+Recommends: damaris-backends, python-scipy, python-numpy-ext
+Suggests: python-doc, python-tables-doc, python-numpy-doc
+Description: python frontend for damaris project

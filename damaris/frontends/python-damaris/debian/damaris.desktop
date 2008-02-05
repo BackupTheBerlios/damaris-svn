@@ -1,0 +1,13 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=DAMARIS
+Name[de]=DAMARIS
+Comment=DArmstadt MAgnetic Resonance Instrument Software
+Comment[de]=DArmstadt MAgnetic Resonance Instrument Software
+Exec=DAMARIS %F
+X-MultipleArgs=true
+Terminal=false
+MimeType=text/x-python;application/x-hdf;text/plain
+Type=Application
+Categories=Science;Physics;Chemistry;Education
+Icon=DAMARIS.png 
