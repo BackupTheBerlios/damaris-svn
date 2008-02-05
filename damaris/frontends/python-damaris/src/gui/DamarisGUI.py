@@ -1126,8 +1126,11 @@ class ScriptWidgets:
             new_place.set_line_offset(newcol)
         else:
             self.__dict__[text_name+"_column_indicator"].set_value(1)
-        
-        textbuffer.place_cursor(new_place)
+        if textbuffer.get_has_selection():
+            textbuffer.move_mark_by_name("insert", new_place)
+        else:
+            textbuffer.place_cursor(new_place)
+            
         textview.scroll_mark_onscreen(textbuffer.get_insert())
         textview.grab_focus()
         return True
