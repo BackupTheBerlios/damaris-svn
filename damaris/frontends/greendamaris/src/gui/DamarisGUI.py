@@ -2244,7 +2244,7 @@ class MonitorWidgets:
             self.update_display(self.displayed_data[0][:])
 
     def display_x_scaling_changed(self, widget, data=None):
-        self.__rescale==True
+        self.__rescale=True
         if self.displayed_data[0] is not None:
             self.update_display(self.displayed_data[0][:])
 
@@ -2483,22 +2483,24 @@ class MonitorWidgets:
 
             [k,v,e]=in_result.get_errorplotdata()
             if k.shape[0]!=0:
-                xmin=xmax=0
                 xmin=k.min()
-                xmax=k.max()
+                ymin=(v-e).min()
 
                 if xmin>0:
                     self.display_x_scaling_combobox.set_sensitive(True)
                 else:
+                    # force switch to lin scale
                     self.display_x_scaling_combobox.set_sensitive(False)
-                    # and reset to linear
-                    self.display_x_scaling_combobox.set_active(0)
+                    if self.display_x_scaling_combobox.get_active_text()!="lin":
+                        self.__rescale=True
+                        # and reset to linear
+                        self.display_x_scaling_combobox.set_active(0)
                 x_scale=self.display_x_scaling_combobox.get_active_text()
                 y_scale=self.display_y_scaling_combobox.get_active_text()
 
                 # Initial rescaling needed?
-                if self.__rescale or self.display_autoscaling_checkbutton.get_active():
-                    ymin=(v-e).min()
+                if self.__rescale: # or self.display_autoscaling_checkbutton.get_active():
+                    xmax=k.max()
                     ymax=(v+e).max()
                     # is there a range problem?
                     if xmin==xmax or ymin==ymax:
