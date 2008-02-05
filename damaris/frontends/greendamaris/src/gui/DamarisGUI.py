@@ -1879,7 +1879,8 @@ class MonitorWidgets:
 
         # Display footer:
         self.display_x_scaling_combobox = self.xml_gui.get_widget("display_x_scaling_combobox")
-        self.display_x_scaling_combobox.set_sensitive(True)
+        self.display_x_scaling_combobox.remove_text(1) # remove base-e log
+        self.display_x_scaling_combobox.set_sensitive(False)
         self.display_y_scaling_combobox = self.xml_gui.get_widget("display_y_scaling_combobox")
         self.display_y_scaling_combobox.set_sensitive(False)
         self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
@@ -1945,7 +1946,7 @@ class MonitorWidgets:
         self.display_source_combobox.connect("changed", self.display_source_changed_event)
         self.xml_gui.signal_connect("on_display_autoscaling_checkbutton_toggled", self.display_autoscaling_toggled)
         self.xml_gui.signal_connect("on_display_statistics_checkbutton_toggled", self.display_statistics_toggled)
-        #self.xml_gui.signal_connect("on_display_x_scaling_combobox_changed", self.display_x_scaling_changed)
+        self.xml_gui.signal_connect("on_display_x_scaling_combobox_changed", self.display_x_scaling_changed)
         #self.xml_gui.signal_connect("on_display_y_scaling_combobox_changed", self.display_y_scaling_changed)
         self.xml_gui.signal_connect("on_display_save_data_as_text_button_clicked", self.save_display_data_as_text)
 
@@ -2242,6 +2243,11 @@ class MonitorWidgets:
         if self.displayed_data[0] is not None:
             self.update_display(self.displayed_data[0][:])
 
+    def display_x_scaling_changed(self, widget, data=None):
+        self.__rescale==True
+        if self.displayed_data[0] is not None:
+            self.update_display(self.displayed_data[0][:])
+
     def display_statistics_toggled(self, widget, data=None):
         if self.displayed_data[0] is not None:
             self.update_display(self.displayed_data[0][:])
@@ -2418,19 +2424,19 @@ class MonitorWidgets:
                 if moving_average is not None:
                     yerr0=numpy.convolve(yerr0, moving_average, "same").take(data_slice)
                     yerr1=numpy.convolve(yerr1, moving_average, "same").take(data_slice)
-                # Real-Fehler
+                # Real-Errors
                 self.graphen[2].set_data(xdata, ydata0 + yerr0)
                 self.graphen[3].set_data(xdata, ydata0 - yerr0)
-                # Img-Fehler
+                # Img-Errors
                 self.graphen[4].set_data(xdata, ydata1 + yerr1)
                 self.graphen[5].set_data(xdata, ydata1 - yerr1)
                 yerr0=yerr1=None
             else:
                 # Maybe theres a better place for deleting the error-lines
-                # Real-Fehler
+                # Real-Errors
                 self.graphen[2].set_data([0.0],[0.0])
                 self.graphen[3].set_data([0.0],[0.0])
-                # Img-Fehler
+                # Img-Errors
                 self.graphen[4].set_data([0.0],[0.0])
                 self.graphen[5].set_data([0.0],[0.0])
             moving_average=data_mask=None
@@ -2460,10 +2466,10 @@ class MonitorWidgets:
 
             # Draw it!
             self.matplot_canvas.draw_idle()
-            in_result=None
+            del in_result
             
         elif isinstance(in_result, MeasurementResult):
-            # directly taken from bluedamaris
+
             # remove lines and error bars
             if self.measurementresultgraph is not None:
                 self.matplot_axes.lines.remove(self.measurementresultgraph[0])
@@ -2476,54 +2482,56 @@ class MonitorWidgets:
                 self.measurementresultgraph=None
 
             [k,v,e]=in_result.get_errorplotdata()
-            # Initial rescaling needed?
-            xmin=xmax=0
             if k.shape[0]!=0:
+                xmin=xmax=0
                 xmin=k.min()
                 xmax=k.max()
-            if self.__rescale or self.display_autoscaling_checkbutton.get_active():
-                if k.shape[0]!=0:
+
+                if xmin>0:
+                    self.display_x_scaling_combobox.set_sensitive(True)
+                else:
+                    self.display_x_scaling_combobox.set_sensitive(False)
+                    # and reset to linear
+                    self.display_x_scaling_combobox.set_active(0)
+                x_scale=self.display_x_scaling_combobox.get_active_text()
+                y_scale=self.display_y_scaling_combobox.get_active_text()
+
+                # Initial rescaling needed?
+                if self.__rescale or self.display_autoscaling_checkbutton.get_active():
                     ymin=(v-e).min()
                     ymax=(v+e).max()
                     # is there a range problem?
                     if xmin==xmax or ymin==ymax:
-                        self.__rescale=True
                         # fix range and scaling problems
                         if xmin==xmax:
-                            (xmin,xmax)=(xmin-1, xmin+1)
+                            if xmin!=0:
+                                (xmin,xmax)=(xmin-abs(xmin/10.0), xmin+abs(xmin/10.0))
+                            else:
+                                (xmin,xmax)=(-1,1)
                         if ymin==ymax:
-                            (ymin,ymax)=(ymin-1,ymin+1)
-                    else:
-                        self.__rescale=False
-                else:
-                    xmin=-1
-                    xmax=1
-                    ymin=-1
-                    ymax=1
-                    self.__rescale = True
-                
-                self.matplot_axes.set_xlim(xmin, xmax)
-                self.matplot_axes.set_ylim(ymin, ymax)
+                            if ymin==0:
+                                (ymin,ymax)=(ymin-abs(ymin/10.0), ymin+abs(ymin/10.0))
+                            else:
+                                (ymin, ymax)=(-1,1)
 
-            if xmin>0:
-                self.display_x_scaling_combobox.set_sensitive(True)
-            else:
-                self.display_x_scaling_combobox.set_sensitive(False)
-                self.display_x_scaling_combobox.set_active(0)
+                    if xmin<=0 or x_scale=="lin":
+                        self.matplot_axes.set_xscale("linear")
+                    if ymin<=0 or y_scale=="lin":
+                        self.matplot_axes.set_yscale("linear")
 
-            # decide about x log plot
-            x_scale=self.display_x_scaling_combobox.get_active_text()
-            if x_scale=="log" and xmin>0:
-                self.matplot_axes.set_xscale("log", basex=numpy.e)
-            elif x_scale=="log10" and xmin>0:
-                self.matplot_axes.set_xscale("log", basex=10.0)
-            else:
-                self.matplot_axes.set_xscale("linear")
+                    self.matplot_axes.set_xlim(xmin, xmax)
+                    self.matplot_axes.set_ylim(ymin, ymax)
 
-            # error bar plots
-            if k.shape[0]>0:
+                    # decide about x log plot
+                    if x_scale=="log10" and xmin>0:
+                        self.matplot_axes.set_xscale("log", basex=10.0)
+                    #elif x_scale=="log" and xmin>0:
+                    # e scaling implementation not really useful
+                    #    self.matplot_axes.set_xscale("log", basex=numpy.e)
+
+                    self.__rescale=False
+
                 self.measurementresultgraph=self.matplot_axes.errorbar(x=k, y=v, yerr=e, fmt="b+")
-            del k,v,e
 
             # Any title to be set?
             title=in_result.get_title()+""
@@ -2533,7 +2541,8 @@ class MonitorWidgets:
                 self.matplot_axes.set_title("")
 
             self.matplot_canvas.draw_idle()
-            in_result=None        
+            del k,v,e
+            del in_result
 
     def renew_display(self):
         """
