@@ -552,10 +552,18 @@ class DamarisGUI:
 
         if init:
             actual_config = self.config.get()
+            # provide name tags for dump file name
             extensions_dict={"date": time.strftime("%Y-%m-%d"),
-                             "datetime": time.strftime("%Y-%m-%d_%H%M"),
-                             "exp": os.path.splitext(os.path.basename(self.sw.exp_script_filename))[0],
-                             "res": os.path.splitext(os.path.basename(self.sw.res_script_filename))[0]}
+                             "datetime": time.strftime("%Y-%m-%d_%H%M")
+                             }
+            if self.sw.exp_script_filename is None:
+                extensions_dict["exp"]="unnamed"
+            else:
+                extensions_dict["exp"]=os.path.splitext(os.path.basename(self.sw.exp_script_filename))[0]
+            if self.sw.res_script_filename is None:
+                extensions_dict["res"]="unnamed"
+            else:
+                extensions_dict["res"]=os.path.splitext(os.path.basename(self.sw.res_script_filename))[0]
             try:
                 self.dump_filename=actual_config.get("data_pool_name")%extensions_dict
             except ValueError,e:
