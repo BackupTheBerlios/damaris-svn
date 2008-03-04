@@ -36,7 +36,12 @@ SpectrumMI40xxSeries::SpectrumMI40xxSeries(const ttlout& t_line, float impedance
   device_id=0;
   trigger_line=t_line;
 
-  default_settings.impedance=impedance; // Ohm
+  default_settings.impedance=1e6;
+  if (impedance==50.0)
+    default_settings.impedance=50.0; // Ohm
+  else if (impedance!=1e6)
+    fprintf(stderr, "unknown impedance %f, default is 1e6 Ohm\n", impedance);
+
   default_settings.sensitivity=5; // Volts
   effective_settings=NULL;
   
@@ -110,7 +115,13 @@ if (name == NULL) { FreeLibrary(spectrum_driver_dll); \
 	  throw SpectrumMI40xxSeries_error(error_message);
       }
 
-
+      /* print lines with useful information: */
+      fprintf(stderr, "Spectrum MI40xx series board with %d byte memory\n", memory_size);
+      fprintf(stderr,
+	      " impedance set to %f, expecting trigger on id=%d, ttls=%s\n",
+	      impedance,
+	      t_line.id,
+	      t_line.ttls.to_string().c_str());
 }
 
 void SpectrumMI40xxSeries::sample_after_external_trigger(double rate, size_t samples, double sensitivity, size_t resolution) {
