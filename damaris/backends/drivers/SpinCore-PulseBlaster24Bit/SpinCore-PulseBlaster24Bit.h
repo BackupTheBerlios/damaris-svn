@@ -85,7 +85,14 @@ class SpinCorePulseBlaster24Bit: public SpinCorePulseBlaster {
     /**
        initialises the PulseBlaster24Bit of Spincore
     */
-    SpinCorePulseBlaster24Bit(int the_id=0, double the_clock=1e8, unsigned int _sync_mask=0):  SpinCorePulseBlaster(10,the_clock) {ttl_device_id=the_id; sync_mask=_sync_mask;}
+    SpinCorePulseBlaster24Bit(int the_id=0, double the_clock=1e8, unsigned int _sync_mask=0):  SpinCorePulseBlaster(10,the_clock) {
+    ttl_device_id=the_id;
+    sync_mask=_sync_mask;
+    fprintf(stderr, "SpinCore PulseBlaster 24Bit: clock=%f Hz, device id=%d", the_clock, the_id);
+    if (sync_mask!=0)
+      fprintf(stderr, ", sync_mask=0x%06x", sync_mask);
+    fprintf(stderr, "\n");
+  }
 
     SpinCorePulseBlaster24Bit(const SpinCorePulseBlaster24Bit& orig);
     /**
