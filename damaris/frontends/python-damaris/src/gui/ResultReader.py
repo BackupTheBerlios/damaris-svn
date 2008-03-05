@@ -90,6 +90,7 @@ class ResultReader:
         "Parses the given file, adding it to the result-queue"
 
         self.result = None
+        self.in_description_section=False
         self.result_description = { }
         self.result_job_number = None
         # Job Date is set in __read_file()
@@ -165,7 +166,14 @@ class ResultReader:
 
         # Description
         elif in_name == "description":
-            self.result_description = in_attribute.copy()
+            # old style description:
+            if len(in_attribute)!=0:
+                self.result_description = in_attribute.copy()
+            self.in_description_section=True
+            self.in_description_data=()
+
+        elif self.in_description_section and in_name == "item":
+            self.in_description_data=[in_attribute["key"], in_attribute["type"], ""]
 
         # ADC_Results
         elif in_name == "adcdata":
@@ -246,8 +254,11 @@ class ResultReader:
     
     def __xmlCharacterDataFound(self, in_cdata):
 
+        if self.in_description_section and len(self.in_description_data):
+            self.in_description_data[2]+=in_cdata
+
         # ADC_Result
-        if self.__filetype == ResultReader.ADCDATA_TYPE and self.element_stack[-1]=="adcdata":
+        elif self.__filetype == ResultReader.ADCDATA_TYPE and self.element_stack[-1]=="adcdata":
             self.adc_result_trailing_chars+=in_cdata
 
         # Error_Result
@@ -316,6 +327,30 @@ class ResultReader:
                 self.adc_result_parts.append(tmp)
                 del tmp
             return
+
+        elif in_name == "description":
+            self.in_description_section=False
+
+        elif self.in_description_section and in_name == "item":
+            # make item contents to dictionary item:
+            k,t,v=self.in_description_data
+            self.in_description_data=()
+            if t == "None":
+                self.result_description[k]=None
+            if t == "Float":
+                self.result_description[k]=float(v)
+            elif t == "Int":
+                self.result_description[k]=int(v)
+            elif t == "Long":
+                self.result_description[k]=long(v)
+            elif t == "Complex":
+                self.result_description[k]=complex(v)
+            elif t == "Boolean":
+                self.result_description[k]=bool(v)
+            elif t == "String":
+                self.result_description[k]=v
+            else:
+                self.result_description[k]
 
         elif in_name == "result":
             pass

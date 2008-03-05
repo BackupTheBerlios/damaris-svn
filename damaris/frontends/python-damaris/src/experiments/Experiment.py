@@ -1,5 +1,5 @@
-# -*- coding: ISO-8859-1 -*-
-import numpy as N
+# -*- coding: iso-8859-1 -*-
+import types
 
 class StateBase(object):
 	def __init__(self):
@@ -224,15 +224,36 @@ class Experiment:
         xml_string += '<experiment no="%d">\n' % self.job_id
 
         # Descriptions einfügen
-        if len(self.description) is 0:
+        if len(self.description)==0:
             xml_string += '  <description/>\n'
         else:
-            xml_string += '  <description\n'
-
-            for key in self.description.keys():
-                xml_string += '    %s="%s"\n' % (key, str(self.description[key]))
-
-            xml_string += "  />\n"
+            xml_string += '  <description>\n'
+            for key,value in self.description.iteritems():
+	        type_string="repr"
+		if value is None:
+		    type_string="None"
+		    value=""
+	        if type(value) is types.FloatType:
+		    type_string="Float"
+		    value=repr(value)
+		elif type(value) is types.IntType:
+		    type_string="Int"
+		    value=repr(value)
+		elif type(value) is types.LongType:
+		    type_string="Long"
+		    value=repr(value)
+		elif type(value) is types.ComplexType:
+		    type_string="Complex"
+		    value=repr(value)
+		elif type(value) is types.BooleanType:
+		    type_string="Boolean"
+		    value=repr(value)
+		elif type(value) in types.StringTypes:
+		    type_string="String"
+	        else:
+		    value=repr(value)
+		xml_string += '    <item key="%s" type="%s">%s</item>\n'%(key, type_string ,value)
+            xml_string += "  </description>\n"
 
         # Experiment-Inhalt einfügen
         xml_string += self.state_list.to_xml(indent = "  ")
@@ -241,7 +262,6 @@ class Experiment:
         xml_string += '</experiment>\n'
 
         return xml_string
-
 
     def write_quit_job(self):
         "Returns a xml quit-job"
@@ -256,63 +276,7 @@ class Quit(Experiment):
     # /Public Methods ------------------------------------------------------------------------------
 
 
-# These methods return lists
-
-lin_range = N.arange
-
-def log_range(start, stop, stepno):
-	if (start<=0 or stop<=0 or stepno<1):
-		raise ValueError("start, stop must be positive and stepno must be >=1")
-	return N.logspace(N.log10(start),N.log10(stop), num=stepno)
-
-
-def staggered_range(some_range, size=3):
-	m=0
-	if isinstance(some_range, N.ndarray):
-		print "da"
-		is_numpy = True
-		some_range = list(some_range)
-	new_list=[]
-	for k in xrange(len(some_range)):
-		for i in xrange(size):
-			try:
-				index = (m*size)
-				new_list.append(some_range.pop(index))
-			except IndexError:
-				break
-		m+=1
-	if is_numpy: 
-		new_list = N.asarray(new_list+some_range)
-	else:
-		new_list+=some_range
-	return new_list
-		
-
-
-	
-def combine_ranges(*ranges):
-    new_list = []
-    for r in ranges:
-        new_list+=r
-    return new_list
-
-def interleave(some_list, left_out):
-	m=0
-	new_list = []
-	for j in xrange(left_out):
-		for i in xrange(len(some_list)):
-			if (i*left_out+m) < len(some_list):
-				new_list.append(some_list[i*left_out+m])
-			else:
-				m+=1
-				break
-	if isinstance(some_list, N.ndarray):
-		new_list = N.array(new_list) 
-	return new_list
-
-
-# This are the generators
-def lin_range_iter(start,stop, step):
+def lin_range(start,stop, step):
     this_one=float(start)+0.0
     if step>0:
         while (this_one<=float(stop)):
@@ -324,7 +288,7 @@ def lin_range_iter(start,stop, step):
             this_one+=float(step)
         
 
-def log_range_iter(start, stop, stepno):
+def log_range(start, stop, stepno):
     if (start<=0 or stop<=0 or stepno<1):
         raise ValueError("start, stop must be positive and stepno must be >=1")
     if int(stepno)==1:
@@ -334,7 +298,7 @@ def log_range_iter(start, stop, stepno):
     for i in xrange(int(stepno)):
         yield start*(factor**i)
 
-def staggered_range_iter(some_range, size = 1):
+def staggered_range(some_range, size = 1):
     # do one, drop one
     left_out=[]
     try:
@@ -351,7 +315,7 @@ def staggered_range_iter(some_range, size = 1):
         yield i
 
 
-def combine_ranges_iter(*ranges):
+def combine_ranges(*ranges):
     for r in ranges:
         for i in r:
             yield i
