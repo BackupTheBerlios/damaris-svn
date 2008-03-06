@@ -661,12 +661,19 @@ class DamarisGUI:
             timeline_row["results"]=0
             timeline_row.append()
             timeline_table.flush()
-            logarray=dump_file.createEArray(where=dump_file.root,
-                                            name="log",
-                                            atom=tables.StringAtom(itemsize=120),
-                                            shape=(0,),
-                                            title="log messages",
-                                            filters=tables.Filters(complevel=9, complib='zlib'))
+            if tables.__version__[0]=="1":
+                logarray=dump_file.createVLArray(where=dump_file.root,
+                                                name="log",
+                                                atom=tables.StringAtom(length=120),
+                                                title="log messages",
+                                                filters=tables.Filters(complevel=9, complib='zlib'))
+            else:
+                logarray=dump_file.createEArray(where=dump_file.root,
+                                                name="log",
+                                                atom=tables.StringAtom(itemsize=120),
+                                                shape=(0,),
+                                                title="log messages",
+                                                filters=tables.Filters(complevel=9, complib='zlib'))
         else:
             # repack file
             os.rename(self.dump_filename, self.dump_filename+".bak")
@@ -703,11 +710,12 @@ class DamarisGUI:
         logtext_start=logtextbuffer.get_iter_at_mark(last_end)
         logtext_end=logtextbuffer.get_end_iter()
         logtextbuffer.move_mark(last_end, logtext_end)
-        logtext=logtextbuffer.get_text(logtext_start , logtext_end)
+        # recode from unicode
+        logtext=codecs.getencoder("iso-8859-15")(logtextbuffer.get_text(logtext_start , logtext_end),"replace")[0]
         # avoid circular references (seems to be necessary with gtk-2.12)
         del logtextbuffer, logtext_start, logtext_end, last_end
-        # recode from unicode?!
-        dump_file.root.log.append(logtext.splitlines())
+        for l in logtext.splitlines():
+            dump_file.root.log.append(numpy.array([l], dtype="S120"))
 
         dump_file.flush()
         dump_file.close()
