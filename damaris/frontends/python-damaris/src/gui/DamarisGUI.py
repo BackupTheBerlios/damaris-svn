@@ -2066,7 +2066,6 @@ class MonitorWidgets:
             self.data_pool=None
 
             self.source_list_reset()
-            self.clear_display()
             self.update_counter_lock.acquire()
             self.update_counter=0
             self.update_counter_lock.release()
@@ -2075,12 +2074,12 @@ class MonitorWidgets:
         self.__rescale=True
         self.displayed_data=[None,None]
         self.display_source_path_label.set_label(u"")
+        self.clear_display()
 
         if data_pool is not None:
             # keep track of data
             self.data_pool=data_pool
             self.data_pool.register_listener(self.datapool_listener)
-
 
     #################### observing data structures and produce idle events
 
@@ -2149,7 +2148,6 @@ class MonitorWidgets:
         """
         here dictionary changes are done
         """
-
         self.update_counter_lock.acquire()
         self.update_counter-=1
         self.update_counter_lock.release()
@@ -2360,6 +2358,8 @@ class MonitorWidgets:
         unconditionally throw away everything
         we are inside gtk/gdk lock
         """
+        self.display_x_scaling_combobox.set_sensitive(False)
+        self.display_y_scaling_combobox.set_sensitive(False)
         if not hasattr(self, "__rescale"):
             self.__rescale = True
         if not hasattr(self,"measurementresultgraph"):
@@ -2415,9 +2415,14 @@ class MonitorWidgets:
             else:
                 self.display_y_scaling_combobox.set_sensitive(False)
 
-
             # Initial rescaling needed?
             if self.__rescale:
+                x_scale=self.display_x_scaling_combobox.get_active_text()
+                y_scale=self.display_y_scaling_combobox.get_active_text()
+                if xmin<=0 or x_scale=="lin":
+                    self.matplot_axes.set_xscale("linear")
+                if ymin<=0 or y_scale=="lin":
+                    self.matplot_axes.set_yscale("linear")
                 self.matplot_axes.set_xlim(xmin, xmax)
                 self.matplot_axes.set_ylim(ymin, ymax)
                 self.__rescale = False
