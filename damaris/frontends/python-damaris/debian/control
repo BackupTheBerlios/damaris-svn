@@ -3,8 +3,8 @@ Section: science
 Priority: optional
 Maintainer: Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>
 Build-Depends: debhelper, python-dev, python-central, dpkg-dev
-Standards-Version: 3.7.2
-XS-Python-Version: all
+Standards-Version: 3.7.3
+XS-Python-Version: current
 
 Package: python-damaris
 Architecture: all
