@@ -335,7 +335,11 @@ class DamarisGUI:
         # delete old data
         self.data = None
         self.monitor.observe_data_pool(self.data)
-        
+
+        # set the text mark for hdf logging
+        if self.log.textbuffer.get_mark("lastdumped") is None:
+            self.log.textbuffer.create_mark("lastdumped", self.log.textbuffer.get_end_iter(), left_gravity=True)
+
         # start experiment
         try:
             self.spool_dir=os.path.abspath(actual_config["spool_dir"])
@@ -618,7 +622,7 @@ class DamarisGUI:
                     dump_filename_pattern=filename.replace("%","%%")+"_%d"+ext
                 else:
                     dump_filename_pattern=self.dump_filename.replace("%","%%")+"_%d"
-                    
+
                 last_backup=0
                 cummulated_size=os.stat(self.dump_filename).st_size
                 while os.path.isfile(dump_filename_pattern%last_backup):
@@ -631,7 +635,7 @@ class DamarisGUI:
                 if cummulated_size>(1<<30):
                     print "Warning: the cummulated backups size of '%s' is %d MByte"%(self.dump_filename,
                                                                                       cummulated_size/(1<<20))
-                
+
             # dump all information to a file
             dump_file=tables.openFile(self.dump_filename,mode="w",title="DAMARIS experiment data")
             if dump_file.isUndoEnabled():
@@ -657,6 +661,12 @@ class DamarisGUI:
             timeline_row["results"]=0
             timeline_row.append()
             timeline_table.flush()
+            logarray=dump_file.createEArray(where=dump_file.root,
+                                            name="log",
+                                            atom=tables.StringAtom(itemsize=120),
+                                            shape=(0,),
+                                            title="log messages",
+                                            filters=tables.Filters(complevel=9, complib='zlib'))
         else:
             # repack file
             os.rename(self.dump_filename, self.dump_filename+".bak")
@@ -683,7 +693,22 @@ class DamarisGUI:
 
         self.data.write_hdf5(dump_file, where="/", name="data_pool",
                              complib=self.dump_complib, complevel=self.dump_complevel)
-        
+
+        # dump log window information:
+        # also dump backend's logfile information?
+        logtextbuffer=self.log.textbuffer
+        last_end=logtextbuffer.get_mark("lastdumped")
+        if last_end is None:
+            last_end=logtextbuffer.create_mark("lastdumped", logtextbuffer.get_start_iter(), left_gravity=True)
+        logtext_start=logtextbuffer.get_iter_at_mark(last_end)
+        logtext_end=logtextbuffer.get_end_iter()
+        logtextbuffer.move_mark(last_end, logtext_end)
+        logtext=logtextbuffer.get_text(logtext_start , logtext_end)
+        # avoid circular references (seems to be necessary with gtk-2.12)
+        del logtextbuffer, logtext_start, logtext_end, last_end
+        # recode from unicode?!
+        dump_file.root.log.append(logtext.splitlines())
+
         dump_file.flush()
         dump_file.close()
         self.last_dumped=time.time()
