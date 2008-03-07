@@ -478,7 +478,8 @@ class DamarisGUI:
             else:
                 self.dump_thread.join()
                 self.dump_thread=None
-                print "done (%.01f s)"%(time.time()-self.dump_start_time)
+                dump_size=os.stat(self.dump_filename).st_size/1e6
+                print "done (%.1f s, %.1f MB)"%(time.time()-self.dump_start_time, dump_size)
 
         gtk.gdk.threads_enter()
         if e_text:
@@ -519,7 +520,8 @@ class DamarisGUI:
                         return True
                     self.save_thread.join()
                     self.save_thread=None
-                    print "done (%.01f s)"%(time.time()-self.dump_start_time)
+                    dump_size=os.stat(self.dump_filename).st_size/1e6
+                    print "done (%.1f s, %.1f MB)"%(time.time()-self.dump_start_time, dump_size)
 
             # now everything is stopped
             self.state=DamarisGUI.Edit_State
@@ -555,6 +557,7 @@ class DamarisGUI:
         """
 
         if init:
+            # calculate new settings for hdf files
             actual_config = self.config.get()
             # provide name tags for dump file name
             extensions_dict={"date": time.strftime("%Y-%m-%d"),
@@ -613,7 +616,7 @@ class DamarisGUI:
                 self.dump_timeinterval=0
                 return True
 
-            # move away old file
+            # move away old files
             if os.path.isfile(self.dump_filename):
                 # create bakup name pattern
                 dump_filename_pattern=None
@@ -635,11 +638,12 @@ class DamarisGUI:
                 if cummulated_size>(1<<30):
                     print "Warning: the cummulated backups size of '%s' is %d MByte"%(self.dump_filename,
                                                                                       cummulated_size/(1<<20))
-
-            # dump all information to a file
+        dump_file=None
+        if not os.path.isfile(self.dump_filename):
+            if not init:
+                print "dump file \"%s\" vanished unexpectedly, creating new one"%self.dump_filename
+            # useful information to a file
             dump_file=tables.openFile(self.dump_filename,mode="w",title="DAMARIS experiment data")
-            if dump_file.isUndoEnabled():
-                dump_file.disableUndo()
             # write scripts
             scriptgroup=dump_file.createGroup("/","scripts","Used Scripts")
             exp_text, res_text=self.sw.get_scripts()
@@ -655,12 +659,6 @@ class DamarisGUI:
                                                         ("experiments","int64"),
                                                         ("results","int64")]))
             timeline_table=dump_file.createTable("/","timeline", timeline_tablecols, title="Timeline of Experiment")
-            timeline_row=timeline_table.row
-            timeline_row["time"]=time.strftime("%Y%m%d %H:%M:%S")
-            timeline_row["experiments"]=0
-            timeline_row["results"]=0
-            timeline_row.append()
-            timeline_table.flush()
             if tables.__version__[0]=="1":
                 logarray=dump_file.createVLArray(where=dump_file.root,
                                                 name="log",
@@ -674,35 +672,40 @@ class DamarisGUI:
                                                 shape=(0,),
                                                 title="log messages",
                                                 filters=tables.Filters(complevel=9, complib='zlib'))
-        else:
-            # repack file
+        if not init and dump_file is None:
+            # take some data from old dump file and repack
             os.rename(self.dump_filename, self.dump_filename+".bak")
             old_dump_file=tables.openFile(self.dump_filename+".bak", mode="r+")
             if "data_pool" in old_dump_file.root:
                 old_dump_file.removeNode(where="/", name="data_pool", recursive=True)
             old_dump_file.copyFile(self.dump_filename)
             old_dump_file.close()
-            old_dump_file=None
+            del old_dump_file
             os.remove(self.dump_filename+".bak")
             # prepare for update
             dump_file=tables.openFile(self.dump_filename, mode="r+")
-            if dump_file.isUndoEnabled():
-                dump_file.disableUndo()
-            e=self.si.data.get("__recentexperiment",-1)+1
-            r=self.si.data.get("__recentresult",-1)+1
-            timeline_table=dump_file.root.timeline
-            timeline_row=timeline_table.row
-            timeline_row["time"]=time.strftime("%Y%m%d %H:%M:%S")
-            timeline_row["experiments"]=e
-            timeline_row["results"]=r
-            timeline_row.append()
-            timeline_table.flush()
-
+        
+        # no undo please!
+        if dump_file.isUndoEnabled():
+            dump_file.disableUndo()
+        
+        # save the data!
         self.data.write_hdf5(dump_file, where="/", name="data_pool",
                              complib=self.dump_complib, complevel=self.dump_complevel)
 
-        # dump log window information:
-        # also dump backend's logfile information?
+        # now save additional information
+        e=self.si.data.get("__recentexperiment",-1)+1
+        r=self.si.data.get("__recentresult",-1)+1
+        timeline_table=dump_file.root.timeline
+        timeline_row=timeline_table.row
+        timeline_row["time"]=time.strftime("%Y%m%d %H:%M:%S")
+        timeline_row["experiments"]=e
+        timeline_row["results"]=r
+        timeline_row.append()
+        timeline_table.flush()
+
+        # save log window information:
+        # also save backend's logfile information?
         logtextbuffer=self.log.textbuffer
         last_end=logtextbuffer.get_mark("lastdumped")
         if last_end is None:
