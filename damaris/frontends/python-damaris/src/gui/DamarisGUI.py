@@ -571,6 +571,7 @@ class DamarisGUI:
                 extensions_dict["res"]="unnamed"
             else:
                 extensions_dict["res"]=os.path.splitext(os.path.basename(self.sw.res_script_filename))[0]
+	    # create new dump file name
             try:
                 self.dump_filename=actual_config.get("data_pool_name")%extensions_dict
             except ValueError,e:
@@ -579,6 +580,11 @@ class DamarisGUI:
                 print "reseting dumpfile to "+self.dump_filename
             del extensions_dict
 
+            if os.path.split(self.dump_filename)[1]=="" or os.path.isdir(self.dump_filename):
+                print "The dump filename is a directory, using filename 'DAMARIS_data_pool.h5'"
+                self.dump_filename+=os.sep+"DAMARIS_data_pool.h5"
+
+	    # compression
             self.dump_complib=actual_config.get("data_pool_complib",None)
             if self.dump_complib=="None":
                 self.dump_complib=None
@@ -587,36 +593,14 @@ class DamarisGUI:
             else:
                 self.dump_complevel=0
 
+	    # time interval
             self.dump_timeinterval=60*60*10
             try:
                 self.dump_timeinterval=int(60*float(actual_config["data_pool_write_interval"]))
             except ValueError,e:
                 print "configuration provides non-number for dump interval: "+str(e)
 
-            if os.path.split(self.dump_filename)[1]=="" or os.path.isdir(self.dump_filename):
-                print "The dump filename is a directory, using filename 'DAMARIS_data_pool.h5'"
-                self.dump_filename+=os.sep+"DAMARIS_data_pool.h5"
-
-            # create necessary directories
-            dir_stack=[]
-            dir_trunk=os.path.dirname(os.path.abspath(self.dump_filename))
-            while dir_trunk!="" and not os.path.isdir(dir_trunk):
-                dir_stack.append(os.path.basename(dir_trunk))
-                dir_trunk=os.path.dirname(dir_trunk)
-
-            try:
-                while len(dir_stack):
-                    dir_trunk=os.path.join(dir_trunk, dir_stack.pop())
-                    if os.path.isdir(dir_trunk): continue
-                    os.mkdir(dir_trunk)
-            except OSError, e:
-                print e
-                print "coud not create dump directory '%s', so hdf5 dumps disabled"%dir_trunk
-                self.dump_filename=""
-                self.dump_timeinterval=0
-                return True
-
-            # move away old files
+            # if existent, move away old files
             if os.path.isfile(self.dump_filename):
                 # create bakup name pattern
                 dump_filename_pattern=None
@@ -638,13 +622,32 @@ class DamarisGUI:
                 if cummulated_size>(1<<30):
                     print "Warning: the cummulated backups size of '%s' is %d MByte"%(self.dump_filename,
                                                                                       cummulated_size/(1<<20))
-        dump_file=None
+        # now it's time to create the hdf file
+	dump_file=None
         if not os.path.isfile(self.dump_filename):
             if not init:
                 print "dump file \"%s\" vanished unexpectedly, creating new one"%self.dump_filename
-            # useful information to a file
+            # have a look to the path and create necessary directories
+	    dir_stack=[]
+	    dir_trunk=os.path.dirname(os.path.abspath(self.dump_filename))
+	    while dir_trunk!="" and not os.path.isdir(dir_trunk):
+		dir_stack.append(os.path.basename(dir_trunk))
+		dir_trunk=os.path.dirname(dir_trunk)
+		try:
+			while len(dir_stack):
+				dir_trunk=os.path.join(dir_trunk, dir_stack.pop())
+				if os.path.isdir(dir_trunk): continue
+				os.mkdir(dir_trunk)
+		except OSError, e:
+			print e
+			print "coud not create dump directory '%s', so hdf5 dumps disabled"%dir_trunk
+			self.dump_filename=""
+			self.dump_timeinterval=0
+			return True
+
+	    # create new dump file
             dump_file=tables.openFile(self.dump_filename,mode="w",title="DAMARIS experiment data")
-            # write scripts
+            # write scripts and other useful information
             scriptgroup=dump_file.createGroup("/","scripts","Used Scripts")
             exp_text, res_text=self.sw.get_scripts()
             if self.si.exp_script:
@@ -672,8 +675,9 @@ class DamarisGUI:
                                                 shape=(0,),
                                                 title="log messages",
                                                 filters=tables.Filters(complevel=9, complib='zlib'))
-        if not init and dump_file is None:
-            # take some data from old dump file and repack
+        
+	if dump_file is None and os.path.isfile(self.dump_filename) and tables.isPyTablesFile(self.dump_filename):
+            # take some data from dump file and repack
             os.rename(self.dump_filename, self.dump_filename+".bak")
             old_dump_file=tables.openFile(self.dump_filename+".bak", mode="r+")
             if "data_pool" in old_dump_file.root:
@@ -685,6 +689,13 @@ class DamarisGUI:
             # prepare for update
             dump_file=tables.openFile(self.dump_filename, mode="r+")
         
+	if dump_file is None:
+		# exit!
+		print "coud not create dump directory '%s', so hdf5 dumps disabled"%dir_trunk
+		self.dump_filename=""
+		self.dump_timeinterval=0
+		return True
+	
         # no undo please!
         if dump_file.isUndoEnabled():
             dump_file.disableUndo()
