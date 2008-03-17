@@ -350,7 +350,9 @@ class ResultReader:
             elif t == "String":
                 self.result_description[k]=v
             else:
-                self.result_description[k]
+                # Anything else will be handled as a string
+                # Probably "repr".
+                self.result_description[k]=v
 
         elif in_name == "result":
             pass
