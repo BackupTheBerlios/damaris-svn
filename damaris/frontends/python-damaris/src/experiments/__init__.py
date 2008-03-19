@@ -1,3 +1,3 @@
-from Experiment import Experiment, lin_range, log_range, staggered_range, combine_ranges
-
-__all__=["Experiment", "lin_range", "log_range", "staggered_range", "combine_ranges"]
+from Experiment import Experiment
+from ranges import *
+#__all__=["Experiment"]

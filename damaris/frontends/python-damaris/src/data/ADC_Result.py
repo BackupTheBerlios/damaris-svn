@@ -3,7 +3,7 @@
 from Resultable import Resultable
 from Drawable import Drawable
 from Accumulation import Accumulation
-
+from DamarisFFT import DamarisFFT
 import threading
 import numpy
 import sys
@@ -19,7 +19,7 @@ import tables
 #                                                                           #
 #############################################################################
 
-class ADC_Result(Resultable, Drawable):
+class ADC_Result(Resultable, Drawable,DamarisFFT):
     def __init__(self, x = None, y = None, index = None, sampl_freq = None, desc = None, job_id = None, job_date = None):
         Resultable.__init__(self)
         Drawable.__init__(self)
@@ -282,7 +282,7 @@ class ADC_Result(Resultable, Drawable):
         if len(self.y)>0:
             tmp_string += "Indexes:             " + str(self.index) + "\n"
             tmp_string += "Samples per Channel: " + str(len(self.y[0])) + "\n"
-            tmp_string += "Samplingfrequency:   " + str(self.sampling_rate)
+            tmp_string += "Samplingfrequency:   " + str(self.sampling_rate) + "\n"
             tmp_string += "X:                   " + repr(self.x) + "\n"
             for i in range(self.get_number_of_channels()):
                 tmp_string += ("Y(%d):                " % i) + repr(self.y[i]) + "\n"
