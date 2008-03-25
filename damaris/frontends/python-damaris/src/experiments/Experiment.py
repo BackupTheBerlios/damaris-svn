@@ -1,5 +1,6 @@
 # -*- coding: iso-8859-1 -*-
 import types
+import numpy
 
 class StateBase(object):
 	def __init__(self):
@@ -233,19 +234,23 @@ class Experiment:
 		if value is None:
 		    type_string="None"
 		    value=""
-	        if type(value) is types.FloatType:
+	        if type(value) is types.FloatType \
+	        	or isinstance(value, numpy.floating):
 		    type_string="Float"
 		    value=repr(value)
-		elif type(value) is types.IntType:
+		elif type(value) is types.IntType \
+			or isinstance(value, numpy.integer):
 		    type_string="Int"
 		    value=repr(value)
 		elif type(value) is types.LongType:
 		    type_string="Long"
 		    value=repr(value)
-		elif type(value) is types.ComplexType:
+		elif type(value) is types.ComplexType \
+			or isinstance(value, numpy.complexfloating):
 		    type_string="Complex"
 		    value=repr(value)
-		elif type(value) is types.BooleanType:
+		elif type(value) is types.BooleanType \
+			or isinstance(value, numpy.bool_):
 		    type_string="Boolean"
 		    value=repr(value)
 		elif type(value) in types.StringTypes:
