@@ -1,3 +1,3 @@
 from Experiment import Experiment
-from ranges import *
+from damaris.tools.ranges import *
 #__all__=["Experiment"]
