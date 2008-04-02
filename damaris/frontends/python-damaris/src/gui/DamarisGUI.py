@@ -1600,10 +1600,15 @@ class ConfigTab:
     by now all values are saved in the GUI widgets
     """
 
-    defaultfilename="damaris_config.xml"
-
     def __init__(self, xml_gui):
         self.xml_gui=xml_gui
+
+        self.defaultfilename = "damaris_config.xml"
+        self.system_default_filename = None
+        self.system_backend_folder = "/usr/lib/damaris/backends/"
+        if sys.platform[:5] == "linux":
+            self.defaultfilename = os.path.expanduser("~/.damaris")
+            self.system_default_filename = "/etc/damaris/python-damaris.conf"
 
         self.config_start_backend_checkbutton=self.xml_gui.get_widget("start_backend_checkbutton")
         self.config_backend_executable_entry=self.xml_gui.get_widget("backend_executable_entry")
@@ -1711,9 +1716,6 @@ pygobject version %(pygobject)s
         info_text%={"moduleversions": components_text%components_versions, "damarisversion": __version__ }
         info_textbuffer.set_text(info_text)
         del info_textbuffer, info_text, components_text, components_versions
-        
-        if sys.platform[:5] == "linux":
-            self.defaultfilename=os.path.expanduser("~/.damaris")
 
         self.xml_gui.signal_connect("on_config_save_button_clicked", self.save_config_handler)
         self.xml_gui.signal_connect("on_config_load_button_clicked", self.load_config_handler)
@@ -1722,8 +1724,10 @@ pygobject version %(pygobject)s
         self.xml_gui.signal_connect("on_fontbutton_font_set",self.set_script_font_handler)
         self.xml_gui.signal_connect("on_printer_setup_button_clicked", self.printer_setup_handler)
 
-        if os.path.isfile(self.defaultfilename) and os.access(self.defaultfilename,os.R_OK):
-            self.load_config()
+        if self.system_default_filename:
+            self.load_config(self.system_default_filename)
+        self.config_from_system = self.get()
+        self.load_config()
 
     def get(self):
         """
@@ -1784,6 +1788,8 @@ pygobject version %(pygobject)s
                 print "compression method %s is not supported"%config["data_pool_complib"]
 
     def load_config_handler(self, widget):
+        if self.system_default_filename:
+            self.load_config(self.system_default_filename)
         self.load_config()
 
     def save_config_handler(self, widget):
@@ -1844,9 +1850,9 @@ pygobject version %(pygobject)s
         dialog.set_default_response(gtk.RESPONSE_OK)
         dialog.set_select_multiple(False)
         dialog.set_filename(os.path.abspath(self.config_backend_executable_entry.get_text()))
-        system_backend_folder="/usr/lib/damaris/backends/"
-        if os.path.isdir(system_backend_folder) and os.access(system_backend_folder, os.R_OK):
-            dialog.add_shortcut_folder(system_backend_folder)
+        if os.path.isdir(self.system_backend_folder) \
+                and os.access(self.system_backend_folder, os.R_OK):
+            dialog.add_shortcut_folder(self.system_backend_folder)
         # Event-Handler for responce-signal (when one of the button is pressed)
         dialog.connect("response", response, self)
         f=gtk.FileFilter()
@@ -1864,6 +1870,13 @@ pygobject version %(pygobject)s
         """
         if filename is None:
             filename=self.defaultfilename
+
+        try:
+            readfile = file(filename, "r")
+        except Exception, e:
+            if debug:
+                print "Could not open %s: %s" % (filename, str(e))
+            return
 
         # parser functions
         def start_element(name, attrs, config):
@@ -1899,7 +1912,7 @@ pygobject version %(pygobject)s
         p.StartElementHandler = lambda n,a: start_element(n,a, config)
         p.EndElementHandler = lambda n: end_element(n, config)
         p.CharacterDataHandler = lambda d: char_data(d, config)
-        p.ParseFile(file(filename,"r"))
+        p.ParseFile(readfile)
 
         self.set(config)
 
@@ -1914,6 +1927,12 @@ pygobject version %(pygobject)s
         configfile.write("<?xml version='1.0'?>\n")
         configfile.write("<damaris>\n")
         for k,v in config.iteritems():
+            if k in self.config_from_system \
+                    and self.config_from_system[k] == v:
+                if debug:
+                    print "Ignoring for write: %r / %r (%r)" % \
+                            (k, v, self.config_from_system[k])
+                continue
             val=""
             typename=""
             if type(v) is types.BooleanType:
