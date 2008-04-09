@@ -152,19 +152,13 @@ class DamarisGUI:
         if exp_script_filename is not None and exp_script_filename!="":
             self.sw.exp_script_filename=exp_script_filename[:]
             if os.path.isfile(exp_script_filename) and os.access(exp_script_filename, os.R_OK):
-                script_file = file(exp_script_filename, "rU")
-                for line in script_file:
-                    exp_script += unicode(line,encoding="iso-8859-15", errors="replace")
-                script_file.close()
+                exp_script = self.sw.load_file_as_unicode(exp_script_filename)
 
         res_script=u""
         if res_script_filename is not None and res_script_filename!="":
             self.sw.res_script_filename=res_script_filename[:]
             if os.path.isfile(res_script_filename) and os.access(res_script_filename, os.R_OK):
-                script_file = file(res_script_filename, "rU")
-                for line in script_file:
-                    res_script += unicode(line,encoding="iso-8859-15", errors="replace")
-                script_file.close()
+                res_script = self.sw.load_file_as_unicode(res_script_filename)
         self.sw.set_scripts(exp_script, res_script)
 
         self.statusbar_init()
@@ -932,6 +926,7 @@ class LogWindow:
         self.logstream=log
         self.logstream.gui_log=self
         self.last_timetag=None
+        self("Started in directory %s\n" % os.getcwd())
 
     def __call__(self, message):
         timetag=time.time()
@@ -1332,6 +1327,14 @@ class ScriptWidgets:
         self.textviews_moved(widget)
         return 0
 
+    def load_file_as_unicode(self, script_filename):
+        script_file = file(script_filename, "rU")
+        script_string = u""
+        for line in script_file:
+            script_string += unicode(line,encoding="iso-8859-15", errors="replace")
+        script_file.close()
+        return script_string
+
     def open_file(self, widget, Data = None):
         """
         do the open file dialog, if necessary ask for save
@@ -1364,11 +1367,7 @@ class ScriptWidgets:
                     outer_space.show_error_dialog("File I/O Error","Cannot read from file %s" % script_filename)
                     return True
 
-                script_file = file(script_filename, "rU")
-                script_string = u""
-                for line in script_file:
-                    script_string += unicode(line,encoding="iso-8859-15", errors="replace")
-                script_file.close()
+                script_string = script_widget.load_file_as_unicode(script_filename)
 
                 if script_widget.main_notebook.get_current_page() == 0:    
                     script_widget.exp_script_filename=script_filename
