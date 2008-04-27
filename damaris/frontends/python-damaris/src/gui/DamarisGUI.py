@@ -2044,8 +2044,9 @@ class MonitorWidgets:
 
     def source_list_reset(self):
         self.display_source_treestore.clear()
-        self.source_list_add('None')
-        self.display_source_combobox.set_active(0)
+        self.source_list_add(u'None')
+	none_iter=self.source_list_find([u'None'])
+        if none_iter is not None: self.display_source_combobox.set_active_iter(none_iter)
 
     def source_list_find_one(self, model, iter, what):
         """find node in subcategory"""
@@ -2188,7 +2189,7 @@ class MonitorWidgets:
 
         del displayed_object
         del object_to_display
-        
+
     def datastructures_listener(self, event):
         """
         do fast work selecting important events
@@ -2260,8 +2261,10 @@ class MonitorWidgets:
             if (not self.displayed_data[0] is None and
                 self.displayed_data[0]==event.subject):
                 self.displayed_data=[None,None]
-                self.display_source_combobox.set_active(0)
-                self.clear_display()
+                none_iter=self.source_list_find([u'None'])
+	        if none_iter is not None: self.display_source_combobox.set_active_iter(none_iter)
+		# not necessary, because event will be submitted
+                #self.clear_display()
             self.source_list_remove(event.subject)
             gtk.gdk.threads_leave()
         elif event.what==DataPool.Event.destroy:
@@ -2295,18 +2298,19 @@ class MonitorWidgets:
     def display_source_changed_event(self, widget, data=None):
         
         new_data_name = self.source_list_current()
-        if (self.displayed_data[0] is None and new_data_name=="None"): return
+        if (self.displayed_data[0] is None and new_data_name==u"None"): return
         if (self.displayed_data[0]==new_data_name): return
         if self.displayed_data[1] is not None and hasattr(self.displayed_data[1], "unregister_listener"):
             self.displayed_data[1].unregister_listener(self.datastructures_listener)
             self.displayed_data[1]=None
             # register new one
-        if new_data_name=="None":
+        if new_data_name==u"None":
             self.display_source_path_label.set_label(u"")
             self.displayed_data=[None,None]
             self.clear_display()
         elif self.data_pool is None or new_data_name not in self.data_pool:
-            self.display_source_combobox.set_active(0)
+            none_iter=self.source_list_find([u'None'])
+	    if none_iter is not None: self.display_source_combobox.set_active_iter(none_iter)
             self.display_source_path_label.set_label(u"")
         else:
             new_data_struct=self.data_pool[new_data_name]
