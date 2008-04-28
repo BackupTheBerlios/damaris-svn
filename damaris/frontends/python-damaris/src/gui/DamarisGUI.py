@@ -2322,7 +2322,13 @@ class MonitorWidgets:
                 self.display_source_path_label.set_label(u"in "+new_data_name[:dirpart])
             else:
                 self.display_source_path_label.set_label(u"")
-            self.renew_display()
+            self.clear_display()
+           # renew display via idle event
+            self.update_counter_lock.acquire()
+            self.update_counter+=1
+            self.update_counter_lock.release()
+           event=DataPool.Event(DataPool.Event.updated_value, new_data_name)
+            gobject.idle_add(self.datapool_idle_listener,event,priority=gobject.PRIORITY_DEFAULT_IDLE)
 
     def display_autoscaling_toggled(self, widget, data=None):
         self.matplot_axes.set_autoscale_on(self.display_autoscaling_checkbutton.get_active())
