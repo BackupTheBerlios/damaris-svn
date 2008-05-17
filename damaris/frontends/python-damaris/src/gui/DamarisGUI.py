@@ -1180,7 +1180,7 @@ class ScriptWidgets:
             textbuffer.move_mark_by_name("insert", new_place)
         else:
             textbuffer.place_cursor(new_place)
-            
+
         textview.scroll_mark_onscreen(textbuffer.get_insert())
         textview.grab_focus()
         return True
@@ -1196,24 +1196,33 @@ class ScriptWidgets:
         textbuffer=widget.get_buffer()
         cursor_mark=textbuffer.get_insert()
         cursor_iter=textbuffer.get_iter_at_mark(cursor_mark)
-        # todo limits! indicator.set_range(1, ...)
-        # fortunately set_text does not emit a change value event
-        if textbuffer==self.experiment_script_textbuffer:
-            self.experiment_script_line_indicator.set_range(1, textbuffer.get_end_iter().get_line()+1)
-            self.experiment_script_line_indicator.set_value(cursor_iter.get_line()+1)
-            self.experiment_script_column_indicator.set_range(1,cursor_iter.get_chars_in_line()+1)
-            self.experiment_script_column_indicator.set_value(cursor_iter.get_line_offset()+1)
-        if textbuffer==self.data_handling_textbuffer:
-            self.data_handling_line_indicator.set_range(1, textbuffer.get_end_iter().get_line()+1)
-            self.data_handling_line_indicator.set_value(cursor_iter.get_line()+1)
-            self.data_handling_column_indicator.set_range(1,cursor_iter.get_chars_in_line()+1)
-            self.data_handling_column_indicator.set_value(cursor_iter.get_line_offset()+1)
+        if textbuffer is self.experiment_script_textbuffer:
+	    line_indicator=self.experiment_script_line_indicator
+	    column_indicator=self.experiment_script_column_indicator
+        if textbuffer is self.data_handling_textbuffer:
+	    line_indicator=self.data_handling_line_indicator
+	    column_indicator=self.data_handling_column_indicator
+
+	# do only necessary updates!
+	li_range_new=textbuffer.get_end_iter().get_line()+1
+	if line_indicator.get_range()[1]!=li_range_new:
+	        line_indicator.set_range(1, li_range_new)
+	ci_range_new=cursor_iter.get_chars_in_line()+1
+	if column_indicator.get_range()[1]!=ci_range_new:
+	        column_indicator.set_range(1, ci_range_new)
+	cursor_line=cursor_iter.get_line()+1
+	cursor_lineoffset=cursor_iter.get_line_offset()+1
+	if line_indicator.get_value()!=cursor_line:
+	        line_indicator.set_value(cursor_line)
+	if column_indicator.get_value()!=cursor_lineoffset:
+	        column_indicator.set_value(cursor_lineoffset)
         return False
 
     def textviews_keypress(self, widget, event, data = None):
         """
         helpful tab and return key functions
         """
+	#print "keypress", event.state, event.keyval
         if event.state&gtk.gdk.CONTROL_MASK!=0:
             if event.keyval==gtk.gdk.keyval_from_name("c"):
                 if self.main_notebook.get_current_page() == 0:
@@ -1323,9 +1332,9 @@ class ScriptWidgets:
             widget.scroll_to_mark(cursor_mark,0.0,0)
             self.textviews_moved(widget)
             return 1
-        
-        self.textviews_moved(widget)
-        return 0
+
+        #self.textviews_moved(widget)
+	return 0
 
     def load_file_as_unicode(self, script_filename):
         script_file = file(script_filename, "rU")
