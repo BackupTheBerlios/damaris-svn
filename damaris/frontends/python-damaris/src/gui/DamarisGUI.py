@@ -1724,7 +1724,11 @@ pygobject version %(pygobject)s
         self.xml_gui.signal_connect("on_printer_setup_button_clicked", self.printer_setup_handler)
 
         if self.system_default_filename:
-            self.load_config(self.system_default_filename)
+	    if os.access(self.system_default_filename, os.R_OK):
+                self.load_config(self.system_default_filename)
+	    else:
+		print "can not read system defaults from %s, ask your instrument responsible if required"%self.system_default_filename
+
         self.config_from_system = self.get()
         self.load_config()
 
@@ -1929,8 +1933,8 @@ pygobject version %(pygobject)s
             if k in self.config_from_system \
                     and self.config_from_system[k] == v:
                 if debug:
-                    print "Ignoring for write: %r / %r (%r)" % \
-                            (k, v, self.config_from_system[k])
+                    print "Ignoring for write, because system value for %r is %r equal to %r" % \
+                            (k, self.config_from_system[k],v)
                 continue
             val=""
             typename=""

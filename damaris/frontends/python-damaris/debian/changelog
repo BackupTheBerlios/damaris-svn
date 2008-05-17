@@ -2,8 +2,10 @@ python-damaris (0.11-0.1) experimental; urgency=low
 
   * updated debian python policy
   * job descriptions: types are saved and recovered
+  * support for system wide defaults file (thanks to Christian)
+  * revised display source change mechanism, found some severe errors
 
- -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Thu, 06 Mar 2008 06:28:13 +0100
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Thu, 17 Mar 2008 17:28:13 +0100
 
 python-damaris (0.11-0.0) experimental; urgency=low
 
