@@ -2327,7 +2327,7 @@ class MonitorWidgets:
             self.update_counter_lock.acquire()
             self.update_counter+=1
             self.update_counter_lock.release()
-           event=DataPool.Event(DataPool.Event.updated_value, new_data_name)
+            event=DataPool.Event(DataPool.Event.updated_value, new_data_name)
             gobject.idle_add(self.datapool_idle_listener,event,priority=gobject.PRIORITY_DEFAULT_IDLE)
 
     def display_autoscaling_toggled(self, widget, data=None):
