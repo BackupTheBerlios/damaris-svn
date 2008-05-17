@@ -2,8 +2,11 @@ python-damaris (0.11-0.1) experimental; urgency=low
 
   * updated debian python policy
   * job descriptions: types are saved and recovered
-  * support for system wide defaults file (thanks to Christian)
-  * revised display source change mechanism, found some severe errors
+  * support for system wide defaults file thanks to Christian
+  * new interleaved range by Markus Rosenstihl
+  * revised display source change event handling, found some severe errors
+  * cursor movement and selection problems solved
+  * log window information are saved in hdf files
 
  -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Thu, 17 Mar 2008 17:28:13 +0100
 
