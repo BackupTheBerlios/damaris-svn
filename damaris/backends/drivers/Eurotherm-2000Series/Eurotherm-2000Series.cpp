@@ -42,9 +42,9 @@ Eurotherm2000Series::Eurotherm2000Series(const std::string& dev_name, int dev_ad
   hex_format=">%04x";
   std::map<std::string,std::string> config;
   // configure for °K output
-  config["Q1"]="0002.";
+  config["Q1"]="2.";
   // configure for nnn.n format output/precision
-  config["QD"]="0001.";
+  config["QD"]="1.";
   configure(config);
   set_history_stepsize(1);
   device_failed=0;
@@ -60,6 +60,7 @@ void Eurotherm2000Series::configure(const std::map<std::string,std::string>& con
       try {
 	std::string value;
 	read_value(i->first, value);
+	fprintf(stderr, "%s: %s (%s)", i->first.c_str(), value.c_str(), i->second.c_str());
 	if (value!=i->second) {
 	  if (mode!=config_mode) set_value("IM",config_mode);
 	  set_value(i->first,i->second);
@@ -260,7 +261,6 @@ double Eurotherm2000Series::get_temperature() const {
 }
 
 double Eurotherm2000Series::set_setpoint(double ct) {
-  const char* value;
   char buffer[8];
   snprintf(buffer,8,fp_format.c_str(),ct);
   set_value("SL",buffer);
