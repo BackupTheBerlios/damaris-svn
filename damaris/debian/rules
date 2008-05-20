@@ -61,8 +61,19 @@ clean:
 
 # Add here commands to clean up after the build process.
 	-$(MAKE) -C backends clean
+# make sure, the backends executables were deleted
+	(cd $(BACKENDSBASE) && for i in $(BACKENDSMACHINES); do rm -f $$i; done)
 	rm -f debian/damaris-backends.init
+# pulseblaster modules cleanup
 	rm -rf backends/drivers/pulseblaster-module
+# spectrum modules cleanup (only, if it's likely that they can be built again)
+	if test "$$SPC_SOURCE" && test -e $$SPC_SOURCE/Makefile; then \
+	(cd backends/drivers/Spectrum-MI40xxSeries ; \
+	for i in $(KERNELVERSIONS); do \
+                rm -rf modules-$$i ;\
+	done ) \
+	fi
+
 	rm -f build-stamp
 	dh_clean
 
