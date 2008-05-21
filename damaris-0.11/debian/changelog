@@ -1,0 +1,108 @@
+damaris (0.10-4) experimental; urgency=low
+
+  * Kernel modules compiled and tested for version 2.6.18-6
+
+ -- Achim Gaedke <achim@eis.fkp.physik.tu-darmstadt.de>  Fri,  1 Feb 2008 17:24:38 +0100
+
+damaris (0.10-3) experimental; urgency=low
+
+  * PulseBlaster Programs are loaded in chunks, prevents system freeze for seconds
+  
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Thu, 18 Oct 2007 18:07:01 +0200
+
+damaris (0.10-2) experimental; urgency=low
+
+  * damaris-modules package contains various modules for testing and stable
+  * damaris-modules package has exact dependencies for supported kernel versions
+  * pulseblaster module does not reset device (because reset sequence is device dependent)
+  * damaris-backends hardware init script does not fail when modules are not available
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Wed, 17 Oct 2007 14:23:25 +0200
+
+damaris (0.10-1) experimental; urgency=low
+
+  [ Achim Gaedke ]
+  * check maximum number of instructions in backend and report proper
+    error
+
+  [ Christian Tacke ]
+  * Bump main version to 0.10
+  * Build-Depend on linux-headers-2.6-all | linux-headers-2.6.18-5-all
+    to really get headers for all subarchs
+  * No need to Build-Depend on g++,make,dpkg-dev as build-essential
+    depends on them
+
+ -- Christian Tacke <Christian.Tacke@physik.tu-darmstadt.de>  Thu,  4 Oct 2007 17:51:42 +0200
+
+damaris (0.9-0.5.2) experimental; urgency=low
+
+  * python-gui: separate package in frontends/greendamaris
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Thu, 06 Sep 2007 11:35:09 +0200
+
+damaris (0.9-0.5.1) experimental; urgency=low
+
+  * Split kernel modules into new damaris-modules package,
+    in preparation for per kernelversion packages
+  * Fix depedencies of damaris-backends
+  * Add Mobile_wo_sync_backend
+
+ -- Christian Tacke <Christian.Tacke@physik.tu-darmstadt.de>  Fri, 31 Aug 2007 11:15:38 +0200
+
+damaris (0.9-0.5) experimental; urgency=low
+
+  * python-gui: directory creation for dump files
+  * python-gui: release of backend subprocess
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Fri, 17 Aug 2007 11:46:08 +0200
+
+damaris (0.9-0.4) experimental; urgency=low
+
+  * python-gui: DAMARIS version information
+  * python-gui: correct matplotlib choice and recognition
+  * python-gui: counter for results produced by backend
+  * python-gui: clean up of internal counters and start/stop mechanisms
+  * drivres: pulseblaster-module directory removed with cleanup
+  * python-gui: disable hdf file generation by empty data pool filename
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Sun,  6 May 2007 19:40:08 +0200
+
+damaris (0.9-0.3) experimental; urgency=high
+
+  * checked all lock issues for threads
+  * basic debugging features --debug flag
+  * removed gtk.gdk.flush() command
+  * matplotlib backend can be chosen via -d option (recommending GTKCairo)
+  * be more careful with stop button: delayed change to insensitvity
+  * changed delay parameters to slow down scripts while observing the results
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Wed,  2 May 2007 12:46:10 +0200
+
+damaris (0.9-0.2) experimental; urgency=high
+
+  * python-gui: full cleanup in greendamaris
+  * backends: postrm removes nmr group while purging
+  * python-gui: classes of experiments and data modules are directly available (eg damaris.data.Accumulation)
+  * python-gui: automatic import of experiment classes to experiment script and data classes to result script
+  * python-gui: periodic dumping in extra thread without stopping measurement
+  * core: taking care of realloc return value
+  * python-gui renewed glade file, added missing alignment information
+  * backends: optimization for backend -O2 (makefile changes)
+  * backends: printf issue for size_t solved
+  * backends: striped .exe suffix from executables (linux not windows!)
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Tue, 24 Apr 2007 15:58:40 +0200
+
+damaris (0.9-0.1) experimental; urgency=medium
+
+  * added i386 and amd64 targets and kernel modules
+  * fixed class prefixes in damaris modules
+  * adapted init script to new spectrum modules
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Thu,  19 Apr 2007 14:00:00 +0100
+
+damaris (0.9-0.0) experimental; urgency=medium
+
+  * started debianization
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Fri,  13 Apr 2007 14:12:12 +0100

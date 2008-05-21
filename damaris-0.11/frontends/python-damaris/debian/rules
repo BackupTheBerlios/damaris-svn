@@ -1,0 +1,66 @@
+#!/usr/bin/make -f
+
+# Achim Gaedke
+# May 2007
+
+# Uncomment this to turn on verbose mode. 
+export DH_VERBOSE=1
+PYVERS=$(shell pyversions -vr)
+PACKAGE_NAME=python-damaris
+MODULE_NAME=damaris
+PYBASE=$(shell pwd)/debian/${PACKAGE_NAME}
+DH_ALWAYS_EXCLUDE=CVS:.svn
+
+clean:
+	dh_testdir
+	dh_testroot
+	dh_installdirs
+	# Add here commands to clean up after the build process.
+	rm -f *-stamp
+	rm -rf dist build $(PYVERS:%=build-ext-%)
+	find . -name *\.py[co] -exec rm {} \;
+	dh_clean
+
+build: build-stamp
+build-stamp: $(PYVERS:%=build-ext-%)
+	touch $@
+build-ext-%:
+	dh_testdir
+	python$* setup.py build
+	touch $@
+
+install: install-stamp
+# install menu related things
+	dh_install debian/damaris.desktop /usr/share/applications/
+
+install-stamp: build-stamp $(PYVERS:%=install-ext-%)
+install-ext-%:
+	python$* setup.py install --root $(PYBASE)
+	echo "DAMARIS script: removing path to local installation"
+	-sed 's/^sys.path.insert(0,.*).*/# damaris package is found on default path/' <$(PYBASE)/usr/bin/DAMARIS >$(PYBASE)/usr/bin/DAMARIS.new
+	-mv $(PYBASE)/usr/bin/DAMARIS.new $(PYBASE)/usr/bin/DAMARIS
+
+binary-indep: build install
+	dh_link usr/share/python-damaris/doc usr/share/doc/python-damaris/html
+	dh_link usr/share/python-damaris/images usr/share/doc/python-damaris/images
+	dh_link usr/share/python-damaris/images/DAMARIS.png usr/share/icons/DAMARIS.png
+	dh_testdir -i
+	dh_testroot -i
+	dh_installchangelogs -i
+	dh_installdocs -i
+	dh_pycentral
+	dh_python
+	dh_installmenu -i
+	dh_desktop -i
+	dh_compress -i -X.py
+	dh_fixperms -i
+	dh_installdeb -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
+
+binary-arch: build install
+
+binary: binary-indep binary-arch
+
+.PHONY: build clean binary-indep binary-arch binary install configure

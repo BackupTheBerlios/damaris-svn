@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1"
+ http-equiv="content-type">
+  <title>DAMARIS</title>
+</head>
+<body>
+<h1 style="text-align: center;">Hello and welcome to the preliminary
+DAMARIS homepage!</h1>
+<br>
+DAMRARIS stands for "Darmstadt Magnetic Resonance Imaging Spectrometer"<br>
+<br>
+In first place this project develops a framework for NMR spectrometer
+controls. A lot of other projects could be found, providing NMR data
+processing and evaluation software. So this project is focusing on:<br>
+<ul>
+  <li>creating control software for a standard NMR-spectrometer (pulses
+and data acquisition)</li>
+  <li>providing a toolkit for tailoring spectrometer control softare on
+your own</li>
+  <li>making the control hardware characteristics transparent to the
+spectrometer developer</li>
+  <li>be a forum for exchanging experiences with the software and
+underlying hardware<br>
+  </li>
+</ul>
+If you are curious and have questions - please join our <a
+ href="http://element.fkp.physik.tu-darmstadt.de/cgi-bin/mailman/listinfo/damaris">mailinglist</a>.<br>
+<br>
+Particularly this page should be a collection of resources:<br>
+<ul>
+  <li>source repository with <span style="font-style: italic;">subversion</span>
+repository, <a
+ href="http://element.fkp.physik.tu-darmstadt.de/cgi-bin/viewcvs.cgi/damaris/">browsable</a><br>
+  </li>
+  <li><a href="damaris-backend-doc/">documentation</a> of backend
+(browsable, English language)<br>
+  </li>
+  <li><a href="Poster_Zakopane2005.pdf">poster</a> presented at XIII.
+Ampere NMR summer school in Zakopane,
+Poland, June 2005 (PDF)<br>
+  </li>
+  <li>presentations and other stuff (mainly in German, created with
+OpenOffice)</li>
+</ul>
+Please be aware that we are distributing our own code with the esser
+GNU public license (LGPL), but in the drivers directory there are
+several
+files, that are several vendor specific headers. This code is freely
+downloadable but not our property, so not subject to the LGPL.<br>
+<br>
+Supported hardware since now:<br>
+<ul>
+  <li>SpinCore PulseBlaster pulse generators with and without DDS (PCI
+card)<br>
+  </li>
+  <li>Datel PCI-416 data acquisition board (PCI card, no longer buyable)</li>
+  <li>Spectrum MI 40xx series data acquisition boards (PCI cards)</li>
+  <li>TiePie Handyscope 3, data acquisition card (USB device)<br>
+  </li>
+  <li>Eurotherm 2016e temperature control (serial port device)<br>
+  </li>
+</ul>
+Used software (dependencies of this project):<br>
+<ul>
+  <li>GNU C++ Compiler (Linux: standard distribution, Windows: Cygwin)</li>
+  <li>Xerces C++ XML support library (Linux: please install also
+"devel" packages, Windows: Cygwin)</li>
+  <li>doxygen and graphiz for c++-documentation (Linux: standard
+distribution, Windows: Cygwin)</li>
+  <li>make (Linux: standard distribution, Windows: Cygwin)</li>
+</ul>
+Python frontend requirements:<br>
+<ul>
+  <li>Python (Linux: standard distribution, Windows: see project page)</li>
+  <li>Python Package numarray (Linux and Windows: see project page)</li>
+  <li>Python GTK+ Package (Linux: standard distribution, Windows: see
+project page)</li>
+  <li>GTK+ Package (Linux: standard distribution, Windows: see project
+page)</li>
+  <li>Matplotlib: (Linux and Windows: see project page)</li>
+</ul>
+Labview frontend requirements:<br>
+<ul>
+  <li>National Instruments LabView 6 (Nonfree software see <a
+ href="http://www.ni.com/">National Instruments</a>)<br>
+  </li>
+</ul>
+Code contributing developers are:<br>
+<ul>
+  <li>Achim G&auml;dke (software design, hardware programmer and
+backend developer)</li>
+  <li>Holger Stork (LabView frontend and beta-Testing)</li>
+  <li>Christopher Schmitt (software design, Python Frontend)</li>
+</ul>
+We would like to thank the NMR groups in Darmstadt: AG Nestle and AG
+Fujara for inspiring comments and
+support.<br>
+</body>
+</html>

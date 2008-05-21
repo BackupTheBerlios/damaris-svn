@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<experiment no="0">
+<state time="2e-6">
+  <analogout id="0" f="300.01e6" phase="0"/>
+</state>
+<state time="5e-6"><ttlout value="0x1"/></state>
+<state time="4e-6"><ttlout value="0x3"/></state>
+<state time="5e-3"/>
+<state time="1e-3">
+  <analogout id="1" dac_value=" 15040"/>
+</state>
+<state time="3.8e-6">
+  <analogout id="1" dac_value="0"/>
+</state>
+<state time="5e-3"/>
+<state time="5e-6"><ttlout value="0x1"/></state>
+<state time="4e-6"><ttlout value="0x3"/></state>
+<sequent repeat="10">
+  <state time="5e-3"/>
+  <state time="5e-6"><ttlout value="0x1"/></state>
+  <state time="4e-6"><ttlout value="0x3"/></state>
+  <state time="5e-3"/>
+  <state time="5e-6"><ttlout value="0x1"/></state>
+  <state time="4e-6"><ttlout value="0x3"/></state>
+</sequent>
+<state time="0.0206848">
+  <analogin s="1024" f="50000" sensitivity="5.0"/>
+</state>
+</experiment>
