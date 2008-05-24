@@ -1,3 +1,9 @@
+python-damaris (0.12-0.0) experimental; urgency=low
+
+  * new development version
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Sat, 24 May 2008 17:49:25 +0200
+
 python-damaris (0.11-0.1) experimental; urgency=low
 
   * updated debian python policy
