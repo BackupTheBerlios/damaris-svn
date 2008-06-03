@@ -29,14 +29,6 @@ class pulse_exception: public std::string {
 
 class pulsegen {
  public:
-#if 1
-  /**
-     \brief a very simple pulse program, that could be hardcoded
-     this pulse program is quite useful to see first results for hardware
-   */
-  virtual void single_pulse_program(double before, double length, double after)=0;
-#endif
-
   /**
      compiles and runs the pulse program
    */
