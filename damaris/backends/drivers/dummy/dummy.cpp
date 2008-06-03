@@ -113,15 +113,6 @@ void dummy::run_pulse_program(state& exp) {
   }
 }
 
-void dummy::single_pulse_program(double before, double length, double after) {
-  // clear list
-  if (new_results!=NULL) {
-    delete new_results;
-    new_results=NULL;
-  }
-}
-
-
 double dummy::get_temperature() const {
   pthread_mutex_lock((pthread_mutex_t*)&device_lock);
   pthread_mutex_unlock((pthread_mutex_t*)&device_lock);

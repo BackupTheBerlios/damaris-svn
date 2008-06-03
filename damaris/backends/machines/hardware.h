@@ -61,10 +61,6 @@ class hardware {
   virtual configuration_results* configure(const std::list<configuration_device_section>& d);
 
   /**
-     simple experiment
-   */
-  virtual result* single_pulse_experiment(double frequency, double t_before, double t, double sample_freq, size_t samples, signed dac_value);
-  /**
      initialise the main components with the experiment
   */
   virtual result* experiment(const state& exp);

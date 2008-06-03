@@ -160,9 +160,6 @@ job* job_receiver::receive(const std::string& filename) {
       throw je;
     }
   }
-  else if (strcasecmp(docname,"singlepulse")==0) {
-    this_job=new single_pulse_experiment(no,rootattrs);
-  }
 
   XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&docname);
   parser->reset();

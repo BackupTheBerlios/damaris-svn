@@ -74,21 +74,6 @@ result* wait_job::do_it(core* c) {
   return new result(job_no);
 }
 
-
-single_pulse_experiment::single_pulse_experiment(size_t n,const XERCES_CPP_NAMESPACE_QUALIFIER DOMNamedNodeMap* attrs): experiment(n) {
-  t_before=0;
-  frequency=1e4;
-  sample_frequency=5e6;
-  samples=1<<12;
-  dac_value=3;
-
-  // find pulse length
-  XERCES_CPP_NAMESPACE_QUALIFIER  DOMNode* length_attr=attrs->getNamedItem((XMLCh*)"length");
-  if (length_attr==NULL) throw job_exception("length attribute required");
-  char* length_data=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode(length_attr->getNodeValue());
-  pulse_length=strtod(length_data,NULL);
-}
-
 experiment::experiment(size_t n, XERCES_CPP_NAMESPACE_QUALIFIER DOMElement* exp_data ): job(n){
   // create result-document
   XMLCh* core_impl_name=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("core");
@@ -406,20 +391,6 @@ result* experiment::do_it(hardware* hw) {
   data->job_no=job_no;
     
   return data;
-}
-
-result* single_pulse_experiment::do_it(hardware* hw) {
-  try {
-    result* data=hw->single_pulse_experiment(frequency,t_before,pulse_length,sample_frequency,samples,dac_value);
-    data->job_no=job_no;
-    return data;
-  }
-  catch (ADC_exception e) {
-    return new error_result(job_no,e);
-  }
-  catch (pulse_exception& e) {
-    return new error_result(job_no,e);
-  }
 }
 
 configuration::configuration(size_t n, XERCES_CPP_NAMESPACE_QUALIFIER DOMElement* conf_data ):job(n) {

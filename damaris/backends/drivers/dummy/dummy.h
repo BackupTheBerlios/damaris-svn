@@ -31,10 +31,6 @@ class dummy:  public virtual device, public ADC, public frequgen, public pulsege
    */
   virtual void sample_after_external_trigger(double rate, size_t no, double sens=5.0, size_t res=12);
 
-  /**
-     emulate a simple single pulse program...
-   */
-  virtual void single_pulse_program(double before, double length, double after);
 
   virtual result* get_samples(double timeout=0.0);
 

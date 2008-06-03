@@ -71,12 +71,6 @@ class SpinCorePulseBlasterDDSIII: public frequgen, public SpinCorePulseBlaster {
    */
   SpinCorePulseBlasterDDSIII(int the_id=0, double the_clock=1e8, unsigned int _sync_mask=0);
 
-#if 1
-  /**
-     a simple pulse program for one pulse experiments
-   */
-  virtual void single_pulse_program(double before, double length, double after);
-#endif
   /**
      sets the frequency for simple frequency generator use
      if set, by default the analog output is set to rx and tx channel with 90 degree shift

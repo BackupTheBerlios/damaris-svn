@@ -175,45 +175,6 @@ class experiment: public job {
   }
 };
 
-/**
-   do a simple one-pulse experiment and record transient
-   ToDo: by now only few parameters are available, this must change
-  */
-class single_pulse_experiment: public experiment {
- public:
-  /** the pulse length */
-  double pulse_length;
-  /** time to wait and switch on frequency generator */
-  double t_before;
-  /** frequency in Hz */
-  double frequency;
-  /** frequency for ADC recording */
-  double sample_frequency;
-  /** samples for each channel */
-  size_t samples;
-signed dac_value;
-  /**
-     quick instantiation of single pulse experiment
-   */
-  single_pulse_experiment(size_t n, double l=0): experiment(n) {
-    pulse_length=l;
-    t_before=0;
-    frequency=1e4;
-    sample_frequency=5e6;
-    samples=1<<12;
-   dac_value=3;
-  }
-
-  single_pulse_experiment(size_t n,const XERCES_CPP_NAMESPACE_QUALIFIER DOMNamedNodeMap* attrs);
-
-  /**
-     does the single pulse experiment
-     \return in case of success ADC_result object is returned, otherwise an error_result object
-   */
-  virtual result* do_it(hardware* hw);
-
-};
-
 
 class configuration_device_section {
  public:
@@ -222,8 +183,6 @@ class configuration_device_section {
   std::string data;
   void print(FILE* f=stdout) const;
 };
-
-
 
 /**
    a configuration job changes the instrument to another state, something like:

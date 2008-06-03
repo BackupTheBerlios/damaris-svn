@@ -458,55 +458,6 @@ int SpinCorePulseBlasterDDSIII::write_to_device(const PulseBlasterDDSIIIProgram&
   return 1;
 }
 
-
-#if 1
-void SpinCorePulseBlasterDDSIII::single_pulse_program(double t_before, double t_pulse, double t_after) {
-
-  /* design error, these definitions should be elsewhere! */
-  double t_trigger=1e5; // [s] delay of trigger after pulse, i.e. dead time
-  unsigned long trigger_line_mask=1<<2; // mask for trigger pulse
-
-  PulseBlasterDDSIIIProgram p;
-
-  // wait until gating....
-  if (t_before>gate_time+10.0e-9)
-    // append_state(0,0,TX_ANALOG_ON,0,RX_ANALOG_ON,0x0,t_before-t_gate);
-    p.push_back(new PulseBlasterDDSIIICommand(p,frequency,0,SpinCorePulseBlasterDDSIII::ANALOG_ON,
-					      90,SpinCorePulseBlasterDDSIII::ANALOG_ON,0x0,t_before-gate_time));
-
-  // gate
-  //append_state(0,0,TX_ANALOG_ON,0,RX_ANALOG_ON,gate_channel,t_gate);
-  p.push_back(new PulseBlasterDDSIIICommand(p,frequency,0,SpinCorePulseBlasterDDSIII::ANALOG_ON,
-					    90,SpinCorePulseBlasterDDSIII::ANALOG_ON,gate_channel,gate_time));
-
-  // pulse
-  //append_state(0,0,TX_ANALOG_ON,0,RX_ANALOG_ON,gate_channel|pulse_channel,t_pulse);
-  p.push_back(new PulseBlasterDDSIIICommand(p,frequency,0,SpinCorePulseBlasterDDSIII::ANALOG_ON,
-					    90,SpinCorePulseBlasterDDSIII::ANALOG_ON,gate_channel|pulse_channel,t_pulse));
-
-  // stop pulse, close gate and trigger ADC
-  //append_state(0,0,TX_ANALOG_ON,0,RX_ANALOG_ON,trigger_channel,t_trigger);
-  p.push_back(new PulseBlasterDDSIIICommand(p, frequency, 0, SpinCorePulseBlasterDDSIII::ANALOG_ON,
-					    90, SpinCorePulseBlasterDDSIII::ANALOG_ON, trigger_line_mask, t_trigger));
-
-  // just send analog output for some time
-  // append_state(0,0,TX_ANALOG_ON,0,RX_ANALOG_ON,0x0,t_after);
-  p.push_back(new PulseBlasterDDSIIICommand(p,frequency,0,SpinCorePulseBlasterDDSIII::ANALOG_ON,
-					    90,SpinCorePulseBlasterDDSIII::ANALOG_ON,0x0,t_after));
-
-  // stop output
-  //pb_inst(0,0,TX_ANALOG_OFF,0,RX_ANALOG_OFF,0x0,STOP,0,100*ns);
-  PulseBlasterDDSIIICommand* c_stop=new PulseBlasterDDSIIICommand(p,frequency,0,SpinCorePulseBlasterDDSIII::ANALOG_ON,
-								  90,SpinCorePulseBlasterDDSIII::ANALOG_ON,0x0,1e-7);
-  c_stop->instruction=STOP;
-  p.push_back(c_stop);
-
-  run_pulse_program(p);
-
-  duration=((t_before>gate_time)?t_before:gate_time)+t_pulse+t_after;
-}
-#endif
-
 PulseBlasterProgram* SpinCorePulseBlasterDDSIII::create_program(state& exp) {
     PulseBlasterDDSIIIProgram* prog=new PulseBlasterDDSIIIProgram();
     // some initialisiation...

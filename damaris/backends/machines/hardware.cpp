@@ -9,19 +9,6 @@
 #include "core/result.h"
 #include "hardware.h"
 
-result* hardware::single_pulse_experiment(double frequency, double t_before, double t, double sample_freq, size_t samples, signed dac_value) {
-# if 1
-  the_fg->set_frequency(frequency);
-  the_adc->sample_after_external_trigger(sample_freq,samples,sample_freq,samples);
-  the_gradientpg->set_dac(dac_value);
-  the_pg->single_pulse_program(t_before,t,((double)samples)/sample_freq);
-  return the_adc->get_samples();
-#else
-  throw ADC_exception("no longer supported");
-  return NULL;
-#endif
-}
-
 result* hardware::experiment(const state& exp) {
   result* r=NULL;
   for(size_t tries=0; r==NULL && core::term_signal==0 &&  tries<102; ++tries) {
