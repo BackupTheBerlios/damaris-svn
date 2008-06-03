@@ -96,14 +96,11 @@ class SpinCorePulseBlaster24Bit: public SpinCorePulseBlaster {
 
     SpinCorePulseBlaster24Bit(const SpinCorePulseBlaster24Bit& orig);
     /**
-     needed by run_pulse_program method
+     create a full program from state tree
+
+     in contrast to append_sequence, this function expects a complete program, not only a fraction, needed by run_pulse_program method
    */
   virtual PulseBlasterProgram* create_program(state& exp);
-
-  /**
-     first test routine for spectrometer
-   */
-  virtual void single_pulse_program(double before, double length, double after);
 
   /**
      run a PulseBlaster Program

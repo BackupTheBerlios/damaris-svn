@@ -252,10 +252,6 @@ void SpinCorePulseBlaster24Bit::write_to_device(const PulseBlaster24BitProgram& 
   set_initialized();
 }
 
-void SpinCorePulseBlaster24Bit::single_pulse_program(double before, double length, double after) {
-    return;
-}
-
 PulseBlasterProgram* SpinCorePulseBlaster24Bit::create_program(state& exp) {
     PulseBlaster24BitProgram* prog=new PulseBlaster24BitProgram();
     // the user's code
