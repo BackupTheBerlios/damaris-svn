@@ -228,13 +228,13 @@ public:
      run a experiment given as state sequence
    */
   virtual void run_pulse_program(state& exp) {
-    run_pulse_program_w_sync(exp,0);
+    run_pulse_program_w_sync(exp, 0);
   }
 
   /**
-     run a experiment given as state sequence
+     run a experiment given as state sequence, but optionally synchronize sequence start with ADC sampling clock
    */
-  virtual void run_pulse_program_w_sync(state& exp, double sync_freq);
+  virtual void run_pulse_program_w_sync(state& exp, double sync_freq=0);
 
   /**
      needed by run_pulse_program method

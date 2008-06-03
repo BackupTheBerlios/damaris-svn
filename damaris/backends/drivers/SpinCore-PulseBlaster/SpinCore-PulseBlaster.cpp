@@ -152,27 +152,41 @@ void SpinCorePulseBlaster::run_pulse_program_w_sync(state& exp, double sync_freq
   PulseBlasterProgram* prog=create_program(exp);
   if (prog==NULL)
     throw pulse_exception("could not create PulseBlasterProgram");
-  // some initialisiation...
-  // one short "do nothing" state at beginning, because Pulseblaster has some problems with first command
-  PulseBlasterCommand* c;
-  c=prog->create_command();
-  c->ttls=0x0;
-  c->instruction=SpinCorePulseBlaster::CONTINUE;
-  c->length=9;
-  prog->push_front(c);
   if (sync_freq>0 && sync_mask!=0) {
     // syncronization
+    PulseBlasterCommand* c;
+
+    // third command: clear sync mask
     c=prog->create_command();
-    c->ttls=sync_mask;
+    c->ttls=0;
     c->instruction=SpinCorePulseBlaster::CONTINUE;
-    c->length=9;
+    c->length=shortest_pulse;
     prog->push_front(c);
+
+    // second command: wait for monoflop up again
     c=prog->create_command();
     c->ttls=sync_mask;
     c->instruction=SpinCorePulseBlaster::WAIT;
-    c->length=9;
+    c->length=shortest_pulse;
     prog->push_front(c);
-    duration+=2.0*shortest_pulse/clock+1.0/sync_freq;
+
+    // first command: clear sync monoflop
+    c=prog->create_command();
+    c->ttls=sync_mask;
+    c->instruction=SpinCorePulseBlaster::CONTINUE;
+    c->length=shortest_pulse;
+    prog->push_front(c);
+
+    duration+=3.0*shortest_pulse/clock+2.0/sync_freq;
+  }
+  // workaround for another PulseBlaster Bug: only CONTINUE opcodes at the first two commands
+  while ((prog->size()>1 && (*(++(prog->begin())))->instruction!=CONTINUE) ||
+         (prog->size()>0 && (*(prog->begin()))->instruction!=CONTINUE)) {
+          PulseBlasterCommand* c;
+          c=prog->create_command();
+          c->instruction=SpinCorePulseBlaster::CONTINUE;
+          c->length=shortest_pulse;
+          prog->push_front(c);
   }
   // end: clear flags and stop pulseblaster
   prog->push_back(prog->create_command());
