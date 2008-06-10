@@ -14,6 +14,12 @@ public:
  	PFG(int myid=0);
 	virtual void set_dac(signed dw);
 //	virtual void set_dac_ttls(signed value);
+
+        /**
+            inserts necessary serial data transmission to set the dac, at the end of experiment reset the dac
+
+            assumes, the root sequence is not repeated, because the reset sequence is appended to the root sequence!
+        */
  	virtual void set_dac(state& experiment);
 	virtual void set_dac_recursive(state_sequent& the_sequence, state::iterator& the_state);
  	

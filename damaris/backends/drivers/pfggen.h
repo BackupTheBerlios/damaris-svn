@@ -1,7 +1,7 @@
 /* **************************************************************************
 
- Author: Achim Gaedke
- Created: June 2004
+ Author: Markus Rosenstihl, Achim Gaedke
+ Created: Nov 2005
 
 ****************************************************************************/
 #ifndef PFGGEN_H
@@ -14,7 +14,7 @@
 */
 
 /**
-   \brief frequency generation related error handling
+   \brief pulsed field gradient related error handling
  */
 class pfg_exception: public std::string {
  public:
@@ -23,32 +23,26 @@ class pfg_exception: public std::string {
 
 
 /**
-   \brief the frequency generator can set the reference frequency and pulse output
-   also phase shifts and different channels are possible
+   \brief pulsed field gradient dac driver
  */
 class pfggen {
  protected:
-  /** reference frequency output */
+  /** no use by now... could be for default value at the end of an experiment?! */
   signed dac_value;
-  /**
-     default phase offset of the frequency generator
-   */
-  double phase;
-  /**
-     should move to frequgen
-   */
-  int pulse_channel;
-  /**
-     should move to frequgen
-   */
-  int gate_channel;
-  /**
-     should move to frequgen
-   */
-  double gate_time;
+
  public:
+  /**
+     no use by now! could be for default value at the end of an experiment?!
+  */
   virtual void set_dac(signed d)=0;
+  /**
+     does the real work: transmits data to dac during pulse sequence
+  */
   virtual void set_dac(state& experiment)=0;
+
+  /**
+    cleanup: nothing to do
+  */
   virtual ~pfggen() {}
 };
 
