@@ -448,16 +448,8 @@ int init_module()
  */
 void cleanup_module()
 {
-	int ret;
-
 	/* 
 	 * Unregister the device 
 	 */
-	ret = unregister_chrdev(major_dev_num, DEVICE_NAME);
-
-	/* 
-	 * If there's an error, report it 
-	 */
-	if (ret < 0)
-		printk("Error in module_unregister_chrdev: %d\n", ret);
+	unregister_chrdev(major_dev_num, DEVICE_NAME);
 }
