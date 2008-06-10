@@ -47,20 +47,18 @@ void PFG::set_dac(state& experiment) {
 		state s(TIMING);
 		ttlout* le=new ttlout();
 		le->id=0;
-		le->ttls=( 1 << LE_BIT );
 		s.push_front(le);
 		state::iterator my_state_iterator = exp_sequence->begin();
-		for ( int i = 0; i < DAC_BIT_DEPTH; i++ ) {
-		    le->ttls=( 1 << LE_BIT) + ( 1 << CLK_BIT );
-		    exp_sequence->insert(my_state_iterator, s.copy_new());
-		    le->ttls=( 1 << LE_BIT );
-		    exp_sequence->insert(my_state_iterator, s.copy_new());
-		    if ( i == DAC_BIT_DEPTH-1 ) {
-			//read in the word (41st pulse)
-			le->ttls=0;
-			exp_sequence->insert(my_state_iterator, s.copy_new());
-		    }
-		}
+                state_sequent* rep_sequence=new state_sequent();
+                rep_sequence->repeat=DAC_BIT_DEPTH;
+		le->ttls=( 1 << LE_BIT) + ( 1 << CLK_BIT );
+		rep_sequence->push_back(s.copy_new());
+		le->ttls=( 1 << LE_BIT );
+	        rep_sequence->push_back(s.copy_new());
+                exp_sequence->insert(my_state_iterator, rep_sequence);
+		//read in the word (41st pulse)
+		le->ttls=0;
+		exp_sequence->insert(my_state_iterator, s.copy_new());
 		// 42nd pulse
 		// the state should be 2ms long
 		s.length = 2e-3-41*TIMING;
@@ -86,11 +84,9 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 			throw pfg_exception( "state_atom in state_sequent not expected");
 		analogout* PFG_aout = NULL;
 		// find an analogout section with suitable id
-		state::iterator i = this_state->begin();
-		while(i!=this_state->end()) {  // state members loop
-			analogout* aout = dynamic_cast<analogout*>(*i); // initialize new analogout
-			analogout* next_aout = dynamic_cast<analogout*>(*i++);
-			i--;
+		state::iterator pos = this_state->begin();
+		while(pos!=this_state->end()) {  // state members loop
+			analogout* aout = dynamic_cast<analogout*>(*pos); // initialize new analogout
 			// This is for me, analogout is != NULL (there is an analogout) and has my ID
 			if (aout!=NULL && aout->id == id) {
 				if (PFG_aout == NULL) {
@@ -103,14 +99,15 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 					delete aout;
 				}
 				// remove the analog out section
-				this_state->erase(i++);
+				this_state->erase(pos++);
 			}
 			else {
-			    ++i;
+			    ++pos;
 			}
 		} // state members loop
 		
 		if (PFG_aout != NULL) { // state modifications
+                        //std::cout<<"found a analog out section, value="<<PFG_aout->dac_value<<std::endl;
 			// check the length of the state
 			if (this_state->length < TIMING*41.0)
 				throw pfg_exception( "time is too short to save DAC information");
@@ -130,26 +127,49 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				for (int j = 0; j < DAC_BIT_DEPTH ; j++)	{
 					int bit = PFG_aout->dac_value & 1;
 					dac_word.push_back(bit);
-					cout << dac_word[j];
+					//cout << dac_word[j];
 					PFG_aout->dac_value >>= 1;
-					}
+				}
 				// need one clock cycle to read in bit
 				// latch enable (LE) should always be high while doing so
 				// except for the last bit
 				// reverse the bit pattern
 				reverse(dac_word.begin(), dac_word.end());
-				
-				for (int i = 0; i < DAC_BIT_DEPTH; i++) {
-					register_ttls->ttls = (1 << DATA_BIT)*dac_word[i] + (1 << CLK_BIT) + (1 << LE_BIT);
-					the_sequence.insert(the_state,register_state->copy_new());
-					register_ttls->ttls = (1 << DATA_BIT)*dac_word[i] + (1 << LE_BIT);
-					the_sequence.insert(the_state,register_state->copy_new());
-					//std::cout << dac_word[i];
-					if (i == (DAC_BIT_DEPTH-1)) {// last bit => LE low, tell DAC to read the word in 
-						register_ttls->ttls = 0; //  1<< DATA_BIT*bit;
-						the_sequence.insert(the_state,register_state->copy_new());
-					}
-				}
+
+                                // do run length encoding, grouping same bit values in loops
+				int last_seen_bit=dac_word[0];
+                                int last_seen_bit_count=1;
+				for (int i = 1; i < DAC_BIT_DEPTH+1; i++) {
+                                        if (i==DAC_BIT_DEPTH || last_seen_bit!=dac_word[i]) {
+                                           // so we have to write the bits
+                                           // either because the previous were different or we are finished
+                                           if (last_seen_bit_count>1) {
+                                                // insert a loop
+                                                state_sequent* rep_sequence=new state_sequent();
+                                                rep_sequence->repeat=last_seen_bit_count;
+        	                                register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << CLK_BIT) + (1 << LE_BIT);
+                                		rep_sequence->push_back(register_state->copy_new());
+                                                register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << LE_BIT);
+                                		rep_sequence->push_back(register_state->copy_new());
+                                                the_sequence.insert(the_state, rep_sequence);
+                                           } else {
+                                                   // no loop necessary, insert two states
+        	                                   register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << CLK_BIT) + (1 << LE_BIT);
+	                                           the_sequence.insert(the_state, register_state->copy_new());
+					           register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << LE_BIT);
+					           the_sequence.insert(the_state, register_state->copy_new());
+                                            }
+                                            // reset counter and bits if we are not finished
+                                            if (i<DAC_BIT_DEPTH) {
+                                                last_seen_bit=dac_word[i];
+                                                last_seen_bit_count=1;
+                                            }
+        	           		} // finished writing
+                                        else
+                                            last_seen_bit_count+=1; // same bit value, so continue
+                                } // end of bit loop
+				register_ttls->ttls = 0;
+				the_sequence.insert(the_state,register_state->copy_new());
 				
 				// shorten the remaining state 
 				// and add LE high to this state
@@ -158,10 +178,11 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				this_state->length -= TIMING*41;
 				ttls->ttls = 1 << LE_BIT;
 				this_state->push_front(ttls);
-				delete register_state;
-				delete PFG_aout;	
 
-			}	
+                                // cleanup
+				delete register_state;
+				delete PFG_aout;
+			} // state was long enough to work on
 		}
 		else {
 			ttlout* le_ttls=new ttlout();

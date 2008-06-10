@@ -1,5 +1,18 @@
 <?xml version="1.0"?>
 <sequent>
- <state t="1"><ttlout value="1"/></state>
- <state t="1"><analogout id="2" a="5"/></state>
+ <state t="1">
+     <ttlout value="1"/>
+ </state>
+ <state t="1">
+     <analogout id="0" dac_value="10" a="5"/>
+      <ttlout id="0" value="2"/>
+ </state>
+ <state t="1">
+     <analogout id="0" dac_value="20" a="5"/>
+     <ttlout id="0" value="3"/>
+ </state>
+ <state t="1">
+      <analogout id="0" dac_value="-20" a="5"/>
+      <ttlout id="0" value="4"/>
+  </state>
 </sequent>
