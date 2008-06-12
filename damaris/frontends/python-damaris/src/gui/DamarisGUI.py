@@ -2517,14 +2517,16 @@ class MonitorWidgets:
 
             # Autoscaling activated?
             elif self.display_autoscaling_checkbutton.get_active():
-                if [xmin, xmax] != self.matplot_axes.get_xlim():
+
+		xlim_min, xlim_max=self.matplot_axes.get_xlim()
+                if xlim_min!= xmin or xlim_max!=xmax :
                     self.matplot_axes.set_xlim(xmin, xmax)
 
-                # Rescale if new max is larger than old_ymax, simialar rules apply to ymin
-                [self.__old_ymin, self.__old_ymax] = self.matplot_axes.get_ylim()
+                # Rescale if new max is much larger than old ymax, simialar rules apply to ymin
+                ylim_min, ylim_max = self.matplot_axes.get_ylim()
                 ydiff=ymax-ymin
-                if (self.__old_ymax < ymax or self.__old_ymin > ymin or
-                    self.__old_ymax > ymax+0.2*ydiff or self.__old_ymin < ymin-0.2*ydiff):
+                if (ylim_max < ymax or ylim_min > ymin or
+                    ylim_max > ymax+0.2*ydiff or ylim_min < ymin-0.2*ydiff):
                     self.matplot_axes.set_ylim(ymin, ymax)
 
             xdata=in_result.get_xdata()
