@@ -23,7 +23,7 @@ SpinCorePulseBlasterLowlevel::~SpinCorePulseBlasterLowlevel() {
 
 int SpinCorePulseBlasterLowlevel::write_data(const unsigned char* data, size_t size) {
   size_t orig_size=size;
-  const unsigned int max_chunk_size=10*1<<10; // 1k commands
+  const unsigned int max_chunk_size=100*1<<10; // 100k commands
   while (size>0) {
     int result=write(device_file_descriptor, data, ((size>max_chunk_size)?max_chunk_size:size) );
     // error handling

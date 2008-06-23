@@ -3,7 +3,9 @@
  * author: Achim Gaedke <achim.gaedke@physik.tu-darmstadt.de>
  * created: February 2005
  * the amcc_outb routine comes from SpinCore
- * the module is built from example 4 of "The Linux Kernel Module Programming Guide"
+ * initially the module is built from example 4 of "The Linux Kernel Module Programming Guide"
+ * the version of June 2008 is written with the help of "Linux device drivers"
+ * Jonathan Corbet, Alessandro Rubini, and Greg Kroah-Hartman, O' Reilly, 3rd Edition
  */
 
 #include <linux/kernel.h>	/* We're doing kernel work */
@@ -83,8 +85,8 @@ MODULE_AUTHOR("Achim Gaedke");
 #define pb_in(bwl) in##bwl
 #else
 // version with extra delay (works on odd hardware, too)
-#define pb_out(bwl) out_p##bwl
-#define pb_out(bwl) in_p##bwl
+#define pb_out(bwl) out##bwl##_p
+#define pb_in(bwl) in##bwl##_p
 #endif
 
 static int amcc_outb(char data, unsigned short address, unsigned long base_address) {
