@@ -528,6 +528,8 @@ static int pulseblaster_pci_probe(struct pci_dev *dev, const struct pci_device_i
         return -1;
     }
 
+#ifndef CONFIG_XEN
+    // why is pci_request_region not defined in a XEN kernel?
     /* exclusive use */
     ret_val=pci_request_region(dev, 0, DEVICE_NAME);
     if (ret_val!=0) {
@@ -536,6 +538,9 @@ static int pulseblaster_pci_probe(struct pci_dev *dev, const struct pci_device_i
 	pci_disable_device(dev);
 	return -1;
     }
+#else
+# warning "in XEN version pci_request_region and pci_release_region are not defined, omitting function call"
+#endif
 
     /* initialize the structure */
     pb_devs[pb_dev_no].device_open=0;
@@ -572,7 +577,10 @@ static void pulseblaster_pci_remove(struct pci_dev* dev) {
     spin_unlock(&pb_devs_lock);
     /* do the pci stuff only */
     pci_disable_device(dev);
+#ifndef CONFIG_XEN
+    // why is pci_release_region not defined in a XEN kernel?
     pci_release_region(dev, 0);
+#endif
 }
 
 static struct pci_device_id pulseblaster_pci_ids[] = {

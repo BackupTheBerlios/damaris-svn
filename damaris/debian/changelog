@@ -1,3 +1,13 @@
+damaris (0.11-0) experimental; urgency=low
+
+  * pulseblaster module renewed: sysfs support, multiple pci devices, device probing
+  * udev support
+  * periodically call schedule instruction when writing to pulseblaster board
+  * _p io instructions removed
+  * xen-686 kernels omitted: some pci_* functions are not defined
+
+ -- Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>  Mon,  23 Jun 2008 14:24:00 +0100
+
 damaris (0.10-4) experimental; urgency=low
 
   * Kernel modules compiled and tested for version 2.6.18-6

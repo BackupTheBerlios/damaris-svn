@@ -17,7 +17,10 @@ BACKENDSMACHINES = \
 	Mobile_wo_sync_backend.exe
 
 tmp_kernel_makefiles = $(wildcard /lib/modules/*/build/Makefile)
-KERNELVERSIONS = $(tmp_kernel_makefiles:/lib/modules/%/build/Makefile=%)
+# exclude xen-686 (problems with pci_... support in pulseblaster and spc driver)
+KERNELVERSIONS = $(filter-out %-xen-686, $(tmp_kernel_makefiles:/lib/modules/%/build/Makefile=%))
+# with xen-686, waiting for problems to be fixed
+#KERNELVERSIONS = $(tmp_kernel_makefiles:/lib/modules/%/build/Makefile=%)
 DEB_BUILD_ARCH=$(strip $(shell dpkg-architecture -qDEB_BUILD_ARCH))
 
 build: build-stamp
@@ -75,6 +78,8 @@ clean:
 	fi
 
 	rm -f build-stamp
+	rm -f debian/damaris-backends.init
+	rm -f debian/damaris-backends.udev
 	dh_clean
 
 install:
@@ -82,13 +87,6 @@ install: build
 	dh_testdir
 	dh_testroot
 	dh_clean -k
-
-# labview stuff goes here
-#	(cd frontends ; \
-#	find labview -type d \! -path "*/.svn*" -exec \
-#	install -d "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; ; \
-#	find labview -type f \! -path "*/.svn*" -iname "*.vi" -exec \
-#	install "{}" "../debian/damaris-frontend-labview/usr/share/damaris/{}" \; )
 
 # backend executables
 	dh_installdirs -pdamaris-backends usr/lib/damaris/backends ; \
@@ -129,8 +127,9 @@ install: build
 	done; true
 	dh_install
 
-# init script
+# init script and udev rules
 	cp backends/tools/nmr_drivers.sh debian/damaris-backends.init
+	cp backends/tools/080_damaris.rules debian/damaris-backends.udev
 
 # Build architecture-independent files here.
 binary-indep: build install
@@ -158,6 +157,7 @@ binary-arch: build install
 	dh_installdocs -a
 	dh_installexamples -a
 	dh_installinit -a -pdamaris-backends
+	dh_installudev -a -pdamaris-backends
 #	dh_installmenu -a
 #	dh_installman -a
 	dh_strip -a
