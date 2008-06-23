@@ -2,7 +2,7 @@
 #define SPINCORE_PULSEBLASTER_H
 
 #include <cstdio>
-#include <string>
+#include <cstring>
 #include <vector>
 #include <cmath>
 #include <cerrno>

@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <cstring>
 
 #ifndef SIZETPRINTFLETTER
 #  ifndef __LP64__

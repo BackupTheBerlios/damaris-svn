@@ -5,6 +5,7 @@
 #include <iostream>
 #include <list>
 #include <vector>
+#include <algorithm>
 
 using std::reverse;
 using std::cout;

@@ -1,6 +1,7 @@
 #include "SpinCore-PulseBlaster.h"
 #include "PulseBlasterProgram.h"
 #include "core/xml_states.h"
+#include <typeinfo>
 
 /* ***************************************************************************************
 
