@@ -101,7 +101,8 @@ stop() {
 	  # test wheter it is still used
 	  $MODPROBE -r ${PULSEBLASTER_NAME}
 	fi
-       
+	# have to wait for a short time, let udev do the work
+	/sbin/udevsettle
 }
 
 status () {
