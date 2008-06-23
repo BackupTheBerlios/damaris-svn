@@ -1,0 +1,21 @@
+# Achim Gaedke, Jun 2008
+# udev rules for driver access
+
+# create nmr group first using the command
+# addgroup nmr
+
+# add users authorized to use nmr devices to that group
+# usermod -a -G nmr bloch
+
+# pulseblaster
+SUBSYSTEM=="pulseblaster", GROUP="nmr"
+# spectrum driver
+SUBSYSTEM=="misc", KERNEL=="spc?*", GROUP="nmr"
+
+# mainly for backward compatibility
+SUBSYSTEM=="pulseblaster", KERNEL=="pulseblaster0", SYMLINK+="pulseblaster"
+
+# if you use parport for stepper motor control
+# and remove /usr/lib/cups/backend/parallel to disable cups access
+# KERNEL=="parport0", GROUP="nmr"
+
