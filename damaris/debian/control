@@ -7,7 +7,7 @@ Standards-Version: 3.7.2
 
 Package: damaris-backends
 Architecture: i386 amd64
-Depends: ${shlibs:Depends}, bash, pciutils, modutils|module-init-tools, coreutils, libxerces|libxerces-c28, udev
+Depends: ${shlibs:Depends}, bash, modutils|module-init-tools, coreutils, libxerces27|libxerces-c28, udev, lsof
 Recommends: python-damaris|damaris-frontend, damaris-modules
 Description: backend package
 
