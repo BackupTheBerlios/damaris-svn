@@ -1,14 +1,19 @@
 #!/bin/sh
-#
-# Startup script to load nmr hardware drivers
-#
-# chkconfig: 2345 03 92
-#
-# description: loads nmr hardware drivers
-#
+### BEGIN INIT INFO
+# Provides:          skeleton
+# Required-Start:    $syslog
+# Required-Stop:     $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Startup script to load nmr hardware drivers
+# Description:       loads available nmr hardware drivers and grants rights to nmr group
+#                    these drivers will be typically used by damaris backends and accompanying programs 
+### END INIT INFO
+
 # Script Author:        Achim Gaedke <achim.gaedke@physik.tu-darmstadt.de>
-# Created:              February 28th,  2005
-# adapted from Mandrake Linux 10.1 scripts
+# Created:              February 28th,  2005, adapted to LSB June 2008
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 RETVAL=0
 # failure value for nonexisting hardware
@@ -53,7 +58,7 @@ start() {
 		fi
 	     else
 		echo "spectrum module not found"
-		return
+		SPECTRUM_RETVAL=1
 	     fi
         fi
 
@@ -70,36 +75,37 @@ start() {
 		fi
 	     else
 		echo "pulseblaster module not found"
-		return
+		PULSEBLASTER_RETVAL=1
 	     fi
-        fi
-
-	# with udev, we should have links and also the rights set correctly
-        if test  $PULSEBLASTER_RETVAL -ne 0  -o $SPECTRUM_RETVAL -ne 0; then
-             return $HARDWARE_FAIL_RETVAL
         fi
 
 	# have to wait for a short time, let udev do the work
 	/sbin/udevsettle
-	if ! test -c ${PULSEBLASTER_DEV}0; then
+	if ! test $PULSEBLASTER_RETVAL -ne 0 -o -c ${PULSEBLASTER_DEV}0 ; then
 		echo "no pulseblaster board is found, only the debug device at ${PULSEBLASTER_DEV}_debug is available"
 	fi
 
+	# with udev, we should have links and also the rights set correctly
+        if test  $PULSEBLASTER_RETVAL -ne 0  -o $SPECTRUM_RETVAL -ne 0; then
+             RETVAL=$HARDWARE_FAIL_RETVAL
+        fi
 
 }
 
 stop() {
 	if egrep "^spc$SPECTRUM_SMP_EXT " /proc/modules >/dev/null ; then
-	  # test wheter it is still used
+	  # test wheter spectrum driver is still used
+	  # !!!! the usage counter of the spc kernel module is not maintained!!!!
 	  if test "`lsof $SPECTRUM_DEV`x" = "x"; then
-		$MODPROBE -r ${SPECTRUM_NAME}${SPECTRUM_SMP_EXT}
+		$MODPROBE -r ${SPECTRUM_NAME}${SPECTRUM_SMP_EXT} || RETVAL=1
 	  else
 	        echo "spectrum driver still in use (use lsof)"
+                RETVAL=1
 	  fi
 	fi
 	if egrep "^${PULSEBLASTER_NAME} " /proc/modules > /dev/null ; then
 	  # test wheter it is still used
-	  $MODPROBE -r ${PULSEBLASTER_NAME}
+	  $MODPROBE -r ${PULSEBLASTER_NAME} || RETVAL=1
 	fi
 	# have to wait for a short time, let udev do the work
 	/sbin/udevsettle
@@ -110,11 +116,13 @@ status () {
 	   echo spectrum module loaded
 	else
 	   echo spectrum module not loaded
+           RETVAL=3
 	fi
 	if egrep "^${PULSEBLASTER_NAME} " /proc/modules > /dev/null ; then
 	   echo pulseblaster module loaded
 	else
 	   echo pulseblaster module not loaded
+           RETVAL=3
 	fi
 }
 
