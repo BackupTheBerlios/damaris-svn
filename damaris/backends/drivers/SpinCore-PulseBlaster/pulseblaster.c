@@ -49,7 +49,7 @@ struct pulseblaster_device {
     * char dev associated with it
     */
    struct cdev cdev;
-   
+
    /*
     * and the device instance in pulseblaster class
     */
@@ -60,6 +60,11 @@ struct pulseblaster_device {
 /* todo: make this a pointer array with dynamic allocation... */
 #define pulseblaster_max_devno 4
 static struct pulseblaster_device pb_devs[pulseblaster_max_devno];
+// a lock for that structure
+static spinlock_t pb_devs_lock;
+
+// debug version
+static struct pulseblaster_device pb_dev_debug;
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Achim Gaedke");
@@ -500,26 +505,25 @@ struct file_operations pulseblaster_fops = {
  */
 static int pulseblaster_pci_probe(struct pci_dev *dev, const struct pci_device_id *id) {
     int ret_val;
-    unsigned long iobase;
 
-    /*
-     check wether we are already initialized
-     */
-    if (pb_dev_no>0 && pb_devs[pb_dev_no-1].pciboard==NULL) {
-       /* the debug instance is already allocated, so this is a hotpulg event! */
-       printk("%s: Sorry, hotpluging not supported!\n", DEVICE_NAME);
-       return -1;
+    spin_lock(&pb_devs_lock);
+    // check wether device numbers were already allocated
+    if (pb_dev_no_start!=0) {
+        //we are too late
+        spin_unlock(&pb_devs_lock);
+        printk("%s: Sorry, hotpluging not supported!\n", DEVICE_NAME);
+        return -1;
     }
-    if (pb_dev_no>=pulseblaster_max_devno-1) {
-       /* leave space for debug device */
-       printk("%s: Sorry, maximum number of allocatable devices (%d) reached (please consider recompiling :-) )\n",
-              DEVICE_NAME,
-              pulseblaster_max_devno-1);
-       return -1;
+
+    if (pb_dev_no>=pulseblaster_max_devno) {
+        spin_unlock(&pb_devs_lock);
+        printk("%s: Sorry, maximum number of allocatable devices reached !\n", DEVICE_NAME);
+        return -1;
     }
     /* do i need this?, what about pci_enable_device_bars() */
     ret_val=pci_enable_device(dev);
     if (ret_val!=0) {
+        spin_unlock(&pb_devs_lock);
 	printk("%s: failed to enable pci device!\n",DEVICE_NAME);
         return -1;
     }
@@ -527,30 +531,48 @@ static int pulseblaster_pci_probe(struct pci_dev *dev, const struct pci_device_i
     /* exclusive use */
     ret_val=pci_request_region(dev, 0, DEVICE_NAME);
     if (ret_val!=0) {
+        spin_unlock(&pb_devs_lock);
 	printk("%s: failed to enable pci device!\n",DEVICE_NAME);
 	pci_disable_device(dev);
 	return -1;
     }
 
-    /* get iobase and initialize the structure */
-    iobase=pci_resource_start(dev, 0);
+    /* initialize the structure */
     pb_devs[pb_dev_no].device_open=0;
     spin_lock_init(&(pb_devs[pb_dev_no].io_lock));
     pb_devs[pb_dev_no].pciboard=dev;
 
     // todo: inform about slots as a hint for the physical location of the board!
-    printk("%s: found a pulseblaster device with i/o base address 0x%lx, assigning no %d\n", DEVICE_NAME, iobase, pb_dev_no);
+    printk("%s: found a pci board with i/o base address 0x%lx, assigning no %d\n",
+          DEVICE_NAME,
+          (unsigned long)pci_resource_start(dev, 0),
+          pb_dev_no);
 
     ++pb_dev_no;
+    spin_unlock(&pb_devs_lock);
 
     return SUCCESS;
 }
 
 static void pulseblaster_pci_remove(struct pci_dev* dev) {
+    int i=0;
+    /* for hotplugging, maintain the list in a smart way
+       here: remove only dangling device pointer!
+     */
+    spin_lock(&pb_devs_lock);
+    for (i=0; i<pb_dev_no; ++i) {
+       if (pb_devs[i].pciboard==dev) {
+           spin_lock(&(pb_devs[i].io_lock));
+           pb_devs[i].pciboard=NULL;
+           spin_unlock(&(pb_devs[i].io_lock));
+           printk("%s: releasing device no %d\n", DEVICE_NAME, i);
+           break;
+       }
+    }
+    spin_unlock(&pb_devs_lock);
     /* do the pci stuff only */
     pci_disable_device(dev);
     pci_release_region(dev, 0);
-    printk("%s: device release\n", DEVICE_NAME);
 }
 
 static struct pci_device_id pulseblaster_pci_ids[] = {
@@ -579,30 +601,26 @@ static int __init init_pulseblaster_module(void)
 	int i;
 	int major_dev_num, minor_dev_num;
 
-	pb_dev_no=0;
+        pb_dev_no_start=0;
+        pb_dev_no=0;
+        // lock for manipulating the device list
+        spin_lock_init(&pb_devs_lock);
 
-	/*
-	  register code for pci bus scanning
-	 */
+        // always provide a debug device
+        pb_dev_debug.device_open=0;
+	spin_lock_init(&(pb_dev_debug.io_lock));
+	pb_dev_debug.pciboard=0x0; // this is the debug flag for amcc functions
+
+	// register code for pci bus scanning
 	ret_val=pci_register_driver(&pulseblaster_pci_driver);
         // todo error checking
+        if (ret_val<0) {
+            printk("%s: registering the pci driver failed", DEVICE_NAME);
+            return ret_val;
+        }
 
-	// assume pb_dev_no<pulseblaster_max_devno
-        // always provide a debug device as highest id
-        if (pb_dev_no<pulseblaster_max_devno) {
-          pb_devs[pb_dev_no].device_open=0;
-	  spin_lock_init(&(pb_devs[pb_dev_no].io_lock));
-	  pb_devs[pb_dev_no].pciboard=0x0; // this is the debug flag for amcc functions
-          printk("%s: creating debug device as no. %d\n", DEVICE_NAME, pb_dev_no);
-	  pb_dev_no++;
-        }
-        else {
-          printk("%s: reached overall maximum number of allocatable devices before create debug device (should not happen!)\n", DEVICE_NAME);
-        }
-	/*
-	   get device ids
-	*/
-	ret_val= alloc_chrdev_region(&pb_dev_no_start, 0, pb_dev_no, DEVICE_NAME);
+	// get device ids
+	ret_val= alloc_chrdev_region(&pb_dev_no_start, 0, pb_dev_no+1, DEVICE_NAME);
 	major_dev_num=MAJOR(pb_dev_no_start);
 	minor_dev_num=MINOR(pb_dev_no_start);
 	if (ret_val < 0) {
@@ -610,7 +628,7 @@ static int __init init_pulseblaster_module(void)
 		       "Sorry, registering the character device failed\n", ret_val);
         	pci_unregister_driver(&pulseblaster_pci_driver);
 		return ret_val;
-	}	
+	}
 	
 	/*
 	 * create class and register devices in /sys
@@ -620,6 +638,27 @@ static int __init init_pulseblaster_module(void)
 		printk("%s: failed to register class", DEVICE_NAME);
         }
 	
+        // register debug device
+        {
+            dev_t devno = MKDEV(major_dev_num, minor_dev_num+pb_dev_no);
+            cdev_init(&(pb_dev_debug.cdev), &pulseblaster_fops);
+            pb_dev_debug.cdev.owner=THIS_MODULE;
+            pb_dev_debug.cdev.ops=&pulseblaster_fops;
+            ret_val=cdev_add(&(pb_dev_debug.cdev), devno, 1);
+            if (pulseblaster_class!=NULL) {
+            	pb_dev_debug.classdev=class_device_create(pulseblaster_class,
+				        		  NULL,
+							  devno,
+							  NULL,
+							  DEVICE_NAME"_dbg"
+							  );
+            	if (pb_dev_debug.classdev==NULL) {
+                    printk("%s: failed to register class device for debug driver", DEVICE_NAME);
+                }
+            }
+        }
+
+        spin_lock(&pb_devs_lock);
 	for (i=0; i<pb_dev_no; ++i) {
             dev_t devno = MKDEV(major_dev_num, minor_dev_num+i);
             /* register char dev */
@@ -633,12 +672,10 @@ static int __init init_pulseblaster_module(void)
             }
             /* add devices to our class */
             if (pulseblaster_class!=NULL) {
-                struct device *assoc_dev=NULL;
-                if (pb_devs[i].pciboard!=NULL) assoc_dev=&(pb_devs[i].pciboard->dev);
             	pb_devs[i].classdev=class_device_create(pulseblaster_class,
 							NULL,
 							devno,
-							assoc_dev,
+							&(pb_devs[i].pciboard->dev),
 							DEVICE_NAME"%d",
 							i
 							);
@@ -647,6 +684,8 @@ static int __init init_pulseblaster_module(void)
                 }
 	    }
 	}
+        spin_unlock(&pb_devs_lock);
+
 	return 0;
 }
 
@@ -666,17 +705,21 @@ static void __exit cleanup_pulseblaster_module(void)
 	 */
 
 	if (pulseblaster_class!=NULL) {
-		for (i=0; i<pb_dev_no; ++i) {
-	            dev_t devno = MKDEV(major_dev_num, minor_dev_num+i);
-		    class_device_destroy(pulseblaster_class, devno);
-        	}
-		class_destroy(pulseblaster_class);
+            spin_lock(&pb_devs_lock);
+            for (i=0; i<pb_dev_no; ++i)
+                class_device_destroy(pulseblaster_class, MKDEV(major_dev_num, minor_dev_num+i));
+            spin_unlock(&pb_devs_lock);
+            class_device_destroy(pulseblaster_class, MKDEV(major_dev_num, minor_dev_num+pb_dev_no));
+            class_destroy(pulseblaster_class);
 	}
 
+        spin_lock(&pb_devs_lock);
 	for (i=0; i<pb_dev_no; ++i) {
 	    cdev_del(&(pb_devs[i].cdev));
         }
-	unregister_chrdev_region(pb_dev_no_start, pb_dev_no);
+        spin_unlock(&pb_devs_lock);
+        cdev_del(&(pb_dev_debug.cdev));
+	unregister_chrdev_region(pb_dev_no_start, pb_dev_no+1);
 
 	pci_unregister_driver(&pulseblaster_pci_driver);
 
