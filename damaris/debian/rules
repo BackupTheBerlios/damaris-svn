@@ -19,9 +19,9 @@ BACKENDSMACHINES = \
 tmp_kernel_makefiles = $(wildcard /lib/modules/*/build/Makefile)
 #if we are no debian testing, exclude xen-686 (problems with pci_... support in pulseblaster and spc driver)
 # with xen-686, waiting for problems to be fixed
-KERNELVERSIONS = $(filter-out *-xen-*, $(tmp_kernel_makefiles:/lib/modules/%/build/Makefile=%))
+#KERNELVERSIONS = $(filter-out %-xen-686, $(tmp_kernel_makefiles:/lib/modules/%/build/Makefile=%))
 # for stable everything is still fine
-#KERNELVERSIONS = $(tmp_kernel_makefiles:/lib/modules/%/build/Makefile=%)
+KERNELVERSIONS = $(tmp_kernel_makefiles:/lib/modules/%/build/Makefile=%)
 DEB_BUILD_ARCH=$(strip $(shell dpkg-architecture -qDEB_BUILD_ARCH))
 
 build: build-stamp
@@ -157,9 +157,10 @@ binary-arch: build install
 	dh_installchangelogs -a
 	dh_installdocs -a
 	dh_installexamples -a
-	dh_installinit -a -pdamaris-backends
-	dh_installudev -a -pdamaris-backends
 	dh_installmodules -a
+# udev must be first, otherwise rights are not set for first time
+	dh_installudev -a -pdamaris-backends
+	dh_installinit -a -pdamaris-backends
 #	dh_installmenu -a
 #	dh_installman -a
 	dh_strip -a
