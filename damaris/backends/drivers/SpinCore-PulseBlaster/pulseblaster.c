@@ -185,7 +185,7 @@ static int amcc_outb(char data, unsigned short address, unsigned long base_addre
  *
  *
  */
-static char amcc_inb(unsigned int address, unsigned long base_address) {
+static int amcc_inb(unsigned int address, unsigned long base_address) {
   unsigned int MAX_RECV_TIMEOUT = 10000;
   unsigned int RECV_START, RECV_STOP, RECV_TOGGLE, RECV_TIMEOUT = 0;
   int XFER_ERROR = 0;
@@ -213,8 +213,9 @@ static char amcc_inb(unsigned int address, unsigned long base_address) {
   }
 
   // CHEK FOR 1 in MD1
-  amcc_outb(address, 8, base_address);
-  amcc_outb(0, READ_ADDR, base_address); // Tell board to start a read cycle
+  if ((XFER_ERROR=amcc_outb(address, 8, base_address))!=0 ||
+  (XFER_ERROR=amcc_outb(0, READ_ADDR, base_address))!=0)  // Tell board to start a read cycle
+      return XFER_ERROR;
 
   RECV_POLLING = 1;	// Set Polling Flag
   RECV_TIMEOUT = 0;
@@ -273,15 +274,8 @@ static char amcc_inb(unsigned int address, unsigned long base_address) {
   if (XFER_ERROR != 0) {
     return XFER_ERROR;
   }
-  
-  if (XFER_ERROR == 0) {
-    return Temp_Data;
-  }
-  else {
-    //printf("Errored data is %x\n",Temp_Data);
-    //printf("RECV_TOGGLE = %i\n",RECV_TOGGLE);
-    return XFER_ERROR;
-  }
+
+  return Temp_Data;
 }
 
 
@@ -407,19 +401,21 @@ device_write(struct file *file,
 	while (1) {
 	  // sometimes
 	  unsigned char temp_byte;
+	  int retval;
 	  get_user(temp_byte, buffer + i);
-	  /*
-	    ToDo: error checking!
-	  */
+	  // the hardware access
 	  spin_lock(&(my_dev->io_lock));
-	  amcc_outb(temp_byte,6, base_address);
+	  retval=amcc_outb(temp_byte,6, base_address);
 	  spin_unlock(&(my_dev->io_lock));
-
+          if (retval!=0) {
+		 printk("%s: IO Error, amcc_outb returned %d\n",DEVICE_NAME, retval);
+		 return -EIO; // make an ordinary io error
+	  }
 	  i++;
           /* break codition */
 	  if (i>=length) break;
           /* be decent to all other processes --- at least sometimes */
-	  if ((i & ((1<<12)-1)) == 0) schedule();
+	  if ((i & ((1<<14)-1)) == 0) schedule();
 	}
 
 	/* 
@@ -443,42 +439,50 @@ int device_ioctl(struct inode *inode,	/* see include/linux/fs.h */
 		 unsigned int ioctl_num,	/* number and param for ioctl */
 		 unsigned long ioctl_param)
 {
-	struct pulseblaster_device* my_dev=container_of(inode->i_cdev, struct pulseblaster_device, cdev);
-	unsigned long base_address=0;
-        if (my_dev->pciboard!=NULL)
-               base_address=pci_resource_start(my_dev->pciboard, 0);
+  struct pulseblaster_device* my_dev=container_of(inode->i_cdev, struct pulseblaster_device, cdev);
+  unsigned long base_address=0;
+  int ret_val=SUCCESS;
+  if (my_dev->pciboard!=NULL)
+      base_address=pci_resource_start(my_dev->pciboard, 0);
 
   if (ioctl_num==IOCTL_OUTB){
     unsigned char reg=(ioctl_param>>8)&0xFF;
     unsigned char val=ioctl_param&0xFF;
-    int ret_val;
     /*
       check for register boundaries!
     */
     if (reg>7) {
-      printk("%s: got bad register number %02x",DEVICE_NAME,0x0ff&reg);
-      return -1;
+      printk("%s: got bad register number %02x\n",DEVICE_NAME,0x0ff&reg);
+      ret_val=-EINVAL;
     }
-    /*
-      ToDo: error checking!
-     */
-    spin_lock(&(my_dev->io_lock));
-    ret_val=amcc_outb(val, reg, base_address);
-    spin_unlock(&(my_dev->io_lock));
-    return ret_val;
+    else {
+       spin_lock(&(my_dev->io_lock));
+       ret_val=amcc_outb(val, reg, base_address);
+       spin_unlock(&(my_dev->io_lock));
+       if (ret_val!=0) {
+	    printk("%s: IO Error, amcc_outb returned %d\n",DEVICE_NAME, ret_val);
+	    ret_val=-EIO; // make an ordinary io error
+       }
+    }
   }
-  if (ioctl_num==IOCTL_INB) {
+  else if (ioctl_num==IOCTL_INB) {
     unsigned char reg=ioctl_param&0xFF;
-    unsigned char val;
     //printk("%s: reading register number %02x\n",DEVICE_NAME,0x0ff&reg);
     spin_lock(&(my_dev->io_lock));
-    val=amcc_inb(reg, base_address);
+    ret_val=amcc_inb(reg, base_address);
     spin_unlock(&(my_dev->io_lock));
     //printk("%s: found %02x=%02x\n", DEVICE_NAME, 0x0ff&reg, 0x0ff&val);
-    return val;
+    if (ret_val<0) {
+	printk("%s: IO Error, amcc_inb returned %d\n",DEVICE_NAME, ret_val);
+	ret_val=-EIO; // make an ordinary io error
+    }
+  }
+  else {
+	printk("%s: unknown ioctl request number %d\n",DEVICE_NAME, ioctl_num);
+        ret_val=-EINVAL;
   }
   
-  return SUCCESS;
+  return ret_val;
 }
 
 /* Module Declarations */
