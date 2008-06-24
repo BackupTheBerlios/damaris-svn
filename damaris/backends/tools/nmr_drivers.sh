@@ -1,13 +1,13 @@
 #!/bin/sh
 ### BEGIN INIT INFO
-# Provides:          skeleton
+# Provides:          damaris-backends
 # Required-Start:    $syslog
 # Required-Stop:     $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Startup script to load nmr hardware drivers
+# Short-Description: Startup script to load nmr hardware drivers for use with damaris backends
 # Description:       loads available nmr hardware drivers and grants rights to nmr group
-#                    these drivers will be typically used by damaris backends and accompanying programs 
+#                    these drivers will be typically used by damaris backends and accompanying programs
 ### END INIT INFO
 
 # Script Author:        Achim Gaedke <achim.gaedke@physik.tu-darmstadt.de>

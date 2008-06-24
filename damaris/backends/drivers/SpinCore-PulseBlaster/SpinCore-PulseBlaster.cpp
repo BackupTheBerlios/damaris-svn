@@ -179,8 +179,9 @@ void SpinCorePulseBlaster::run_pulse_program_w_sync(state& exp, double sync_freq
           PulseBlasterCommand* c;
           c=prog->create_command();
           c->instruction=SpinCorePulseBlaster::CONTINUE;
-          c->length=shortest_pulse;
+          c->length=shortest_pulse+1;
           prog->push_front(c);
+          duration+=(1.0+shortest_pulse)/clock;
   }
   // end: clear flags and stop pulseblaster
   prog->push_back(prog->create_command());
