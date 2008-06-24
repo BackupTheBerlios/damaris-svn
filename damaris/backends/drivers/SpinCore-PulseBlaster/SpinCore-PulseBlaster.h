@@ -177,15 +177,27 @@ class SpinCorePulseBlaster: protected SpinCorePulseBlasterLowlevel, public pulse
     int ttl_device_id;
     
     /**
-       bit mask to set while WAIT command for syncronization is executed
+       bit mask to set while WAIT command for synchronization is executed
        
-       no syncronization when zero.
+       no synchronization when zero.
      */
     unsigned int sync_mask;
 
 public:
 
   enum opcode {CONTINUE=0, STOP=1, LOOP=2, END_LOOP=3, JSR=4, RTS=5, BRANCH=6, LONG_DELAY=7, WAIT=8};
+
+  /**
+   status codes retured by get_status function
+
+   they are combinable like bit masks
+   */
+  enum statuscode { STOPPED=1<<0,  /// Bit 0 - Stopped
+		    RESET=1<<1,    /// Bit 1 - Reset
+		    RUNNING=1<<2,  /// Bit 2 - Running
+		    WAITING=1<<3,  /// Bit 3 - Waiting
+		    SCANNING=1<<4  /// Bit 4 - Scanning (RadioProcessor boards only)
+		  };
 
   SpinCorePulseBlaster(int c_length, double the_clock) {
     clock=the_clock;

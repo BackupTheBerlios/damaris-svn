@@ -153,31 +153,25 @@ void SpinCorePulseBlaster::run_pulse_program_w_sync(state& exp, double sync_freq
   if (prog==NULL)
     throw pulse_exception("could not create PulseBlasterProgram");
   if (sync_freq>0 && sync_mask!=0) {
-    // syncronization
+    // synchronization with help of board P136
+    // P136 derives a single trigger slope from sampling clock of Spectrum MI4021
     PulseBlasterCommand* c;
 
-    // third command: clear sync mask
+    // second command: clear sync mask
     c=prog->create_command();
     c->ttls=0;
     c->instruction=SpinCorePulseBlaster::CONTINUE;
     c->length=shortest_pulse;
-    prog->push_front(c);
+    prog->push_front(c); // so we have to add the two commands in reverse order
 
-    // second command: wait for monoflop up again
+    // first command: wait for monoflop on P136 up again
     c=prog->create_command();
     c->ttls=sync_mask;
     c->instruction=SpinCorePulseBlaster::WAIT;
     c->length=shortest_pulse;
     prog->push_front(c);
 
-    // first command: clear sync monoflop
-    c=prog->create_command();
-    c->ttls=sync_mask;
-    c->instruction=SpinCorePulseBlaster::CONTINUE;
-    c->length=shortest_pulse;
-    prog->push_front(c);
-
-    duration+=3.0*shortest_pulse/clock+2.0/sync_freq;
+    duration+=2.0*shortest_pulse/clock+2.0/sync_freq;
   }
   // workaround for another PulseBlaster Bug: only CONTINUE opcodes at the first two commands
   while ((prog->size()>1 && (*(++(prog->begin())))->instruction!=CONTINUE) ||
@@ -212,9 +206,10 @@ void SpinCorePulseBlaster::wait_till_end() {
     // Bit zero is stopped; bit one is reset; bit two is running; bit three is waiting.
     int status=get_status();
 #if SP_DEBUG
-    fprintf(stderr,"status: 0x%0x ",status);
+    fprintf(stderr,"status=0x%04x ",status);
 #endif
-    while (waittime>-timeout && core::term_signal==0 && (status&0x4)) {
+    // with synchronization, also waiting status can occur
+    while (waittime>-timeout && core::term_signal==0 && (status&(RUNNING|WAITING))!=0) {
       if (waittime<1e-2)
 	waittime=1e-2;
       else
@@ -230,7 +225,7 @@ void SpinCorePulseBlaster::wait_till_end() {
       waittime=duration-time_running.elapsed();
       status=get_status();
 #if SP_DEBUG
-      fprintf(stderr,"status: 0x%0x ",status);
+      fprintf(stderr,"status: 0x%04x\n",status);
       fflush(stderr);
 #endif
     }
@@ -240,11 +235,11 @@ void SpinCorePulseBlaster::wait_till_end() {
       reset_flags(0);
     }
     if (waittime<=-timeout) {
-      fprintf(stderr, "ran into timeout, aborting...");
+      fprintf(stderr, "Pulseblaster: status=0x%04x, ran into timeout after %f s\nPulseblaster: aborting...", status, time_running.elapsed());
       stop();
       reset_flags(0);
       status=get_status();
-      fprintf(stderr,"status: 0x%0x\n",status);
+      fprintf(stderr,"now: status=0x%04x\n", status);
     }
 #if SP_DEBUG
     fprintf(stderr,"done\n");
