@@ -68,8 +68,12 @@ static spinlock_t pb_devs_lock;
 // debug version
 static struct pulseblaster_device pb_dev_debug;
 
+static int base_address=-1;
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Achim Gaedke");
+module_param(base_address, int, S_IRUGO);
+MODULE_PARM_DESC(base_address, "not supported anymore! IO base address of device");
 
 /*************************************************************************************/
 
@@ -89,7 +93,7 @@ MODULE_AUTHOR("Achim Gaedke");
 #define pb_in(bwl) in##bwl##_p
 #endif
 
-static int amcc_outb(char data, unsigned short address, unsigned long base_address) {
+static int amcc_outb(char data, unsigned short address, unsigned long my_base_address) {
 
 	unsigned int MAX_RECV_TIMEOUT = 10;
 	unsigned int RECV_START, RECV_TOGGLE, RECV_TIMEOUT = 0;
@@ -108,7 +112,7 @@ static int amcc_outb(char data, unsigned short address, unsigned long base_addre
 	unsigned int Temp_Address = address;
 	unsigned int Temp_Data = data;
 
-	if (base_address==0) {
+	if (my_base_address==0) {
 	  printk("%s: reg %02x=%02x\n",DEVICE_NAME, 0xff&address, 0xff&data);
 	  return 0;
 	}
@@ -122,24 +126,24 @@ static int amcc_outb(char data, unsigned short address, unsigned long base_addre
 		Temp_Data |= SET_XFER;
 
 		// Clear the XFER bit (Should already be cleared)
-		pb_out(b) (0,base_address+SIG_TRNS);
+		pb_out(b) (0,my_base_address+SIG_TRNS);
 
 		// Transfer Address
 		
 		// Read RECV bit from the Board
-		RECV_START = pb_in(b) (base_address+CHK_RECV);
+		RECV_START = pb_in(b) (my_base_address+CHK_RECV);
 
 		RECV_START &= CLEAR31;	// Only Save LSB
 
 
 		// Send Address to OGMB
-		pb_out(l) (Temp_Address, base_address+OGMB);
+		pb_out(l) (Temp_Address, my_base_address+OGMB);
 
 		RECV_POLLING = 1;	// Set Polling Flag
 		RECV_TIMEOUT = 0;
 		while ((RECV_POLLING == 1) && (RECV_TIMEOUT < MAX_RECV_TIMEOUT)) 
 		{
-			RECV_TOGGLE = pb_in(b)(base_address+CHK_RECV);
+			RECV_TOGGLE = pb_in(b)(my_base_address+CHK_RECV);
 
 			RECV_TOGGLE &= CLEAR31;	// Only Save LSB
 			if (RECV_TOGGLE != RECV_START) RECV_POLLING = 0;	// Finished if Different
@@ -148,24 +152,24 @@ static int amcc_outb(char data, unsigned short address, unsigned long base_addre
 		}
 
 		// Transfer Complete (Clear) Signal
-		pb_out(b)(0, base_address+SIG_TRNS);
+		pb_out(b)(0, my_base_address+SIG_TRNS);
 
 		// Transfer Data
 
 		// Read RECV bit from the Board
-		RECV_START = pb_in(b)(base_address+CHK_RECV);
+		RECV_START = pb_in(b)(my_base_address+CHK_RECV);
 
 		RECV_START &= CLEAR31;	// Only Save LSB
 
 		// Send Data to OGMB
-		pb_out(l)(Temp_Data, base_address+OGMB);
+		pb_out(l)(Temp_Data, my_base_address+OGMB);
 
 		RECV_POLLING = 1;	// Set Polling Flag
 		RECV_TIMEOUT = 0;
 		while ((RECV_POLLING == 1) && (RECV_TIMEOUT < MAX_RECV_TIMEOUT)) 
 		{
 			// Check for Toggled RECV
-                        RECV_TOGGLE = pb_in(b)(base_address+CHK_RECV);
+                        RECV_TOGGLE = pb_in(b)(my_base_address+CHK_RECV);
 
 			RECV_TOGGLE &= CLEAR31;	// Only Save LSB
 			if (RECV_TOGGLE != RECV_START) RECV_POLLING = 0;	// Finished if Different
@@ -174,7 +178,7 @@ static int amcc_outb(char data, unsigned short address, unsigned long base_addre
 		}
 
 		// Transfer Complete (Clear) Signal
-		pb_out(b)(0, base_address+SIG_TRNS);
+		pb_out(b)(0, my_base_address+SIG_TRNS);
 
 	return XFER_ERROR;	
 }
@@ -185,7 +189,7 @@ static int amcc_outb(char data, unsigned short address, unsigned long base_addre
  *
  *
  */
-static int amcc_inb(unsigned int address, unsigned long base_address) {
+static int amcc_inb(unsigned int address, unsigned long my_base_address) {
   unsigned int MAX_RECV_TIMEOUT = 10000;
   unsigned int RECV_START, RECV_STOP, RECV_TOGGLE, RECV_TIMEOUT = 0;
   int XFER_ERROR = 0;
@@ -207,14 +211,14 @@ static int amcc_inb(unsigned int address, unsigned long base_address) {
 
   unsigned int Temp_Data = 0;
 
-  if (base_address==0) {
+  if (my_base_address==0) {
       printk("%s: reg(%02x)=0 (guessed)\n",DEVICE_NAME, 0xff&address);
       return 0;
   }
 
   // CHEK FOR 1 in MD1
-  if ((XFER_ERROR=amcc_outb(address, 8, base_address))!=0 ||
-  (XFER_ERROR=amcc_outb(0, READ_ADDR, base_address))!=0)  // Tell board to start a read cycle
+  if ((XFER_ERROR=amcc_outb(address, 8, my_base_address))!=0 ||
+  (XFER_ERROR=amcc_outb(0, READ_ADDR, my_base_address))!=0)  // Tell board to start a read cycle
       return XFER_ERROR;
 
   RECV_POLLING = 1;	// Set Polling Flag
@@ -224,7 +228,7 @@ static int amcc_inb(unsigned int address, unsigned long base_address) {
   while ((RECV_POLLING == 1) && (RECV_TIMEOUT < MAX_RECV_TIMEOUT)) {
       // Check for Toggled RECV
       //RECV_TOGGLE = _inp(CHK_RECV);
-      RECV_TOGGLE = pb_in(b) (base_address+CHK_RECV);
+      RECV_TOGGLE = pb_in(b) (my_base_address+CHK_RECV);
       RECV_TOGGLE &= BIT1;	// Only Save Bit 1
       
       if (RECV_TOGGLE == RECV_START) RECV_POLLING = 0;	// Finished if Different
@@ -237,12 +241,12 @@ static int amcc_inb(unsigned int address, unsigned long base_address) {
 
   //Temp_Data = _inp(ICMB);
   // Read RECV bit from the Board
-  Temp_Data = pb_in(b)(base_address+ICMB);
+  Temp_Data = pb_in(b)(my_base_address+ICMB);
   Temp_Data &= CLEAR24;
 
 		
   //Toggle = _inp(SIG_TRNS);
-  Toggle = pb_in(b) (base_address+SIG_TRNS);
+  Toggle = pb_in(b) (my_base_address+SIG_TRNS);
   
   Toggle_Temp = Toggle & BIT1; // Only Save Bit 1
   if (Toggle_Temp == 0x0)
@@ -255,7 +259,7 @@ static int amcc_inb(unsigned int address, unsigned long base_address) {
     }
 
   //_outp(SIG_TRNS, Toggle);
-  pb_out(b) (Toggle,base_address+SIG_TRNS);
+  pb_out(b) (Toggle,my_base_address+SIG_TRNS);
   
   RECV_POLLING = 1;	// Set Polling Flag
   RECV_TIMEOUT = 0;
@@ -264,7 +268,7 @@ static int amcc_inb(unsigned int address, unsigned long base_address) {
   while ((RECV_POLLING == 1) && (RECV_TIMEOUT < MAX_RECV_TIMEOUT)) {
     // Check for Toggled RECV
     //RECV_TOGGLE = _inp(CHK_RECV);
-    RECV_TOGGLE = pb_in(b) (base_address + CHK_RECV);
+    RECV_TOGGLE = pb_in(b) (my_base_address + CHK_RECV);
     RECV_TOGGLE &= BIT1;	// Only Save Bit 1
       
     if (RECV_TOGGLE == RECV_STOP) RECV_POLLING = 0;	// Finished if Different
@@ -307,10 +311,10 @@ static int device_release(struct inode *inode, struct file *file)
 {
   struct pulseblaster_device* my_dev=container_of(inode->i_cdev, struct pulseblaster_device, cdev);
 
-  unsigned long base_address=0;
+  unsigned long my_base_address=0;
   if (my_dev->pciboard!=NULL)
-       base_address=pci_resource_start(my_dev->pciboard, 0);
-  if (base_address==0) printk("%s: device_release(%p,%p)\n",DEVICE_NAME, inode, file);
+       my_base_address=pci_resource_start(my_dev->pciboard, 0);
+  if (my_base_address==0) printk("%s: device_release(%p,%p)\n",DEVICE_NAME, inode, file);
 
   /*
    * reset device
@@ -319,16 +323,16 @@ static int device_release(struct inode *inode, struct file *file)
     // this procedure works only on DDS cards
     // DDS Manual
     spin_lock(&(my_dev->io_lock));
-    amcc_outb(   0, 0, base_address); //dev reset
-    amcc_outb(   4, 2, base_address); //bytes per word
-    amcc_outb(0xFF, 3, base_address); //dev to program
-    amcc_outb(   0, 4, base_address); //reset address counter
-    amcc_outb(   0, 6, base_address); //data out
-    amcc_outb(   0, 6, base_address); //data out
-    amcc_outb(   0, 6, base_address); //data out
-    amcc_outb(   0, 6, base_address); //data out
-    amcc_outb(   0, 5, base_address); //strobe clock
-    amcc_outb(   0, 5, base_address); //strobe clock
+    amcc_outb(   0, 0, my_base_address); //dev reset
+    amcc_outb(   4, 2, my_base_address); //bytes per word
+    amcc_outb(0xFF, 3, my_base_address); //dev to program
+    amcc_outb(   0, 4, my_base_address); //reset address counter
+    amcc_outb(   0, 6, my_base_address); //data out
+    amcc_outb(   0, 6, my_base_address); //data out
+    amcc_outb(   0, 6, my_base_address); //data out
+    amcc_outb(   0, 6, my_base_address); //data out
+    amcc_outb(   0, 5, my_base_address); //strobe clock
+    amcc_outb(   0, 5, my_base_address); //strobe clock
     spin_unlock(&(my_dev->io_lock));
 
   }
@@ -336,25 +340,25 @@ static int device_release(struct inode *inode, struct file *file)
     spin_lock(&(my_dev->io_lock));
     // this procedure is successful for 24Bit cards
     // SpinCore by mail Oct 10th 2007
-    amcc_outb(0,6, base_address);//store 0's to memory
-    amcc_outb(0,6, base_address);
-    amcc_outb(0,6, base_address);
-    amcc_outb(0,6, base_address);
-    amcc_outb(0,6, base_address);
-    amcc_outb(0,6, base_address);
-    amcc_outb(0,6, base_address);
-    amcc_outb(0,6, base_address);
+    amcc_outb(0,6, my_base_address);//store 0's to memory
+    amcc_outb(0,6, my_base_address);
+    amcc_outb(0,6, my_base_address);
+    amcc_outb(0,6, my_base_address);
+    amcc_outb(0,6, my_base_address);
+    amcc_outb(0,6, my_base_address);
+    amcc_outb(0,6, my_base_address);
+    amcc_outb(0,6, my_base_address);
 
-    amcc_outb(0,0, base_address);//dev reset
-    amcc_outb(4,2, base_address);//bytes per word
-    amcc_outb(0,3, base_address);//write to internal memory
-    amcc_outb(0,4, base_address);//clear address counter
-    amcc_outb(0,6, base_address);//data out
-    amcc_outb(0,6, base_address);//data out
-    amcc_outb(0,6, base_address);//data out
-    amcc_outb(0,6, base_address);//data out
-    amcc_outb(7,7, base_address);//programming finished
-    amcc_outb(7,1, base_address);//trigger
+    amcc_outb(0,0, my_base_address);//dev reset
+    amcc_outb(4,2, my_base_address);//bytes per word
+    amcc_outb(0,3, my_base_address);//write to internal memory
+    amcc_outb(0,4, my_base_address);//clear address counter
+    amcc_outb(0,6, my_base_address);//data out
+    amcc_outb(0,6, my_base_address);//data out
+    amcc_outb(0,6, my_base_address);//data out
+    amcc_outb(0,6, my_base_address);//data out
+    amcc_outb(7,7, my_base_address);//programming finished
+    amcc_outb(7,1, my_base_address);//trigger
     spin_lock(&(my_dev->io_lock));
   }
 
@@ -392,11 +396,11 @@ device_write(struct file *file,
 	     const char __user * buffer, size_t length, loff_t * offset)
 {
         struct pulseblaster_device* my_dev=(struct pulseblaster_device*)file->private_data;
-	unsigned long base_address=0;
+	unsigned long my_base_address=0;
 	register int i=0;
 
         if (my_dev->pciboard!=NULL)
-               base_address=pci_resource_start(my_dev->pciboard, 0);
+               my_base_address=pci_resource_start(my_dev->pciboard, 0);
 
 	while (1) {
 	  // sometimes
@@ -405,7 +409,7 @@ device_write(struct file *file,
 	  get_user(temp_byte, buffer + i);
 	  // the hardware access
 	  spin_lock(&(my_dev->io_lock));
-	  retval=amcc_outb(temp_byte,6, base_address);
+	  retval=amcc_outb(temp_byte,6, my_base_address);
 	  spin_unlock(&(my_dev->io_lock));
           if (retval!=0) {
 		 printk("%s: IO Error, amcc_outb returned %d\n",DEVICE_NAME, retval);
@@ -440,10 +444,10 @@ int device_ioctl(struct inode *inode,	/* see include/linux/fs.h */
 		 unsigned long ioctl_param)
 {
   struct pulseblaster_device* my_dev=container_of(inode->i_cdev, struct pulseblaster_device, cdev);
-  unsigned long base_address=0;
+  unsigned long my_base_address=0;
   int ret_val=SUCCESS;
   if (my_dev->pciboard!=NULL)
-      base_address=pci_resource_start(my_dev->pciboard, 0);
+      my_base_address=pci_resource_start(my_dev->pciboard, 0);
 
   if (ioctl_num==IOCTL_OUTB){
     unsigned char reg=(ioctl_param>>8)&0xFF;
@@ -457,7 +461,7 @@ int device_ioctl(struct inode *inode,	/* see include/linux/fs.h */
     }
     else {
        spin_lock(&(my_dev->io_lock));
-       ret_val=amcc_outb(val, reg, base_address);
+       ret_val=amcc_outb(val, reg, my_base_address);
        spin_unlock(&(my_dev->io_lock));
        if (ret_val!=0) {
 	    printk("%s: IO Error, amcc_outb returned %d\n",DEVICE_NAME, ret_val);
@@ -469,7 +473,7 @@ int device_ioctl(struct inode *inode,	/* see include/linux/fs.h */
     unsigned char reg=ioctl_param&0xFF;
     //printk("%s: reading register number %02x\n",DEVICE_NAME,0x0ff&reg);
     spin_lock(&(my_dev->io_lock));
-    ret_val=amcc_inb(reg, base_address);
+    ret_val=amcc_inb(reg, my_base_address);
     spin_unlock(&(my_dev->io_lock));
     //printk("%s: found %02x=%02x\n", DEVICE_NAME, 0x0ff&reg, 0x0ff&val);
     if (ret_val<0) {
@@ -615,6 +619,10 @@ static int __init init_pulseblaster_module(void)
 	int i;
 	int major_dev_num, minor_dev_num;
 
+
+	if (base_address!=-1) {
+	   printk("%s: no longer supporting 'base_address' parameter\n", DEVICE_NAME);
+        }
         pb_dev_no_start=0;
         pb_dev_no=0;
         // lock for manipulating the device list
