@@ -13,3 +13,15 @@ find /usr/lib/damaris/backends -type f \
 -exec chmod u+s,o= {} \;
 
 #DEBHELPER#
+
+if [ "$1" = "configure" -a -n "$2" ]; then
+   comparableversion=`echo "$2"|sed 's/[\.-]/ /g'|xargs printf "%03d%03d%03d"`
+   if [ "000011000" -gt $comparableversion ]; then
+      # transition to version with udev
+      if [ \! -e /etc/udev/rules.d/z60_damaris-backends.rules ]; then
+        # check whether the link/script was done when updating from 0.11 to newer version
+        ln -s ../damaris-backends.rules /etc/udev/rules.d/z60_damaris-backends.rules
+      fi
+   fi
+fi
+
