@@ -24,6 +24,10 @@ SpinCorePulseBlasterLowlevel::~SpinCorePulseBlasterLowlevel() {
 int SpinCorePulseBlasterLowlevel::write_data(const unsigned char* data, size_t size) {
   size_t orig_size=size;
   const unsigned int max_chunk_size=100*1<<10; // 100k commands
+#if SP_DEBUG
+  stopwatch write_data_time;
+  write_data_time.start();
+#endif
   while (size>0) {
     int result=write(device_file_descriptor, data, ((size>max_chunk_size)?max_chunk_size:size) );
     // error handling
@@ -38,6 +42,9 @@ int SpinCorePulseBlasterLowlevel::write_data(const unsigned char* data, size_t s
     data+=result;
     size-=result;
   }
+#if SP_DEBUG
+   fprintf(stderr, "wrote %d bytes in %f s\n", orig_size, write_data_time.elapsed());
+#endif
   return orig_size;
 }
 
@@ -155,14 +162,15 @@ void SpinCorePulseBlaster::run_pulse_program_w_sync(state& exp, double sync_freq
   if (sync_freq>0 && sync_mask!=0) {
     // synchronization with help of board P136
     // P136 derives a single trigger slope from sampling clock of Spectrum MI4021
+    // using push_front(): we have to add the two commands in reverse order
     PulseBlasterCommand* c;
 
     // second command: clear sync mask
     c=prog->create_command();
-    c->ttls=0;
+    c->ttls=0x0;
     c->instruction=SpinCorePulseBlaster::CONTINUE;
     c->length=shortest_pulse;
-    prog->push_front(c); // so we have to add the two commands in reverse order
+    prog->push_front(c); 
 
     // first command: wait for monoflop on P136 up again
     c=prog->create_command();
@@ -171,15 +179,24 @@ void SpinCorePulseBlaster::run_pulse_program_w_sync(state& exp, double sync_freq
     c->length=shortest_pulse;
     prog->push_front(c);
 
-    duration+=2.0*shortest_pulse/clock+2.0/sync_freq;
+    if (0) {
+	    // zeroth command: set sync mask in advance, sometimes necessary
+	    c=prog->create_command();
+	    c->ttls=sync_mask;
+	    c->instruction=SpinCorePulseBlaster::CONTINUE;
+	    c->length=shortest_pulse+2;
+	    prog->push_front(c);
+    }
+    duration+=2.0*shortest_pulse/clock+1.0/sync_freq;
   }
-  // workaround for another PulseBlaster Bug: only CONTINUE opcodes at the first two commands
+  // workaround for another PulseBlaster Bug:
+  // extra CONTINUE opcodes with little more duration to force proper initialization of all internal counters
   while ((prog->size()>1 && (*(++(prog->begin())))->instruction!=CONTINUE) ||
          (prog->size()>0 && (*(prog->begin()))->instruction!=CONTINUE)) {
           PulseBlasterCommand* c;
           c=prog->create_command();
           c->instruction=SpinCorePulseBlaster::CONTINUE;
-          c->length=shortest_pulse+1;
+          c->length=shortest_pulse+2;
           prog->push_front(c);
           duration+=(1.0+shortest_pulse)/clock;
   }
