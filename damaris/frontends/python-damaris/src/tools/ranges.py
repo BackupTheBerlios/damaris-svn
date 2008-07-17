@@ -12,7 +12,6 @@ def log_range(start, stop, stepno):
 def staggered_range(some_range, size=3):
 	m=0
 	if isinstance(some_range, N.ndarray):
-		print "da"
 		is_numpy = True
 		some_range = list(some_range)
 	new_list=[]
