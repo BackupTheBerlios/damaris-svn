@@ -33,7 +33,7 @@ def staggered_range(some_range, size=3):
 def combine_ranges(*ranges):
     new_list = []
     for r in ranges:
-        new_list+=r
+        new_list.extend(r)
     return new_list
 
 combined_ranges=combine_ranges
