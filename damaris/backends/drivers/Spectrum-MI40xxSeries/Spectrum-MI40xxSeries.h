@@ -67,6 +67,11 @@ class SpectrumMI40xxSeries: public ADC {
     size_t fifo_minimal_size;
     /** stuff concerning fifo acquisition */
     std::vector<short int*> fifobuffers;
+    /** the extra data thread should store things to that buffer */
+    short int* fifo_adc_data;
+    pthread_attr_t timeout_pt_attrs;
+    pthread_t timeout_pt;
+
 
 # if defined __linux__
   // ----- include the easy ioctl commands from the driver -----

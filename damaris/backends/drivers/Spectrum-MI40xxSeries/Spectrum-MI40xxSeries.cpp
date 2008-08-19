@@ -227,7 +227,7 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 		if (a_state->length<time_required) {
 		  char parameter_info[512];
 		  snprintf(parameter_info,sizeof(parameter_info),
-			   "(%d samples, %f samplerate, %f time required, %f state time)",
+			   "(%" SIZETPRINTFLETTER " samples, %f samplerate, %f time required, %f state time)",
 			   inputs.front()->samples,
 			   settings.samplefreq,
 			   time_required,
@@ -300,6 +300,10 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
     settings.timeout*=exp.repeat;
     settings.timeout+=parent_timeout;
     return;
+}
+
+static void* SpectrumMI40xxSeries_TimeoutThread(void* data) {
+  return (void*)((SpectrumMI40xxSeries*)data)->TimeoutThread();
 }
 
 void SpectrumMI40xxSeries::set_daq(state & exp) {
@@ -391,22 +395,31 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
       nErr = SpcSetParam (deviceno, SPC_COMMAND,      SPC_START);     // start the board
   }
   else {
-      fprintf(stderr, "expecting %" SIZETPRINTFLETTER " samples in fifo mode\n",sampleno);
+    fprintf(stderr, "expecting %" SIZETPRINTFLETTER " samples in fifo mode\n",sampleno);
+    // todo: fifo should really write directly to recursive gated sampling structures
+    fifo_adc_data=(short int*)malloc(sampleno*sizeof(short int)*2);
+    if (fifo_adc_data==NULL) {
+       throw SpectrumMI40xxSeries_error("could not allocate adc data memory for fifo recording");
+    }
     // ToDo: do some magic calculations
     fifobufferno=16;
     fifobufferlen=1<<20;
+    fprintf(stderr, "configuring for %" SIZETPRINTFLETTER " buffers, each of size %" SIZETPRINTFLETTER "\n", fifobufferno, fifobufferlen);
     SpcSetParam(deviceno,SPC_FIFO_BUFFERS,fifobufferno);
     SpcSetParam(deviceno,SPC_FIFO_BUFLEN,fifobufferlen);
     // allocate FIFO buffers
     fifobuffers.resize(fifobufferno,(short int*)NULL);
     for (size_t i=0; i!=fifobufferno; ++i) {
-      void* newbuffer=malloc(fifobufferlen);
+      void* newbuffer;
+      fprintf(stderr, "allocating fifobuffer %" SIZETPRINTFLETTER "...", i);
+      newbuffer=malloc(fifobufferlen);
       if (newbuffer==NULL) {
 	// free the buffers, if there is not enough memory
 	for (size_t j=0; j!=i; ++j) free(fifobuffers[j]);
 	fifobuffers.clear();
 	throw SpectrumMI40xxSeries_error("could not allocate buffers for fifo mode");
       }
+      fprintf(stderr, "and registering with ADC driver....");
       fifobuffers[i]=(short int*)newbuffer;
       // todo: check for errors
 #ifndef _LINUX64
@@ -415,12 +428,13 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
       // 64 bit Linux needs SetAdr function, 32 bit linux can also use this if driver build > 1093
       SpcSetAdr (deviceno, SPC_FIFO_BUFADR0+i, newbuffer);
 #endif
-
+      fprintf(stderr, "success.\n");
     }
-    // start fifo aquisition
-    nErr=SpcSetParam(deviceno, SPC_COMMAND, SPC_FIFOSTART);
+    fprintf(stderr, "starting fifo thread\n");
     // to do: append a new state to overcome problems with fifo...
-    
+    // need another thread, that collects the data
+    pthread_attr_init(&timeout_pt_attrs); 
+    pthread_create(&timeout_pt, &timeout_pt_attrs, SpectrumMI40xxSeries_TimeoutThread,(void*)this);
   }
   // ----- driver error: request error and end program -----
   if (nErr != ERR_OK) {
@@ -451,27 +465,54 @@ double SpectrumMI40xxSeries::get_sample_clock_frequency() const{
   return effective_settings->samplefreq;
 }
 
-
-static void* SpectrumMI40xxSeries_TimeoutThread(void* data) {
-  return (void*)((SpectrumMI40xxSeries*)data)->TimeoutThread();
-}
-
 int SpectrumMI40xxSeries::TimeoutThread() { 
-  stopwatch timer;
-  timer.start();
-  do {
-    int32 lStatus;
-    timespec sleeptime;
-    sleeptime.tv_sec=0;
-    sleeptime.tv_nsec=100000000;
-    nanosleep(&sleeptime,NULL);
-    pthread_testcancel();
-    SpcGetParam (deviceno, SPC_STATUS,      &lStatus);    
-    pthread_testcancel();
-    if (lStatus == SPC_READY) return 0;
-  } while (timer.elapsed()<effective_settings->timeout);
-  SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
-  return 1;
+    // now collect data
+    assert(effective_settings!=NULL);
+    size_t sampleno=effective_settings->data_structure->size();
+    size_t buff_number_expected=(sampleno*2*sizeof(short int)+fifobufferlen-1)/fifobufferlen;
+    SpcSetParam(deviceno, SPC_FIFO_BUFMAXCNT, buff_number_expected);
+    size_t buff_number=0;
+    short int* buff_pointer=fifo_adc_data;
+
+    // start fifo aquisition
+    fprintf(stderr, "SPC_FIFOSTART\n");
+    SpcSetParam(deviceno, SPC_COMMAND, SPC_FIFOSTART);
+
+    do {
+      // wait for the buffers
+      pthread_testcancel();
+      fprintf(stderr, "reading buffer no %" SIZETPRINTFLETTER "/%" SIZETPRINTFLETTER "\n", buff_number+1, buff_number_expected);
+      if (buff_number+1==buff_number_expected) {
+	// the last one is special, copy only expected bytes
+	memcpy(buff_pointer, fifobuffers[buff_number%(fifobuffers.size())], sampleno*2*sizeof(short int)-fifobufferlen*buff_number);
+        break;
+      }
+      else
+	buff_pointer=(short int*)mempcpy(buff_pointer, fifobuffers[buff_number%(fifobuffers.size())], fifobufferlen);
+      SpcSetParam(deviceno,SPC_FIFO_BUFREADY, buff_number%(fifobuffers.size()));
+      buff_number++;
+      int adc_status;
+      fprintf(stderr, "SPC_STATUS\n");
+      SpcGetParam (deviceno, SPC_STATUS, &adc_status);
+      if (adc_status==SPC_READY) {
+	// this must be a timeout!
+	//pthread_cancel(timeout_pt);
+	//pthread_join(timeout_pt,NULL);
+	//pthread_attr_destroy(&timeout_pt_attrs);
+	free(fifo_adc_data);
+        fifo_adc_data=NULL;
+	//throw SpectrumMI40xxSeries_error("timout occured while collecting data");
+	return 0;
+      }
+      fprintf(stderr, "waiting for fifo buffers\n");
+      fprintf(stderr, "SPC_FIFOWAIT\n");
+      SpcSetParam(deviceno, SPC_COMMAND, SPC_FIFOWAIT);
+    }
+    while (buff_number<buff_number_expected);
+    fprintf(stderr, "SPC_STOP\n");
+    SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
+
+    return 1;
 }
 
 short int* SpectrumMI40xxSeries::split_adcdata_recursive(short int* data, const DataManagementNode& structure, adc_results& result_splitted) {
@@ -506,18 +547,20 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
     if (sampleno==0) return new adc_result(1,0,NULL);
     double timeout=_timeout;
     // allocate a lot of space
-    short int* adc_data=(short int*)malloc(sampleno*sizeof(short int)*2);
-    if (adc_data==NULL) {
-	for (std::vector<short int*>::iterator i=fifobuffers.begin(); i!=fifobuffers.end(); ++i) free(*i);
-	fifobuffers.clear();
-	throw SpectrumMI40xxSeries_error("could not allocate adc data memory");
-    }
+    // todo: use GatedSampling buffers directly!
 
     if (fifobuffers.empty()) {
+        short int* adc_data=(short int*)malloc(sampleno*sizeof(short int)*2);
+        if (adc_data==NULL) {
+       	     for (std::vector<short int*>::iterator i=fifobuffers.begin(); i!=fifobuffers.end(); ++i) free(*i);
+	     fifobuffers.clear();
+	     throw SpectrumMI40xxSeries_error("could not allocate adc data memory");
+        }
+
 	// simple version: standard acquisition, wait and get...
-#if SPC_DEBUG
+//#if SPC_DEBUG
 	fprintf(stderr, "fetching %" SIZETPRINTFLETTER " samples in normal mode (timeout is %g)\n",sampleno,timeout);
-#endif
+//#endif
 	stopwatch adc_timer;
 	adc_timer.start();
 	int adc_status;
@@ -572,57 +615,50 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 	return the_results;
   }
   else {
-    adc_result* the_result=NULL;
     fprintf(stderr, "fetching %" SIZETPRINTFLETTER " samples in fifo mode (timeout is %g)\n",sampleno,timeout);
     // FIFO method
-    // need another thread, that stops my process
-    pthread_attr_t timeout_pt_attrs;
-    pthread_attr_init(&timeout_pt_attrs); 
-    pthread_t timeout_pt;
-    pthread_create(&timeout_pt,&timeout_pt_attrs,SpectrumMI40xxSeries_TimeoutThread,(void*)this);
-    
-    // now collect data
-    size_t buff_number_expected=(sampleno*2*sizeof(short int)+fifobufferlen-1)/fifobufferlen;
-    SpcSetParam(deviceno, SPC_FIFO_BUFMAXCNT, buff_number_expected);
-    size_t buff_number=0;
-    size_t buff_index=0;
-    short int* buff_pointer=adc_data;
-    while (buff_number<buff_number_expected) {
-      // wait for the buffers
-      SpcSetParam(deviceno, SPC_COMMAND, SPC_FIFOWAIT);
-      int adc_status;
-      SpcGetParam (deviceno, SPC_STATUS, &adc_status);
-      if (adc_status==SPC_READY) {
-	// this must be a timeout!
-	pthread_cancel(timeout_pt);
-	pthread_join(timeout_pt,NULL);
-	pthread_attr_destroy(&timeout_pt_attrs);
-	free(adc_data);
-	for (std::vector<short int*>::iterator i=fifobuffers.begin(); i!=fifobuffers.end(); ++i) free(*i);
-	fifobuffers.clear();
-	throw SpectrumMI40xxSeries_error("timout occured while collecting data");
-      }
-      if (buff_number+1==buff_number_expected)
-	// the last one is special
-	memcpy(buff_pointer, fifobuffers[buff_index], sampleno*2*sizeof(short int)-fifobufferlen*buff_number);
-      else
-	buff_pointer=(short int*)mempcpy(buff_pointer, fifobuffers[buff_index], fifobufferlen);
-      SpcSetParam(deviceno,SPC_FIFO_BUFREADY,buff_index);
-      buff_number++;
-      buff_index++;
-      if (buff_index==fifobuffers.size()) buff_index=0;
-    }
+    stopwatch timer;
+    timer.start();
+    do {
+       int32 lStatus;
+       timespec sleeptime;
+       sleeptime.tv_sec=0;
+       sleeptime.tv_nsec=100000000;
+       nanosleep(&sleeptime,NULL);
+       //pthread_testcancel();
+       SpcGetParam (deviceno, SPC_STATUS, &lStatus);
+       if (lStatus == SPC_READY) break;
+    } while (timer.elapsed()<_timeout);
     SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
 
-    /* wait for timeout thread */
+    fprintf(stderr, "waiting for read thread terminating\n");
+    /* wait for read thread */
     pthread_cancel(timeout_pt);
     pthread_join(timeout_pt,NULL);
-    the_result=new adc_result(0,sampleno,adc_data,effective_settings->samplefreq);
     pthread_attr_destroy(&timeout_pt_attrs);
-    
+    /* free it's resources */
+    fprintf(stderr, "freeing fifo data buffers\n");
     for (std::vector<short int*>::iterator i=fifobuffers.begin(); i!=fifobuffers.end(); ++i) free(*i);
     fifobuffers.clear();
-    return the_result;
+
+    adc_results* the_results=NULL;
+    if (fifo_adc_data!=NULL) {
+	// split data to (small) pieces
+	short int* data_position=fifo_adc_data;
+	the_results=new adc_results(0);
+	data_position=split_adcdata_recursive(data_position, *(effective_settings->data_structure), *the_results);
+	if (data_position==0 || (size_t)(data_position-fifo_adc_data)!=(sampleno*2)) {
+		fprintf(stderr,"something went wrong while spliting data\n");
+	}
+	free(fifo_adc_data);
+	fifo_adc_data=NULL;
+    }
+    else
+        fprintf(stderr,"something went wrong while collecting data\n");
+
+    delete effective_settings;
+    effective_settings=NULL;
+    return the_results;
   }
 }
 
