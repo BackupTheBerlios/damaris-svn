@@ -117,6 +117,7 @@ void PTS::set_frequency_ttls(state& the_state) {
   /* now, add the ttl information*/
   if (pts_aout!=NULL) {
     phase_add_ttls(the_state, pts_aout->phase);
+    phase=pts_aout->phase;
     if (pts_aout->frequency!=0) {
       if (frequency==0) {
 	set_frequency(pts_aout->frequency);
