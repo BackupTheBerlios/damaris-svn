@@ -8,27 +8,40 @@ import exceptions
 import UserDict
 import Drawable
 
+## provide gaussian statistics for a series of measured data points
+#
+# AccumulatedValue provides mean and error of mean after being fed with measured data
+# internaly it keeps the sum, the sum of squares and the number of data points
 class AccumulatedValue:
 
-    def __init__(self, mean=None, mean_err=0, n=0):
+    def __init__(self, mean=None, mean_err=None, n=None):
         """
         one value with std. deviation
         can be initialized by:
         No argument: no entries
         one argument: first entry
+	two arguments: mean and its error, n is set 2
         three arguments: already existing statistics defined by mean, mean's error, n
         """
         if mean is None:
             self.y=0.0
             self.y2=0.0
             self.n=0
-        elif n==0:
-            self.y=mean
+        elif mean_err is None and n is None:
+            self.y=float(mean)
+            self.y2=self.y**2
             self.n=1
-            self.y2=mean*mean
+	elif mean_err is None:
+            self.n=max(1, int(n))
+            self.y=float(mean)*self.n
+            self.y2=(float(mean)**2)*self.n
+	elif n is None:
+            self.n=2
+            self.y=float(mean)*2
+            self.y2=(float(mean_err)**2+float(mean)**2)*2
         else:
             self.n=int(n)
-            self.y=float(mean*self.n)
+            self.y=float(mean)*self.n
             self.y2=float(mean_err)**2*n*(n-1.0)+float(mean)**2*n
 
     def __add__(self,y):
@@ -65,11 +78,11 @@ class AccumulatedValue:
         """
         returns the mean of all added/accumulated values
         """
-        if self.n is None:
+        if self.n is None or self.n==0:
             return None
         else:
             return self.y/self.n
-    
+
     def sigma(self):
         """
         returns the standard deviation added/accumulated values
@@ -82,7 +95,7 @@ class AccumulatedValue:
                 return 0.0
             return math.sqrt(variance)
         elif self.n==1:
-            return 0
+            return 0.0
         else:
             return None
 
@@ -98,7 +111,7 @@ class AccumulatedValue:
                 return 0.0
             return math.sqrt(variance/self.n)
         elif self.n==1:
-            return 0
+            return 0.0
         else:
             return None
 
@@ -153,24 +166,25 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
 
     def get_xdata(self):
         """
-        sorted array of all dictionary entries
+        sorted array of all dictionary entries without Accumulated Value objects with n==0
         """
-        k=numpy.array(self.data.keys(), dtype="Float64")
-        k.sort()
-        return k
+        keys=numpy.array(filter(lambda k: not (isinstance(self.data[k], AccumulatedValue) and self.data[k].n==0), self.data.keys()),
+	                 dtype="Float64")
+        keys.sort()
+        return keys
 
     def get_ydata(self):
         return self.get_xydata()[1]
 
     def get_xydata(self):
         k=self.get_xdata()
-        v=numpy.array(map(lambda key: self.data[key].mean(),k), dtype="Float64")
+        v=numpy.array(map(lambda key: self.data[key].mean(), k), dtype="Float64")
         return [k,v]
 
     def get_errorplotdata(self):
         k=self.get_xdata()
-        v=numpy.array(map(lambda key: self.data[key].mean(),k), dtype="Float64")
-        e=numpy.array(map(lambda key: self.data[key].mean_error(),k), dtype="Float64")
+        v=numpy.array(map(lambda key: self.data[key].mean(), k), dtype="Float64")
+        e=numpy.array(map(lambda key: self.data[key].mean_error(), k), dtype="Float64")
         return [k,v,e]
 
     def uses_statistics(self):

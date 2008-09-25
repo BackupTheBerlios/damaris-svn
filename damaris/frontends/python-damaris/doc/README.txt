@@ -19,3 +19,6 @@ cp -r /usr/share/moin/underlay wikiunderlay
 python dump_wiki.py
 cp -r /usr/share/moin/htdocs/modern tutorial-html
 rm -r wikiunderlay wikiconfig.py
+
+# get useful numpy doc
+wget http://www.scipy.org/Numpy_Example_List_With_Doc?action=print
