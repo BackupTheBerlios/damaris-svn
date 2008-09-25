@@ -1,10 +1,16 @@
 #!/usr/bin/python
 
-import sys
-import os.path
+import os
+# for numpy-1.1 and later: check the environment for LANG and LC_NUMERIC
+# see: http://projects.scipy.org/scipy/numpy/ticket/902
+if os.environ.get("LANG","").startswith("de") or os.environ.get("LC_NUMERIC", "").startswith("de"):
+	os.environ["LC_NUMERIC"]="C"
+
 import damaris.gui.DamarisGUI
 import matplotlib
 
+import sys
+import os.path
 # argv is already parsed by gtk initialisation
 myargs=sys.argv[1:]
 myname=os.path.basename(sys.argv[0])
