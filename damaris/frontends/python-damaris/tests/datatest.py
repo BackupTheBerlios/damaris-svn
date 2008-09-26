@@ -1,4 +1,5 @@
 import sys
+import numpy
 import math
 import os.path
 import unittest
@@ -43,13 +44,17 @@ class TestAccumulatedValueClass(unittest.TestCase):
 		self.assert_(a.n==10)
 
 	def testStatistics(self):
+		test_dataset=numpy.arange(10.0)
 		a=AccumulatedValue()
-		for i in xrange(10):
+		for i in test_dataset:
 			a+=i
-		self.assert_(a.n==10)
-		self.assertAlmostEqual(a.mean(), 4.5)
-		self.assertAlmostEqual(a.sigma(), 3.027650354)
-		self.assertAlmostEqual(a.mean_error(), 3.027650354/math.sqrt(10.0))
+		self.assert_(a.n==len(test_dataset))
+		# sum x_i/n
+		self.assertAlmostEqual(a.mean(), test_dataset.mean())
+		# std_dev_n-1 x_i= sqrt(sum (x-xmean)**2/(n-1))
+		self.assertAlmostEqual(a.sigma(), math.sqrt(((test_dataset-a.mean())**2).sum()/(len(test_dataset)-1.)))
+		# std_dev_n-1 x_i/sqrt(n)
+		self.assertAlmostEqual(a.mean_error(), a.sigma()/math.sqrt(len(test_dataset)))
 		
 	def tearDown(self):
 		# is called after each test
