@@ -221,10 +221,10 @@ class Experiment:
         # Standart XML-Kopf
         xml_string = '<?xml version="1.0" encoding="ISO-8859-1"?>\n'
 
-        # Experiment-Start-Tag einfügen
+        # Experiment-Start-Tag einfÃ¼gen
         xml_string += '<experiment no="%d">\n' % self.job_id
 
-        # Descriptions einfügen
+        # Descriptions einfÃ¼gen
         if len(self.description)==0:
             xml_string += '  <description/>\n'
         else:
@@ -260,7 +260,7 @@ class Experiment:
 		xml_string += '    <item key="%s" type="%s">%s</item>\n'%(key, type_string ,value)
             xml_string += "  </description>\n"
 
-        # Experiment-Inhalt einfügen
+        # Experiment-Inhalt einfÃ¼gen
         xml_string += self.state_list.to_xml(indent = "  ")
 
         # Experiment-End-Tag
