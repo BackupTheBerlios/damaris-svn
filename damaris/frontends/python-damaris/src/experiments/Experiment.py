@@ -112,11 +112,13 @@ class Experiment:
         self.state_list.append(StateSimple(time))
 
 
-    def record(self, samples, frequency, timelength=None, sensitivity=None):
+    def record(self, samples, frequency, timelength=None, sensitivity=None, ttls=None):
         attributes='s="%d" f="%g"'%(samples,frequency)
         if sensitivity is not None:
             attributes+=' sensitivity="%f"'%sensitivity
         s_content = '<analogin %s/>' % attributes
+	if ttls is not None:
+	    s_content+='<ttlout value="0x%06x"/>' % ttls
         if timelength is None:
             timelength = samples / float(frequency)*1.01
         self.state_list.append(StateSimple(timelength, s_content))
