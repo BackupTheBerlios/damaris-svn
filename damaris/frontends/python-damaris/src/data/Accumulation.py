@@ -540,7 +540,7 @@ class Accumulation(Errorable, Drawable, DamarisFFT):
 
     def __rsub__(self, other):
         "Redefining other - self"
-        return self.__neg__(self.__add__(other))
+        return self.__neg__(self.__add__(-other))
 
 
     def __iadd__(self, other):

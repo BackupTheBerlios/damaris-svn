@@ -191,6 +191,6 @@ class DamarisFFT:
 	
     def magnitude(self):
 		# this should calculate the absolute value, and set the imag channel to zero
-		self.y[0] = numpy.sqrt(self.y[0]**2+self.y[1]**2)
+		self.y[0] = numpy.sqrt(self.y [0]**2+self.y [1]**2)
 		self.y[1] *= 0 #self.y[0].copy()
 		return self

@@ -110,7 +110,7 @@ setup (
                     'damaris.experiments': 'src/experiments',
                     'damaris.gui': 'src/gui',
                     'damaris.tools': 'src/tools' },
-    package_data = { 'damaris.gui': ['DAMARIS.png', 'DAMARIS.ico', 'damaris.glade',  'damaris.gladep']},
+    package_data = { 'damaris.gui': ['DAMARIS.png', 'DAMARIS.ico', 'damaris.glade',  'damaris.gladep', 'python.xml']},
     scripts = ['scripts/DAMARIS'],
     cmdclass={"build_scripts": build_damaris_scripts},
     data_files = distribution_data_files

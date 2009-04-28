@@ -64,6 +64,7 @@ if hasattr(gtk, "PrintOperation"):
 from damaris.gui import ExperimentWriter, ExperimentHandling
 from damaris.gui import ResultReader, ResultHandling
 from damaris.gui import BackendDriver
+from damaris.gui.gtkcodebuffer import CodeBuffer, SyntaxLoader
 #from damaris.data import Drawable # this is a base class, it should be used...
 from damaris.data import DataPool, Accumulation, ADC_Result, MeasurementResult
 
@@ -828,7 +829,7 @@ class DamarisGUI:
             "numpy": "http://www.scipy.org/Documentation#head-9013a0c8c345747e0b152f5125afe50b63177ad6",
             "scipy": "http://www.scipy.org/Documentation#head-737c779c5566aaed848449e5e365542664fb274a",
             "pytables": "http://www.pytables.org/docs/manual/",
-            "DAMARIS backednds": None,
+            "DAMARIS backends": None,
             "DAMARIS Repository": "http://element.fkp.physik.tu-darmstadt.de/cgi-bin/viewcvs.cgi/damaris/"
             }
 
@@ -965,11 +966,18 @@ class ScriptWidgets:
         # keep in mind which filename was used for result script
         self.res_script_filename=None
         
+        # load syntax description for syntax highlighting (defined in python.xml)
+        sl = SyntaxLoader ("python")
         # script buffers:
         self.experiment_script_textview = self.xml_gui.get_widget("experiment_script_textview")
         self.data_handling_textview = self.xml_gui.get_widget("data_handling_textview")
-        self.experiment_script_textbuffer = self.experiment_script_textview.get_buffer()
-        self.data_handling_textbuffer = self.data_handling_textview.get_buffer()
+
+        # create and set syntax-highlighting text-buffers as textview backends
+        self.experiment_script_textbuffer = CodeBuffer (lang = sl)
+        self.data_handling_textbuffer = CodeBuffer (lang = sl)
+        self.experiment_script_textview.set_buffer (self.experiment_script_textbuffer)
+        self.data_handling_textview.set_buffer (self.data_handling_textbuffer)
+        
         # script fonts are atlered by configuration
         # clipboard
         self.main_clipboard = gtk.Clipboard(selection = "CLIPBOARD")
