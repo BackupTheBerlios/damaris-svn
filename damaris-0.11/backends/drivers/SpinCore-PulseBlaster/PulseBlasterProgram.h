@@ -2,7 +2,7 @@
 #include "core/states.h"
 #include "core/stopwatch.h"
 #include "drivers/pulsegen.h"
-
+#include <string.h>
 class PulseBlasterCommand;
 
 /**

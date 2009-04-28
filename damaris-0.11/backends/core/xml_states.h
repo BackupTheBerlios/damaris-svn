@@ -11,6 +11,7 @@
 #include <expat.h>
 #include <xercesc/dom/DOMElement.hpp>
 
+
 /**
    \defgroup xmlstateinterface XML support for all state classes
    \ingroup states

@@ -1,3 +1,9 @@
+damaris (0.11-0) experimental; urgency=low
+
+  * Kernel modules compiled and tested for version 2.6.22-6
+
+ -- Markus Rosenstihl <markusro@element.fkp.physik.tu-darmstadt.de>  Fri,  10 Mar 2009 17:24:38 +0100
+
 damaris (0.10-4) experimental; urgency=low
 
   * Kernel modules compiled and tested for version 2.6.18-6

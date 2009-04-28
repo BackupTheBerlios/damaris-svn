@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <string>
+#include <string.h>
 #include <vector>
 #include <cmath>
 #include <cerrno>

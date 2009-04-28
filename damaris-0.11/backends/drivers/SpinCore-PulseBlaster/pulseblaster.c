@@ -453,7 +453,7 @@ void cleanup_module()
 	/* 
 	 * Unregister the device 
 	 */
-	ret = unregister_chrdev(major_dev_num, DEVICE_NAME);
+	unregister_chrdev(major_dev_num, DEVICE_NAME);
 
 	/* 
 	 * If there's an error, report it 
