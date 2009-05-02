@@ -193,7 +193,7 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         """
         return True
 
-    def write_as_csv(self,destination=sys.stdout, delimiter=" "):
+    def write_to_csv(self,destination=sys.stdout, delimiter=" "):
         """
         writes the data to a file or to sys.stdout
         destination can be a file or a filename
@@ -209,9 +209,9 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         for x in self.get_xdata():
             y=self.data[x]
             if type(y) in [types.FloatType, types.IntType, types.LongType]:
-                the_destination.write("%g%s%g%s0%s1\n"%(x, delimiter, y, delimiter, delimiter))
+                the_destination.write("%e%s%e%s0%s1\n"%(x, delimiter, y, delimiter, delimiter))
             else:
-                the_destination.write("%g%s%g%s%g%s%d\n"%(x,
+                the_destination.write("%e%s%e%s%e%s%d\n"%(x,
                                                           delimiter,
                                                           y.mean(),
                                                           delimiter,

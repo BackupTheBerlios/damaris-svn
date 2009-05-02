@@ -39,6 +39,8 @@ import matplotlib
 # force noninteractive and use of numpy
 matplotlib.rcParams["numerix"]="numpy"
 matplotlib.rcParams["interactive"]="False"
+matplotlib.rcParams["text.usetex"]="False"
+matplotlib.rcParams["axes.formatter.limits"]="-3,3"
 
 if matplotlib.rcParams["backend"]=="GTK":
     from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
@@ -2485,6 +2487,8 @@ class MonitorWidgets:
         try to recycle labels, data, lines....
         assume, object is not changed
         we are inside gtk/gdk lock
+
+	markusro
         """
         in_result=self.data_pool.get(self.displayed_data[0])
         if in_result is None:
@@ -2610,6 +2614,27 @@ class MonitorWidgets:
                 self.matplot_axes.set_ylabel(in_result.get_ylabel())
             else:
                 self.matplot_axes.set_ylabel("")
+
+            # Any  variables to be set?
+            if False:
+				if isinstance(in_result, Accumulation):
+					descriptions = in_result.common_descriptions
+				elif isinstance(in_result, ADC_Result):
+					descriptions = in_result.description
+		#	    else: pass
+		#	    actual_config = self.config.get()
+				if (descriptions is not None) : #--markusro
+			#		print actual_config['pretty_descriptions']
+			#		pass
+					description_string = ""
+					for key in descriptions.keys():
+						description_string += "%s = %s\n" % (key,descriptions[key])
+						self.matplot_axes.text(0.7,0.95, description_string[:-1],
+												size=8,
+												transform=self.matplot_axes.transAxes,
+												va='top',
+												backgroundcolor='white')
+
 
             # Draw it!
             self.matplot_canvas.draw_idle()

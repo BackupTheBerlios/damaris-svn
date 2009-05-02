@@ -141,7 +141,7 @@ class ADC_Result(Resultable, Drawable,DamarisFFT):
     def uses_statistics(self):
         return False
 
-    def write_as_csv(self, destination=sys.stdout, delimiter=" "):
+    def write_to_csv(self, destination=sys.stdout, delimiter=" "):
         """
         writes the data to a file or to sys.stdout
         destination can be a file or a filename
@@ -161,9 +161,9 @@ class ADC_Result(Resultable, Drawable,DamarisFFT):
             ydata=map(self.get_ydata, xrange(ch_no))
             #yerr=map(self.get_yerr, xrange(ch_no))
             for i in xrange(len(xdata)):
-                the_destination.write("%g"%xdata[i])
+                the_destination.write("%e"%xdata[i])
                 for j in xrange(ch_no):
-                    the_destination.write("%s%g"%(delimiter, ydata[j][i]))
+                    the_destination.write("%s%e"%(delimiter, ydata[j][i]))
                 the_destination.write("\n")
             the_destination=None
             xdata=ydata=None

@@ -193,7 +193,7 @@ class Accumulation(Errorable, Drawable, DamarisFFT):
     def get_job_id(self):
         return None
 
-    def write_as_csv(self, destination=sys.stdout, delimiter=" "):
+    def write_to_csv(self, destination=sys.stdout, delimiter=" "):
         """
         writes the data to a file or to sys.stdout
         destination can be a file or a filename
@@ -223,12 +223,12 @@ class Accumulation(Errorable, Drawable, DamarisFFT):
             if self.use_error:
                 yerr=map(self.get_yerr, xrange(ch_no))
             for i in xrange(len(xdata)):
-                the_destination.write("%g"%xdata[i])
+                the_destination.write("%e"%xdata[i])
                 for j in xrange(ch_no):
                     if self.use_error:
-                        the_destination.write("%s%g%s%g"%(delimiter, ydata[j][i], delimiter, yerr[j][i]))
+                        the_destination.write("%s%e%s%e"%(delimiter, ydata[j][i], delimiter, yerr[j][i]))
                     else:
-                        the_destination.write("%s%g"%(delimiter,ydata[j][i]))                        
+                        the_destination.write("%s%e"%(delimiter,ydata[j][i]))                        
                 the_destination.write("\n")
             the_destination=None
             xdata=yerr=ydata=None
