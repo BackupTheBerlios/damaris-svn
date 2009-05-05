@@ -2375,14 +2375,14 @@ class MonitorWidgets:
         if self.displayed_data[1] is None:
             # nothing to save
             return
-        if not hasattr(data_to_save[1], "write_as_csv"):
+        if not hasattr(data_to_save[1], "write_to_csv"):
             log("do not know how to save %s of class/type %s"%(data_to_save[0],type(data_to_save[1])))
             return
 
         # save them to a temporary file (in memory)
         tmpdata=os.tmpfile()
         tmpdata.write("# saved from monitor as %s\n"%data_to_save[0])
-        data_to_save[1].write_as_csv(tmpdata)
+        data_to_save[1].write_to_csv(tmpdata)
         
         # show save dialog
         def response(self, response_id, tmpfile):
@@ -2429,7 +2429,7 @@ class MonitorWidgets:
         if self.displayed_data[1] is None:
             # nothing to save
             return
-        if not hasattr(data_to_save[1], "write_as_csv"):
+        if not hasattr(data_to_save[1], "write_to_csv"):
             log("do not know how to save %s of class/type %s"%(data_to_save[0],type(data_to_save[1])))
             return
 
@@ -2437,7 +2437,7 @@ class MonitorWidgets:
         # tab delimiters necessary
         # comments are not welcome :-(
         tmpdata=cStringIO.StringIO()
-        data_to_save[1].write_as_csv(tmpdata, delimiter=u"\t")
+        data_to_save[1].write_to_csv(tmpdata, delimiter=u"\t")
         # cut away comments
         tmpstring=u""
         tmpdata.seek(0)
@@ -2488,7 +2488,6 @@ class MonitorWidgets:
         assume, object is not changed
         we are inside gtk/gdk lock
 
-	markusro
         """
         in_result=self.data_pool.get(self.displayed_data[0])
         if in_result is None:
@@ -2616,25 +2615,25 @@ class MonitorWidgets:
                 self.matplot_axes.set_ylabel("")
 
             # Any  variables to be set?
-            if False:
-				if isinstance(in_result, Accumulation):
-					descriptions = in_result.common_descriptions
-				elif isinstance(in_result, ADC_Result):
-					descriptions = in_result.description
+#            if False:
+#				if isinstance(in_result, Accumulation):
+#					descriptions = in_result.common_descriptions
+#				elif isinstance(in_result, ADC_Result):
+#					descriptions = in_result.description
 		#	    else: pass
 		#	    actual_config = self.config.get()
-				if (descriptions is not None) : #--markusro
+#				if (descriptions is not None) : #--markusro
 			#		print actual_config['pretty_descriptions']
 			#		pass
-					description_string = ""
-					for key in descriptions.keys():
-						description_string += "%s = %s\n" % (key,descriptions[key])
-						self.matplot_axes.text(0.7,0.95, description_string[:-1],
-												size=8,
-												transform=self.matplot_axes.transAxes,
-												va='top',
-												backgroundcolor='white')
-
+#					description_string = ""
+#					for key in descriptions.keys():
+#						description_string += "%s = %s\n" % (key,descriptions[key])
+#						self.matplot_axes.text(0.7,0.95, description_string[:-1],
+#												size=8,
+#												transform=self.matplot_axes.transAxes,
+#												va='top',
+#												backgroundcolor='white')
+#
 
             # Draw it!
             self.matplot_canvas.draw_idle()
