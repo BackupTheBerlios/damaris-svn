@@ -3,7 +3,7 @@
  *
  *  The declarations here have to be in a header file, because
  *  they need to be known both to the kernel module
- *  (in chardev.c) and the process calling ioctl (ioctl.c)
+ *  and the process calling ioctl
  */
 
 #ifndef PULSEBLASTER_H
