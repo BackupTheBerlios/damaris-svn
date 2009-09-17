@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # import native python modules
 import time
 import math
@@ -826,13 +827,12 @@ class DamarisGUI:
 
         self.doc_urls={
             "Python DAMARIS": None,
-            "DAMARIS Homepage": "http://www.fkp.physik.tu-darmstadt.de/damariswiki",
+            "DAMARIS Homepage": "http://damaris.berlios.de/",
             "Python": "http://www.python.org/doc/%d.%d/"%(sys.version_info[:2]),
-            "numpy": "http://www.scipy.org/Documentation#head-9013a0c8c345747e0b152f5125afe50b63177ad6",
-            "scipy": "http://www.scipy.org/Documentation#head-737c779c5566aaed848449e5e365542664fb274a",
+            "numpy/scipy": "http://docs.scipy.org/",
             "pytables": "http://www.pytables.org/docs/manual/",
             "DAMARIS backends": None,
-            "DAMARIS Repository": "http://element.fkp.physik.tu-darmstadt.de/cgi-bin/viewcvs.cgi/damaris/"
+            "DAMARIS Repository": "http://svn.berlios.de/viewvc/damaris"
             }
 
         if os.path.isdir("/usr/share/doc/python%d.%d-doc/html"%(sys.version_info[:2])):
@@ -852,7 +852,7 @@ class DamarisGUI:
             # check generic debian location
             self.doc_urls["Python DAMARIS"]="file:///usr/share/doc/python-damaris/html/index.html"
         else:
-            self.doc_urls["Python DAMARIS"]="http://www.fkp.physik.tu-darmstadt.de/damariswiki/Tutorial"
+            self.doc_urls["Python DAMARIS"]="http://damaris.berlios.de/wiki/index.php/Tutorial"
 
         self.doc_browser=None
 
