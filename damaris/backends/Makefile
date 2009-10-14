@@ -12,7 +12,9 @@ SUBDIRS=core drivers machines tests doc tools
 PREFIX=$(shell cd && pwd)/nmr_software
 
 all:
-	for d in $(SUBDIRS); do $(MAKE) PREFIX=$(PREFIX) -C $$d all; done
+	for d in $(SUBDIRS); do \
+	  $(MAKE) PREFIX=$(PREFIX) -C $$d all || exit 1; \
+	done
 
 clean:
 	rm -f *~ && for d in $(SUBDIRS); do $(MAKE) -C $$d clean; done

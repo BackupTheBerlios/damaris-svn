@@ -104,6 +104,8 @@ INPUT                  = ../core/ \
                          ../drivers/Datel-PCI416/Datel-PCI416.cpp \
                          ../drivers/PTS-Synthesizer/PTS.cpp \
                          ../drivers/PTS-Synthesizer/PTS.h \
+                         ../drivers/Tecmag-DAC20/DAC20.cpp \
+                         ../drivers/Tecmag-DAC20/DAC20.h \
                          ../drivers/dummy \
                          ../machines/ \
                          ../tests/ \
@@ -118,9 +120,7 @@ INPUT                  = ../core/ \
                          /home/achim/build/backends/machines/Mobile_wo_sync_backend.cpp \
                          /home/achim/build/backends/machines/NQRcore.cpp \
                          /home/achim/build/backends/machines/PFGcore.cpp \
-                         /home/achim/build/backends/machines/bg_backend.cpp \
-                         /home/achim/build/backends/drivers/Tecmag-DAC20/DAC20.cpp \
-                         /home/achim/build/backends/drivers/Tecmag-DAC20/DAC20.h
+                         /home/achim/build/backends/machines/bg_backend.cpp
 INPUT_ENCODING         = UTF-8
 FILE_PATTERNS          = *.h \
                          *.cpp

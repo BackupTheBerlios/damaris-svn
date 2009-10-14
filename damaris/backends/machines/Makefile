@@ -12,11 +12,19 @@ CXXCPPFLAGS= -I. -I..
 LDFLAGS=
 LIBS=-lexpat -lxerces-c -lm
 
-MACHINE=dummy
+MACHINES = \
+	dummycore.exe \
+	deuteron_backend.exe \
+	magnexgrad_backend \
+	magnexgrad_backend_dds \
+	PFGcore.exe \
+	bg_backend \
+	Mobilecore.exe \
+	Mobile_wo_sync_backend.exe
 
 .PHONY: all clean install
 
-all: $(MACHINE)core.exe
+all: $(MACHINES)
 
 ../tools/add_endline.exe: ../tools/add_endline.cpp
 	$(CXX) $< -o $@
@@ -152,8 +160,8 @@ clean: ../tools/add_endline.exe
 	for f in *.cpp *.h; do ../tools/add_endline.exe $$f;done; \
 rm -f *~ *.o *.exe *.stackdump magnexgrad_backend bg_backend
 
-install: $(MACHINE)core.exe
-	install $(MACHINE)core.exe $(PREFIX)
+install: $(MACHINES)
+	install $(MACHINES) $(PREFIX)
 
 PFGcore.exe: PFGcore.o hardware.o \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
