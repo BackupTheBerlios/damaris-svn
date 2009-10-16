@@ -7,13 +7,19 @@
 #include "core/states.h"
 #include "drivers/pfggen.h"
 
-class PFG: public pfggen {
+class DAC20: public GenericDAC {
+protected:
+	/// The channel for the latch signal
+	int latch_bit;
+
 public:
  	int id;
  	// default constructor
- 	PFG(int myid=0);
+ 	DAC20(int myid=0);
 	virtual void set_dac(signed dw);
 //	virtual void set_dac_ttls(signed value);
+
+	void set_latch_bit(int le_bit);
 
         /**
             inserts necessary serial data transmission to set the dac, at the end of experiment reset the dac
@@ -24,7 +30,7 @@ public:
 	virtual void set_dac_recursive(state_sequent& the_sequence, state::iterator& the_state);
  	
 	// destructor
- 	virtual ~PFG();
+ 	virtual ~DAC20();
 	
 };
 

@@ -63,8 +63,6 @@ public:
 	  the_fg->set_frequency(*work_copy);
 	if (the_adc!=NULL)
 	  the_adc->set_daq(*work_copy);
-	if (the_gradientpg!=NULL)
-	  the_gradientpg->set_dac(*work_copy);
 	// the pulse generator is necessary
 	my_pulseblaster->run_pulse_program_w_sync(*work_copy, my_adc->get_sample_clock_frequency());
 	// wait for pulse generator

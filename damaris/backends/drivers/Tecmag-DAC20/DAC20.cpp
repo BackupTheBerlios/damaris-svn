@@ -20,21 +20,26 @@ using std::vector;
 // The channel configuration
 #define DATA_BIT 18//18	
 #define CLK_BIT 16//16
-#define LE_BIT 17//17
 
-PFG::PFG(int myid): id(myid) {
+DAC20::DAC20(int myid): id(myid) {
 	dac_value = 0;
+	set_latch_bit(17);
 }
 
-PFG::~PFG() {}
+DAC20::~DAC20() {}
 
 // This sets the dac_value
-void PFG::set_dac(signed dw) {
+void DAC20::set_dac(signed dw) {
 	dac_value = dw;	
 }
 
+void DAC20::set_latch_bit(int le_bit)
+{
+	latch_bit = le_bit;
+}
+
 // This sets the DAC
-void PFG::set_dac(state& experiment) {
+void DAC20::set_dac(state& experiment) {
 	
 	state_sequent* exp_sequence=dynamic_cast<state_sequent*>(&experiment);
 	if (exp_sequence == NULL)
@@ -52,9 +57,9 @@ void PFG::set_dac(state& experiment) {
 		state::iterator my_state_iterator = exp_sequence->begin();
                 state_sequent* rep_sequence=new state_sequent();
                 rep_sequence->repeat=DAC_BIT_DEPTH;
-		le->ttls=( 1 << LE_BIT) + ( 1 << CLK_BIT );
+		le->ttls=( 1 << latch_bit) + ( 1 << CLK_BIT );
 		rep_sequence->push_back(s.copy_new());
-		le->ttls=( 1 << LE_BIT );
+		le->ttls=( 1 << latch_bit);
 	        rep_sequence->push_back(s.copy_new());
                 exp_sequence->insert(my_state_iterator, rep_sequence);
 		//read in the word (41st pulse)
@@ -63,14 +68,14 @@ void PFG::set_dac(state& experiment) {
 		// 42nd pulse
 		// the state should be 2ms long
 		s.length = 2e-3-41*TIMING;
-		le->ttls= ( 1 << LE_BIT );
+		le->ttls= ( 1 << latch_bit );
 		exp_sequence->insert(my_state_iterator, s.copy_new());
 	}
 }
 
 // This loops recursive through the state tree
 
-void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_state) {
+void DAC20::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_state) {
 	
 	state_sequent* a_sequence = dynamic_cast<state_sequent*>(*the_state);
 	// Am I a sequence? Yes? Go one sequence further
@@ -148,16 +153,16 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
                                                 // insert a loop
                                                 state_sequent* rep_sequence=new state_sequent();
                                                 rep_sequence->repeat=last_seen_bit_count;
-        	                                register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << CLK_BIT) + (1 << LE_BIT);
+        	                                register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << CLK_BIT) + (1 << latch_bit);
                                 		rep_sequence->push_back(register_state->copy_new());
-                                                register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << LE_BIT);
+                                                register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << latch_bit);
                                 		rep_sequence->push_back(register_state->copy_new());
                                                 the_sequence.insert(the_state, rep_sequence);
                                            } else {
                                                    // no loop necessary, insert two states
-        	                                   register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << CLK_BIT) + (1 << LE_BIT);
+        	                                   register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << CLK_BIT) + (1 << latch_bit);
 	                                           the_sequence.insert(the_state, register_state->copy_new());
-					           register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << LE_BIT);
+					           register_ttls->ttls = (1 << DATA_BIT)*last_seen_bit + (1 << latch_bit);
 					           the_sequence.insert(the_state, register_state->copy_new());
                                             }
                                             // reset counter and bits if we are not finished
@@ -177,7 +182,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 				ttlout* ttls=new ttlout();
 				// 42nd pulse
 				this_state->length -= TIMING*41;
-				ttls->ttls = 1 << LE_BIT;
+				ttls->ttls = 1 << latch_bit;
 				this_state->push_front(ttls);
 
                                 // cleanup
@@ -187,7 +192,7 @@ void PFG::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_st
 		}
 		else {
 			ttlout* le_ttls=new ttlout();
-			le_ttls->ttls = 1 << LE_BIT;
+			le_ttls->ttls = 1 << latch_bit;
 			this_state->push_back(le_ttls);
 		}
 		// end of state modifications 

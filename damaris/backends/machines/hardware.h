@@ -43,8 +43,12 @@ class hardware {
   pulsegen* the_pg;
   /// the temperature control, optional
   tempcont* the_tc;
-  /// the  gradient pulse control
-  pfggen* the_gradientpg;
+  /**
+   * List of all DACs in the system
+   *
+   * The destructor of this class cleans them up
+   */
+  std::list<GenericDAC*> list_dacs;
 
   /**
      configurable devices dictionary
@@ -54,7 +58,7 @@ class hardware {
   /**
      set all pointers to zero to signal missing hardware components
    */
-  hardware() {the_adc=NULL; the_fg=NULL; the_pg=NULL; the_tc=NULL; the_gradientpg=NULL;}
+  hardware() {the_adc=NULL; the_fg=NULL; the_pg=NULL; the_tc=NULL;}
 
   /**
    */
@@ -68,7 +72,19 @@ class hardware {
   /**
      \brief shuts down hardware
    */
-  virtual ~hardware() {};
+  virtual ~hardware();
+
+ protected:
+  /**
+   * Utility function: Prepare the DACs for the experiment
+   *
+   * In this base class, it calls the set_dac() method on
+   * each DAC in the list_dacs.
+   *
+   * This might include sending configuration info to the
+   * DAC, or rewriting the pulse program.
+   */
+  virtual void experiment_prepare_dacs(state* work_copy);
 };
 
 #endif

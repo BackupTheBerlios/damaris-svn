@@ -9,6 +9,28 @@
 #include "core/result.h"
 #include "hardware.h"
 
+void hardware::experiment_prepare_dacs(state* work_copy)
+{
+	if (! list_dacs.empty())
+	{
+		std::list<GenericDAC*>::iterator i;
+		for (i = list_dacs.begin(); i != list_dacs.end(); i++)
+		{
+			(*i)->set_dac(*work_copy);
+		}
+	}
+}
+
+hardware::~hardware()
+{
+	while (! list_dacs.empty()) {
+		if (list_dacs.back())
+			delete list_dacs.back();
+		list_dacs.pop_back();
+	}
+}
+
+
 result* hardware::experiment(const state& exp) {
   result* r=NULL;
   for(size_t tries=0; r==NULL && core::term_signal==0 &&  tries<102; ++tries) {
@@ -19,8 +41,7 @@ result* hardware::experiment(const state& exp) {
 	the_fg->set_frequency(*work_copy);
       if (the_adc!=NULL)
 	the_adc->set_daq(*work_copy);
-      if (the_gradientpg!=NULL)
-	the_gradientpg->set_dac(*work_copy);
+      experiment_prepare_dacs(work_copy);
       // the pulse generator is necessary
       the_pg->run_pulse_program(*work_copy);
       // wait for pulse generator

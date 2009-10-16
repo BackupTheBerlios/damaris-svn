@@ -48,8 +48,8 @@ public:
       the_fg=my_pts;
       the_pg=my_pulseblaster;
       the_adc=my_adc;
-      PFG* my_pfg=new PFG(1);
-      the_gradientpg=my_pfg;
+      DAC20* my_pfg=new DAC20(1);
+      list_dacs.push_back(my_pfg);
   }
 
   result* experiment(const state& exp) {
@@ -62,8 +62,7 @@ public:
 	  the_fg->set_frequency(*work_copy);
 	if (the_adc!=NULL)
 	  the_adc->set_daq(*work_copy);
-	if (the_gradientpg!=NULL)
-	  the_gradientpg->set_dac(*work_copy);
+	experiment_prepare_dacs(work_copy);
 	// the pulse generator is necessary
 	my_pulseblaster->run_pulse_program_w_sync(*work_copy, my_adc->get_sample_clock_frequency());
 	// wait for pulse generator
@@ -94,7 +93,6 @@ public:
   virtual ~PFG_hardware() {
     if (the_adc!=NULL) delete the_adc;
     if (the_pg!=NULL) delete the_pg;
-    if (the_gradientpg!=NULL) delete the_gradientpg;
     if (the_fg!=NULL) delete the_fg;
    }
 

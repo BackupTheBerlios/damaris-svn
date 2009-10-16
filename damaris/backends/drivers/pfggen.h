@@ -23,9 +23,9 @@ class pfg_exception: public std::string {
 
 
 /**
-   \brief pulsed field gradient dac driver
+ * Generic base class for DAC drivers
  */
-class pfggen {
+class GenericDAC {
  protected:
   /** no use by now... could be for default value at the end of an experiment?! */
   signed dac_value;
@@ -43,7 +43,7 @@ class pfggen {
   /**
     cleanup: nothing to do
   */
-  virtual ~pfggen() {}
+  virtual ~GenericDAC() {}
 };
 
 /**
