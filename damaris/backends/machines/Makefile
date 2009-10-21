@@ -12,21 +12,24 @@ CXXCPPFLAGS= -I. -I..
 LDFLAGS=
 LIBS=-lexpat -lxerces-c -lm
 
+EXEEXT = .exe
+
 MACHINES = \
-	dummycore.exe \
-	deuteron_backend.exe \
+	dummycore$(EXEEXT) \
+	deuteron_backend$(EXEEXT) \
 	magnexgrad_backend \
 	magnexgrad_backend_dds \
-	PFGcore.exe \
+	PFGcore$(EXEEXT) \
+	fc2_backend$(EXEEXT) \
 	bg_backend \
-	Mobilecore.exe \
-	Mobile_wo_sync_backend.exe
+	Mobilecore$(EXEEXT) \
+	Mobile_wo_sync_backend$(EXEEXT)
 
 .PHONY: all clean install
 
 all: $(MACHINES)
 
-../tools/add_endline.exe: ../tools/add_endline.cpp
+../tools/add_endline$(EXEEXT): ../tools/add_endline.cpp
 	$(CXX) $< -o $@
 
 ifeq ($(shell uname -o),Cygwin)
@@ -37,7 +40,7 @@ ifeq ($(shell uname -o),Cygwin)
 	$(MAKE) -C ../drivers/Datel-PCI416 Datel-PCI416.o
 
 
-NQRcore.exe: NQRcore.o ../core/core.a hardware.o \
+NQRcore$(EXEEXT): NQRcore.o ../core/core.a hardware.o \
 ../drivers/Datel-PCI416/Datel-PCI416.o ../drivers/SpinCore-PulseBlasterDDSIII/SpinCore-PulseBlasterDDSIII.o \
 ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o
 	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@
@@ -81,7 +84,7 @@ hardware.o: hardware.cpp hardware.h
 	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
 
-Mobilecore.exe: Mobilecore.o hardware.o \
+Mobilecore$(EXEEXT): Mobilecore.o hardware.o \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o \
 ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
@@ -92,7 +95,7 @@ Mobilecore.o: Mobilecore.cpp \
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
 	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
-Mobile_wo_sync_backend.exe: Mobile_wo_sync_backend.o hardware.o \
+Mobile_wo_sync_backend$(EXEEXT): Mobile_wo_sync_backend.o hardware.o \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o \
 ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
@@ -144,7 +147,7 @@ deuteron_backend.o: deuteron_backend.cpp \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
 	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
-deuteron_backend.exe: deuteron_backend.o hardware.o \
+deuteron_backend$(EXEEXT): deuteron_backend.o hardware.o \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
 ../drivers/SpinCore-PulseBlasterDDSIII/SpinCore-PulseBlasterDDSIII.o \
 ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
@@ -153,23 +156,36 @@ deuteron_backend.exe: deuteron_backend.o hardware.o \
 dummycore.o: dummycore.cpp ../drivers/dummy/dummy.o
 	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 
-dummycore.exe: dummycore.o  ../drivers/dummy/dummy.o hardware.o ../drivers/tempcont.o ../core/core.a
+dummycore$(EXEEXT): dummycore.o  ../drivers/dummy/dummy.o hardware.o ../drivers/tempcont.o ../core/core.a
 	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
 
-clean: ../tools/add_endline.exe
-	for f in *.cpp *.h; do ../tools/add_endline.exe $$f;done; \
-rm -f *~ *.o *.exe *.stackdump magnexgrad_backend bg_backend
+clean: ../tools/add_endline$(EXEEXT)
+	for f in *.cpp *.h; do ../tools/add_endline$(EXEEXT) $$f;done
+	rm -f $(MACHINES)
+	rm -f *~ *.o *.exe *.stackdump
+	rm -f ../tools/add_endline$(EXEEXT)
 
 install: $(MACHINES)
 	install $(MACHINES) $(PREFIX)
 
-PFGcore.exe: PFGcore.o hardware.o \
+PFGcore$(EXEEXT): PFGcore.o hardware.o \
 ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o ../drivers/Tecmag-DAC20/DAC20.o\
 ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
 	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
 
 PFGcore.o: PFGcore.cpp \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h ../drivers/Tecmag-DAC20/DAC20.h\
+../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
+
+fc2_backend$(EXEEXT): fc2_backend.o hardware.o \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o ../drivers/Tecmag-DAC20/DAC20.o\
+../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
+	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
+
+fc2_backend.o: fc2_backend.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h ../drivers/Tecmag-DAC20/DAC20.h\
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
 	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
