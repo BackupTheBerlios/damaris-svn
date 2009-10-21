@@ -224,6 +224,21 @@ class Experiment:
                 % trigger
             self.state_list.append(StateSimple(42*9e-8, s_content))
 
+    def set_dac(self, dac_value, dac_id=1, length=None, is_seq=False, ttls=0):
+        """
+        This sets the value for the DAC and possibly some TTLs.
+            It also sets it back automatically.
+	    If you don't whish to do so (i.e. line shapes)  set is_seq=True
+        """
+        if length==None:
+            length=42*9e-8
+        s_content = '<analogout id="%d" dac_value="%i"/><ttlout value="0x%06x"/>' \
+            % (dac_id, dac_value, ttls)
+        self.state_list.append(StateSimple(length, s_content))
+        if not is_seq:
+            s_content = '<analogout id="%d" dac_value="0"/><ttlout value="0x%06x"/>' \
+                % (dac_id, ttls)
+            self.state_list.append(StateSimple(42*9e-8, s_content))
 
     def set_phase(self, phase, ttls=0):
         s_content = '<analogout phase="%f" />' % (phase)
@@ -341,6 +356,7 @@ def self_test():
 		l = StateLoop(3)
 		l.append(StateSimple(5e-6, '<ttlout value="1"/>'))
 		e.state_list.append(l)
+	e.set_dac(12345, dac_id=2, is_seq = True, ttls=16)
 	e.record(1024, 20e6)
 	try:
 		e.wait(-1)
