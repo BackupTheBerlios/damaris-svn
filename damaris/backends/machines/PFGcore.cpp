@@ -12,9 +12,9 @@
 #include "drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h"
 
 /**
-   \defgroup mobilemachine Mobile NMR Spectrometer
+   \defgroup pfgmachine PFG NMR Spectrometer
    \ingroup machines
-   Uses Spincore Pulseblaster 24 Bit and Spectrum MI4021, but there is no cable driver with phase control
+   Uses Spincore Pulseblaster 24 Bit, Spectrum MI4021, and one DAC20.
 
    \par Starting the hardware
    This procedure should assure the correct initialisation of the hardware:

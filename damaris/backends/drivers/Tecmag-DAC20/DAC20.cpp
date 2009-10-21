@@ -1,7 +1,29 @@
+/**
+ * \file
+ * \brief Implementation of the Driver for the DAC20
+ *   Digital to Analog Converter Board
+ *
+ * This board was first used in the PFG, and gets now
+ * adopted by the Field-Cycling spectrometers.
+ *
+ * The board inverts all digital inputs.
+ * This driver partially honors this.
+ * Especially the data input is not yet inverted.
+ * -# Inverting the data line is equivalent to inverting
+ *    the value and add/substracting one.
+ * -# There are different versions of the board around,
+ *    where one board "undoes" the inversion by having an
+ *    inverting op-amp after the DAC.
+ * -# The digital units have to be calibrated to physical
+ *    units anyway. A sign doesn't hurt much.
+ *
+ * This is still a current discussion topic and might
+ * change.
+ */
+
 #include "DAC20.h"
 #include <cstdio>
 #include <cmath>
-#include "core/xml_states.h"
 #include <iostream>
 #include <list>
 #include <vector>
@@ -132,6 +154,8 @@ void DAC20::set_dac_recursive(state_sequent& the_sequence, state::iterator& the_
 				vector<int> dac_word;
 				for (int j = 0; j < DAC_BIT_DEPTH ; j++)	{
 					int bit = PFG_aout->dac_value & 1;
+					// // invert the bit
+					// bit = (bit == 0);
 					dac_word.push_back(bit);
 					//cout << dac_word[j];
 					PFG_aout->dac_value >>= 1;

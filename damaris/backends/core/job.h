@@ -28,6 +28,7 @@ class core;
 /**
    \defgroup jobs Jobs
    \brief jobs to control core and make experiments
+
    the file format for a job file is simple xml: the element name of the root section is also the name of the job.
 
    \verbinclude experiment_job.xml
