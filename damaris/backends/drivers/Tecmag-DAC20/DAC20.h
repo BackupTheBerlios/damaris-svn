@@ -7,6 +7,9 @@
 #include "core/states.h"
 #include "drivers/pfggen.h"
 
+/**
+ * \ingroup drivers
+ */
 class DAC20: public GenericDAC {
 protected:
 	/// The channel for the latch signal
@@ -27,11 +30,13 @@ public:
             assumes, the root sequence is not repeated, because the reset sequence is appended to the root sequence!
         */
  	virtual void set_dac(state& experiment);
-	virtual void set_dac_recursive(state_sequent& the_sequence, state::iterator& the_state);
  	
 	// destructor
  	virtual ~DAC20();
 	
+    private:
+	void set_dac_recursive(state_sequent& the_sequence, state::iterator& the_state);
+	void set_dac_to_zero(state_sequent* exp_sequence, state::iterator where);
 };
 
 /*class pfg_exception: public std::string {

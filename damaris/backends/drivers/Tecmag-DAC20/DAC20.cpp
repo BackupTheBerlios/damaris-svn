@@ -71,28 +71,34 @@ void DAC20::set_dac(state& experiment) {
 		for(state_sequent::iterator child_state = exp_sequence->begin(); child_state != exp_sequence->end(); ++child_state)
 			set_dac_recursive(*exp_sequence, child_state);
 //		std::cout << "first state"<< std::endl;
-		// Initialize the DAC to "0"
+		// Set DAC to 0 at start of experiment
+		set_dac_to_zero(exp_sequence, exp_sequence->begin());
+		// And at the end of the experiment
+		set_dac_to_zero(exp_sequence, exp_sequence->end());
+	}
+}
+
+void DAC20::set_dac_to_zero(state_sequent* exp_sequence, state::iterator where)
+{
 		state s(TIMING);
 		ttlout* le=new ttlout();
 		le->id=0;
 		s.push_front(le);
-		state::iterator my_state_iterator = exp_sequence->begin();
                 state_sequent* rep_sequence=new state_sequent();
                 rep_sequence->repeat=DAC_BIT_DEPTH;
-		le->ttls=( 1 << latch_bit) + ( 1 << CLK_BIT );
+		le->ttls = 0 + ( 1 << CLK_BIT );
 		rep_sequence->push_back(s.copy_new());
-		le->ttls=( 1 << latch_bit);
+		le->ttls = 0 ;
 	        rep_sequence->push_back(s.copy_new());
-                exp_sequence->insert(my_state_iterator, rep_sequence);
+                exp_sequence->insert(where, rep_sequence);
 		//read in the word (41st pulse)
 		le->ttls=0;
-		exp_sequence->insert(my_state_iterator, s.copy_new());
+		exp_sequence->insert(where, s.copy_new());
 		// 42nd pulse
-		// the state should be 2ms long
-		s.length = 2e-3-41*TIMING;
+		// // the state should be 2ms long
+		// s.length = 2e-3-41*TIMING;
 		le->ttls= ( 1 << latch_bit );
-		exp_sequence->insert(my_state_iterator, s.copy_new());
-	}
+		exp_sequence->insert(where, s.copy_new());
 }
 
 // This loops recursive through the state tree
