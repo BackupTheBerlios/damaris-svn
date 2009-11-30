@@ -16,15 +16,13 @@
 #include <linux/cdev.h>
 #include <linux/sched.h>
 #include <linux/spinlock.h>
+#include <linux/version.h>
 #include <asm/uaccess.h>	/* for get_user and put_user */
 #include <asm/io.h>
 
 #include "pulseblaster.h"
 #define SUCCESS 0
 #define DEVICE_NAME "pulseblaster"
-
-/* class device support for linux-kernel<2.2.26 */
-#define CLASS_SUPPORT 0 
 
 /* number of found and allocated devices */
 static int pb_dev_no=0;
@@ -54,13 +52,6 @@ struct pulseblaster_device {
     * char dev associated with it
     */
    struct cdev cdev;
-
-#if CLASS_SUPPORT
-   /*
-    * and the device instance in pulseblaster class
-    */
-    struct class_device *classdev;
-#endif
 };
 
 /* array of char_devices */
@@ -612,13 +603,99 @@ static struct pci_driver pulseblaster_pci_driver = {
  .remove=pulseblaster_pci_remove,
 };
 
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 26)
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 27)
+#define WITH_DRVDATA
+#endif
+
+static struct class *pulseblaster_class = NULL;
+
+static void pb_class_setup(void)
+{
+	/*
+	 * create class and register devices in /sys
+	 */
+	pulseblaster_class = class_create(THIS_MODULE, DEVICE_NAME);
+	if (IS_ERR(pulseblaster_class))
+	{
+		printk(KERN_ERR "%s: failed to register class", DEVICE_NAME);
+		pulseblaster_class = NULL;
+	}
+}
+
+static void pb_class_destroy(void)
+{
+	if (pulseblaster_class)
+		class_destroy(pulseblaster_class);
+	pulseblaster_class = NULL;
+}
+
+/**
+ * Add device to our class
+ */
+static void pb_class_device_create(dev_t devno, int nr)
+{
+	struct device *dev;
+
+	if (pulseblaster_class == NULL)
+		return;
+
+	if (nr == -1)
+	{
+		dev = device_create(pulseblaster_class, NULL, devno,
+#ifdef WITH_DRVDATA
+				    NULL,
+#endif
+				    DEVICE_NAME"_dbg");
+	}
+	else
+	{
+		dev = device_create(pulseblaster_class, NULL, devno,
+#ifdef WITH_DRVDATA
+				    NULL,
+#endif
+				    DEVICE_NAME"%d", nr);
+	}
+
+	if (IS_ERR(dev))
+	{
+		printk(KERN_WARNING "%s: device_create for %d failed\n",
+		       DEVICE_NAME, nr);
+	}
+}
+
+/**
+ * Remove device from class
+ */
+static void pb_class_device_destroy(dev_t devno)
+{
+	if (pulseblaster_class == NULL)
+		return;
+
+	device_destroy(pulseblaster_class, devno);
+}
+#else
+static void pb_class_setup(void)
+{
+	printk(KERN_WARNING "%s: No udev support\n", DEVICE_NAME);
+}
+static void pb_class_destroy(void)
+{
+}
+static void pb_class_device_create(dev_t devno, int nr)
+{
+}
+static void pb_class_device_destroy(dev_t devno)
+{
+}
+# warning "No class support, hotplug/udev wont wrok"
+#endif
+ 
 /*
  * Initialize the module - Register the character device 
  */
- 
-#if CLASS_SUPPORT
-static struct class *pulseblaster_class=NULL;
-#endif
 
 static int __init init_pulseblaster_module(void)
 {
@@ -659,15 +736,7 @@ static int __init init_pulseblaster_module(void)
 		return ret_val;
 	}
 	
-#if CLASS_SUPPORT
-	/*
-	 * create class and register devices in /sys
-	 */
-	pulseblaster_class = class_create(THIS_MODULE, DEVICE_NAME);
-       	if (pulseblaster_class==NULL) {
-		printk("%s: failed to register class", DEVICE_NAME);
-        }
-#endif
+	pb_class_setup();
 	
         // register debug device
         {
@@ -677,19 +746,7 @@ static int __init init_pulseblaster_module(void)
             pb_dev_debug.cdev.ops=&pulseblaster_fops;
             ret_val=cdev_add(&(pb_dev_debug.cdev), devno, 1);
 
-#if CLASS_SUPPORT
-            if (pulseblaster_class!=NULL) {
-            	pb_dev_debug.classdev=class_device_create(pulseblaster_class,
-				        		  NULL,
-							  devno,
-							  NULL,
-							  DEVICE_NAME"_dbg"
-							  );
-            	if (pb_dev_debug.classdev==NULL) {
-                    printk("%s: failed to register class device for debug driver", DEVICE_NAME);
-                }
-            }
-#endif
+            pb_class_device_create(devno, -1);
         }
 
         spin_lock(&pb_devs_lock);
@@ -704,21 +761,8 @@ static int __init init_pulseblaster_module(void)
                printk("%s: failed to register char device", DEVICE_NAME);
                // todo cleanup and return;
             }
-#if CLASS_SUPPORT
-            /* add devices to our class */
-            if (pulseblaster_class!=NULL) {
-            	pb_devs[i].classdev=class_device_create(pulseblaster_class,
-							NULL,
-							devno,
-							&(pb_devs[i].pciboard->dev),
-							DEVICE_NAME"%d",
-							i
-							);
-            	if (pb_devs[i].classdev==NULL) {
-                    printk("%s: failed to register class device", DEVICE_NAME);
-                }
-	    }
-#endif
+
+            pb_class_device_create(devno, i);
 	}
         spin_unlock(&pb_devs_lock);
 
@@ -738,19 +782,18 @@ static void __exit cleanup_pulseblaster_module(void)
 	 */
 	int i;
 
-#if CLASS_SUPPORT
 	int major_dev_num=MAJOR(pb_dev_no_start);
 	int minor_dev_num=MINOR(pb_dev_no_start);
 
-	if (pulseblaster_class!=NULL) {
-            spin_lock(&pb_devs_lock);
-            for (i=0; i<pb_dev_no; ++i)
-                class_device_destroy(pulseblaster_class, MKDEV(major_dev_num, minor_dev_num+i));
-            spin_unlock(&pb_devs_lock);
-            class_device_destroy(pulseblaster_class, MKDEV(major_dev_num, minor_dev_num+pb_dev_no));
-            class_destroy(pulseblaster_class);
+	spin_lock(&pb_devs_lock);
+	for (i=0; i<pb_dev_no; ++i)
+	{
+                pb_class_device_destroy(MKDEV(major_dev_num, minor_dev_num+i));
 	}
-#endif
+	spin_unlock(&pb_devs_lock);
+	pb_class_device_destroy(MKDEV(major_dev_num, minor_dev_num+pb_dev_no));
+	pb_class_destroy();
+
         spin_lock(&pb_devs_lock);
 	for (i=0; i<pb_dev_no; ++i) {
 	    cdev_del(&(pb_devs[i].cdev));
