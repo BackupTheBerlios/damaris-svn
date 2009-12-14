@@ -115,7 +115,7 @@ class DataPool(UserDict.DictMixin):
                 # walk along the given path and create groups if necessary
                 namelist = key.split("/")
                 for part in namelist[:-1]:
-                    dir_part="dir_"+part.translate(DataPool.translation_table)
+                    dir_part="dir_"+str(part).translate(DataPool.translation_table)
                     if not dir_part in dump_dir:
                         dump_dir=dump_file.createGroup(dump_dir,name=dir_part,title=part)
                     else:
@@ -130,7 +130,7 @@ class DataPool(UserDict.DictMixin):
                                                            title=part)
                 
                 # convert last part of key to a valid name
-                group_keyname="dict_"+namelist[-1].translate(DataPool.translation_table)
+                group_keyname="dict_"+str(namelist[-1]).translate(DataPool.translation_table)
                 # avoid double names by adding number extension
                 if group_keyname in dump_dir:
                     extension_count=0
