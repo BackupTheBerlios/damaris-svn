@@ -12,6 +12,7 @@ BACKENDSMACHINES = \
 	magnexgrad_backend \
 	magnexgrad_backend_dds \
 	PFGcore.exe \
+	fc2_backend.exe \
 	bg_backend \
 	Mobilecore.exe \
 	Mobile_wo_sync_backend.exe

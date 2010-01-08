@@ -1,3 +1,16 @@
+damaris (0.11-0.1) experimental; urgency=low
+
+  * pulseblaster module
+    - New udev support for 2.6.26 - 2.6.30, breaking prior support
+  * backends
+    - Make DAC20 more generic
+    - DAC20: Improve init- and exit-sequences
+    - Add FC2 backend (with two DACs)
+    - Some little buildsystem updates
+  * Kernel modules for version 2.6.26-2
+
+ -- Christian Tacke <Christian.Tacke@physik.tu-darmstadt.de>  Fri, 08 Jan 2010 14:27:16 +0100
+
 damaris (0.11-0) experimental; urgency=low
 
   * pulseblaster module renewed: sysfs support, multiple pci devices, device probing

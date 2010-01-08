@@ -2,7 +2,12 @@ Source: damaris
 Section: science
 Priority: optional
 Maintainer: Achim Gaedke <Achim.Gaedke@physik.tu-darmstadt.de>
-Build-Depends: debhelper, libxerces27-dev|libxerces-c2-dev, libexpat-dev|libexpat1-dev, linux-headers-2.6-all | linux-headers-2.6.18-6-all
+Build-Depends: debhelper,
+	libxerces27-dev|libxerces-c2-dev,
+	libexpat-dev|libexpat1-dev,
+	linux-headers-2.6.18-6-all
+	| linux-headers-2.6.26-2-all
+	| linux-headers-2.6
 Standards-Version: 3.7.2
 
 Package: damaris-backends
