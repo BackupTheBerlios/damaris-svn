@@ -1,5 +1,5 @@
 /*
- * pulseblaster.c - Communication with pulseblaster via amcc chip registers
+ * pulseblaster.c - Communication with pulseblaster
  * author: Achim Gaedke <achim.gaedke@physik.tu-darmstadt.de>
  * created: February 2005
  * the amcc_outb routine comes from SpinCore
@@ -24,6 +24,12 @@
 #define SUCCESS 0
 #define DEVICE_NAME "pulseblaster"
 
+enum pulseblaster_board {
+	PBB_DEBUG = 0,
+	PBB_GENERIC_AMCC,
+	PBB_GENERIC_PCI,
+};
+
 /* number of found and allocated devices */
 static int pb_dev_no=0;
 /*
@@ -38,11 +44,23 @@ struct pulseblaster_device {
     * concurent access into the same device 
     */
    int device_open;
+
+   /**
+    * The type of this board
+    */
+   enum pulseblaster_board boardtype;
+
+   /**
+    * The pci device for this pulseblaster
+    */
+   struct pci_dev *pciboard;
+
    /*
     * the base io address
     * 0 means debug mode without hardware accesss, writes everything to kernel log
     */
-   struct pci_dev *pciboard;
+   unsigned long base_addr;
+
    /*
     * protect access to io memory
     */
@@ -68,6 +86,7 @@ static int base_address=-1;
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Achim Gaedke");
+MODULE_DESCRIPTION("Driver for SpinCore's PulseBlaster");
 module_param(base_address, int, S_IRUGO);
 MODULE_PARM_DESC(base_address, "not supported anymore, IO base addresses of device are detected automatically");
 
@@ -89,6 +108,13 @@ MODULE_PARM_DESC(base_address, "not supported anymore, IO base addresses of devi
 #define pb_in(bwl) in##bwl##_p
 #endif
 
+
+static int pb_outb_debug(char data, unsigned short address, unsigned long my_base_address)
+{
+	printk("%s: reg %02x=%02x\n",DEVICE_NAME, 0xff&address, 0xff&data);
+	return 0;
+}
+
 static int amcc_outb(char data, unsigned short address, unsigned long my_base_address) {
 
 	unsigned int MAX_RECV_TIMEOUT = 10;
@@ -109,8 +135,7 @@ static int amcc_outb(char data, unsigned short address, unsigned long my_base_ad
 	unsigned int Temp_Data = data;
 
 	if (my_base_address==0) {
-	  printk("%s: reg %02x=%02x\n",DEVICE_NAME, 0xff&address, 0xff&data);
-	  return 0;
+		return pb_outb_debug(data, address, my_base_address);
 	}
 
 		// Prepare Address Transfer
@@ -179,11 +204,52 @@ static int amcc_outb(char data, unsigned short address, unsigned long my_base_ad
 	return XFER_ERROR;	
 }
 
+static int pb_outb_pci(char data, unsigned short address, unsigned long my_base_address)
+{
+	if (my_base_address == 0)
+		return pb_outb_debug(data, address, my_base_address);
+	pb_out(b)(data, my_base_address + address);
+	return 0;
+}
+
+/**
+ * write to byte register on board
+ */
+static int pb_dev_outb(struct pulseblaster_device *my_dev, char data, unsigned short address)
+{
+	unsigned long my_base_address;
+
+	if (my_dev == NULL)
+		return -1;
+
+	my_base_address = my_dev->base_addr;
+
+	switch (my_base_address != 0
+		? my_dev->boardtype
+		: PBB_DEBUG)
+	{
+		case PBB_DEBUG:
+			return pb_outb_debug(data, address, my_base_address);
+		case PBB_GENERIC_AMCC:
+			return amcc_outb(data, address, my_base_address);
+		case PBB_GENERIC_PCI:
+			return pb_outb_pci(data, address, my_base_address);
+		default:
+			return -1;
+	}
+
+	return -1;
+}
+
+
+static int pb_inb_debug(unsigned int address, unsigned long my_base_address)
+{
+	printk("%s: reg(%02x)=0 (guessed)\n",DEVICE_NAME, 0xff&address);
+	return 0;
+}
 
 /**
  * Read a byte from a board using the AMCC chip
- *
- *
  */
 static int amcc_inb(unsigned int address, unsigned long my_base_address) {
   unsigned int MAX_RECV_TIMEOUT = 10000;
@@ -208,8 +274,7 @@ static int amcc_inb(unsigned int address, unsigned long my_base_address) {
   unsigned int Temp_Data = 0;
 
   if (my_base_address==0) {
-      printk("%s: reg(%02x)=0 (guessed)\n",DEVICE_NAME, 0xff&address);
-      return 0;
+      return pb_inb_debug(address, my_base_address);
   }
 
   // CHEK FOR 1 in MD1
@@ -278,6 +343,70 @@ static int amcc_inb(unsigned int address, unsigned long my_base_address) {
   return Temp_Data;
 }
 
+static int pb_inb_pci(unsigned int address, unsigned long my_base_address)
+{
+	if (my_base_address == 0)
+		return pb_inb_debug(address, my_base_address);
+	return pb_in(b)(my_base_address + address);
+}
+
+
+/**
+ * Read byte register from board
+ */
+static int pb_dev_inb(struct pulseblaster_device *my_dev, unsigned short address)
+{
+	unsigned long my_base_address;
+
+	if (my_dev == NULL)
+		return -1;
+
+	my_base_address = my_dev->base_addr;
+
+	switch (my_base_address != 0
+		? my_dev->boardtype
+		: PBB_DEBUG)
+	{
+		case PBB_DEBUG:
+			return pb_inb_debug(address, my_base_address);
+		case PBB_GENERIC_AMCC:
+			return amcc_inb(address, my_base_address);
+		case PBB_GENERIC_PCI:
+			return pb_inb_pci(address, my_base_address);
+		default:
+			return -1;
+	}
+
+	return -1;
+}
+
+/**
+ * Setup and get the base_addr
+ */
+static unsigned long pb_dev_setup_baseaddr(struct pulseblaster_device *my_dev)
+{
+	unsigned long addr = 0x0;
+
+	if (my_dev == NULL)
+		return 0x0;
+
+	if ((my_dev->boardtype != PBB_DEBUG)
+	    && (my_dev->pciboard != NULL))
+	{
+		addr = pci_resource_start(my_dev->pciboard, 0);
+	}
+
+	my_dev->base_addr = addr;
+
+	return addr;
+}
+
+static inline bool pb_is_debug(struct pulseblaster_device *my_dev)
+{
+	return ((my_dev->boardtype == PBB_DEBUG)
+		|| (my_dev->pciboard == NULL));
+}
+
 
 /* 
  * This is called whenever a process attempts to open the device file 
@@ -287,7 +416,8 @@ static int device_open(struct inode *inode, struct file *file)
   struct pulseblaster_device* my_dev=container_of(inode->i_cdev, struct pulseblaster_device, cdev);
   file->private_data=my_dev;
 
-  if (my_dev->pciboard==NULL) printk("%s: device_open(%p)\n", DEVICE_NAME,file);
+  if (pb_is_debug(my_dev))
+    printk("%s: device_open(%p)\n", DEVICE_NAME,file);
 
   /* 
    * We don't want to talk to two processes at the same time 
@@ -307,10 +437,10 @@ static int device_release(struct inode *inode, struct file *file)
 {
   struct pulseblaster_device* my_dev=container_of(inode->i_cdev, struct pulseblaster_device, cdev);
 
-  unsigned long my_base_address=0;
-  if (my_dev->pciboard!=NULL)
-       my_base_address=pci_resource_start(my_dev->pciboard, 0);
-  if (my_base_address==0) printk("%s: device_release(%p,%p)\n",DEVICE_NAME, inode, file);
+  pb_dev_setup_baseaddr(my_dev);
+
+  if (pb_is_debug(my_dev))
+    printk("%s: device_release(%p,%p)\n",DEVICE_NAME, inode, file);
 
   /*
    * reset device
@@ -319,16 +449,16 @@ static int device_release(struct inode *inode, struct file *file)
     // this procedure works only on DDS cards
     // DDS Manual
     spin_lock(&(my_dev->io_lock));
-    amcc_outb(   0, 0, my_base_address); //dev reset
-    amcc_outb(   4, 2, my_base_address); //bytes per word
-    amcc_outb(0xFF, 3, my_base_address); //dev to program
-    amcc_outb(   0, 4, my_base_address); //reset address counter
-    amcc_outb(   0, 6, my_base_address); //data out
-    amcc_outb(   0, 6, my_base_address); //data out
-    amcc_outb(   0, 6, my_base_address); //data out
-    amcc_outb(   0, 6, my_base_address); //data out
-    amcc_outb(   0, 5, my_base_address); //strobe clock
-    amcc_outb(   0, 5, my_base_address); //strobe clock
+    pb_dev_outb(my_dev,    0, 0); //dev reset
+    pb_dev_outb(my_dev,    4, 2); //bytes per word
+    pb_dev_outb(my_dev, 0xFF, 3); //dev to program
+    pb_dev_outb(my_dev,    0, 4); //reset address counter
+    pb_dev_outb(my_dev,    0, 6); //data out
+    pb_dev_outb(my_dev,    0, 6); //data out
+    pb_dev_outb(my_dev,    0, 6); //data out
+    pb_dev_outb(my_dev,    0, 6); //data out
+    pb_dev_outb(my_dev,    0, 5); //strobe clock
+    pb_dev_outb(my_dev,    0, 5); //strobe clock
     spin_unlock(&(my_dev->io_lock));
 
   }
@@ -336,25 +466,25 @@ static int device_release(struct inode *inode, struct file *file)
     spin_lock(&(my_dev->io_lock));
     // this procedure is successful for 24Bit cards
     // SpinCore by mail Oct 10th 2007
-    amcc_outb(0,6, my_base_address);//store 0's to memory
-    amcc_outb(0,6, my_base_address);
-    amcc_outb(0,6, my_base_address);
-    amcc_outb(0,6, my_base_address);
-    amcc_outb(0,6, my_base_address);
-    amcc_outb(0,6, my_base_address);
-    amcc_outb(0,6, my_base_address);
-    amcc_outb(0,6, my_base_address);
+    pb_dev_outb(my_dev, 0,6);//store 0's to memory
+    pb_dev_outb(my_dev, 0,6);
+    pb_dev_outb(my_dev, 0,6);
+    pb_dev_outb(my_dev, 0,6);
+    pb_dev_outb(my_dev, 0,6);
+    pb_dev_outb(my_dev, 0,6);
+    pb_dev_outb(my_dev, 0,6);
+    pb_dev_outb(my_dev, 0,6);
 
-    amcc_outb(0,0, my_base_address);//dev reset
-    amcc_outb(4,2, my_base_address);//bytes per word
-    amcc_outb(0,3, my_base_address);//write to internal memory
-    amcc_outb(0,4, my_base_address);//clear address counter
-    amcc_outb(0,6, my_base_address);//data out
-    amcc_outb(0,6, my_base_address);//data out
-    amcc_outb(0,6, my_base_address);//data out
-    amcc_outb(0,6, my_base_address);//data out
-    amcc_outb(7,7, my_base_address);//programming finished
-    amcc_outb(7,1, my_base_address);//trigger
+    pb_dev_outb(my_dev, 0,0);//dev reset
+    pb_dev_outb(my_dev, 4,2);//bytes per word
+    pb_dev_outb(my_dev, 0,3);//write to internal memory
+    pb_dev_outb(my_dev, 0,4);//clear address counter
+    pb_dev_outb(my_dev, 0,6);//data out
+    pb_dev_outb(my_dev, 0,6);//data out
+    pb_dev_outb(my_dev, 0,6);//data out
+    pb_dev_outb(my_dev, 0,6);//data out
+    pb_dev_outb(my_dev, 7,7);//programming finished
+    pb_dev_outb(my_dev, 7,1);//trigger
     spin_unlock(&(my_dev->io_lock));
   }
 
@@ -392,11 +522,9 @@ device_write(struct file *file,
 	     const char __user * buffer, size_t length, loff_t * offset)
 {
         struct pulseblaster_device* my_dev=(struct pulseblaster_device*)file->private_data;
-	unsigned long my_base_address=0;
 	register int i=0;
 
-        if (my_dev->pciboard!=NULL)
-               my_base_address=pci_resource_start(my_dev->pciboard, 0);
+	pb_dev_setup_baseaddr(my_dev);
 
 	while (1) {
 	  // sometimes
@@ -405,10 +533,10 @@ device_write(struct file *file,
 	  get_user(temp_byte, buffer + i);
 	  // the hardware access
 	  spin_lock(&(my_dev->io_lock));
-	  retval=amcc_outb(temp_byte,6, my_base_address);
+	  retval = pb_dev_outb(my_dev, temp_byte,6);
 	  spin_unlock(&(my_dev->io_lock));
           if (retval!=0) {
-		 printk("%s: IO Error, amcc_outb returned %d\n",DEVICE_NAME, retval);
+		 printk("%s: IO Error, pb_dev_outb returned %d\n",DEVICE_NAME, retval);
 		 return -EIO; // make an ordinary io error
 	  }
 	  i++;
@@ -440,10 +568,9 @@ int device_ioctl(struct inode *inode,	/* see include/linux/fs.h */
 		 unsigned long ioctl_param)
 {
   struct pulseblaster_device* my_dev=container_of(inode->i_cdev, struct pulseblaster_device, cdev);
-  unsigned long my_base_address=0;
   int ret_val=SUCCESS;
-  if (my_dev->pciboard!=NULL)
-      my_base_address=pci_resource_start(my_dev->pciboard, 0);
+
+  pb_dev_setup_baseaddr(my_dev);
 
   if (ioctl_num==IOCTL_OUTB){
     unsigned char reg=(ioctl_param>>8)&0xFF;
@@ -457,10 +584,10 @@ int device_ioctl(struct inode *inode,	/* see include/linux/fs.h */
     }
     else {
        spin_lock(&(my_dev->io_lock));
-       ret_val=amcc_outb(val, reg, my_base_address);
+       ret_val = pb_dev_outb(my_dev, val, reg);
        spin_unlock(&(my_dev->io_lock));
        if (ret_val!=0) {
-	    printk("%s: IO Error, amcc_outb returned %d\n",DEVICE_NAME, ret_val);
+	    printk("%s: IO Error, pb_dev_outb returned %d\n",DEVICE_NAME, ret_val);
 	    ret_val=-EIO; // make an ordinary io error
        }
     }
@@ -469,11 +596,11 @@ int device_ioctl(struct inode *inode,	/* see include/linux/fs.h */
     unsigned char reg=ioctl_param&0xFF;
     //printk("%s: reading register number %02x\n",DEVICE_NAME,0x0ff&reg);
     spin_lock(&(my_dev->io_lock));
-    ret_val=amcc_inb(reg, my_base_address);
+    ret_val = pb_dev_inb(my_dev, reg);
     spin_unlock(&(my_dev->io_lock));
     //printk("%s: found %02x=%02x\n", DEVICE_NAME, 0x0ff&reg, 0x0ff&val);
     if (ret_val<0) {
-	printk("%s: IO Error, amcc_inb returned %d\n",DEVICE_NAME, ret_val);
+	printk("%s: IO Error, pb_dev_inb returned %d\n",DEVICE_NAME, ret_val);
 	ret_val=-EIO; // make an ordinary io error
     }
   }
@@ -552,6 +679,8 @@ static int pulseblaster_pci_probe(struct pci_dev *dev, const struct pci_device_i
     pb_devs[pb_dev_no].device_open=0;
     spin_lock_init(&(pb_devs[pb_dev_no].io_lock));
     pb_devs[pb_dev_no].pciboard=dev;
+    pb_devs[pb_dev_no].boardtype = id->driver_data;
+    pb_devs[pb_dev_no].base_addr = 0x0;
 
     // todo: inform about slots as a hint for the physical location of the board!
     printk("%s: found a pci board with i/o base address 0x%lx, assigning no %d\n",
@@ -575,6 +704,8 @@ static void pulseblaster_pci_remove(struct pci_dev* dev) {
        if (pb_devs[i].pciboard==dev) {
            spin_lock(&(pb_devs[i].io_lock));
            pb_devs[i].pciboard=NULL;
+           pb_devs[i].boardtype = PBB_DEBUG;
+           pb_devs[i].base_addr = 0x0;
            spin_unlock(&(pb_devs[i].io_lock));
            printk("%s: releasing device no %d\n", DEVICE_NAME, i);
            break;
@@ -590,7 +721,8 @@ static void pulseblaster_pci_remove(struct pci_dev* dev) {
 }
 
 static struct pci_device_id pulseblaster_pci_ids[] = {
-{PCI_DEVICE(0x10e8, 0x8852)},
+{PCI_DEVICE(0x10e8, 0x8852), .driver_data = PBB_GENERIC_AMCC},
+{PCI_DEVICE(0x10e8, 0x8878), .driver_data = PBB_GENERIC_PCI},
 {0,},
 };
 
@@ -716,6 +848,8 @@ static int __init init_pulseblaster_module(void)
         pb_dev_debug.device_open=0;
 	spin_lock_init(&(pb_dev_debug.io_lock));
 	pb_dev_debug.pciboard=0x0; // this is the debug flag for amcc functions
+	pb_dev_debug.boardtype = PBB_DEBUG;
+	pb_dev_debug.base_addr = 0x0;
 
 	// register code for pci bus scanning
 	ret_val=pci_register_driver(&pulseblaster_pci_driver);
