@@ -44,7 +44,7 @@ class hardware {
   /// the temperature control, optional
   tempcont* the_tc;
   /**
-   * List of all DACs in the system
+   * \brief List of all DACs in the system
    *
    * The destructor of this class cleans them up
    */
@@ -76,15 +76,27 @@ class hardware {
 
  protected:
   /**
-   * Utility function: Prepare the DACs for the experiment
+   * \brief Utility function: Prepare the DACs for the experiment
    *
    * In this base class, it calls the set_dac() method on
-   * each DAC in the list_dacs.
+   * each DAC in list_dacs.
    *
    * This might include sending configuration info to the
    * DAC, or rewriting the pulse program.
    */
   virtual void experiment_prepare_dacs(state* work_copy);
+
+  /**
+   * \brief Utility function: Finally run pulse program
+   *
+   * Called by the experiment() method.
+   *
+   * Calls: \code the_pg->run_pulse_program(*work_copy) \endcode
+   *
+   * Can be overriden to use other pulse running methods,
+   * for example a synced one.
+   */
+  virtual void experiment_run_pulse_program(state* work_copy);
 };
 
 #endif

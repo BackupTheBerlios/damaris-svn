@@ -30,6 +30,9 @@ hardware::~hardware()
 	}
 }
 
+void hardware::experiment_run_pulse_program(state* work_copy) {
+	the_pg->run_pulse_program(*work_copy);
+}
 
 result* hardware::experiment(const state& exp) {
   result* r=NULL;
@@ -43,7 +46,7 @@ result* hardware::experiment(const state& exp) {
 	the_adc->set_daq(*work_copy);
       experiment_prepare_dacs(work_copy);
       // the pulse generator is necessary
-      the_pg->run_pulse_program(*work_copy);
+      experiment_run_pulse_program(work_copy);
       // wait for pulse generator
       the_pg->wait_till_end();
       // after that, the result must be available
