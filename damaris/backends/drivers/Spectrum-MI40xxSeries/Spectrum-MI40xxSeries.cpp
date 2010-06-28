@@ -31,7 +31,7 @@ void SpectrumMI40xxSeries::Configuration::print(FILE* f) {
 }
 
 
-SpectrumMI40xxSeries::SpectrumMI40xxSeries(const ttlout& t_line, float impedance) {
+SpectrumMI40xxSeries::SpectrumMI40xxSeries(const ttlout& t_line, float impedance, int ext_reference_clock) {
   // to be configured
   device_id=0;
   trigger_line=t_line;
@@ -41,8 +41,8 @@ SpectrumMI40xxSeries::SpectrumMI40xxSeries(const ttlout& t_line, float impedance
     default_settings.impedance=50.0; // Ohm
   else if (impedance!=1e6)
     fprintf(stderr, "unknown impedance %f, default is 1e6 Ohm\n", impedance);
-
   default_settings.sensitivity=5; // Volts
+  default_settings.ext_reference_clock=ext_reference_clock; // Hz
   effective_settings=NULL;
   
 #     if defined __linux__
@@ -90,13 +90,15 @@ if (name == NULL) { FreeLibrary(spectrum_driver_dll); \
       if (actual_status!=SPC_READY) {
 	fprintf(stderr, "Warning: Spectrum board was is running before reset.\n");
       }
-
+#if SPC_DEBUG
+	fprintf(stderr,"External reference clock: %i\n",default_settings.ext_reference_clock);
+#endif
       int ErrorOccurred=1;
       SpcSetParam(deviceno, SPC_COMMAND,        SPC_RESET)==ERR_OK &&       // reset device first
 	  SpcSetParam (deviceno, SPC_GATE,          1)==ERR_OK &&             // Gated Triggering
 	  SpcSetParam (deviceno, SPC_PLL_ENABLE,    1)==ERR_OK &&             // Internal PLL enabled for clock
 	  SpcSetParam (deviceno, SPC_CLOCKOUT,      0)==ERR_OK &&             // No clock output
-	  SpcSetParam (deviceno, SPC_REFERENCECLOCK,100000000)==ERR_OK &&     // external reference clock
+	  SpcSetParam (deviceno, SPC_REFERENCECLOCK, default_settings.ext_reference_clock)==ERR_OK &&     // external reference clock
 	  SpcSetParam (deviceno, SPC_EXTERNALCLOCK, 0)==ERR_OK &&             //  but no external sample clock
 	  SpcSetParam (deviceno, SPC_CLOCK50OHM,    1)==ERR_OK &&             // clock input with 50Ohm impedance
 	  SpcSetParam (deviceno, SPC_TRIGGERMODE,   TM_TTLPOS)==ERR_OK &&     // ttl trigger is used
@@ -118,10 +120,11 @@ if (name == NULL) { FreeLibrary(spectrum_driver_dll); \
       /* print lines with useful information: */
       fprintf(stderr, "Spectrum MI40xx series board with %d byte memory\n", memory_size);
       fprintf(stderr,
-	      " impedance set to %f, expecting trigger on id=%d, ttls=0x%lx\n",
+	      " impedance set to %g Ohm\n expecting trigger on id=%d ttls=0x%lx\n external clock frequency set to %g Hz\n",
 	      impedance,
 	      t_line.id,
-	      t_line.ttls.to_ulong());
+	      t_line.ttls.to_ulong(),
+	      (float)ext_reference_clock );
 }
 
 void SpectrumMI40xxSeries::sample_after_external_trigger(double rate, size_t samples, double sensitivity, size_t resolution) {
@@ -157,6 +160,9 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 	else {
 	    // found a state, not a sequence
 	    settings.timeout+=a_state->length;
+#if SPC_DEBUG
+        fprintf(stderr,"SETTINGS %e %e\n",settings.timeout,a_state->length);
+#endif
 	    // collect analogin sections in state
 	    std::list<analogin*> inputs;
 	    /* loop over all device definitions in a state */
@@ -224,10 +230,10 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 		gating_time=round(1e8*gating_time)/1e8;
 		double time_required=delayed_gating_time+gating_time;
 		// check time requirements
-		if (a_state->length<time_required) {
+		if (a_state->length<=time_required) {
 		  char parameter_info[512];
 		  snprintf(parameter_info,sizeof(parameter_info),
-			   "(%" SIZETPRINTFLETTER " samples, %f samplerate, %f time required, %f state time)",
+			   "(%" SIZETPRINTFLETTER " samples, %g samplerate, %e time required, %e state time)",
 			   inputs.front()->samples,
 			   settings.samplefreq,
 			   time_required,
@@ -299,6 +305,7 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 
     settings.timeout*=exp.repeat;
     settings.timeout+=parent_timeout;
+    fprintf(stderr,"setting.timout %g\n",settings.timeout);
     return;
 }
 
@@ -367,7 +374,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   int actual_status=0;
   SpcGetParam(deviceno, SPC_STATUS, &actual_status);
   if (actual_status!=SPC_READY) {
-      fprintf(stderr, "Warning: Spectrum board was is running before starting data aquisition.\n");
+      fprintf(stderr, "Warning: Spectrum board was/is running before starting data aquisition.\n");
       SpcSetParam (deviceno, SPC_COMMAND,      SPC_STOP);     // stop the board
   }
 
@@ -577,7 +584,11 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
     if (core::term_signal!=0) return NULL;
     size_t sampleno=(effective_settings==NULL || effective_settings->data_structure==NULL)?0:effective_settings->data_structure->size();
     if (sampleno==0) return new adc_result(1,0,NULL);
-    double timeout=_timeout;
+//    double timeout=_timeout;
+  
+#if SPC_DEBUG
+    fprintf(stderr,"effective_settings in get_samples: %g\n",effective_settings->timeout);
+#endif
     // allocate a lot of space
     // todo: use GatedSampling buffers directly!
 
@@ -591,26 +602,37 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 
 	// simple version: standard acquisition, wait and get...
 #if SPC_DEBUG
-	fprintf(stderr, "fetching %" SIZETPRINTFLETTER " samples in normal mode (timeout is %g)\n",sampleno,timeout);
+	fprintf(stderr, "fetching %" SIZETPRINTFLETTER " samples in normal mode (timeout is %g)\n",sampleno,effective_settings->timeout);
 #endif
 	stopwatch adc_timer;
 	adc_timer.start();
-	int adc_status;
+	int adc_status, i;
+	i = 0;
 	SpcGetParam(deviceno, SPC_STATUS, &adc_status);
- 	while (core::term_signal==0 && adc_status!=SPC_READY && adc_timer.elapsed()<timeout){
+	while (core::term_signal==0 && adc_status!=SPC_READY && adc_timer.elapsed()<=effective_settings->timeout) {
 	  timespec sleeptime;
-	  sleeptime.tv_nsec=10*1000*1000;
+	  sleeptime.tv_nsec=10*1000*1000; // 10 ms
 	  sleeptime.tv_sec=0;
 	  nanosleep(&sleeptime,NULL);
 	  SpcGetParam(deviceno, SPC_STATUS, &adc_status);
+
+#if SPC_DEBUG
+	  fprintf(stderr, "while loop %i NORMAL (adc_s, adc_t, effective_timeout core.term): %i %g %g %i\n",i,adc_status, adc_timer.elapsed(), effective_settings->timeout, core::term_signal);
+#endif
+	  i++;
 	}
 	SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
 	if (core::term_signal!=0) {
 	    free(adc_data);
 	    return NULL;
 	}
+	SpcGetParam(deviceno, SPC_STATUS, &adc_status);
+#if SPC_DEBUG
+    	fprintf(stderr, "adc_status after while loop: %i \n",adc_status );
+#endif
 	if (adc_status!=SPC_READY) {
 	    free(adc_data);
+	    fprintf(stderr, "adc_status not ready: %i \n",adc_status );
 	    throw SpectrumMI40xxSeries_error("timeout occured while collecting data");
 	}
     
@@ -648,7 +670,7 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
   }
   else {
 #if SPC_DEBUG
-    fprintf(stderr, "fetching %" SIZETPRINTFLETTER " samples in fifo mode (timeout is %g)\n",sampleno,timeout);
+    fprintf(stderr, "fetching %" SIZETPRINTFLETTER " samples in fifo mode (timeout is %g)\n",sampleno,effective_settings->timeout);
 #endif
     // FIFO method
     stopwatch timer;
@@ -657,12 +679,15 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
        int32 lStatus;
        timespec sleeptime;
        sleeptime.tv_sec=0;
-       sleeptime.tv_nsec=100000000;
+       sleeptime.tv_nsec=100*1000*1000;
        nanosleep(&sleeptime,NULL);
        //pthread_testcancel();
        SpcGetParam (deviceno, SPC_STATUS, &lStatus);
+#if SPC_DEBUG
+	fprintf(stderr, "while loop FIFO (lStatis, timer, effective_timeout): %i %g %g\n",lStatus, timer.elapsed(), effective_settings->timeout );
+#endif
        if (lStatus == SPC_READY) break;
-    } while (timer.elapsed()<_timeout);
+    } while (timer.elapsed()<effective_settings->timeout); //rosi _timeout
     SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
 
 #if SPC_DEBUG

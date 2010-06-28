@@ -24,7 +24,8 @@ MACHINES = \
 	fc1neu_backend$(EXEEXT) \
 	bg_backend \
 	Mobilecore$(EXEEXT) \
-	Mobile_wo_sync_backend$(EXEEXT)
+	Mobile_wo_sync_backend$(EXEEXT) \
+	berta$(EXEEXT)
 
 .PHONY: all clean install
 
@@ -188,6 +189,17 @@ fc2_backend$(EXEEXT): fc2_backend.o hardware.o \
 
 fc2_backend.o: fc2_backend.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h ../drivers/Tecmag-DAC20/DAC20.h\
+../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
+
+berta$(EXEEXT): berta.o hardware.o \
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a ../drivers/PTS-Synthesizer/PTS.o \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o \
+../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.o ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.o  ../core/core.a
+	$(CXX) $(LDFLAGS) $^ $(LIBS) -o $@ -lpthread
+
+berta.o: berta.cpp \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
 	$(CXX) -c $(CXXFLAGS) $(CXXCPPFLAGS) $< -o $@
 

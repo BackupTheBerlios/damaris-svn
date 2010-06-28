@@ -103,12 +103,20 @@ class SpectrumMI40xxSeries: public ADC {
       double sensitivity;
       /** coupling 0=DC else AC */
       int coupling;
+      /** external reference clock **/
+      int ext_reference_clock;
 
       /** print data for debug purpose  */
       void print(FILE* f);
 
       Configuration() {
-	samplefreq=0; timeout=0; impedance=0; sensitivity=0; coupling=0; data_structure=NULL;
+	samplefreq=0; 
+        timeout=0;
+        impedance=0;
+	sensitivity=0;
+	coupling=0;
+	ext_reference_clock=0; 
+	data_structure=NULL;
       }
 
       Configuration(const Configuration& orig) {
@@ -117,6 +125,7 @@ class SpectrumMI40xxSeries: public ADC {
 	impedance=orig.impedance;
 	sensitivity=orig.sensitivity;
 	coupling=orig.coupling;
+	ext_reference_clock=orig.ext_reference_clock;
 	if (orig.data_structure==NULL) data_structure=NULL;
 	else data_structure=new DataManagementNode(*orig.data_structure);
       }
@@ -141,7 +150,7 @@ class SpectrumMI40xxSeries: public ADC {
   void collect_config_recursive(state_sequent& exp, SpectrumMI40xxSeries::Configuration& settings);
 
 public:
-  SpectrumMI40xxSeries(const ttlout& t_line, float impedance=1e6 );
+  SpectrumMI40xxSeries(const ttlout& t_line, float impedance=1e6, int ext_reference_clock=(int)100e6);
 
   virtual void sample_after_external_trigger(double rate, size_t samples, double sensitivity=5.0, size_t resolution=14);
 

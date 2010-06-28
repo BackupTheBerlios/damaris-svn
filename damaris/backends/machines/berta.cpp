@@ -1,20 +1,23 @@
 /* **************************************************************************
 
- Author: Achim Gaedke
- Created: June 2004
+ Author: Markus Rosenstihl
+ Created: June 2010
 
 ****************************************************************************/
 #include "machines/hardware.h"
 #include "core/core.h"
-#include "drivers/Tecmag-DAC20/DAC20.h"
 #include "drivers/PTS-Synthesizer/PTS.h"
 #include "drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h"
 #include "drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h"
 
 /**
-   \defgroup pfgmachine PFG NMR Spectrometer
+   \defgroup mobilemachine NMR Spectrometer
    \ingroup machines
-   Uses Spincore Pulseblaster 24 Bit, Spectrum MI4021, and one DAC20.
+   Uses:
+     \li Spincore Pulseblaster 24 Bit (SP 17) which has a reference clock with 50 MHz
+     \li Spectrum MI4021 with gated sampling option (PB ref. clock is fed to Ext.Clock, impedance set to 1 MOhm)
+     \li Programmed Test Sources PTS 500 frequency synthesizer with phase control (0.36 degrees step size)
+     
 
    \par Starting the hardware
    This procedure should assure the correct initialisation of the hardware:
@@ -29,27 +32,33 @@
 /**
    line 0 for gate
    line 1 for pulse
-   line 22 for trigger
+   line 2 for trigger
    line 3 free
  */
-class PFG_hardware: public hardware {
+class Mobile_hardware: public hardware {
 
-SpinCorePulseBlaster24Bit* my_pulseblaster;
+  PTS* my_pts;
+  SpinCorePulseBlaster24Bit* my_pulseblaster;
   SpectrumMI40xxSeries* my_adc;
 
 public:
-  PFG_hardware(){
+  Mobile_hardware(){
       ttlout trigger;
       trigger.id=0;
-      trigger.ttls=1<<22; /* line 22 */// 
-      my_adc=new SpectrumMI40xxSeries(trigger);
-      my_pulseblaster=new SpinCorePulseBlaster24Bit(0,1e8,1<<23); // line 23
-      PTS* my_pts=new PTS_latched(0); // ID of PTS_analogout 0
-      the_fg=my_pts;
+      trigger.ttls=1<<22; /* line 22 */
+      int ext_reference_clock = (int) 50e6; // 50 MHz from PB24 SP17; defaults to 100MHz (PB24 SP 2)
+      double impedance = 1e6; // Ohm ( or 50 Ohm)
+      my_adc=new SpectrumMI40xxSeries(trigger, impedance, ext_reference_clock);
+      // device_id=0, clock=100MHz, sync_mask: Bit 23
+      my_pulseblaster=new SpinCorePulseBlaster24Bit(0,1e8,1<<23);
+      my_pts=new PTS_latched(0);
+      // PTS 500 has 0.36 ;  PTS 310 has 0.225 degrees/step
+      my_pts->phase_step=0.36;
+
+      // publish devices
       the_pg=my_pulseblaster;
       the_adc=my_adc;
-      DAC20* my_pfg=new DAC20(1);
-      list_dacs.push_back(my_pfg);
+      the_fg=my_pts;
   }
 
   result* experiment(const state& exp) {
@@ -62,7 +71,6 @@ public:
 	  the_fg->set_frequency(*work_copy);
 	if (the_adc!=NULL)
 	  the_adc->set_daq(*work_copy);
-	experiment_prepare_dacs(work_copy);
 	// the pulse generator is necessary
 	my_pulseblaster->run_pulse_program_w_sync(*work_copy, my_adc->get_sample_clock_frequency());
 	// wait for pulse generator
@@ -89,24 +97,23 @@ public:
     return r;
   }
 
-
-  virtual ~PFG_hardware() {
+  virtual ~Mobile_hardware() {
     if (the_adc!=NULL) delete the_adc;
-    if (the_pg!=NULL) delete the_pg;
     if (the_fg!=NULL) delete the_fg;
-   }
+    if (the_pg!=NULL) delete the_pg;
+  }
 
 };
 
 /**
    \brief brings standard core together with the Mobile NMR hardware
 */
-class PFG_core: public core {
+class Mobile_core: public core {
   std::string the_name;
 public:
-    PFG_core(const core_config& conf): core(conf) {
-	the_hardware=new PFG_hardware();
-	the_name="PFG core";
+    Mobile_core(const core_config& conf): core(conf) {
+	the_hardware=new Mobile_hardware();
+	the_name="Mobile core";
   }
   virtual const std::string& core_name() const {
   	return the_name;
@@ -122,7 +129,7 @@ int main(int argc, const char** argv) {
   try {
       core_config my_conf(argv, argc);
       // setup input and output
-      PFG_core my_core(my_conf);
+      Mobile_core my_core(my_conf);
       // start core application
       my_core.run();
   }
@@ -138,10 +145,5 @@ int main(int argc, const char** argv) {
     fprintf(stderr,"pulse: %s\n",pe.c_str());
     return_result=1;
   }
-  catch(pfg_exception pfge) {
-	  fprintf(stderr,"pfg: %s\n",pfge.c_str());
-	  return_result=1;
-  }
-  
   return return_result;
 }

@@ -50,6 +50,11 @@ class PTS: public frequgen {
   int negative_logic;
 
   /**
+     define the phase stepping: PTS310 0.225    PTS500 0.36
+   */
+  float phase_step;
+
+  /**
      \brief default constructor
    */
   PTS(int myid=0);

@@ -4,7 +4,10 @@ AR=ar
 
 all: Spectrum-MI40xxSeries.a
 
-include/spcerr.h include/regs.h include/dlltyp.h include/spcioctl.inc: drv_header_v323b1742.zip
+#include/spcerr.h include/regs.h include/dlltyp.h include/spcioctl.inc: drv_header_v323b1742.zip
+#	unzip -u $< "*.h" "*.txt" "*.inc" -d include/
+
+include/spcerr.h include/regs.h include/dlltyp.h include/spcioctl.inc: drv_new.zip
 	unzip -u $< "*.h" "*.txt" "*.inc" -d include/
 
 Spectrum-MI40xxSeries.a: Spectrum-MI40xxSeries.o GatedData.o

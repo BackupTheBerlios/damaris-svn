@@ -18,6 +18,7 @@ PTS::PTS(int myid): id(myid) {
   frequency=0;
   phase=0;
   negative_logic=1;
+  phase_step=0.225;
 }
 
 PTS::~PTS() {
@@ -26,8 +27,9 @@ PTS::~PTS() {
 
 unsigned int PTS::phase_ttl_values(double p) const {
   // break down to [0;360[
+  fprintf(stderr,"PHASE %g\n",phase_step);
   p-=floor(p/360.0)*360.0;
-  unsigned int phasesteps=(unsigned int)fabs(round(p/0.225));
+  unsigned int phasesteps=(unsigned int)fabs(round(p/phase_step));
   int bcd_part=phasesteps/100;
   unsigned int ttl_value=bcd_part<<8;
   phasesteps-=bcd_part*100;
@@ -196,7 +198,7 @@ void PTS_latched::set_frequency_recursive(state_sequent& the_sequence, state::it
       /* now, insert the ttl information*/
       /* set phase everytime */
       pts_aout->phase-=floor(pts_aout->phase/360.0)*360.0;
-      int phase_int=(int)floor(pts_aout->phase/0.225+0.5);
+      int phase_int=(int)floor(pts_aout->phase/phase_step+0.5);
       /* copy of original state */
       state* register_state=new state(*this_state);
       ttlout* register_ttls=new ttlout();
