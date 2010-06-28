@@ -1,3 +1,15 @@
+damaris (0.11-0.2) experimental; urgency=low
+
+  * Spectrum MI4021 driver
+    - Can change now ext. ref clock frequency (needed for PulseBlaster 24 SP 17)
+    - Testing for timeout now checks the proper timeout variable
+  * PTS driver
+    - We can now change the phase_step in the machine file. Needed to accomodate PTS 500.
+  * backends
+    - Added berta backend (Using PB 24 SP 17; PTS 500)
+
+ -- Markus Rosenstihl <Markus.Rosenstihl@physik.tu-darmstadt.de>  Fri, 08 Jan 2010 14:27:16 +0100
+
 damaris (0.11-0.1) experimental; urgency=low
 
   * pulseblaster module

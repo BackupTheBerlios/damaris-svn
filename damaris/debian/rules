@@ -15,6 +15,7 @@ BACKENDSMACHINES = \
 	fc2_backend.exe \
 	bg_backend \
 	Mobilecore.exe \
+	berta.exe \
 	Mobile_wo_sync_backend.exe
 
 tmp_kernel_makefiles = $(wildcard /lib/modules/*/build/Makefile)
