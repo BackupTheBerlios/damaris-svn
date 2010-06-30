@@ -83,8 +83,8 @@ class Experiment:
 
     # Commands -------------------------------------------------------------------------------------
 
-    def rf_pulse(self, channel, length = None):
-        s_content = '<ttlout value="0x%06x"/>' % channel
+    def rf_pulse(self, value, length = None):
+        s_content = '<ttlout value="0x%06x"/>' % value
 
         if length is None:
             self.state_list.append(s_content)
@@ -100,6 +100,14 @@ class Experiment:
         self.state_list.append(StateSimple(length, \
             '<ttlout value="0x%06x"/>' % the_value))
 
+    def ttls(self, length = None, value = None):
+        the_value=int(value)
+        s_content = '<ttlout value="0x%06x"/>' % the_value
+        if length is not None:
+            self.state_list.append(StateSimple(length, s_content))
+        else:
+            self.state_list.append(s_content)
+
     def state_start(self, time):
         self.state_list.append('<state time="%s">\n' % repr(time))
 
@@ -108,8 +116,12 @@ class Experiment:
         self.state_list.append('</state>\n')
 
 
-    def wait(self, time):
-        self.state_list.append(StateSimple(time))
+    def wait(self, time, ttls=None):
+    	if ttls is not None:
+	        s_content = '<ttlout value="0x%06x"/>' % ttls
+        	self.state_list.append(StateSimple(time,s_content))
+	else:
+        	self.state_list.append(StateSimple(time))
 
 
     def record(self, samples, frequency, timelength=None, sensitivity=None, ttls=None):
