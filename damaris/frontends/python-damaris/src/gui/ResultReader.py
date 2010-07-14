@@ -14,6 +14,7 @@ import sys
 import base64
 import numpy
 import xml.parsers.expat
+import xml.etree.cElementTree
 import threading
 from datetime import datetime
 
@@ -76,7 +77,7 @@ class ResultReader:
         # get date of last modification 
         self.result_job_date = datetime.fromtimestamp(os.stat(in_filename)[8])
             
-        self.__parseFile(result_file)
+        self.__parseFile_cETree (result_file)
 
         result_file.close()
         result_file = None
@@ -85,6 +86,144 @@ class ResultReader:
         self.result = None
 
         return r
+
+    def __parseFile_cETree(self, in_file):
+        self.result = None
+        self.in_description_section=False
+        self.result_description = { }
+        self.result_job_number = None
+        # Job Date is set in __read_file()
+        self.__filetype = None
+        for elem in xml.etree.cElementTree.ElementTree(file=in_file).getiterator():
+            if elem.tag == 'result':
+                self.result_job_number = int(elem.get("job"))
+                pass
+            
+            elif elem.tag == 'description':
+                if len(elem.text)!=0:
+                    self.result_description = {}
+                self.in_description_section=True
+                self.in_description_data=()
+                for an_item in elem.getchildren():
+                    self.in_description_data = (an_item.get("key"), an_item.get("type"), an_item.text)
+                    # make item contents to dictionary item:
+                    k,t,v=self.in_description_data
+                    self.in_description_data=()
+                    if t == "None":
+                        self.result_description[k]=None
+                    if t == "Float":
+                        self.result_description[k]=float(v)
+                    elif t == "Int":
+                        self.result_description[k]=int(v)
+                    elif t == "Long":
+                        self.result_description[k]=long(v)
+                    elif t == "Complex":
+                        self.result_description[k]=complex(v)
+                    elif t == "Boolean":
+                        self.result_description[k]=bool(v)
+                    elif t == "String":
+                        self.result_description[k]=v
+                    else:
+                        # Anything else will be handled as a string
+                        # Probably "repr".
+                        self.result_description[k]=v
+
+            elif elem.tag == 'adcdata':
+                self.__filetype = ResultReader.ADCDATA_TYPE
+                self.adc_result_trailing_chars = ""
+
+                if self.result is None:
+                    self.result = ADC_Result()
+                    # None: new guess for adc data encoding
+                    # "a": ascii
+                    # "b": base64
+                    self.adc_data_encoding = None
+
+                    self.result.set_sampling_rate(float(elem.get("rate")))
+                    self.result.set_job_id(self.result_job_number)
+                    self.result.set_job_date(self.result_job_date)
+
+                    self.result.set_description_dictionary(self.result_description.copy())
+                    title = "ADC-Result: job-id=%d"%int(self.result_job_number)
+                    if len(self.result_description) > 0:
+                        for k,v in self.result_description.iteritems():
+                            title += ", %s=%s"%(k,v)
+                    self.result.set_title(title)
+                    self.result_description = None
+                    self.adc_result_sample_counter = 0
+                    self.adc_result_parts = [] # will contain arrays of sampled intervals, assumes same sample rate
+                else:
+                    if float(elem.get("rate")) != self.result.get_sampling_rate():
+                        print "sample rate different in ADC_Result, found %f, former value %f"%\
+                                  (float(in_attribute["rate"]),self.result.get_sampling_rate())
+                new_samples = int(elem.get("samples"))
+                self.adc_result_sample_counter += new_samples
+                
+                self.adc_result_trailing_chars = "".join(elem.text.splitlines())
+                tmp_string = base64.standard_b64decode(self.adc_result_trailing_chars)
+                self.adc_result_trailing_chars =  None
+                tmp = numpy.fromstring(tmp_string,dtype='Int16')
+                tmp_string = None
+                self.adc_result_parts.append(tmp)
+                tmp = None
+                # we do not need this adcdata anymore, delete it
+                elem.clear()
+
+       
+
+            elif elem.tag == 'error':
+                self.__filetype = ResultReader.ERROR_TYPE
+                    
+                self.result = Error_Result()
+                self.result.set_job_id(self.result_job_number)
+                self.result.set_job_date(self.result_job_date)
+
+                self.result.set_description_dictionary(self.result_description.copy())
+                self.result.set_error_message(elem.text)
+
+            elif elem.tag == 'temp':
+                self.__filetype = ResultReader.TEMP_TYPE
+                    
+                self.result = Error_Result()
+                self.result.set_job_id(self.result_job_number)
+                self.result.set_job_date(self.result_job_date)
+            
+            elif elem.tag == 'conf':
+                self.__filetype = ResultReader.CONF_TYPE
+                    
+                self.result = Error_Result()
+                self.result.set_job_id(self.result_job_number)
+                self.result.set_job_date(self.result_job_date)
+
+        # xml file was traversed now prepare the data in one go
+        # prepare result data
+        if self.result is not None and \
+            self.__filetype == ResultReader.ADCDATA_TYPE and \
+            self.adc_result_sample_counter>0:
+            # fill the ADC_Result with collected data
+            # x data
+            self.result.x=numpy.arange(self.adc_result_sample_counter, dtype="Float64")/\
+                                                                self.result.get_sampling_rate()
+            self.result.y = []
+            # initialise the y arrays
+            for i in xrange(2):
+                self.result.y.append(numpy.empty(self.adc_result_sample_counter, dtype='Int16'))
+                # remove from result stack
+            tmp_index = 0
+            while self.adc_result_parts:
+                tmp_part=self.adc_result_parts.pop(0)
+                tmp_size = tmp_part.size/2
+                # split interleaved data
+                self.result.y[0][tmp_index:tmp_index+tmp_size] = tmp_part[0::2]
+                self.result.y[1][tmp_index:tmp_index+tmp_size] = tmp_part[1::2]
+
+                if self.result.index != []:
+                    self.result.index.append((tmp_index, tmp_index+tmp_size-1))
+                else:
+                    self.result.index = [(0,tmp_size-1)]
+                tmp_index += tmp_size
+                self.result.cont_data=True
+            tmp_part = None
 
     def __parseFile(self, in_file):
         "Parses the given file, adding it to the result-queue"
