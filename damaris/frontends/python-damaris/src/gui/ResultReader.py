@@ -13,8 +13,13 @@ import time
 import sys
 import base64
 import numpy
-import xml.parsers.expat
-import xml.etree.cElementTree
+try:
+    import xml.etree.cElementTree
+    ELEMENT_TREE = True
+except:
+    import xml.parsers.expat
+    ELEMENT_TREE = False
+
 import threading
 from datetime import datetime
 
@@ -76,8 +81,12 @@ class ResultReader:
 
         # get date of last modification 
         self.result_job_date = datetime.fromtimestamp(os.stat(in_filename)[8])
-            
-        self.__parseFile_cETree (result_file)
+        if ELEMENT_TREE:
+            self.__parseFile = self.__parseFile
+        else:
+            self.__parseFile = self.__parseFile_expat
+
+        self.__parseFile (result_file)
 
         result_file.close()
         result_file = None
@@ -225,7 +234,7 @@ class ResultReader:
                 self.result.cont_data=True
             tmp_part = None
 
-    def __parseFile(self, in_file):
+    def __parseFile_expat(self, in_file):
         "Parses the given file, adding it to the result-queue"
 
         self.result = None
