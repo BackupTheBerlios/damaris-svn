@@ -41,6 +41,7 @@ def checksum(message):
 
 class Eurotherm(object):
 	def __init__(self, serial_device, baudrate = 19200):
+		self.device = standard_device
 		# timeout: 110 ms to get all answers.
 		self.s = serial.Serial(serial_device,
 					baudrate = baudrate,
@@ -48,30 +49,38 @@ class Eurotherm(object):
 					parity='E',
 					stopbits=1,
 					timeout=0.11)
+		self._expect_len = 50
 
-	def send_read_param(self, param, device=standard_device):
-		self.s.write(EOT+device+param+ENQ)
+	def send_read_param(self, param):
+		self.s.write(EOT + self.device + param + ENQ)
 
-	def read_param(self, param, device=standard_device):
-		self.send_read_param(param, device)
-		answer = self.s.read(200)
+	def read_param(self, param):
+		self.s.flushInput()
+		self.send_read_param(param)
+		answer = self.s.read(self._expect_len)
 		m = reply_pattern.search(answer)
+		if m is None:
+			# Reading _expect_len bytes was not enough...
+			answer += self.s.read(200)
+			m = reply_pattern.search(answer)
 		if m is not None:
+			self._expect_len = len(answer)
 			return m.group(1)
 		else:
 			print "received:", repr(answer)
 			return None
 
-	def write_param(self, mnemonic, data, device=standard_device):
+	def write_param(self, mnemonic, data):
 		if len(mnemonic) > 2:
 			raise ValueError
 		bcc = checksum(mnemonic + data + ETX)
-		mes =  EOT+device+STX+mnemonic+data+ETX+bcc
+		mes = EOT+self.device+STX+mnemonic+data+ETX+bcc
 		if DEBUG:
 			for i in  mes:
 				print i,hex(ord(i))
+		self.s.flushInput()
 		self.s.write(mes)
-		answer = self.s.read(5)
+		answer = self.s.read(1)
 		# print "received:", repr(answer)
 		if answer == "":
 			# raise IOError("No answer from device")
