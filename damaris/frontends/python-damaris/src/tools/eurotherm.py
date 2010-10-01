@@ -5,7 +5,7 @@ import operator
 
 DEBUG=False
 
-temp_pattern = re.compile('\d+\.\d?')
+reply_pattern = re.compile(r"\x02..(.*)\x03.", re.DOTALL)
 # example answer '\x02PV279.8\x03/'
 # [EOT] = \x04
 # [STX] = \x02
@@ -20,6 +20,7 @@ STX = '\x02'
 ENQ = '\x05'
 ETX = '\x03'
 ACK = '\x06'
+NAK = '\x15'
 
 
 """
@@ -40,15 +41,26 @@ def checksum(message):
 
 class Eurotherm(object):
 	def __init__(self, serial_device, baudrate = 19200):
+		# timeout: 110 ms to get all answers.
 		self.s = serial.Serial(serial_device,
 					baudrate = baudrate,
 					bytesize=7,
 					parity='E',
 					stopbits=1,
-					timeout=0.04)
+					timeout=0.11)
+
+	def send_read_param(self, param, device=standard_device):
+		self.s.write(EOT+device+param+ENQ)
 
 	def read_param(self, param, device=standard_device):
-		self.s.write(EOT+device+param+ENQ)
+		self.send_read_param(param, device)
+		answer = self.s.read(200)
+		m = reply_pattern.search(answer)
+		if m is not None:
+			return m.group(1)
+		else:
+			print "received:", repr(answer)
+			return None
 
 	def write_param(self, mnemonic, data, device=standard_device):
 		if len(mnemonic) > 2:
@@ -59,20 +71,24 @@ class Eurotherm(object):
 			for i in  mes:
 				print i,hex(ord(i))
 		self.s.write(mes)
+		answer = self.s.read(5)
+		# print "received:", repr(answer)
+		if answer == "":
+			# raise IOError("No answer from device")
+			return None
+		return answer[-1] == ACK
 
 	def get_current_temperature(self):
-		self.read_param('PV')
-		#s.write('\x040011PV\x05')
-		answer = self.s.readline()
-		try:
-			temp = (re.findall(temp_pattern,answer)[0])
-		except:
-			print "received:", repr(answer)
+		temp = self.read_param('PV')
+		if temp is None:
 			temp = "0"
 		return temp
 
 	def set_temperature(self, temperature):
-		self.write_param('SL', str(temperature))
+		return self.write_param('SL', str(temperature))
+
+	def get_setpoint_temperature(self):
+		return self.read_param('SL')
 
 if __name__ == '__main__':
 	import time
