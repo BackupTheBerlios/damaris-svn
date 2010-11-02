@@ -1,9 +1,7 @@
-import ADC_Result
-import Accumulation
 
 def result():
 	# create accumulation object
-	accu = Accumulation.Accumulation()
+	accu = Accumulation()
 	# loop over the incoming results
 	for timesignal in results:
 		# read in variables
@@ -32,4 +30,4 @@ def result():
 			# close the file
 			afile.close()
 			# create a new accumulation object
-			accu = Accumulation.Accumulation()
+			accu = Accumulation()

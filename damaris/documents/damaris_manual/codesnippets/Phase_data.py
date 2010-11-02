@@ -1,9 +1,7 @@
-﻿import ADC_Result
-import Accumulation
-
+﻿
 def result():
 	# create accumulation object
-	accu = Accumulation.Accumulation()
+	accu = Accumulation()
 	# loop over the incoming results
 	for timesignal in results:
 		# read in the variable "run" from the result

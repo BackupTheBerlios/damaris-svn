@@ -1,4 +1,3 @@
-import ADC_Result
 # import pytables module to
 # support the binary HDF file format
 import tables

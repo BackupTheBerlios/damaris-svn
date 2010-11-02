@@ -1,5 +1,3 @@
-import ADC_Result
-
 def result():
 	# loop over the incoming results
 	for timesignal in results:

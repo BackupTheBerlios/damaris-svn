@@ -1,7 +1,5 @@
-import Experiment
-
 def fid_experiment(pi, tau, run, accus):
-	e=Experiment.Experiment()
+	e=Experiment()
 	e.wait(9) # repetition time (in s)
 	# set the descriptions, they are used later in the result script
 	e.set_description("run",run)

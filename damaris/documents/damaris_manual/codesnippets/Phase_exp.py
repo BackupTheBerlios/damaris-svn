@@ -1,7 +1,6 @@
-import Experiment
 
 def fid_experiment(run):
-	e=Experiment.Experiment()
+	e=Experiment()
 	# set a description, this one is used later in the result script
 	e.set_description("run",run)
 	# run%4 is run modulo(4), and thus goes like 0,1,2,3,0,1,2 ...
