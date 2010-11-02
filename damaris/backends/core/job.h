@@ -13,6 +13,7 @@
 #include <unistd.h>
 #include <string>
 #include <map>
+#include <cstdio>
 #include "core/result.h"
 #include "core/states.h"
 

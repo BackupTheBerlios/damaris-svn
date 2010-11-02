@@ -9,6 +9,7 @@
 
 #include "states.h"
 #include <expat.h>
+#include <cstdio>
 #include <xercesc/dom/DOMElement.hpp>
 
 /**
