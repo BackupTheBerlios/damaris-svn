@@ -13,6 +13,7 @@ import time
 import sys
 import base64
 import numpy
+
 try:
     import xml.etree.cElementTree
     ELEMENT_TREE = True
@@ -82,7 +83,7 @@ class ResultReader:
         # get date of last modification 
         self.result_job_date = datetime.fromtimestamp(os.stat(in_filename)[8])
         if ELEMENT_TREE:
-            self.__parseFile = self.__parseFile
+            self.__parseFile = self.__parseFile_cETree
         else:
             self.__parseFile = self.__parseFile_expat
 
@@ -109,7 +110,7 @@ class ResultReader:
                 pass
             
             elif elem.tag == 'description':
-                if len(elem.text)!=0:
+                if elem.text!=None:
                     self.result_description = {}
                 self.in_description_section=True
                 self.in_description_data=()
