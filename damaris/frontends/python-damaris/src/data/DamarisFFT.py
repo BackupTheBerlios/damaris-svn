@@ -94,7 +94,7 @@ class DamarisFFT:
 			self.y[i] = self.y[i]*apod
 		return self
 
-    def dexp_window(self, line_broadening=10, gaussian_multiplicator=0.3):
+    def dexp_window(self, line_broadening=-10, gaussian_multiplicator=0.3):
 		apod = numpy.exp(-(numpy.arange(self.x.size)*line_broadening - gaussian_multiplicator*self.x.max())**2)
 		for i in range(2):
 			self.y[i] = self.y[i]*apod 
