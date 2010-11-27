@@ -80,7 +80,12 @@ start() {
         fi
 
 	# have to wait for a short time, let udev do the work
+	if [ -x /sbin/udevsettle ]; then
 	/sbin/udevsettle
+	fi
+	if [ -x /sbin/udevadm ]; then
+	/sbin/udevadm settle
+	fi
 	if ! test $PULSEBLASTER_RETVAL -ne 0 -o -c ${PULSEBLASTER_DEV}0 ; then
 		echo "no pulseblaster board is found, only the debug device at ${PULSEBLASTER_DEV}_debug is available"
 	fi
@@ -108,7 +113,12 @@ stop() {
 	  $MODPROBE -r ${PULSEBLASTER_NAME} || RETVAL=1
 	fi
 	# have to wait for a short time, let udev do the work
+	if [ -x /sbin/udevsettle ]; then
 	/sbin/udevsettle
+	fi
+	if [ -x /sbin/udevadm ]; then
+	/sbin/udevadm settle
+	fi
 }
 
 status () {
