@@ -5,12 +5,12 @@ import sys
 import os
 import os.path
 import tables
-import DataPool
-import ResultReader
-import ExperimentWriter
-import BackendDriver
-import ResultHandling
-import ExperimentHandling
+import damaris.data.DataPool as DataPool
+import damaris.gui.ResultReader as ResultReader
+import damaris.gui.ExperimentWriter as ExperimentWriter
+import damaris.gui.BackendDriver as BackendDriver
+import damaris.gui.ResultHandling as ResultHandling
+import damaris.gui.ExperimentHandling as ExperimentHandling
 
 def some_listener(event):
     if event.subject=="__recentexperiment" or event.subject=="__recentresult":
@@ -42,7 +42,7 @@ class ScriptInterface:
             if self.exp_script: self.exp_writer=ExperimentWriter.ExperimentWriter(spool_dir)
             if self.res_script: self.res_reader=ResultReader.ResultReader(spool_dir)
 
-        self.data=DataPool.DataPool()
+        self.data=DataPool()
 
 
     def runScripts(self):
@@ -66,7 +66,7 @@ class ScriptInterface:
             while filter(None,[self.exp_handling,self.res_handling,self.back_driver]):
                 time.sleep(0.1)
                 if time.time()>next_dump_time:
-                    self.dump_data("data_pool.h5")
+                    self.dump_data("pool/data_pool.h5")
                     next_dump_time+=dump_interval
 
                 if self.exp_handling is not None:
@@ -108,7 +108,7 @@ class ScriptInterface:
         try:
             # write data from pool
             dump_file=tables.openFile(filename,mode="w",title="DAMARIS experiment data")
-            self.data.write_hdf5(dump_file)
+            self.data.write_hdf5(dump_file, complib='zlib', complevel=6)
             # write scripts
             scriptgroup=dump_file.createGroup("/","scripts","Used Scripts")
             dump_file.createArray(scriptgroup,"experiment_script", self.exp_script)
@@ -129,16 +129,17 @@ if __name__=="__main__":
     if len(sys.argv)==1:
         print "%s: data_handling_script [spool directory]"%sys.argv[0]
         sys.exit(1)
-    if len(sys.argv)==2:
+    if len(sys.argv)==3:
         spool_dir=os.getcwd()
     else:
-        spool_dir=sys.argv[2]
+        spool_dir=sys.argv[3]
     
-    scriptfile=open(sys.argv[1])
-    script=scriptfile.read()
-    scriptfile=None
+    expscriptfile=open(sys.argv[1])
+    expscript=expscriptfile.read()
+    resscriptfile=open(sys.argv[2])
+    resscript=resscriptfile.read()
 
-    si=ScriptInterface(script, script,"/home/achim/damaris/backends/machines/Mobilecore.exe", spool_dir)
+    si=ScriptInterface(expscript, resscript,"/usr/lib/damaris/backends/Mobilecore", spool_dir)
 
     si.data.register_listener(some_listener)
 
