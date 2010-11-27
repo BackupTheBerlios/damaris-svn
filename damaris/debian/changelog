@@ -1,3 +1,9 @@
+damaris (0.13-0) experimental; urgency=low
+  * Packages are compiling now on squeeze (and Ubuntu 10.04)
+  * fixed /sbin/udevsettle (lenny) vs /sbin/udevadm settle (squeeze) in init script
+
+ -- Markus Rosenstihl <Markus.Rosenstihl@physik.tu-darmstadt.de>  Sun, 28 Nov 2010 01:00:39 +0100
+
 damaris (0.11-0.2) experimental; urgency=low
 
   * Spectrum MI4021 driver
