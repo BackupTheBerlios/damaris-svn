@@ -11,7 +11,7 @@
 #include "drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h"
 
 /**
-   \defgroup mobilemachine NMR Spectrometer
+   \defgroup bertamachine Berta NMR Spectrometer
    \ingroup machines
    Uses:
      \li Spincore Pulseblaster 24 Bit (SP 17) which has a reference clock with 50 MHz
@@ -35,14 +35,14 @@
    line 2 for trigger
    line 3 free
  */
-class Mobile_hardware: public hardware {
+class Berta_hardware: public hardware {
 
   PTS* my_pts;
   SpinCorePulseBlaster24Bit* my_pulseblaster;
   SpectrumMI40xxSeries* my_adc;
 
 public:
-  Mobile_hardware(){
+  Berta_hardware(){
       ttlout trigger;
       trigger.id=0;
       trigger.ttls=1<<22; /* line 22 */
@@ -97,7 +97,7 @@ public:
     return r;
   }
 
-  virtual ~Mobile_hardware() {
+  virtual ~Berta_hardware() {
     if (the_adc!=NULL) delete the_adc;
     if (the_fg!=NULL) delete the_fg;
     if (the_pg!=NULL) delete the_pg;
@@ -106,14 +106,14 @@ public:
 };
 
 /**
-   \brief brings standard core together with the Mobile NMR hardware
+   \brief brings standard core together with the Berta NMR hardware
 */
-class Mobile_core: public core {
+class Berta_core: public core {
   std::string the_name;
 public:
-    Mobile_core(const core_config& conf): core(conf) {
-	the_hardware=new Mobile_hardware();
-	the_name="Mobile core";
+    Berta_core(const core_config& conf): core(conf) {
+	the_hardware=new Berta_hardware();
+	the_name="berta core";
   }
   virtual const std::string& core_name() const {
   	return the_name;
@@ -129,7 +129,7 @@ int main(int argc, const char** argv) {
   try {
       core_config my_conf(argv, argc);
       // setup input and output
-      Mobile_core my_core(my_conf);
+      Berta_core my_core(my_conf);
       // start core application
       my_core.run();
   }
