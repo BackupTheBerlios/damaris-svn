@@ -10,7 +10,6 @@
 #include "drivers/frequgen.h"
 #include "drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h"
 #include "drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h"
-#include "core/core.h"
 #include "core/states.h"
 #include "core/stopwatch.h"
 #include <cstdio>

@@ -8,7 +8,6 @@
 #include "PTS.h"
 #include <cstdio>
 #include <cmath>
-#include "core/xml_states.h"
 
 #ifdef __CYGWIN__
 # define floorl floor

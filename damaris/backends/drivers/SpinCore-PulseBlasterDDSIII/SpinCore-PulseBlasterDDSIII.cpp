@@ -8,6 +8,7 @@
 #include <cmath>
 #include <typeinfo>
 #include <iterator>
+#include "core/core.h"
 #include "core/states.h"
 
 /*********************************************************************
