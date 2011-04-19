@@ -29,12 +29,6 @@
 
 
 
-/**
-   line 0 for gate
-   line 1 for pulse
-   line 2 for trigger
-   line 3 free
- */
 class Berta_hardware: public hardware {
 
   PTS* my_pts;
@@ -45,7 +39,8 @@ public:
   Berta_hardware(){
       ttlout trigger;
       trigger.id=0;
-      trigger.ttls=1<<22; /* line 22 */
+      /* trigger on line 22 */
+      trigger.ttls=1<<22; 
       int ext_reference_clock = (int) 50e6; // 50 MHz from PB24 SP17; defaults to 100MHz (PB24 SP 2)
       double impedance = 1e6; // Ohm ( or 50 Ohm)
       my_adc=new SpectrumMI40xxSeries(trigger, impedance, ext_reference_clock);

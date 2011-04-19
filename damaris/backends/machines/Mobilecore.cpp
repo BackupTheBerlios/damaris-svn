@@ -13,8 +13,11 @@
 /**
    \defgroup mobilemachine Mobile NMR Spectrometer
    \ingroup machines
-   Uses Spincore Pulseblaster 24 Bit and Spectrum MI4021, but there is no cable driver with phase control
-
+   Uses Spincore Pulseblaster 24 Bit and Spectrum MI4021, PTS310 with cabledriver with phase control and a synchronization board
+   \li line 0 for gate
+   \li line 1 for pulse
+   \li line 17 for trigger
+   \li line 16 for synchronization
    \par Starting the hardware
    This procedure should assure the correct initialisation of the hardware:
    \li Switch off main switches of SpinCore Pulseblaster and Computer (the main switch of the computer is at the rear)
@@ -24,13 +27,6 @@
 */
 
 
-
-/**
-   line 0 for gate
-   line 1 for pulse
-   line 2 for trigger
-   line 3 free
- */
 class Mobile_hardware: public hardware {
 
   PTS* my_pts;
@@ -41,7 +37,7 @@ public:
   Mobile_hardware(){
       ttlout trigger;
       trigger.id=0;
-      trigger.ttls=1<<17; /* line 2 */
+      trigger.ttls=1<<17; /* trigger on line 17 */
       my_adc=new SpectrumMI40xxSeries(trigger);
       // device_id=0, clock=100MHz, sync_mask: Bit 16
       my_pulseblaster=new SpinCorePulseBlaster24Bit(0,1e8,1<<16);

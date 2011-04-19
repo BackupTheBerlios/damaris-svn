@@ -14,7 +14,11 @@
 /**
    \defgroup pfgmachine PFG NMR Spectrometer
    \ingroup machines
-   Uses Spincore Pulseblaster 24 Bit, Spectrum MI4021, and one DAC20.
+   Uses Spincore Pulseblaster 24 Bit, Spectrum MI4021, one DAC20 and a synchronization board.
+   \li line 0 for gate
+   \li line 1 for pulse
+   \li line 22 for trigger
+   \li line 23 for synchronization
 
    \par Starting the hardware
    This procedure should assure the correct initialisation of the hardware:
@@ -26,12 +30,6 @@
 
 
 
-/**
-   line 0 for gate
-   line 1 for pulse
-   line 22 for trigger
-   line 3 free
- */
 class PFG_hardware: public hardware {
 
 SpinCorePulseBlaster24Bit* my_pulseblaster;
@@ -41,13 +39,17 @@ public:
   PFG_hardware(){
       ttlout trigger;
       trigger.id=0;
-      trigger.ttls=1<<22; /* line 22 */// 
+      /* trigger on line 22 */	
+      trigger.ttls=1<<22; 
       my_adc=new SpectrumMI40xxSeries(trigger);
-      my_pulseblaster=new SpinCorePulseBlaster24Bit(0,1e8,1<<23); // line 23
-      PTS* my_pts=new PTS_latched(0); // ID of PTS_analogout 0
+      /* device_id = 0, clock = 100 MHz, sync_mask = Bit 23 */
+      my_pulseblaster=new SpinCorePulseBlaster24Bit(0,1e8,1<<23);
+      /* PTS has analog id = 0 */
+      PTS* my_pts=new PTS_latched(0);
       the_fg=my_pts;
       the_pg=my_pulseblaster;
       the_adc=my_adc;
+      /* DAC has analog id = 1 */
       DAC20* my_pfg=new DAC20(1);
       list_dacs.push_back(my_pfg);
   }
