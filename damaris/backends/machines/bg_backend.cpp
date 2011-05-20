@@ -38,7 +38,9 @@ public:
       ttlout trigger;
       trigger.id=0;
       trigger.ttls=4; /* line 2 */
-      the_adc=new SpectrumMI40xxSeries(trigger);
+      int refclock=50e6; /* 50 MHz for Pulseblaster SP-17; 100 MHz for SP-2 */
+      double impedance=1e6; /* 1MOhm or 50 Ohm impedance */
+      the_adc=new SpectrumMI40xxSeries(trigger, impedance, refclock);
       the_pg=new SpinCorePulseBlaster24Bit();
       PTS* my_pts=new PTS(0);
 
