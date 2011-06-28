@@ -8,7 +8,7 @@ export DH_VERBOSE=1
 PYVERS=$(shell pyversions -vr)
 PACKAGE_NAME=python-damaris
 MODULE_NAME=damaris
-PYBASE=$(shell pwd)/debian/${PACKAGE_NAME}
+PYBASE=$(CURDIR)/debian/${PACKAGE_NAME}
 DH_ALWAYS_EXCLUDE=CVS:.svn
 
 clean:
@@ -35,7 +35,7 @@ install: install-stamp
 
 install-stamp: build-stamp $(PYVERS:%=install-ext-%)
 install-ext-%:
-	python$* setup.py install --root $(PYBASE)
+	python$* setup.py install --root $(PYBASE) --install-layout=deb
 	echo "DAMARIS script: removing path to local installation"
 	-sed 's/^sys.path.insert(0,.*).*/# damaris package is found on default path/' <$(PYBASE)/usr/bin/DAMARIS >$(PYBASE)/usr/bin/DAMARIS.new
 	-mv $(PYBASE)/usr/bin/DAMARIS.new $(PYBASE)/usr/bin/DAMARIS
@@ -48,8 +48,7 @@ binary-indep: build install
 	dh_testroot -i
 	dh_installchangelogs -i
 	dh_installdocs -i
-	dh_pycentral
-	dh_python
+	dh_pysupport
 	dh_installmenu -i
 	dh_desktop -i
 	dh_compress -i -X.py
