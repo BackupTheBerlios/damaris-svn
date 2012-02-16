@@ -44,7 +44,7 @@ class BackendDriver(threading.Thread):
                 raise AssertionError("could not create backend's spool directory %s "%self.spool_dir)
         
         # remove stale state filenames
-        if sys.platform.startswith("linux"):
+        if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
             old_state_files=glob.glob(os.path.join(self.spool_dir,"*.state"))
             statelinepattern=re.compile("<state name=\"([^\"]+)\" pid=\"([^\"]+)\" starttime=\"([^\"]+)\">")
             for statefilename in old_state_files:
@@ -105,7 +105,7 @@ class BackendDriver(threading.Thread):
             return
 
         # start backend
-        if sys.platform.startswith("linux"):
+        if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
             self.core_input=subprocess.Popen([self.executable, "--spool", self.spool_dir],
                                              stdout=self.core_output,
                                              stderr=self.core_output)
