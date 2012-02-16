@@ -2,7 +2,7 @@
 
 from Resultable import Resultable
 from Drawable import Drawable
-from Accumulation import Accumulation
+from Signalpath import Signalpath
 from DamarisFFT import DamarisFFT
 import threading
 import numpy
@@ -19,7 +19,7 @@ import tables
 #                                                                           #
 #############################################################################
 
-class ADC_Result(Resultable, Drawable,DamarisFFT):
+class ADC_Result(Resultable, Drawable, DamarisFFT, Signalpath):
     def __init__(self, x = None, y = None, index = None, sampl_freq = None, desc = None, job_id = None, job_date = None):
         Resultable.__init__(self)
         Drawable.__init__(self)
