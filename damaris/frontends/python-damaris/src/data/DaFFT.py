@@ -1,3 +1,7 @@
+import warnings
+# enable warnings in Python 2.7
+warnings.simplefilter('default')
+warnings.warn("use of DaFFT is deprecated, please use the methods of Accumulation and ADC_data classes provided by DamarisFFT.", DeprecationWarning)
 import numpy as N
 import numpy.fft as F
 
