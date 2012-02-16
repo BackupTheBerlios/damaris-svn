@@ -38,7 +38,7 @@ import numpy
 # math graphics
 import matplotlib
 # force noninteractive and use of numpy
-matplotlib.rcParams["numerix"]="numpy"
+#matplotlib.rcParams["numerix"]="numpy"
 matplotlib.rcParams["interactive"]="False"
 matplotlib.rcParams["text.usetex"]="False"
 matplotlib.rcParams["axes.formatter.limits"]="-3,3"
@@ -1624,7 +1624,7 @@ class ConfigTab:
         self.defaultfilename = "damaris_config.xml"
         self.system_default_filename = None
         self.system_backend_folder = "/usr/lib/damaris/backends/"
-        if sys.platform[:5] == "linux":
+        if sys.platform[:5] == "linux" or "darwin":
             self.defaultfilename = os.path.expanduser("~/.damaris")
             self.system_default_filename = "/etc/damaris/python-damaris.conf"
 
@@ -1651,8 +1651,7 @@ operating system %(os)s
 gtk version %(gtk)s
 glib version %(glib)s
 python version %(python)s
-matplotlib version %(matplotlib)s, using %(matplotlib_numerix)s, %(matplotlib_backend)s
-numarray version %(numarray)s
+matplotlib version %(matplotlib)s, %(matplotlib_backend)s
 numpy version %(numpy)s
 pytables version %(pytables)s, using %(pytables_libs)s
 pygtk version %(pygtk)s
@@ -1675,23 +1674,13 @@ pygobject version %(pygobject)s
         else:
             numpy_version=numpy.__version__            
 
-        numarray_version="none"
-        try:
-            import numarray
-        except ImportError:
-            pass
-        else:
-            numarray_version=numarray.__version__            
-
         components_versions = {
             "os":         platform.platform() ,
             "gtk":        "%d.%d.%d"%gtk.gtk_version,
             "glib":       glib_version,
             "python":     sys.version ,
             "matplotlib": matplotlib.__version__,
-            "matplotlib_numerix": matplotlib.rcParams["numerix"],
             "matplotlib_backend": FigureCanvas.__name__[12:],
-            "numarray":   numarray_version,
             "numpy":      numpy_version,
             "pytables":   tables.getPyTablesVersion(),
             "pytables_libs": "",

@@ -274,7 +274,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                    <property name="adjustment">1 1 1 1 10 10</property>
+                    <property name="adjustment">1 1 1 1 10 0</property>
                     <property name="climb_rate">1</property>
                     <property name="numeric">True</property>
                     <signal name="value_changed" handler="on_experiment_script_line_textfield_value_changed"/>
@@ -293,7 +293,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                    <property name="adjustment">1 1 1 1 10 10</property>
+                    <property name="adjustment">1 1 1 1 10 0</property>
                     <property name="climb_rate">1</property>
                     <property name="snap_to_ticks">True</property>
                     <property name="numeric">True</property>
@@ -388,7 +388,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                    <property name="adjustment">1 1 1 1 10 10</property>
+                    <property name="adjustment">1 1 1 1 10 0</property>
                     <property name="climb_rate">1</property>
                     <property name="numeric">True</property>
                     <signal name="value_changed" handler="on_data_handling_line_textfield_value_changed"/>
@@ -407,7 +407,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="events">GDK_POINTER_MOTION_MASK | GDK_POINTER_MOTION_HINT_MASK | GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK</property>
-                    <property name="adjustment">1 1 1 1 10 10</property>
+                    <property name="adjustment">1 1 1 1 10 0</property>
                     <property name="climb_rate">1</property>
                     <property name="numeric">True</property>
                     <signal name="value_changed" handler="on_data_handling_column_textfield_value_changed"/>
@@ -1259,7 +1259,7 @@ log10</property>
                           <widget class="GtkSpinButton" id="CompRatio">
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
-                            <property name="adjustment">0 0 9 1 1 1</property>
+                            <property name="adjustment">0 0 9 1 1 0</property>
                             <property name="climb_rate">1</property>
                             <property name="numeric">True</property>
                           </widget>
