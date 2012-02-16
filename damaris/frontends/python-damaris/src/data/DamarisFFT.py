@@ -7,7 +7,7 @@ class DamarisFFT:
 		"""
 		Method for clipping data, only the timesignal between start and stop
 		is returned.
-		start and stop can be either time or frequency. The unit is automaticall determined
+		start and stop can be either time or frequency. The unit is automatically determined
 		"""
 		# check if start/stop order is properly
 		if start > stop:

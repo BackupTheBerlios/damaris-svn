@@ -12,6 +12,7 @@
 from Errorable import Errorable
 from Drawable import Drawable
 from DamarisFFT import DamarisFFT
+from Signalpath import Signalpath
 import sys
 import threading
 import types
@@ -19,7 +20,7 @@ import tables
 import numpy
 import datetime
 
-class Accumulation(Errorable, Drawable, DamarisFFT):
+class Accumulation(Errorable, Drawable, DamarisFFT, Signalpath):
     def __init__(self, x = None, y = None, y_2 = None, n = None, index = None, sampl_freq = None, error = False):
         Errorable.__init__(self)
         Drawable.__init__(self)
