@@ -1,7 +1,13 @@
 import numpy as N
+import numbers
+
+def lin_range(start,stop,step):
+	if isinstance(step, numbers.Integral):
+		return N.linspace(start,stop,step)
+	else:
+		return N.arange(start,stop,step)
 
 
-lin_range = N.arange
 
 def log_range(start, stop, stepno):
 	if (start<=0 or stop<=0 or stepno<1):

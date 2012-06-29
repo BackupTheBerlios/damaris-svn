@@ -187,6 +187,11 @@ class MeasurementResult(Drawable.Drawable, UserDict.UserDict):
         e=numpy.array(map(lambda key: self.data[key].mean_error(), k), dtype="Float64")
         return [k,v,e]
 
+    def get_lineplotdata(self):
+        k=self.get_xdata()
+        v=numpy.array(self.y, dtype="Float64") 
+        return [k, v]
+
     def uses_statistics(self):
         """
         drawable interface method, returns True

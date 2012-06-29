@@ -2694,7 +2694,15 @@ class MonitorWidgets:
 
                     self.__rescale=False
 
-                self.measurementresultgraph=self.matplot_axes.errorbar(x=k, y=v, yerr=e, fmt="b+")
+                self.measurementresultgraph=self.matplot_axes.errorbar(x=k, y=v, yerr=e, fmt="bx")
+            
+            #------------added by Oleg Petrov, 29 February 2012 ---------------
+
+            [k,v]=in_result.get_lineplotdata()
+            if k.shape[0]!=0 and v.shape==k.shape:  
+                self.matplot_axes.plot(k, v, 'b-')
+
+            #------------------------------------------------------------------ 
 
             # Any title to be set?
             title=in_result.get_title()+""

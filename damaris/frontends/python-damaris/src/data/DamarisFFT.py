@@ -59,7 +59,7 @@ class DamarisFFT:
 		# rather modify the object
 		n = int(self.x.size*last_part)
 		for ch in xrange(len(self.y)):
-			self.y[ch] -= self.y[ch][:-n].mean()
+			self.y[ch] -= self.y[ch][-n:].mean()
 		# Skip the following due to design reasons
 		# new_object.was_copied = True
 		return self
@@ -82,26 +82,25 @@ class DamarisFFT:
 		"""
 		exponential window
 		"""
-		apod = numpy.exp(-numpy.arange(self.x.size)*line_broadening)
-		print apod
+                apod = numpy.exp(-self.x*numpy.pi*line_broadening)
 		for i in range(2):
 			self.y[i] = self.y[i]*apod
 		return self
 
     def gauss_window(self, line_broadening=10):
-		apod = numpy.exp(-(numpy.arange(self.x.size)*line_broadening)**2)
+		apod = numpy.exp(-(self.x*line_broadening)**2)
 		for i in range(2):
 			self.y[i] = self.y[i]*apod
 		return self
 
     def dexp_window(self, line_broadening=-10, gaussian_multiplicator=0.3):
-		apod = numpy.exp(-(numpy.arange(self.x.size)*line_broadening - gaussian_multiplicator*self.x.max())**2)
+		apod = numpy.exp(-(self.x*line_broadening - gaussian_multiplicator*self.x.max())**2)
 		for i in range(2):
 			self.y[i] = self.y[i]*apod 
 		return self
 
     def traf_window(self, line_broadening=10):
-		apod = (numpy.exp(-numpy.arange(self.x.size)*line_broadening))**2 / ( (numpy.exp(-numpy.arange(self.x.size)*line_broadening))**3 
+		apod = (numpy.exp(-self.x*line_broadening))**2 / ( (numpy.exp(-self.x*line_broadening))**3 
 		+ (numpy.exp(-self.x.max()*line_broadening))**3  )
 		for i in range(2):
 			self.y[i] = self.y[i]*apod
@@ -182,7 +181,8 @@ class DamarisFFT:
 		fft_of_signal = numpy.fft.fft(self.y[0] + 1j*self.y[1], n=samples)
 		fft_of_signal = numpy.fft.fftshift(fft_of_signal)
 		dwell = 1.0/self.sampling_rate
-		fft_frequencies = numpy.fft.fftfreq(self.x.size, dwell)
+                n = fft_of_signal.size
+                fft_frequencies = numpy.fft.fftfreq(n, dwell)
 		self.x = numpy.fft.fftshift(fft_frequencies)
 		self.y[0] = fft_of_signal.real
 		self.y[1] = fft_of_signal.imag

@@ -75,7 +75,7 @@ class Drawable:
 
     def set_style(self, channel, value):
         "Sets a channel to a certain plot-style"
-        if self.styles.has_key(key):
+        if self.styles.has_key(channel):
             print "Drawable Warning: Style key \"%s\" will be overwritten with \"%s\"" % (str(channel), str(value))
 
         self.styles[channel] = str(value)

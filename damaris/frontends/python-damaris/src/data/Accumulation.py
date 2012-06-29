@@ -235,6 +235,37 @@ class Accumulation(Errorable, Drawable, DamarisFFT, Signalpath):
             xdata=yerr=ydata=None
         finally:
             self.lock.release()
+            
+    def write_to_simpson(self, destination=sys.stdout, delimiter=" "):
+        """
+        writes the data to a text file or sys.stdout in Simpson format,
+        for further processing with the NMRnotebook software;
+        destination can be a file or a filename
+        """
+        # write sorted
+        the_destination=destination
+        if type(destination) in types.StringTypes:
+            the_destination=file(destination, "w")
+  
+        self.lock.acquire()
+        try:
+            xdata=self.get_xdata()
+            the_destination.write("SIMP\n")
+            the_destination.write("%s%i%s"%("NP=", len(xdata), "\n"))
+            the_destination.write("%s%i%s"%("SW=", self.get_sampling_rate(), "\n"))
+            the_destination.write("TYPE=FID\n")
+            the_destination.write("DATA\n")
+            ch_no=self.get_number_of_channels()
+            ydata=map(self.get_ydata, xrange(ch_no))
+            for i in xrange(len(xdata)):
+                for j in xrange(ch_no):
+                    the_destination.write("%g%s"%(ydata[j][i], delimiter))
+                the_destination.write("\n")
+            the_destination.write("END\n")
+            the_destination=None
+            xdata=ydata=None
+        finally:
+            self.lock.release()        
 
     def write_to_hdf(self, hdffile, where, name, title, complib=None, complevel=None):
         accu_group=hdffile.createGroup(where=where,name=name,title=title)

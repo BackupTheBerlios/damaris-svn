@@ -263,7 +263,6 @@ class Experiment:
         "Sets a description"
         if key in self.description.keys():
             print 'Warning: Overwriting existing description "%s" = "%s" with "%s"' % (key, self.description[key], value)
-
         self.description[key] = value
 
     def set_pts_local(self):

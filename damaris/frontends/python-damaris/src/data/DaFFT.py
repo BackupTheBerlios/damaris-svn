@@ -39,7 +39,7 @@ class FFT:
 		"""
 		last_points = int(cutoff*self.data_points)
 		for i in range(2):
-			self.the_result.y[i] = self.the_result.y[i] - self.the_result.y[i][:-last_points].mean()
+			self.the_result.y[i] = self.the_result.y[i] - self.the_result.y[i][-last_points:].mean()
 		if show == 1 :
 			return self.the_result
 		return self
