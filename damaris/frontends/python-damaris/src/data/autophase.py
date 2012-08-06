@@ -60,4 +60,4 @@ def get_phase(result_object):
 						disp=0)
 	result_object.y[0] = real*N.cos(xopt) - imag*N.sin(xopt)
 	result_object.y[1] = real*N.sin(xopt) + imag*N.cos(xopt)
-	return 
+	return result_object 

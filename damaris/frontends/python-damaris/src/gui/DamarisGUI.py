@@ -1977,6 +1977,7 @@ class MonitorWidgets:
         self.display_x_scaling_combobox.remove_text(1) # remove base-e log
         self.display_x_scaling_combobox.set_sensitive(False)
         self.display_y_scaling_combobox = self.xml_gui.get_widget("display_y_scaling_combobox")
+        self.display_y_scaling_combobox.remove_text(1) # remove base-e log
         self.display_y_scaling_combobox.set_sensitive(False)
         self.display_autoscaling_checkbutton = self.xml_gui.get_widget("display_autoscaling_checkbutton")
         self.display_statistics_checkbutton = self.xml_gui.get_widget("display_statistics_checkbutton")
@@ -2035,14 +2036,14 @@ class MonitorWidgets:
         self.display_x_scaling_combobox.set_active(0)
         self.display_y_scaling_combobox.set_active(0)
         self.display_x_scaling_combobox.set_sensitive(True)
-        self.display_y_scaling_combobox.set_sensitive(False)
+        self.display_y_scaling_combobox.set_sensitive(True)
 
         # and events...
         self.display_source_combobox.connect("changed", self.display_source_changed_event)
         self.xml_gui.signal_connect("on_display_autoscaling_checkbutton_toggled", self.display_autoscaling_toggled)
         self.xml_gui.signal_connect("on_display_statistics_checkbutton_toggled", self.display_statistics_toggled)
-        self.xml_gui.signal_connect("on_display_x_scaling_combobox_changed", self.display_x_scaling_changed)
-        #self.xml_gui.signal_connect("on_display_y_scaling_combobox_changed", self.display_y_scaling_changed)
+        self.xml_gui.signal_connect("on_display_x_scaling_combobox_changed", self.display_scaling_changed)
+        self.xml_gui.signal_connect("on_display_y_scaling_combobox_changed", self.display_scaling_changed)
         self.xml_gui.signal_connect("on_display_save_data_as_text_button_clicked", self.save_display_data_as_text)
         self.xml_gui.signal_connect("on_display_copy_data_to_clipboard_button_clicked", self.copy_display_data_to_clipboard)
 
@@ -2347,7 +2348,7 @@ class MonitorWidgets:
         if self.displayed_data[0] is not None:
             self.update_display(self.displayed_data[0][:])
 
-    def display_x_scaling_changed(self, widget, data=None):
+    def display_scaling_changed(self, widget, data=None):
         self.__rescale=True
         if self.displayed_data[0] is not None:
             self.update_display(self.displayed_data[0][:])
@@ -2655,6 +2656,16 @@ class MonitorWidgets:
                         self.__rescale=True
                         # and reset to linear
                         self.display_x_scaling_combobox.set_active(0)
+                if ymin>0:
+                    self.display_y_scaling_combobox.set_sensitive(True)
+                else:
+                    # force switch to lin scale
+                    self.display_y_scaling_combobox.set_sensitive(False)
+                    if self.display_y_scaling_combobox.get_active_text()!="lin":
+                        self.__rescale=True
+                        # and reset to linear
+                        self.display_y_scaling_combobox.set_active(0)
+
                 x_scale=self.display_x_scaling_combobox.get_active_text()
                 y_scale=self.display_y_scaling_combobox.get_active_text()
 
@@ -2691,6 +2702,9 @@ class MonitorWidgets:
                     #elif x_scale=="log" and xmin>0:
                     # e scaling implementation not really useful
                     #    self.matplot_axes.set_xscale("log", basex=numpy.e)
+                    if y_scale=="log10" and ymin>0:
+                        self.matplot_axes.set_yscale("log", basex=10.0)
+                        self.matplot_axes.fmt_ydata = lambda x: "%g" % x
 
                     self.__rescale=False
 
