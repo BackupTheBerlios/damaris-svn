@@ -16,7 +16,7 @@
    Uses:
      \li Spincore Pulseblaster 24 Bit (SP 17) which has a reference clock with 50 MHz
      \li Spectrum MI4021 with gated sampling option (PB ref. clock is fed to Ext.Clock, impedance set to 1 MOhm)
-     \li Programmed Test Sources PTS 500 frequency synthesizer with phase control (0.36 degrees step size)
+     \li Programmed Test Sources PTS 310 frequency synthesizer with phase control (0.225 degrees step size)
      
 
    \par Starting the hardware
@@ -42,13 +42,13 @@ public:
       /* trigger on line 22 */
       trigger.ttls=1<<22; 
       int ext_reference_clock = (int) 50e6; // 50 MHz from PB24 SP17; defaults to 100MHz (PB24 SP 2)
-      double impedance = 1e6; // Ohm ( or 50 Ohm)
+      double impedance = 50; // Ohm ( or 50 Ohm)
       my_adc=new SpectrumMI40xxSeries(trigger, impedance, ext_reference_clock);
       // device_id=0, clock=100MHz, sync_mask: Bit 23
       my_pulseblaster=new SpinCorePulseBlaster24Bit(0,1e8,1<<23);
       my_pts=new PTS_latched(0);
       // PTS 500 has 0.36 ;  PTS 310 has 0.225 degrees/step
-      my_pts->phase_step=0.36;
+      my_pts->phase_step=0.225;
 
       // publish devices
       the_pg=my_pulseblaster;
