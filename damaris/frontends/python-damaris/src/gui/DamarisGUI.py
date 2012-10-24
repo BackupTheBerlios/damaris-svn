@@ -620,6 +620,8 @@ class DamarisGUI:
                 if cummulated_size>(1<<30):
                     print "Warning: the cummulated backups size of '%s' is %d MByte"%(self.dump_filename,
                                                                                       cummulated_size/(1<<20))
+                # init is finnished now
+                
         # now it's time to create the hdf file
 	dump_file=None
         if not os.path.isfile(self.dump_filename):
@@ -2200,6 +2202,10 @@ class MonitorWidgets:
                 self.update_counter_lock.release()
                 gobject.idle_add(self.datapool_idle_listener,event,priority=gobject.PRIORITY_DEFAULT_IDLE)
 
+        if event.what in [DataPool.Event.updated_value, DataPool.Event.new_key]:
+            print "Update hdf5 file ..."
+            pass
+
         del displayed_object
         del object_to_display
 
@@ -2450,6 +2456,14 @@ class MonitorWidgets:
         self.display_y_scaling_combobox.set_sensitive(False)
         if not hasattr(self, "__rescale"):
             self.__rescale = True
+
+        if not hasattr(self,"measurementresultline"):
+            self.measurementresultline=None
+        elif self.measurementresultline is not None:
+           # clear line plot
+           self.matplot_axes.lines.remove(self.measurementresultline[0])
+           self.measurementresultline=None
+
         if not hasattr(self,"measurementresultgraph"):
             self.measurementresultgraph=None
         elif self.measurementresultgraph is not None:
@@ -2642,6 +2656,11 @@ class MonitorWidgets:
                     self.matplot_axes.collections.remove(l)
                 self.measurementresultgraph=None
 
+                if self.measurementresultline is not None:
+                    self.matplot_axes.lines.remove(self.measurementresultline[0])
+                    self.measurementresultline=None
+
+
             [k,v,e]=in_result.get_errorplotdata()
             if k.shape[0]!=0:
                 xmin=k.min()
@@ -2710,13 +2729,11 @@ class MonitorWidgets:
 
                 self.measurementresultgraph=self.matplot_axes.errorbar(x=k, y=v, yerr=e, fmt="bx")
             
-            #------------added by Oleg Petrov, 29 February 2012 ---------------
 
             [k,v]=in_result.get_lineplotdata()
             if k.shape[0]!=0 and v.shape==k.shape:  
-                self.matplot_axes.plot(k, v, 'b-')
+                self.measurementresultline = self.matplot_axes.plot(k, v, 'r-')
 
-            #------------------------------------------------------------------ 
 
             # Any title to be set?
             title=in_result.get_title()+""
