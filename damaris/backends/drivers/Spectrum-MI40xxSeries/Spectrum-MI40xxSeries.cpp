@@ -28,6 +28,7 @@ void SpectrumMI40xxSeries::Configuration::print(FILE* f) {
   else
     fprintf(f, "  No Data to acquire\n");
   fprintf(f, "  Impedance %f Ohm, Sensitivity %f V, Coupling %s\n", impedance, sensitivity, (coupling==0)?"DC":"AC");    
+  fprintf(f, "  Channels: %s %s %s %s\n", "1","2","3","4"  );    
 }
 
 
@@ -142,7 +143,7 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
     settings.timeout=0.0;
 
     /* loop over all states and sequences */
-    for (state_sequent::iterator i=exp.begin();i!=exp.end(); ++i) {
+    for (state_sequent::iterator i=exp.begin(); i!=exp.end(); ++i) {
 	
 	state* a_state=dynamic_cast<state*>(*i);
 	if (a_state==NULL)
@@ -211,20 +212,37 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 		}
 
 		// calculate the time required
-		double delayed_gating_time;
+		double delayed_gating_time=0.0;
 		// the gating time has an offset, which was found to be 1.5 dwelltimes for <2.5MHz and 4.5 dwelltimes for >=2.5MHz
 		double gating_time;
-		if (settings.samplefreq<2.5e6) {
-		  // if sampling rate is <2.5MHz, there is another data handling mode,
-		  // we have to wait 6 dwelltimes before the gating pulse
-		  // see MI4021 manual page 79: "Accquisition Delay: -6 Samples"
-		  // it might be necessary to add 0.1 dwelltime to shift the sampling start a little more...
-		  gating_time=(inputs.front()->samples+1.5)/settings.samplefreq;
-		  delayed_gating_time=ceil(1e8*6.0/settings.samplefreq)/1e8;
+		fprintf(stderr, "Channels: %d\n", settings.channels);
+		if ( settings.channels==(CHANNEL0|CHANNEL1) || settings.channels==(CHANNEL0|CHANNEL1|CHANNEL2|CHANNEL3) )  {
+                  fprintf(stderr, "Default Channels\n");
+		  if (settings.samplefreq<2.5e6) {
+		    // if sampling rate is <2.5MHz, there is another data handling mode,
+		    // see MI4021 manual page 79: "Accquisition Delay: -6 Samples"
+		    // it might be necessary to add 0.1 dwelltime to shift the sampling start a little more...
+		    gating_time=(inputs.front()->samples+1.5)/settings.samplefreq;
+		    delayed_gating_time=ceil(1e8*6.0/settings.samplefreq)/1e8;
+		  }
+		  else {
+		    gating_time=(inputs.front()->samples+4.5)/settings.samplefreq;
+		    delayed_gating_time=0.0;
+		  }
 		}
+                else if (settings.channels==CHANNEL0 || settings.channels==(CHANNEL0|CHANNEL2) )  {
+                  fprintf(stderr, "Weird Channels\n");
+		  if (settings.samplefreq<5e6) {
+		    gating_time=(inputs.front()->samples+1.5)/settings.samplefreq;
+		    delayed_gating_time=ceil(1e8*6.0/settings.samplefreq)/1e8;
+		  }
+		  else {
+		    gating_time=(inputs.front()->samples+4.5)/settings.samplefreq;
+		    delayed_gating_time=-ceil(1e8*7.0/settings.samplefreq)/1e8;
+                  }
+                }
 		else {
-		  gating_time=(inputs.front()->samples+4.5)/settings.samplefreq;
-		  delayed_gating_time=0.0;
+		throw SpectrumMI40xxSeries_error("Selected channels combination not allowed");
 		}
 		
 		gating_time=round(1e8*gating_time)/1e8;
@@ -238,17 +256,51 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 			   settings.samplefreq,
 			   time_required,
 			   a_state->length);
-		  throw ADC_exception(std::string("state is shorter than acquisition time")+parameter_info);
+		  //throw ADC_exception(std::string("state is shorter than acquisition time")+parameter_info);
 		}
-
-		// if necessary, add the gating pulse delay...
-		if (delayed_gating_time!=0.0) {
-		  state* delayed_gating_state=new state(*a_state);
-		  delayed_gating_state->length=delayed_gating_time;
-		  // insert before me
-		  exp.insert(i,(state_atom*)delayed_gating_state);
+               // if necessary, add the gating pulse delay...
+               if (delayed_gating_time>0.0) {
+                 state* delayed_gating_state=new state(*a_state);
+                 delayed_gating_state->length=delayed_gating_time;
+                 // insert before me
+                 exp.insert(i,(state_atom*)delayed_gating_state);
 		}
+                else if (delayed_gating_time < 0.0)  {
+                /*
+		For +samples delays
 
+                1. get the previous state
+                2. if the length is not long enough (6*dw) add the state before
+                3. split the state(s) so that we have the gating on 6*dw before the actual recording
+                */
+                  double rest_length = delayed_gating_time;
+                  state_sequent::iterator i_prev;
+                  state* prev_state;
+		  i_prev = i;
+		  do {
+		    i_prev--;
+		    prev_state = dynamic_cast<state*>(*(i_prev));
+                    rest_length -= prev_state->length;
+		    fprintf(stderr, "DW rest_length: %g\n", rest_length);
+		    fprintf(stderr, "DW state_length: %g\n", prev_state->length);
+		    if (rest_length >= 0)
+		      prev_state->push_back(trigger_line.copy_new()); // add trigger to this state
+		    else { // split final state
+		      state* prev_state_1 = prev_state->copy_flat(); //create copy of current state
+		      prev_state_1->length += rest_length; // adjust 1st part length
+		      exp.insert(i_prev,(state_atom*) prev_state_1); // insert AFTER prev_state
+		      prev_state->length = -rest_length; // adjust 2nd part length
+		      prev_state->push_back(trigger_line.copy_new()); // add trigger to 2nd part
+		      break;
+		    }
+                  
+		  } while (i_prev!=exp.begin() || rest_length > 0.0);
+		}
+		# if SPC_DEBUG
+		  fprintf(stderr, "sequence after pre_gate correction:\n");
+		  xml_state_writer().write_states(stderr, exp);
+		# endif
+			
 		// adapt the pulse program for gated sampling
 		if (a_state->length == gating_time) {
 		  // state has proper length
@@ -265,7 +317,6 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 		  // shorten this state
 		  a_state->length-=time_required;
 		}
-
 		/* save sampleno */
 		DataManagementNode* new_one=new DataManagementNode(new_branch);
 		new_one->n=inputs.front()->samples;
@@ -305,7 +356,9 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 
     settings.timeout*=exp.repeat;
     settings.timeout+=parent_timeout;
+#ifdef SPC_DEBUG
     fprintf(stderr,"setting.timout %g\n",settings.timeout);
+#endif
     return;
 }
 
@@ -341,6 +394,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   if (conf->samplefreq<=0) conf->samplefreq=default_settings.samplefreq;
   if (conf->impedance<=0) conf->impedance=default_settings.impedance;
   if (conf->sensitivity<=0) conf->sensitivity=default_settings.sensitivity;
+  if (conf->channels<=0) conf->channels=default_settings.channels;
 
   size_t sampleno=(conf->data_structure==NULL)?0:conf->data_structure->size();
 
@@ -357,10 +411,14 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
      else
          conf->sensitivity=10.0; // dto.
   }
-
+  /* Limit for 50 Ohm impedance is 5 V sensitivity */
+  if (conf->impedance==50.0 && conf->sensitivity>=5.0) {
+      delete conf;
+      throw SpectrumMI40xxSeries_error("Imepdance is set to 50 Ohms, sensitivity has to be lower than 5 V");
+  }
   if (sampleno<16 || sampleno%16!=0) {
       delete conf;
-      throw SpectrumMI40xxSeries_error("total number of samples must be multiple of 16 and at least 16");
+      throw SpectrumMI40xxSeries_error("Total number of samples must be multiple of 16 and at least 16");
   }
 
   effective_settings=conf;
@@ -372,7 +430,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
 
   /* make a check, whether spectrum board is running */
   int actual_status=0;
-  SpcGetParam(deviceno, SPC_STATUS, &actual_status);
+  SpcGetParam (deviceno, SPC_STATUS, &actual_status);
   if (actual_status!=SPC_READY) {
       fprintf(stderr, "Warning: Spectrum board was/is running before starting data aquisition.\n");
       SpcSetParam (deviceno, SPC_COMMAND,      SPC_STOP);     // stop the board
@@ -389,6 +447,9 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   }
 
   SpcSetParam (deviceno, SPC_CHENABLE,            CHANNEL0 | CHANNEL1); // Enable channels for recording
+  int activated_channels;
+  SpcGetParam (deviceno, SPC_CHENABLE, &activated_channels);
+
   SpcSetParam (deviceno, SPC_SAMPLERATE,          (int)floor(effective_settings->samplefreq));      // Samplerate
 
   // decide for aquisition mode and start it
@@ -536,7 +597,7 @@ int SpectrumMI40xxSeries::TimeoutThread() {
 	//pthread_attr_destroy(&timeout_pt_attrs);
 	free(fifo_adc_data);
         fifo_adc_data=NULL;
-	//throw SpectrumMI40xxSeries_error("timout occured while collecting data");
+	throw SpectrumMI40xxSeries_error("timout occured while collecting data");
 	return 0;
       }
 #if SPC_DEBUG
@@ -607,34 +668,51 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
 	stopwatch adc_timer;
 	adc_timer.start();
 	int adc_status, i;
+	double elapsed_time=0;
+        /*
+        The gate-end signal can only be recognized at an eigth samples alignement.
+        The board can record up to 7 more samples and the timeout has to be allowed to be longer
+        */
+        double post_gate_maxtime=(1e8*7.5/effective_settings->samplefreq)/1e8;
 	i = 0;
 	SpcGetParam(deviceno, SPC_STATUS, &adc_status);
-	while (core::term_signal==0 && adc_status!=SPC_READY && adc_timer.elapsed()<=effective_settings->timeout) {
+        /* 
+	Sometimes the timeout is not enough, the reason could be that the timer 
+	starts running before the actual start of the pulse program because the OS is not loading and starting 
+        the pulseblaster immediatly. It is not possible to 
+	synchronize the timers for now. 
+	Thus, we add a generous 1s to the timeout to be on the safe side. One second ought to be enoug for everybody!
+	*/
+	while (core::term_signal==0 && adc_status!=SPC_READY && elapsed_time<=(effective_settings->timeout + post_gate_maxtime + 1.0) ) {
 	  timespec sleeptime;
-	  sleeptime.tv_nsec=10*1000*1000; // 10 ms
+	  sleeptime.tv_nsec=50*1000*1000; // 10 ms
 	  sleeptime.tv_sec=0;
 	  nanosleep(&sleeptime,NULL);
 	  SpcGetParam(deviceno, SPC_STATUS, &adc_status);
-
+          elapsed_time=adc_timer.elapsed();
 #if SPC_DEBUG
-	  fprintf(stderr, "while loop %i NORMAL (adc_s, adc_t, effective_timeout core.term): %i %g %g %i\n",i,adc_status, adc_timer.elapsed(), effective_settings->timeout, core::term_signal);
+	  fprintf(stderr, "loop %i NORMAL (adc_s, t, t_out, post_gate, core): %i %g %g %g %i\n",i,adc_status, elapsed_time, effective_settings->timeout, post_gate_maxtime, core::term_signal);
 #endif
 	  i++;
 	}
-	SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
-	if (core::term_signal!=0) {
-	    free(adc_data);
-	    return NULL;
-	}
-	SpcGetParam(deviceno, SPC_STATUS, &adc_status);
 #if SPC_DEBUG
-    	fprintf(stderr, "adc_status after while loop: %i \n",adc_status );
+	fprintf(stderr, "loop stopped NORMAL (adc_s, t, t_out, core): %i %g %g %i\n",adc_status, elapsed_time, effective_settings->timeout, core::term_signal);
 #endif
+        /* card ready to transfer samples */
 	if (adc_status!=SPC_READY) {
 	    free(adc_data);
 	    fprintf(stderr, "adc_status not ready: %i \n",adc_status );
 	    throw SpectrumMI40xxSeries_error("timeout occured while collecting data");
 	}
+	SpcSetParam(deviceno, SPC_COMMAND, SPC_STOP);
+	if (core::term_signal!=0) {
+#if SPC_DEBUG
+	    fprintf(stderr, "received core::term_signal %i\n",core::term_signal);
+#endif
+	    free(adc_data);
+	    return NULL;
+	}
+	// SpcGetParam(deviceno, SPC_STATUS, &adc_status); // this seems to be always SPC_READY after SPC_STOP and negates following test!
     
 # if defined __linux__
 	size_t data_length=SpcGetData (deviceno, 0, 0, 2 * sampleno, 2, (dataptr) adc_data);

@@ -105,6 +105,8 @@ class SpectrumMI40xxSeries: public ADC {
       int coupling;
       /** external reference clock **/
       int ext_reference_clock;
+      /* Bitwise OR of channels */
+      int channels;
 
       /** print data for debug purpose  */
       void print(FILE* f);
@@ -116,6 +118,7 @@ class SpectrumMI40xxSeries: public ADC {
 	sensitivity=0;
 	coupling=0;
 	ext_reference_clock=0; 
+	channels=(CHANNEL0|CHANNEL1);
 	data_structure=NULL;
       }
 
@@ -126,6 +129,7 @@ class SpectrumMI40xxSeries: public ADC {
 	sensitivity=orig.sensitivity;
 	coupling=orig.coupling;
 	ext_reference_clock=orig.ext_reference_clock;
+	channels=orig.channels;
 	if (orig.data_structure==NULL) data_structure=NULL;
 	else data_structure=new DataManagementNode(*orig.data_structure);
       }
