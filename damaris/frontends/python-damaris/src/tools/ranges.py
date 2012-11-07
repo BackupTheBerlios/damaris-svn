@@ -1,10 +1,18 @@
 import numpy as N
-import numbers
+import sys
+if sys.version_info > (2,6,0):
+	import numbers
+else:
+	pass
 
-def lin_range(start,stop,step):
-	if isinstance(step, numbers.Integral):
-		return N.linspace(start,stop,step)
-	else:
+if sys.version_info > (2,6,0):
+	def lin_range(start,stop,step):
+		if isinstance(step, numbers.Integral):
+			return N.linspace(start,stop,step)
+		else:
+			return N.arange(start,stop,step)
+else:
+	def lin_range(start,stop,step):
 		return N.arange(start,stop,step)
 
 

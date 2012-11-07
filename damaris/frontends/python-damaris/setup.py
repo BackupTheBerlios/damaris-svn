@@ -10,6 +10,10 @@ from distutils import log
 from distutils.util import convert_path
 from distutils.dep_util import newer
 
+#if sys.version_info < (2, 5, 3):
+#    log.error("**** ERROR: Install manually: python setup.py install ****")
+#    raise ValueError
+
 class build_damaris_scripts(_build_scripts):
 
     #user_options=_build_scripts.user_options[:]
@@ -89,7 +93,7 @@ GPL_LICENCE = "feed licence here"
 
 setup (
     name = 'python-damaris',
-    version = "0.10",
+    version = "0.13",
     description = 'python frontend for DAMARIS (DArmstadt MAgnetic Resonance Instrument Software)',
     long_description = LONG_DESCRIPTION,
     author = 'Achim Gaedke',

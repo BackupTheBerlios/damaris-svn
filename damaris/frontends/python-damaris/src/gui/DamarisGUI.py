@@ -2203,7 +2203,8 @@ class MonitorWidgets:
                 gobject.idle_add(self.datapool_idle_listener,event,priority=gobject.PRIORITY_DEFAULT_IDLE)
 
         if event.what in [DataPool.Event.updated_value, DataPool.Event.new_key]:
-            print "Update hdf5 file ..."
+            #print "Update hdf5 file ..."
+            # TODO: incremental hdf5 update
             pass
 
         del displayed_object
