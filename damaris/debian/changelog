@@ -1,3 +1,13 @@
+damaris (0.14) experimental; urgency=low
+
+  * MI40xx driver bugs:
+    - pre-gating implemented for other configurations according to the manual
+    - ADC_Excpetion is thrown if a timeout occured 
+    - timeout is now correct, no need to add extra time in frontend:
+      the card records upto 7 samples more after gating stops
+
+ -- Markus Rosenstihl <Markus.Rosenstihl@physik.tu-darmstadt.de>  Thu, 01 Nov 2012 09:52:51 +0100
+
 damaris (0.13-0) experimental; urgency=low
   * Packages are compiling now on squeeze (and Ubuntu 10.04)
   * fixed /sbin/udevsettle (lenny) vs /sbin/udevadm settle (squeeze) in init script

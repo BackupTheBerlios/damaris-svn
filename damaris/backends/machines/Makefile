@@ -8,7 +8,7 @@
 
 CXX=g++
 CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic
-CXXCPPFLAGS= -I. -I..
+CXXCPPFLAGS= -I. -I.. 
 LDFLAGS=
 LIBS=-lexpat -lxerces-c -lm
 
