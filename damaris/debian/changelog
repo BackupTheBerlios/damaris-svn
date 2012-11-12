@@ -1,10 +1,12 @@
-damaris (0.14) experimental; urgency=low
+damaris (0.14-svn) experimental; urgency=low
 
   * MI40xx driver bugs:
     - pre-gating implemented for other configurations according to the manual
     - ADC_Excpetion is thrown if a timeout occured 
     - timeout is now correct, no need to add extra time in frontend:
       the card records upto 7 samples more after gating stops
+  * "general" backend: configurable via glib KeyValue config file (follows XDG standard)
+  * added glib-2.0 dependcy for configuration file
 
  -- Markus Rosenstihl <Markus.Rosenstihl@physik.tu-darmstadt.de>  Thu, 01 Nov 2012 09:52:51 +0100
 

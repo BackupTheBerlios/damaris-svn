@@ -93,7 +93,7 @@ GPL_LICENCE = "feed licence here"
 
 setup (
     name = 'python-damaris',
-    version = "0.13",
+    version = "0.14-svn",
     description = 'python frontend for DAMARIS (DArmstadt MAgnetic Resonance Instrument Software)',
     long_description = LONG_DESCRIPTION,
     author = 'Achim Gaedke',

@@ -8,9 +8,9 @@
 
 CXX=g++
 CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic
-CXXCPPFLAGS= -I. -I.. 
+CXXCPPFLAGS= -I. -I.. `pkg-config --cflags glib-2.0`
 LDFLAGS=
-LIBS=-lexpat -lxerces-c -lm
+LIBS=-lexpat -lxerces-c -lm `pkg-config --libs glib-2.0`
 
 EXEEXT = .exe
 
@@ -25,7 +25,8 @@ MACHINES = \
 	bg_backend \
 	Mobilecore$(EXEEXT) \
 	Mobile_wo_sync_backend$(EXEEXT) \
-	berta$(EXEEXT)
+	berta \
+	general
 
 DRV_SPC_MI40xx    = ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a
 DRV_PTS           = ../drivers/PTS-Synthesizer/PTS.o
@@ -228,7 +229,7 @@ fc2_backend.o: fc2_backend.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h ../drivers/Tecmag-DAC20/DAC20.h\
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
 
-berta$(EXEEXT): berta.o \
+berta: berta.o \
 		hardware.o \
 		$(DRV_SPC_MI40xx) \
 		$(DRV_PTS) \
@@ -252,3 +253,14 @@ fc1neu_backend$(EXEEXT): fc1neu_backend.o \
 fc1neu_backend.o: fc1neu_backend.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h ../drivers/Tecmag-DAC20/DAC20.h\
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+
+general: general.o \
+		hardware.o \
+		$(DRV_SPC_MI40xx) \
+		$(DRV_PTS) \
+		$(DRV_PB_24BIT) $(DRV_PB) $(DRV_PB_PROG) \
+		../core/core.a
+	@$(LINK_MACHINE) $^ $(LIBS) -o $@ -lpthread 
+
+general.o: general.cpp \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \

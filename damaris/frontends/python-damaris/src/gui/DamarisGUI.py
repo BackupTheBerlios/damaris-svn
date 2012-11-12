@@ -13,6 +13,7 @@ import types
 import xml.parsers.expat
 import threading
 import webbrowser
+import xdg.BaseDirectory
 
 # import 3rd party modules
 # gui graphics
@@ -75,7 +76,7 @@ from damaris.data import DataPool, Accumulation, ADC_Result, MeasurementResult
 debug=False
 
 # version info
-__version__="0.13-svn"
+__version__="0.14-svn"
 
 class logstream:
     gui_log=None
@@ -1623,12 +1624,14 @@ class ConfigTab:
     def __init__(self, xml_gui):
         self.xml_gui=xml_gui
 
-        self.defaultfilename = "damaris_config.xml"
+        self.configname = "damaris/python-damaris.xml"
         self.system_default_filename = None
         self.system_backend_folder = "/usr/lib/damaris/backends/"
         if sys.platform[:5] == "linux" or "darwin":
-            self.defaultfilename = os.path.expanduser("~/.damaris")
-            self.system_default_filename = "/etc/damaris/python-damaris.conf"
+            xdg_dirs = xdg.BaseDirectory.xdg_config_dirs
+            xdg_dirs.remove(xdg.BaseDirectory.xdg_config_home)
+            self.user_default_filename = os.path.join(xdg.BaseDirectory.xdg_config_home, self.configname)
+            self.system_default_filenames = [os.path.join(syscfg,self.configname) for syscfg in xdg_dirs]
 
         self.config_start_backend_checkbutton=self.xml_gui.get_widget("start_backend_checkbutton")
         self.config_backend_executable_entry=self.xml_gui.get_widget("backend_executable_entry")
@@ -1732,12 +1735,12 @@ pygobject version %(pygobject)s
                                     self.browse_backend_executable_dialog)
         self.xml_gui.signal_connect("on_fontbutton_font_set",self.set_script_font_handler)
         self.xml_gui.signal_connect("on_printer_setup_button_clicked", self.printer_setup_handler)
-
-        if self.system_default_filename:
-	    if os.access(self.system_default_filename, os.R_OK):
-                self.load_config(self.system_default_filename)
-	    else:
-		print "can not read system defaults from %s, ask your instrument responsible if required"%self.system_default_filename
+        for self.system_default_filename in self.system_default_filenames:
+            if self.system_default_filename:
+	        if os.access(self.system_default_filename, os.R_OK):
+                    self.load_config(self.system_default_filename)
+	        else:
+		    print "can not read system defaults from %s, ask your instrument responsible if required"%self.system_default_filename
 
         self.config_from_system = self.get()
         self.load_config()
@@ -1882,7 +1885,7 @@ pygobject version %(pygobject)s
         set config from an xml file
         """
         if filename is None:
-            filename=self.defaultfilename
+            filename=self.user_default_filename
 
         try:
             readfile = file(filename, "r")
@@ -1935,7 +1938,11 @@ pygobject version %(pygobject)s
         """
         config=self.get()
         if filename is None:
-            filename=self.defaultfilename
+            filename=self.user_default_filename
+        dirs = os.path.dirname(filename)
+        if not os.path.isdir(dirs):
+            os.makedirs(dirs)
+
         configfile=file(filename, "w")
         configfile.write("<?xml version='1.0'?>\n")
         configfile.write("<damaris>\n")
