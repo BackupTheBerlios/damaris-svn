@@ -2,14 +2,17 @@ CPPFLAGS=-Iinclude -I../..
 CXXFLAGS=-Wshadow -Wall -pedantic -O0 -g
 AR=ar
 
-SPC_HEADERS = include/spcerr.h include/regs.h include/dlltyp.h include/spcioctl.inc
-SPC_ZIP = drv_header_v323b1742.zip
-# SPC_ZIP = drv_new.zip
 
-all: $(SPC_HEADERS) Spectrum-MI40xxSeries.a
+SPC_HEADERS = include/spcerr.h include/regs.h include/dlltyp.h include/spcioctl.inc
+SPC_ZIP = drv_header_v402b6844.zip
+
+all: clean $(SPC_HEADERS) patch Spectrum-MI40xxSeries.a
 
 $(SPC_HEADERS): $(SPC_ZIP)
 	unzip -u $< "*.h" "*.txt" "*.inc" -d include/
+
+patch:
+	patch -N -p0 < ftbfs_patch.diff
 
 Spectrum-MI40xxSeries.a: Spectrum-MI40xxSeries.o GatedData.o
 	$(AR) r $@ $^

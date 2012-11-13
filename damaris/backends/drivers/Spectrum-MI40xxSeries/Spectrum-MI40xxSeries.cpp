@@ -412,7 +412,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
          conf->sensitivity=10.0; // dto.
   }
   /* Limit for 50 Ohm impedance is 5 V sensitivity */
-  if (conf->impedance==50.0 && conf->sensitivity>=5.0) {
+  if (conf->impedance==50.0 && conf->sensitivity >= 5.1) {
       delete conf;
       throw SpectrumMI40xxSeries_error("Imepdance is set to 50 Ohms, sensitivity has to be lower than 5 V");
   }

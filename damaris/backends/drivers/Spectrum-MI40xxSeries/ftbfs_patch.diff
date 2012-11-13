@@ -1,0 +1,26 @@
+--- include/dlltyp.h	2012-08-06 14:02:18.000000000 +0200
++++ ../../../dlltyp.h	2012-11-13 10:10:23.000000000 +0100
+@@ -262,14 +262,15 @@
+ 
+ // ----- Linux -----
+ #ifdef _LINUX
+-#   define int8 char
+-#   define int16 short int
+-#   define int32 int
+-#   define int64 long long
+-#   define uint8 unsigned char
+-#   define uint16 unsigned short int
+-#   define uint32 unsigned int
+-#   define uint64 unsigned long long
++#include <stdint.h>
++typedef int8_t int8;
++typedef int16_t int16;
++typedef int32_t int32;
++typedef int64_t int64;
++typedef uint8_t uint8;
++typedef uint16_t uint16;
++typedef uint32_t uint32;
++typedef uint64_t uint64;
+ #   define dataptr void *
+ #   define ptr8 int8*
+ #   define ptr16 int16*
