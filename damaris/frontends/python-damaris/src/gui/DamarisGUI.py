@@ -76,7 +76,7 @@ from damaris.data import DataPool, Accumulation, ADC_Result, MeasurementResult
 debug=False
 
 # version info
-__version__="0.14-svn"
+__version__="0.14-svn-$Id: $"
 
 class logstream:
     gui_log=None
