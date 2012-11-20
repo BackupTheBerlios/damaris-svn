@@ -1425,14 +1425,14 @@ log10</property>
                             <property name="editable">False</property>
                             <property name="wrap_mode">GTK_WRAP_WORD_CHAR</property>
                             <property name="cursor_visible">False</property>
-                            <property name="text">DAMARIS python frontend version %(damarisversion)s, 2007
+                            <property name="text">DAMARIS python frontend version %(damarisversion)s, 2012
 %(moduleversions)s
 
-DArmstadt Magnetic Resonance Instrument Software, 2004-2007
+DArmstadt Magnetic Resonance Instrument Software, 2004-2012
 Homepage http://www.fkp.physik.tu-darmstadt.de/damaris/
 
-Python frontend written by Christopher Schmitt, Achim Gädke and Markus Rosenstihl
-Backends written by Achim Gädke, Markus Rosenstihl, tested by Holger Stork
+Python frontend written by Christopher Schmitt, Achim Gädke, Markus Rosenstihl and Christian Tacke
+Backends written by Achim Gädke, Markus Rosenstihl, Christian Tacke, tested by Holger Stork
 The drivers included in the backend may use propietary interfaces.
 The source code distribution may include commercial third party's code,
 which is specially marked and not covered by this license.
