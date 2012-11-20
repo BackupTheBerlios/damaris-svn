@@ -1,1 +1,2 @@
-backends/tools/backend.conf share/doc/damaris-backends
+backends/tools/backend.conf usr/share/doc/damaris-backends
+backends/tools/backend.conf etc/xdg/damaris
