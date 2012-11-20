@@ -109,9 +109,11 @@ public:
       double pb_refclock = g_key_file_get_double(cfg_file, "PB", "refclock", &error);
       if (error) g_error(error->message);
       error = NULL;
-      int pb_sync = 1<<g_key_file_get_integer(cfg_file, "PB", "sync_line", &error);
+      int pb_sync_bit = g_key_file_get_integer(cfg_file, "PB", "sync_line", &error);
       if (error) g_error(error->message);
       error = NULL;
+      int pb_sync = 0;
+      if (pb_sync_bit != 128) pb_sync=1<<pb_sync_bit;
 
       my_pulseblaster=new SpinCorePulseBlaster24Bit(pb_id, pb_refclock, pb_sync);
 
@@ -120,7 +122,7 @@ public:
       if (error) g_error(error->message);
       error = NULL;
       my_pts=new PTS_latched(pts_id);
-      // PTS 500 has 0.36 ;  PTS 310 has 0.225 degrees/step
+      // PTS 500 has 0.36 or 0.72 above 200MHz ;  PTS 310 has 0.225 degrees/step
       my_pts->phase_step=g_key_file_get_double(cfg_file, "PTS", "phase_stepsize", &error);
       if (error) g_error(error->message);
       error = NULL;
