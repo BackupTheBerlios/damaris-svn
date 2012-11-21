@@ -1,4 +1,4 @@
-damaris (0.14-svn) experimental; urgency=low
+damaris (0.14-svn697) experimental; urgency=low
 
   * MI40xx driver bugs:
     - pre-gating implemented for other configurations according to the manual
@@ -7,8 +7,10 @@ damaris (0.14-svn) experimental; urgency=low
       the card records upto 7 samples more after gating stops
   * "general" backend: configurable via glib KeyValue config file (follows XDG standard)
   * added glib-2.0 dependcy for configuration file
+  * backend.conf allows to disable synchronization
+  * backend.conf example in /usr/share/doc/damaris-backends/backend.conf
 
- -- Markus Rosenstihl <Markus.Rosenstihl@physik.tu-darmstadt.de>  Thu, 01 Nov 2012 09:52:51 +0100
+ -- Markus Rosenstihl <Markus.Rosenstihl@physik.tu-darmstadt.de>  Wed, 21 Nov 2012 09:47:10 +0100
 
 damaris (0.13-0) experimental; urgency=low
   * Packages are compiling now on squeeze (and Ubuntu 10.04)
