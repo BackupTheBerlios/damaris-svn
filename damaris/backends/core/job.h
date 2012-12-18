@@ -12,10 +12,13 @@
 #include <xercesc/dom/DOMElement.hpp>
 #include <unistd.h>
 #include <string>
+#include <sstream>
 #include <map>
 #include <cstdio>
+#include <math.h>
 #include "core/result.h"
 #include "core/states.h"
+#include "core/constants.h"
 
 #ifndef SIZETPRINTFLETTER
 #  ifndef __LP64__

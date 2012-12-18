@@ -81,13 +81,19 @@ class adc_result: public result {
    */
   double sampling_frequency;
   
+  /** 
+    number of channels
+  */
+  int nchannels;
+  
   /**
      instantiation without data is possible
    */
-  adc_result(size_t _no, size_t s=0, short int* d=NULL, double freq=0): result(_no) {
+  adc_result(size_t _no, size_t s=0, short int* d=NULL, double freq=0, int nchan=2): result(_no) {
     data=d;
     samples=s;
     sampling_frequency=freq;
+    nchannels = nchan;
   }
 
   /**

@@ -129,23 +129,73 @@ state_atom* xml_state_reader::state_factory(const XML_Char *name,
     const XML_Char* frequency=search_attributes(atts,"f","frequency",(XML_Char*)NULL);
     const XML_Char* samples=search_attributes(atts,"s","samples",(XML_Char*)NULL);
     const XML_Char* channels=search_attributes(atts,"c","channels",(XML_Char*)NULL);
-    const XML_Char* sensitivity=search_attributes(atts,"sen","sensitivity",(XML_Char*)NULL);
-    const XML_Char* resolution=search_attributes(atts,"r","res","resolution",(XML_Char*)NULL);
+    const XML_Char* resolution = search_attributes(atts,"r","res","resolution",(XML_Char*)NULL);
+
+    if (resolution!=NULL)
+        ain->resolution=strtoul(resolution,NULL,0);
+	else
+		ain->resolution=14; // was 12
+
     if (frequency!=NULL) ain->sample_frequency=strtod(frequency,NULL);
     if (samples!=NULL) ain->samples=strtoul(samples,NULL,0);
     if (id!=NULL) ain->id=strtoul(id,NULL,0);
-    if (channels!=NULL)
-      ain->channels=strtoul(channels,NULL,0);
-    else
-      ain->channels=3;
-    if (sensitivity!=NULL)
-      ain->sensitivity=strtod(sensitivity,NULL);
-    else
-      ain->sensitivity=5.0;
-    if (resolution!=NULL)
-      ain->resolution=strtoul(resolution,NULL,0);
-    else
-      ain->resolution=12;
+    if (channels!=NULL) {
+    	ain->channels = channel_array(strtoul(channels,NULL,0));
+    	ain->nchannels = ain->channels.count();
+    } else {
+    	ain->channels = channel_array(3);
+    	ain->nchannels = ain->channels.count();
+    }
+
+    // set parameters for each channel
+    for (int i = 0; i < ain->nchannels; i++) {
+    	if (ain->channels[i] == true) {
+    		char buffer1[100];
+			char buffer2[100];
+			sprintf(buffer1, "sen%i", i);
+			sprintf(buffer2, "sensitivity%i", i - 1);
+
+
+			// read sensitivity
+    		const XML_Char* sensitivity = search_attributes(atts, buffer1, buffer2,(XML_Char*)NULL);
+    		if (sensitivity != NULL) {
+    			if (ain->sensitivity == NULL) {
+    				ain->sensitivity = new double[ain->nchannels];
+    			}
+    			ain->sensitivity[i] = strtod(sensitivity, NULL);
+    		} else {
+    			ain->sensitivity[i] = ADC_M2I_DEFAULT_SENSITIVITY;
+    		}
+    		delete sensitivity;
+
+    		// read offset
+    		sprintf(buffer1, "offset%i", i);
+    		const XML_Char* offset = search_attributes(atts, buffer1, (XML_Char*)NULL);
+			if (offset != NULL) {
+				if (ain->offset == NULL) {
+					ain->offset = new int[ain->nchannels];
+				}
+				ain->offset[i] = strtol(offset, NULL, 0);
+			} else {
+				ain->offset[i] = ADC_M2I_DEFAULT_OFFSET;
+			}
+			delete offset;
+
+			// read impedance
+			sprintf(buffer1, "impedance%i", i);
+			const XML_Char* impedance = search_attributes(atts, buffer1, (XML_Char*)NULL);
+			if (impedance != NULL) {
+				if (ain->impedance == NULL) {
+					ain->impedance = new double[ain->nchannels];
+				}
+				ain->impedance[i] = strtol(impedance, NULL, 0);
+			} else {
+				ain->impedance[i] = ADC_M2I_DEFAULT_IMPEDANCE;
+			}
+			delete impedance;
+    	}
+    }
+
     return (state_atom*)ain;
   }
   fprintf(stderr,"unknown tag %s found\n",name);
@@ -297,15 +347,21 @@ int xml_state_writer::write_states(FILE* output, const state_atom& states_to_wri
   }
   const analogin* ai=dynamic_cast<const analogin*>(&states_to_write);
   if (ai!=NULL) {
-    fprintf(output,
-	    "%s<analogin id=\"%d\" samples=\"%" SIZETPRINTFLETTER "\" sample_frequency=\"%g\" channels=\"%lu\" sensitivity=\"%g\" resolution=\"%" SIZETPRINTFLETTER "\"/>\n",
+    char args[2000];
+    char buffer[1000];
+    sprintf(args, "%s<analogin id=\"%d\" samples=\"%" SIZETPRINTFLETTER "\" sample_frequency=\"%g\" channels=\"%lu\" resolution=\"%" SIZETPRINTFLETTER "\"",
 	    indent_string.c_str(),
 	    ai->id,
 	    ai->samples,
 	    ai->sample_frequency,
 	    ai->channels.to_ulong(),
-	    ai->sensitivity,
 	    ai->resolution);
+	for (int i = 0; i < ai->nchannels; i++) {
+        sprintf(buffer, "sensitivity%d=\"%g\" offset%d=\"%d\" impedance%d=\"%g\"", i, ai->sensitivity[i], i, ai->offset[i], i, ai->impedance[i]);
+        strcat(args, buffer);
+    }
+	strcat(args, "/>\n");
+    fprintf(output, args);
     return 1;
   }
   fprintf(output,"%s<!-- something missing -->\n",indent_string.c_str());

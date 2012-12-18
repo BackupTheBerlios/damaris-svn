@@ -10,7 +10,7 @@ CXXFLAGS=-O0 -g -Wall -Wshadow -pedantic
 CXXCPPFLAGS=-I. -I..
 
 #ToDo PBP-HS3-test.exe
-SUBDIRS:=SpinCore-PulseBlaster SpinCore-PulseBlaster24Bit SpinCore-PulseBlasterDDSIII PTS-Synthesizer Eurotherm-2000Series dummy Spectrum-MI40xxSeries Tecmag-DAC20
+SUBDIRS:=SpinCore-PulseBlaster SpinCore-PulseBlaster24Bit SpinCore-PulseBlasterDDSIII PTS-Synthesizer Eurotherm-2000Series dummy Spectrum-MI40xxSeries Spectrum-M2i40xxSeries Tecmag-DAC20
 ifeq ($(shell /bin/uname -o),Cygwin)
 SUBDIRS+=TiePie-HS3 Datel-PCI416
 endif

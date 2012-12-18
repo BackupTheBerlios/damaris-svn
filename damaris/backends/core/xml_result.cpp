@@ -583,31 +583,32 @@ int xml_result_writer::write_adcdata_separate(FILE* out, const std::string& data
     fprintf(stderr,"could not open file %s\n",datafilename.c_str());
     return 0;
   }
-  fwrite(res->data, 2*sizeof(short int), res->samples, binout);
+  fwrite(res->data, sizeof(short int)*res->nchannels, res->samples, binout);
   fclose(binout);
   fprintf(out,
-	  "<adcdatafile path=\"%s\" samples=\"%" SIZETPRINTFLETTER "\" rate=\"%g\"/>\n",
+	  "<adcdatafile path=\"%s\" samples=\"%" SIZETPRINTFLETTER "\" rate=\"%g\" channels=\"%i\"/>\n",
 	  datafilename.c_str(),
 	  res->samples,
-	  res->sampling_frequency);
+	  res->sampling_frequency,
+	  res->nchannels);
   return 0;
 }
 
 int xml_result_writer::write_adcdata_formated(FILE* out, const std::string& format, const adc_result* res) const {
-  fprintf(out,"<adcdata samples=\"%" SIZETPRINTFLETTER "\" rate=\"%g\">\n",res->samples,res->sampling_frequency);
+  fprintf(out,"<adcdata samples=\"%" SIZETPRINTFLETTER "\" rate=\"%g\" channels=\"%i\">\n",res->samples,res->sampling_frequency, res->nchannels);
   for(size_t i=0;i<res->samples;++i) {
-    int data_real=res->data[i*2];
-    int data_imag=res->data[i*2+1];
-    fprintf(out, format.c_str(), data_real, data_imag);
+    for (int j = 0; j < res->nchannels; j++) {
+        fprintf(out, format.c_str(), res->data[i*2 + j]);
+    }
   }
   fprintf(out,"</adcdata>\n");
   return 0;
 }
 
 int xml_result_writer::write_adcdata_base64(FILE* out, const adc_result* res) const {
-  fprintf(out,"<adcdata samples=\"%" SIZETPRINTFLETTER "\" rate=\"%g\">\n",res->samples,res->sampling_frequency);
+  fprintf(out,"<adcdata samples=\"%" SIZETPRINTFLETTER "\" rate=\"%g\" channels=\"%i\">\n",res->samples,res->sampling_frequency, res->nchannels);
   unsigned int base64length=0;
-  XMLByte* base64buffer=XERCES_CPP_NAMESPACE_QUALIFIER Base64::encode((XMLByte*)res->data,res->samples*2*sizeof(short int),&base64length);
+  XMLByte* base64buffer=XERCES_CPP_NAMESPACE_QUALIFIER Base64::encode((XMLByte*)res->data,res->samples*res->nchannels*sizeof(short int),&base64length);
   fwrite(base64buffer,1,base64length,out);
   XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&base64buffer);
   fprintf(out,"</adcdata>\n");

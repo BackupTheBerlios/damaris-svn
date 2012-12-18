@@ -7,8 +7,8 @@
 
 CXX=g++
 CXXFLAGS=-g -O0 -Wshadow -Wall -pedantic
-CXXCPPFLAGS= -I. -I.. -I/opt/local/include 
-LIBS=-lexpat -L/opt/local/lib
+CXXCPPFLAGS= -I. -I.. -I/usr/include 
+LIBS=-lexpat -L/usr/lib
 AR=ar
 
 .PHONY: clean all install

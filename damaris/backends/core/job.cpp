@@ -130,8 +130,12 @@ experiment::experiment(size_t n, XERCES_CPP_NAMESPACE_QUALIFIER DOMElement* exp_
     if (one_child->getNodeType()==XERCES_CPP_NAMESPACE_QUALIFIER DOMNode::ELEMENT_NODE) {
       state_atom* new_one=state_factory(dynamic_cast<XERCES_CPP_NAMESPACE_QUALIFIER DOMElement*>(one_child));
       if (new_one!=NULL) {
+       
 	state* new_state=dynamic_cast<state*>(new_one);
-	if (new_state!=NULL) found_states.push_back(new_state);
+	
+	if (new_state!=NULL) {
+        found_states.push_back(new_state);
+    }
 	else {
 	  fprintf(stderr,"experiment: did find something other than a state... forgetting\n");
 	  delete new_one;
@@ -334,43 +338,88 @@ state_atom* experiment::state_factory(const XERCES_CPP_NAMESPACE_QUALIFIER DOMEl
       ain->sample_frequency=strtod(frequency,NULL);
       XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&frequency);
       if (ain->sample_frequency<0) {
-	  delete ain;
-	  throw job_exception("frequency must be non-negative");
+    	  delete ain;
+    	  throw job_exception("frequency must be non-negative");
       }
     }
+    
     char* samples=get_parameter(element,"s","samples",(char*)NULL);
     if (samples!=NULL) {
-	char* samples_startpos=samples;
-	while (*samples_startpos!=0 && isspace(*samples_startpos)) ++samples_startpos;
-	if (*samples_startpos=='-') {
-	    XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&samples);
-	    delete ain;
-	    throw job_exception("frequency must be non-negative");
-	}
-	ain->samples=strtoul(samples,NULL,0);
-	XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&samples);
+    	char* samples_startpos=samples;
+    	while (*samples_startpos!=0 && isspace(*samples_startpos)) ++samples_startpos;
+    	if (*samples_startpos=='-') {
+    		XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&samples);
+    		delete ain;
+    		throw job_exception("number of samples must be non-negative");
+    	}
+    	ain->samples=strtoul(samples,NULL,0);
+    	XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&samples);
     }
+    
     char* channels=get_parameter(element,"c","channels",(char*)NULL);
     if (channels!=NULL) {
-	ain->channels=strtoul(channels,NULL,0);
-	XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&channels);
+    	ain->channels = channel_array(strtoul(channels,NULL,0));
+		XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&channels);
+		ain->nchannels = ain->channels.count();
+    } else {
+    	ain->channels = channel_array(ADC_M2I_DEFAULT_CHANNELS);
+    	ain->nchannels = ain->channels.count();
     }
-    else
-	ain->channels=3;
-    char* sensitivity=get_parameter(element,"sen","sensitivity",(char*)NULL);
-    if (sensitivity!=NULL) {
-	ain->sensitivity=strtod(sensitivity,NULL);
-	XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&sensitivity);
+
+    ain->sensitivity = new double[ain->nchannels]; // initialize sensitivity array
+    ain->offset = new int[ain->nchannels]; // initialize offset array (offset is in % of sensitivity)
+    ain->impedance = new double[ain->nchannels]; // initialize impedance array
+    // get parameters for each channel
+    for (int i = 0; i < ain->nchannels; i++) {
+    	if (ain->channels[i] == true) { // check if channel bit is true
+
+    		/* get sensitivity */
+			char buffer1[100];
+			char buffer2[100];
+			sprintf(buffer1, "sen%i", i);
+			sprintf(buffer2, "sensitivity%i", i);
+			char* sensitivity = get_parameter(element, buffer1, buffer2,(char*)NULL);
+			if (sensitivity!=NULL) {
+				ain->sensitivity[i] = strtod(sensitivity,NULL);
+				XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&sensitivity);
+			} else {
+				ain->sensitivity[i] = ADC_M2I_DEFAULT_SENSITIVITY; // set to default
+			}
+
+			/* get offset */
+			sprintf(buffer1, "offset%i", i);
+			char* offset = get_parameter(element, buffer1, (char*)NULL);
+			if (offset!=NULL) {
+				ain->offset[i] = strtol(offset, NULL, 0);
+				XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&offset);
+			} else {
+				ain->offset[i] = ADC_M2I_DEFAULT_OFFSET; // default is 0
+			}
+
+			/* get impedance */
+			sprintf(buffer1, "impedance%i", i);
+			char* impedance = get_parameter(element, buffer1, (char*)NULL);
+			if (impedance!=NULL) {
+				ain->impedance[i] = strtoul(impedance, NULL, 0);
+				XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&impedance);
+			} else {
+				ain->impedance[i] = ADC_M2I_DEFAULT_IMPEDANCE; // default is 1 MOhm
+			}
+		} else { // channel is not enabled, set to defaults
+			ain->sensitivity[i] = ADC_M2I_DEFAULT_SENSITIVITY;
+			ain->offset[i] = ADC_M2I_DEFAULT_OFFSET;
+			ain->impedance[i] = ADC_M2I_DEFAULT_IMPEDANCE;
+		}
+		
     }
-    else
-	ain->sensitivity=5.0;
+    
     char* resolution=get_parameter(element,"r","res","resolution",(char*)NULL);
     if (resolution!=NULL) {
-	ain->resolution=strtoul(resolution,NULL,0);
-	XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&resolution);
+    	ain->resolution=strtoul(resolution,NULL,0);
+    	XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&resolution);
     }
     else
-	ain->resolution=12;
+    	ain->resolution=ADC_M2I_DEFAULT_RESOLUTION; // was 12
     
     return (state_atom*)ain;
   }
@@ -382,7 +431,7 @@ result* experiment::do_it(hardware* hw) {
   if (experiment_states==NULL) {
     return new error_result(job_no,"did not find any states in job file");
   }
-  fprintf(stderr,"performing experiment job no %" SIZETPRINTFLETTER "\n",job_no);
+  fprintf(stderr,"performing experiment job no %" SIZETPRINTFLETTER ", number of exps is %i\n",job_no, experiment_states->size());
   result* data=hw->experiment(*experiment_states);
   fprintf(stderr,"finished experiment job no %" SIZETPRINTFLETTER "\n\n",job_no);
   if (data==NULL)

@@ -22,6 +22,7 @@ MACHINES = \
 	PFGcore$(EXEEXT) \
 	fc2_backend$(EXEEXT) \
 	fc1neu_backend$(EXEEXT) \
+	fc1_vierkanal_backend$(EXEEXT) \
 	bg_backend \
 	Mobilecore$(EXEEXT) \
 	Mobile_wo_sync_backend$(EXEEXT) \
@@ -29,6 +30,7 @@ MACHINES = \
 	general
 
 DRV_SPC_MI40xx    = ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.a
+DRV_SPC_M2i40xx   = ../drivers/Spectrum-M2i40xxSeries/Spectrum-M2i40xxSeries.a
 DRV_PTS           = ../drivers/PTS-Synthesizer/PTS.o
 DRV_DAC20         = ../drivers/Tecmag-DAC20/DAC20.o
 DRV_PB_24BIT      = ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.o
@@ -91,6 +93,9 @@ $(DRV_DAC20):
 
 $(DRV_SPC_MI40xx):
 	$(MAKE) -C ../drivers/Spectrum-MI40xxSeries Spectrum-MI40xxSeries.a
+	
+$(DRV_SPC_M2i40xx):
+	$(MAKE) -C ../drivers/Spectrum-M2i40xxSeries Spectrum-M2i40xxSeries.a
 
 $(DRV_EUROTHERM2000):
 	$(MAKE) -C ../drivers/Eurotherm-2000Series Eurotherm-2000Series.o
@@ -117,7 +122,7 @@ Mobilecore$(EXEEXT): Mobilecore.o \
 
 Mobilecore.o: Mobilecore.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \
-../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h ../drivers/Spectrum-M2i40xxSeries/Spectrum-M2i40xxSeries.h
 
 Mobile_wo_sync_backend$(EXEEXT): Mobile_wo_sync_backend.o \
 		hardware.o \
@@ -129,7 +134,7 @@ Mobile_wo_sync_backend$(EXEEXT): Mobile_wo_sync_backend.o \
 
 Mobile_wo_sync_backend.o: Mobile_wo_sync_backend.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \
-../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h ../drivers/Spectrum-M2i40xxSeries/Spectrum-M2i40xxSeries.h
 
 
 bg_backend: bg_backend.o \
@@ -143,7 +148,7 @@ bg_backend: bg_backend.o \
 
 bg_backend.o: bg_backend.cpp  ../drivers/PTS-Synthesizer/PTS.h \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
-../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h 
 
 
 magnexgrad_backend_dds: magnexgrad_backend_dds.o \
@@ -157,7 +162,7 @@ magnexgrad_backend_dds: magnexgrad_backend_dds.o \
 
 magnexgrad_backend_dds.o: magnexgrad_backend_dds.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
-../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h 
 
 
 magnexgrad_backend: magnexgrad_backend.o \
@@ -171,7 +176,7 @@ magnexgrad_backend: magnexgrad_backend.o \
 
 magnexgrad_backend.o: magnexgrad_backend.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
-../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h 
 
 deuteron_backend.o: deuteron_backend.cpp \
 ../drivers/SpinCore-PulseBlasterDDSIII/SpinCore-PulseBlasterDDSIII.h \
@@ -253,6 +258,23 @@ fc1neu_backend$(EXEEXT): fc1neu_backend.o \
 fc1neu_backend.o: fc1neu_backend.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h ../drivers/Tecmag-DAC20/DAC20.h\
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+
+fc1_vierkanal_backend$(EXEEXT): fc1_vierkanal_backend.o \
+		hardware.o \
+		$(DRV_SPC_M2i40xx) \
+		$(DRV_PTS) \
+		$(DRV_DAC20) \
+		$(DRV_PB_24BIT) $(DRV_PB) $(DRV_PB_PROG) \
+		../core/core.a
+	@$(LINK_MACHINE) $^ $(LIBS) -o $@ -lpthread -lspcm_linux
+
+fc1_vierkanal_backend.o: fc1_vierkanal_backend.cpp \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
+../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h \
+../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \
+../drivers/Tecmag-DAC20/DAC20.h \
+../core/stopwatch.h \
+../drivers/Spectrum-M2i40xxSeries/Spectrum-M2i40xxSeries.h
 
 general: general.o \
 		hardware.o \

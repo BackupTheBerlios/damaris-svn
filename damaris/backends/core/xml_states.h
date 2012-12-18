@@ -8,6 +8,7 @@
 #define XML_STATES_H
 
 #include "states.h"
+#include "constants.h"
 #include <expat.h>
 #include <cstdio>
 #include <xercesc/dom/DOMElement.hpp>

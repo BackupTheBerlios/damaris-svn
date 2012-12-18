@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "core/states.h"
+#include "core/constants.h"
 #include "drivers/ADC.h"
 #include "GatedData.h"
 
@@ -59,6 +60,11 @@ class SpectrumMI40xxSeries: public ADC {
      */
     ttlout trigger_line;
 
+    /**
+        Type of the card. This is important for the number of allowed channels, etc.
+    */
+    int cardType;
+
     /** stuff concerning fifo acquisition */
     size_t fifobufferno;
     /** stuff concerning fifo acquisition */
@@ -98,40 +104,51 @@ class SpectrumMI40xxSeries: public ADC {
       /* a timeout for acquiring data in s*/
       double timeout;
       /** configured input impedance in Ohm*/
-      double impedance;
+      double* impedance;
       /** configured input sensitivity in V*/
-      double sensitivity;
+      double* sensitivity;
       /** coupling 0=DC else AC */
       int coupling;
       /** external reference clock **/
       int ext_reference_clock;
-      /* Bitwise OR of channels */
-      int channels;
+
+      /** offsets for each channel in % of sensitivity **/
+      int* offset;
+      
+      /** \brief Number of used channels for this run */
+      int lSetChannels;
+      /** \brief Bitmap for currently enabled channels */
+	  channel_array qwSetChEnableMap;
 
       /** print data for debug purpose  */
       void print(FILE* f);
+      
+      
 
       Configuration() {
-	samplefreq=0; 
+	    samplefreq=0; 
         timeout=0;
-        impedance=0;
-	sensitivity=0;
-	coupling=0;
-	ext_reference_clock=0; 
-	channels=(CHANNEL0|CHANNEL1);
-	data_structure=NULL;
+        impedance=NULL;
+	    sensitivity=NULL;
+	    offset = NULL;
+	    coupling=0;
+	    ext_reference_clock=0; 
+	    data_structure=NULL;
+	    lSetChannels=0;
+	    qwSetChEnableMap=0;
       }
 
       Configuration(const Configuration& orig) {
-	samplefreq=orig.samplefreq;
-	timeout=orig.timeout;
-	impedance=orig.impedance;
-	sensitivity=orig.sensitivity;
-	coupling=orig.coupling;
-	ext_reference_clock=orig.ext_reference_clock;
-	channels=orig.channels;
-	if (orig.data_structure==NULL) data_structure=NULL;
-	else data_structure=new DataManagementNode(*orig.data_structure);
+	    samplefreq=orig.samplefreq;
+	    timeout=orig.timeout;
+	    impedance=orig.impedance;
+	    sensitivity=orig.sensitivity;
+	    coupling=orig.coupling;
+	    ext_reference_clock=orig.ext_reference_clock;
+	    qwSetChEnableMap = orig.qwSetChEnableMap;
+	    lSetChannels = orig.lSetChannels;
+	    if (orig.data_structure==NULL) data_structure=NULL;
+	    else data_structure=new DataManagementNode(*orig.data_structure);
       }
       
       ~Configuration() {
@@ -152,6 +169,8 @@ class SpectrumMI40xxSeries: public ADC {
   short int* split_adcdata_recursive(short int* data, const DataManagementNode& structure, adc_results& result_splitted);
 
   void collect_config_recursive(state_sequent& exp, SpectrumMI40xxSeries::Configuration& settings);
+  
+  bool IsChannelMaskLegal(int mask);
 
 public:
   SpectrumMI40xxSeries(const ttlout& t_line, float impedance=1e6, int ext_reference_clock=(int)100e6);

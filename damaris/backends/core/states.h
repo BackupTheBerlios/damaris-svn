@@ -139,9 +139,17 @@ class analogin: public state_atom {
   size_t samples;
   /** which channels to record */
   channel_array channels;
+  /** the number of channels */
+  int nchannels;
 
-  /** sensitivity in volts*/
-  double sensitivity;
+  /** sensitivity in volts for each channel */
+  double* sensitivity;
+
+  /** impedance in Ohm for each channel */
+  double* impedance;
+
+  /** offset in % of sensitivity for each channel */
+  int* offset;
 
   /** resolution in bit per sample */
   size_t resolution;
@@ -151,8 +159,9 @@ class analogin: public state_atom {
     id=0;
     sample_frequency=0;
     samples=0;
-    sensitivity=0;
     resolution=0;
+    nchannels = 0;
+    channels = channel_array(0);
   }
 
   analogin(const analogin& orig) {
@@ -161,6 +170,10 @@ class analogin: public state_atom {
     samples=orig.samples;
     sensitivity=orig.sensitivity;
     resolution=orig.resolution;
+    offset = orig.offset;
+    impedance = orig.impedance;
+    channels = orig.channels;
+    nchannels = orig.nchannels;
   }
 
   virtual state_atom* copy_new() const {

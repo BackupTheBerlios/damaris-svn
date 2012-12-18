@@ -35,40 +35,40 @@ void hardware::experiment_run_pulse_program(state* work_copy) {
 }
 
 result* hardware::experiment(const state& exp) {
-  result* r=NULL;
-  for(size_t tries=0; r==NULL && core::term_signal==0 &&  tries<102; ++tries) {
-    state* work_copy=exp.copy_flat();
-    if (work_copy==NULL) return new error_result(1,"could create work copy of experiment sequence");
-    try {
-      if (the_fg!=NULL)
-	the_fg->set_frequency(*work_copy);
-      if (the_adc!=NULL)
-	the_adc->set_daq(*work_copy);
-      experiment_prepare_dacs(work_copy);
-      // the pulse generator is necessary
-      experiment_run_pulse_program(work_copy);
-      // wait for pulse generator
-      the_pg->wait_till_end();
-      // after that, the result must be available
-      if (the_adc!=NULL)
-	r=the_adc->get_samples();
-      else
-	r=new adc_result(1,0,NULL);
+    result* r=NULL;
+    for(size_t tries=0; r==NULL && core::term_signal==0 &&  tries<102; ++tries) {
+        state* work_copy=exp.copy_flat();
+        if (work_copy==NULL) return new error_result(1,"couldn't create work copy of experiment sequence");
+        try {
+            if (the_fg!=NULL)
+                the_fg->set_frequency(*work_copy);
+            if (the_adc!=NULL)
+                the_adc->set_daq(*work_copy);
+            experiment_prepare_dacs(work_copy);
+            // the pulse generator is necessary
+            experiment_run_pulse_program(work_copy);
+            // wait for pulse generator
+            the_pg->wait_till_end();
+            // after that, the result must be available
+            if (the_adc!=NULL)
+                r=the_adc->get_samples();
+            else
+                r=new adc_result(1,0,NULL);
+        }
+        catch (frequ_exception e) {
+        	r=new error_result(1,"frequ_exception: "+e);
+        }
+        catch (ADC_exception e) {
+            if (e!="ran into timeout!" || tries>=100)
+        	r=new error_result(1,"ADC_exception: "+e);
+        }
+        catch (pulse_exception p) {
+            r=new error_result(1,"pulse_exception: "+p);
+        }
+        delete work_copy;
+        if (core::quit_signal!=0) break;
     }
-    catch (frequ_exception e) {
-	r=new error_result(1,"frequ_exception: "+e);
-    }
-    catch (ADC_exception e) {
-      if (e!="ran into timeout!" || tries>=100)
-	r=new error_result(1,"ADC_exception: "+e);
-    }
-    catch (pulse_exception p) {
-      r=new error_result(1,"pulse_exception: "+p);
-    }
-    delete work_copy;
-    if (core::quit_signal!=0) break;
-  }
-  return r;
+    return r;
 }
 
 configuration_results* hardware::configure(const std::list<configuration_device_section>& d) {
