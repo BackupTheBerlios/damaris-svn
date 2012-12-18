@@ -1,7 +1,7 @@
 CPPFLAGS=-Iinclude -I../..
 CXXFLAGS=-Wshadow -Wall -O0 -g
 AR=ar
-LIBS+= -lspcm_linux -lpthread -lm -lxerces-c -lexpat
+LIBS+= -lpthread -lm -lxerces-c -lexpat
 
 SPC_HEADERS = include/spcerr.h include/regs.h include/dlltyp.h include/spcioctl.inc
 SPC_ZIP = drv_spcm_linux_drv_v214b5633.zip
