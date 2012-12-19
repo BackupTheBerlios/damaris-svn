@@ -22,7 +22,6 @@ MACHINES = \
 	PFGcore$(EXEEXT) \
 	fc2_backend$(EXEEXT) \
 	fc1neu_backend$(EXEEXT) \
-	fc1_vierkanal_backend$(EXEEXT) \
 	bg_backend \
 	Mobilecore$(EXEEXT) \
 	Mobile_wo_sync_backend$(EXEEXT) \
@@ -92,10 +91,10 @@ $(DRV_DAC20):
 	$(MAKE) -C ../drivers/Tecmag-DAC20 DAC20.o
 
 $(DRV_SPC_MI40xx):
-	$(MAKE) -C ../drivers/Spectrum-MI40xxSeries Spectrum-MI40xxSeries.a
+	$(MAKE) -C ../drivers/Spectrum-MI40xxSeries Spectrum-MI40xxSeries.o
 	
 $(DRV_SPC_M2i40xx):
-	$(MAKE) -C ../drivers/Spectrum-M2i40xxSeries Spectrum-M2i40xxSeries.a
+	$(MAKE) -C ../drivers/Spectrum-M2i40xxSeries Spectrum-M2i40xxSeries.o
 
 $(DRV_EUROTHERM2000):
 	$(MAKE) -C ../drivers/Eurotherm-2000Series Eurotherm-2000Series.o
@@ -266,7 +265,7 @@ fc1_vierkanal_backend$(EXEEXT): fc1_vierkanal_backend.o \
 		$(DRV_DAC20) \
 		$(DRV_PB_24BIT) $(DRV_PB) $(DRV_PB_PROG) \
 		../core/core.a
-	@$(LINK_MACHINE) $^ $(LIBS) -o $@ -lpthread
+	@$(LINK_MACHINE) $^ $(LIBS) -o $@ -lpthread -lspcm_linux
 
 fc1_vierkanal_backend.o: fc1_vierkanal_backend.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
