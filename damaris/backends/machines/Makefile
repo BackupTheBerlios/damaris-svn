@@ -266,7 +266,7 @@ fc1_vierkanal_backend$(EXEEXT): fc1_vierkanal_backend.o \
 		$(DRV_DAC20) \
 		$(DRV_PB_24BIT) $(DRV_PB) $(DRV_PB_PROG) \
 		../core/core.a
-	@$(LINK_MACHINE) $^ $(LIBS) -o $@ -lpthread -lspcm_linux
+	@$(LINK_MACHINE) $^ $(LIBS) -o $@ -lpthread
 
 fc1_vierkanal_backend.o: fc1_vierkanal_backend.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
