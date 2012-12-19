@@ -7,7 +7,7 @@ SPC_HEADERS = include/spcerr.h include/regs.h include/dlltyp.h include/spcioctl.
 SPC_ZIP = drv_spcm_linux_drv_v214b5633.zip
 # SPC_ZIP = drv_new.zip
 
-all: $(SPC_HEADERS) Spectrum-M2i40xxSeries.a
+all: clean $(SPC_HEADERS) Spectrum-M2i40xxSeries.a
 
 $(SPC_HEADERS): $(SPC_ZIP)
 	unzip -u $< "*.h" "*.txt" "*.inc" -d include/
