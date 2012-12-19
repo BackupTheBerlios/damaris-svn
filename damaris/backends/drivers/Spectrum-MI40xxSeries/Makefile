@@ -6,10 +6,7 @@ AR=ar
 SPC_HEADERS = include/spcerr.h include/regs.h include/dlltyp.h include/spcioctl.inc
 SPC_ZIP = drv_header_v402b6844.zip
 
-all: clean $(SPC_HEADERS) patch Spectrum-MI40xxSeries.a
-
-$(SPC_HEADERS): $(SPC_ZIP)
-	unzip -u $< "*.h" "*.txt" "*.inc" -d include/
+all: clean patch Spectrum-MI40xxSeries.a
 
 patch:
 	patch -N -p0 < ftbfs_patch.diff
