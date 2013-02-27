@@ -120,14 +120,48 @@ class Experiment:
     	if ttls is not None:
 	        s_content = '<ttlout value="0x%06x"/>' % ttls
         	self.state_list.append(StateSimple(time,s_content))
-	else:
+        else:
         	self.state_list.append(StateSimple(time))
 
 
-    def record(self, samples, frequency, timelength=None, sensitivity=None, ttls=None):
+    def record(self, samples, frequency, timelength=None, sensitivity = None, ttls=None, channels = 3, offset = None, impedance = None):
         attributes='s="%d" f="%g"'%(samples,frequency)
+        if channels != 1 and channels != 3 and channels != 5 and channels != 15:
+            raise ValueError, "Channel definition is illegal"
+        attributes += ' channels="%i"'%(channels)
+        
+        nchannels = 0
+        if channels == 1:
+            nchannels = 1
+        elif channels == 3 or channels == 5:
+            nchannels = 2
+        elif channels == 15:
+            nchannels = 4
         if sensitivity is not None:
-            attributes+=' sensitivity="%f"'%sensitivity
+            # float values are allowed and applied to all channels
+            if isinstance(sensitivity, float) or isinstance(sensitivity, int):
+                for i in range(nchannels):
+                    attributes +=' sensitivity%i="%f"'%(i, float(sensitivity))
+            else:
+                for i in range(nchannels):
+                    attributes +=' sensitivity%i="%f"'%(i, sensitivity[i])
+        if offset is not None:
+            # int values are allowed and applied to all channels
+            if isinstance(offset, int):
+                for i in range(nchannels):
+                    attributes +=' offset%i="%f"'%(i, offset)
+            else:
+                for i in range(nchannels):
+                    attributes +=' offset%i="%f"'%(i, offset[i])
+        if impedance is not None:
+            # float values are allowed and applied to all channels
+            if isinstance(impedance, float):
+                for i in range(nchannels):
+                    attributes += ' impedance%i="%i"'%(i, impedance)
+            else:
+                for i in range(nchannels):
+                    attributes += ' impedance%i="%i"'%(i, impedance[i])
+                
         s_content = '<analogin %s/>' % attributes
     	if ttls is not None:
 	        s_content+='<ttlout value="0x%06x"/>' % ttls
@@ -263,6 +297,7 @@ class Experiment:
         "Sets a description"
         if key in self.description.keys():
             print 'Warning: Overwriting existing description "%s" = "%s" with "%s"' % (key, self.description[key], value)
+
         self.description[key] = value
 
     def set_pts_local(self):
