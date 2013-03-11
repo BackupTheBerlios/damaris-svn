@@ -1,3 +1,9 @@
+damaris (0.14-svn708) experimental; urgency=low
+
+  * Spectrum-M2i40xxSeries (Stefan Reutter)
+
+ -- Markus Rosenstihl <Markus.Rosenstihl@physik.tu-darmstadt.de>  Mon, 11 Mar 2013 11:33:54 +0100
+
 damaris (0.14-svn697) experimental; urgency=low
 
   * MI40xx driver bugs:
