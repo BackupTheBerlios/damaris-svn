@@ -16,6 +16,7 @@ BACKENDSMACHINES = \
 	bg_backend \
 	Mobilecore.exe \
 	berta \
+        birgit \
 	Mobile_wo_sync_backend.exe \
         general
 
