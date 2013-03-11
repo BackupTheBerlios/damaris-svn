@@ -119,6 +119,18 @@ Mobilecore$(EXEEXT): Mobilecore.o \
 		../core/core.a
 	@$(LINK_MACHINE) $^ $(LIBS) -o $@ -lpthread
 
+birgit: birgit.o \
+		hardware.o \
+		$(DRV_SPC_MI40xx) \
+		$(DRV_PTS) \
+		$(DRV_PB_24BIT) $(DRV_PB) $(DRV_PB_PROG) \
+		../core/core.a
+	@$(LINK_MACHINE) $^ $(LIBS) -o $@ -lpthread
+
+birgit.o: birgit.cpp \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \
+../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h
+
 Mobilecore.o: Mobilecore.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \
 ../core/stopwatch.h ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h ../drivers/Spectrum-M2i40xxSeries/Spectrum-M2i40xxSeries.h
