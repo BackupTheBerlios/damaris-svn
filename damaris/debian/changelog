@@ -1,8 +1,9 @@
-damaris (0.14-svn708) experimental; urgency=low
+damaris (0.14-svn713) experimental; urgency=low
 
-  * Spectrum-M2i40xxSeries (Stefan Reutter)
+  * added Spectrum M2i40xx Series ADC Cards (Stefan Reutter)
+  * added birgit back end
 
- -- Markus Rosenstihl <Markus.Rosenstihl@physik.tu-darmstadt.de>  Mon, 11 Mar 2013 11:33:54 +0100
+ -- Markus Rosenstihl <Markus.Rosenstihl@physik.tu-darmstadt.de>  Mon, 11 Mar 2013 15:58:47 +0000
 
 damaris (0.14-svn697) experimental; urgency=low
 
