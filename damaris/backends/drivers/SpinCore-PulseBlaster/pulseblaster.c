@@ -562,11 +562,12 @@ device_write(struct file *file,
  * calling process), the ioctl call returns the output of this function.
  *
  */
-int device_ioctl(struct inode *inode,	/* see include/linux/fs.h */
+static long  device_ioctl(
 		 struct file *file,	/* ditto */
 		 unsigned int ioctl_num,	/* number and param for ioctl */
 		 unsigned long ioctl_param)
 {
+  struct inode *inode = file->f_path.dentry->d_inode;
   struct pulseblaster_device* my_dev=container_of(inode->i_cdev, struct pulseblaster_device, cdev);
   int ret_val=SUCCESS;
 
@@ -624,7 +625,7 @@ int device_ioctl(struct inode *inode,	/* see include/linux/fs.h */
 struct file_operations pulseblaster_fops = {
 	.read = device_read,
 	.write = device_write,
-	.ioctl = device_ioctl,
+	.unlocked_ioctl = device_ioctl,
 	.open = device_open,
 	.release = device_release,	/* a.k.a. close */
 };
