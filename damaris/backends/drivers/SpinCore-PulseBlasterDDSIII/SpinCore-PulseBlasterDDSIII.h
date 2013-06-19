@@ -8,8 +8,10 @@
 #define SPINCOREPULSEBLASTERDDSIII_H
 
 #include "drivers/frequgen.h"
+#ifndef SPINCORE_PULSEBLASTER_H
 #include "drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h"
 #include "drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h"
+#endif
 #include "core/states.h"
 #include "core/stopwatch.h"
 #include <cstdio>

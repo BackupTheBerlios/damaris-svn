@@ -7,8 +7,10 @@
 #ifndef SPINCOREPULSEBLASTER24BIT_H
 #define SPINCOREPULSEBLASTER24BIT_H
 
+#ifndef SPINCORE_PULSEBLASTER_H
 #include "drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h"
 #include "drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h"
+#endif
 #include "core/stopwatch.h"
 #include <cstdio>
 #include <string>
