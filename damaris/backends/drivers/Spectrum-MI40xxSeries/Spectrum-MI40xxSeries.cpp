@@ -216,7 +216,7 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
             /* save channel mask and number of channels */
 		    if (settings.lSetChannels > 0 && settings.qwSetChEnableMap.to_ulong() > 0) {
                 if (settings.qwSetChEnableMap != inputs.front()->channels) {
-				    fprintf(stderr, "Warning! different channels enabled in input %i and in config %i, setting to default \n",
+				    fprintf(stderr, "Warning! different channels enabled in input %lu and in config %lu, setting to default \n",
 						    settings.qwSetChEnableMap.to_ulong(),
 						    inputs.front()->channels.to_ulong());
 				    settings.qwSetChEnableMap = channel_array(ADC_MI_DEFAULT_CHANNELS);
@@ -308,7 +308,7 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 		    double delayed_gating_time=0.0;
 		    // the gating time has an offset, which was found to be 1.5 dwelltimes for <2.5MHz and 4.5 dwelltimes for >=2.5MHz
 		    double gating_time;
-		    fprintf(stderr, "Channels: %d\n", settings.qwSetChEnableMap.to_ulong());
+		    fprintf(stderr, "Channels: %lu\n", settings.qwSetChEnableMap.to_ulong());
 		    
 		    /* check if channel mask is legal for the card */
 	        if (this->IsChannelMaskLegal(inputs.front()->channels.to_ulong())) {
@@ -527,7 +527,7 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
   /* and the dirty things there...
      ----- setup board for recording -----
   */
-  for (unsigned int j=0; j<effective_settings->lSetChannels; j++) {
+  for (unsigned int j=0; j<(unsigned int)effective_settings->lSetChannels; j++) {
     SpcSetParam (deviceno, SPC_AMP0 + 100*j,    (int)floor(effective_settings->sensitivity[j]*1000));          // +/- 5V input range
     SpcSetParam (deviceno, SPC_50OHM0 + 100*j,  ((effective_settings->impedance[j]==50.0)?1:0));             // 1 = 50 Ohm input impedance, 0 = 1MOhm input impedance
     SpcSetParam (deviceno, SPC_OFFS0 +  100*j, effective_settings->offset[j]); // set offset to zero

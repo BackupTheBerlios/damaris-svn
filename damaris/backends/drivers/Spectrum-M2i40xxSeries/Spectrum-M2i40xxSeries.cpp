@@ -99,16 +99,16 @@ bool SpectrumM2i40xxSeries::Configuration::bOpenCard() {
 }
 
 char* SpectrumM2i40xxSeries::Configuration::PrintInfo() {
-	char sInfo[10000];
-	char sTmp[100];
+	char *sInfo = new char[10000];
+	char *sTmp = new char[100];
 
 	// the card type + serial number
 	switch (lCardType & TYP_SERIESMASK){
-		case TYP_M2ISERIES:     sprintf(sInfo, "M2i.%04x sn %05d\n", lCardType & TYP_VERSIONMASK, lSerialNumber); break;
-		case TYP_M2IEXPSERIES:  sprintf(sInfo, "M2i.%04x-Exp sn %05d\n", lCardType & TYP_VERSIONMASK, lSerialNumber); break;
+		case TYP_M2ISERIES:     sprintf(sInfo, "M2i.%04x sn %05d\n",(unsigned int)  (lCardType & TYP_VERSIONMASK), lSerialNumber); break;
+		case TYP_M2IEXPSERIES:  sprintf(sInfo, "M2i.%04x-Exp sn %05d\n", (unsigned int)( lCardType & TYP_VERSIONMASK), lSerialNumber); break;
 		default:                sprintf(sInfo, "Type: %x not supported so far\n", lCardType); break;
 	}
-	sprintf(sTmp, "  Installed memory:  %d MByte\n", llInstMemBytes / 1024 / 1024);
+	sprintf(sTmp, "  Installed memory:  %lld MByte\n", llInstMemBytes / 1024 / 1024);
 	strcat(sInfo, sTmp);
 	sprintf(sTmp, "  Max sampling rate: %.1f MS/s\n", (double) lMaxSampleRate / 1000000);
 	strcat(sInfo, sTmp);
@@ -307,7 +307,7 @@ void SpectrumM2i40xxSeries::collect_config_recursive(state_sequent& exp, Spectru
 				if (settings.lSetChannels > 0) {
 					if (settings.qwSetChEnableMap.to_ulong() > 0) {
 						if (settings.qwSetChEnableMap != inputs.front()->channels) {
-							fprintf(stderr, "Warning! different channels enabled in input %i and in config %i, setting to default \n",
+							fprintf(stderr, "Warning! different channels enabled in input %lu and in config %lu, setting to default \n",
 									settings.qwSetChEnableMap.to_ulong(),
 									inputs.front()->channels.to_ulong());
 							settings.qwSetChEnableMap = channel_array(ADC_M2I_DEFAULT_CHANNELS);
@@ -326,7 +326,6 @@ void SpectrumM2i40xxSeries::collect_config_recursive(state_sequent& exp, Spectru
 
 
 				// calculate the time required
-				double delayed_gating_time;
 				// the gating time has an offset, which was found to be 1.5 dwelltimes for <2.5MHz and 4.5 dwelltimes for >=2.5MHz
 				double time_required;
 				time_required = (inputs.front()->samples)/settings.samplefreq;
@@ -481,7 +480,7 @@ result* SpectrumM2i40xxSeries::get_samples(double _timeout) {
 	if (sampleno == 0) return new adc_result(1,0,NULL);
 
 #if SPC_DEBUG
-	fprintf(stderr, "samples: %i\tchannels: %i\tbytes/sample: %i\n", sampleno, effective_settings->lSetChannels, effective_settings->lBytesPerSample);
+	fprintf(stderr, "samples: %lu\tchannels: %i\tbytes/sample: %i\n", sampleno, effective_settings->lSetChannels, effective_settings->lBytesPerSample);
 #endif
 
 	int memSize = sampleno * effective_settings->lSetChannels * effective_settings->lBytesPerSample;
