@@ -124,6 +124,8 @@ PulseBlaster24BitProgram::PulseBlaster24BitProgram(const PulseBlaster24BitProgra
 PulseBlasterCommand* PulseBlaster24BitProgram::create_command(const state& the_state) {
     if (typeid(the_state)==typeid(state_sequent)||typeid(the_state)==typeid(state_parallel))
 	throw pulse_exception("PulseBlasterCommands can only be created from states");
+    if (the_state.length < minimum_interval)
+	throw pulse_exception("PulseBlaster state too short: t<90ns");
     // all states or-ed together
     int the_ttls=0;
     for (state::const_iterator i=the_state.begin();i!=the_state.end();++i) {
