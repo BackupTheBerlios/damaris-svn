@@ -28,6 +28,9 @@ test.o: test.cpp Spectrum-MI40xxSeries.h include/spcerr.h
 
 test: test.o Spectrum-MI40xxSeries.o ../../core/core.a
 	$(CXX) -o $@ -I../.. ../ADC.h $^ -lpthread -lm
+hw_test: hw_test.cpp
+	$(CXX) -o $@ -Iinclude $^
+
 
 ../../core/core.a:
 	$(MAKE) -C ../../core core.a
