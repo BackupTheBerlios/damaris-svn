@@ -56,7 +56,7 @@ else:
     # default
     from matplotlib.backends.backend_gtkcairo import FigureCanvasGTKCairo as FigureCanvas
     from matplotlib.backends.backend_gtkcairo import NavigationToolbar2GTK as NavigationToolbar
-    max_points_to_display=1<<14
+    max_points_to_display=0
 
 import matplotlib.axes
 import matplotlib.figure
