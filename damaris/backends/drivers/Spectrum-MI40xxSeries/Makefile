@@ -1,12 +1,12 @@
 CPPFLAGS=-Iinclude -I../..
-CXXFLAGS=-Wshadow -Wall -pedantic -O0  -DSPC_DEBUG=0
+CXXFLAGS=-Wshadow -Wall -pedantic -O0
 AR=ar
 
 
 SPC_HEADERS = include/spcerr.h include/regs.h include/dlltyp.h include/spcioctl.inc
 SPC_ZIP = ../Spectrum-M2i40xxSeries/drv_spcm_linux_drv_v214b5633.zip
 
-all: clean $(SPC_HEADERS) patch Spectrum-MI40xxSeries.a
+all: clean $(SPC_HEADERS) patch Spectrum-MI40xxSeries.a hw_test_int hw_test_ext
 
 $(SPC_HEADERS): $(SPC_ZIP)
 	unzip -u $< "*.h" "*.txt" "*.inc" -d include/
@@ -26,9 +26,11 @@ GatedData.o: GatedData.cpp GatedData.h
 test.o: test.cpp Spectrum-MI40xxSeries.h include/spcerr.h
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 
-test: test.o Spectrum-MI40xxSeries.o ../../core/core.a
+test: test.o Spectrum-MI40xxSeries.o ../../core/core.a 
 	$(CXX) -o $@ -I../.. ../ADC.h $^ -lpthread -lm
-hw_test: hw_test.cpp
+hw_test_int: hw_test_intclock.cpp 
+	$(CXX) -o $@ -Iinclude $^
+hw_test_ext: hw_test_extclock.cpp 
 	$(CXX) -o $@ -Iinclude $^
 
 
@@ -36,5 +38,5 @@ hw_test: hw_test.cpp
 	$(MAKE) -C ../../core core.a
 
 clean:
-	rm -f *.o *.a *~ test *.core
+	rm -f *.o *.a *~ test *.core hw_test_ext hw_test_int
 	rm -rf include

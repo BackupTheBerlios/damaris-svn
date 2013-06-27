@@ -1,5 +1,5 @@
 /*
- * simple test program simplified from 
+ * simple test program simplified from
  * mi40xx.cpp example program (c) Spectrum GmbH
  *
 */
@@ -18,7 +18,7 @@
 
 // ----- main task -----
 int main(int argc, char **argv)
-    {
+{
     int     hDrv;
     //int16   nCount, nPCIBusVersion
     int16   nChannels;
@@ -28,21 +28,21 @@ int main(int argc, char **argv)
     ptr16   pnTmp;
     int32   i, k;
     int16   j, nErr;
-    
+
 
     hDrv = open ("/dev/spc0", O_RDWR);
     if (hDrv <= 0)
-        {
+    {
         printf ("device not found\n");
         return -1;
-        }
+    }
 
 
     nChannels = 2;
     lChEnable = CHANNEL0 | CHANNEL1;
 
     // ----- set memsize for recording ----
-    lMemsize = 2*1024; 
+    lMemsize = 2*1024;
 
     // ----- setup board for recording -----
     for (j=0; j<nChannels; j++)
@@ -56,10 +56,10 @@ int main(int argc, char **argv)
 
     SpcSetParam (hDrv, SPC_PLL_ENABLE,          1);             // Internal PLL enabled for clock
     SpcSetParam (hDrv, SPC_EXTERNALCLOCK,       0);             // Internal clock used
-    SpcSetParam (hDrv, SPC_CLOCKOUT,       0);             // no clock out
-    SpcSetParam (hDrv, SPC_REFERENCECLOCK,       50000000);             // Internal clock used
-    SpcSetParam (hDrv, SPC_CLOCK50OHM,       0);             // clock 50 Ohm
-    printf ("Using external reference clock\n");
+    SpcSetParam (hDrv, SPC_CLOCKOUT,       	0);             // no clock out
+    SpcSetParam (hDrv, SPC_REFERENCECLOCK,      50000000);             // External reference clock used
+    SpcSetParam (hDrv, SPC_CLOCK50OHM,       	0);             // clock impedance NOT 50 Ohm
+    printf ("Using external internal clock\n");
     SpcSetParam (hDrv, SPC_SAMPLERATE,          10000000);      // Samplerate: 10 MHz
     SpcSetParam (hDrv, SPC_EXTERNOUT,           0);             // No clock output
 
@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 
     // ----- driver error: request error and end program -----
     if (nErr != ERR_OK)
-        {
+    {
         SpcGetParam (hDrv, SPC_LASTERRORCODE,   &lErrorCode);
         SpcGetParam (hDrv, SPC_LASTERRORREG,    &lErrorReg);
         SpcGetParam (hDrv, SPC_LASTERRORVALUE,  &lErrorValue);
@@ -85,16 +85,16 @@ int main(int argc, char **argv)
         printf ("Driver error: %i in register %i at value %i\n", lErrorCode, lErrorReg, lErrorValue);
 
         return -1;
-        }
+    }
 
 
 
     // ----- Wait for Status Ready  -----
     printf("Wating\n");
     do
-        {
+    {
         SpcGetParam (hDrv, SPC_STATUS,      &lStatus);
-        }
+    }
     while (lStatus != SPC_READY);
 
     printf ("Board is ready, recording has finished\n");
@@ -107,10 +107,10 @@ int main(int argc, char **argv)
 
     // ----- data is muxed and must be splitted -----
     pnTmp = (ptr16) malloc (lMemsize * nChannels * sizeof(int16));
-        SpcGetData (hDrv, 0, 0, nChannels * lMemsize, 2, (dataptr) pnTmp);
-        for (i=0; i<lMemsize; i++)
-            for (k=0; k<nChannels; k++)
-                pnData[k][i] = pnTmp[nChannels * i + k];
+    SpcGetData (hDrv, 0, 0, nChannels * lMemsize, 2, (dataptr) pnTmp);
+    for (i=0; i<lMemsize; i++)
+        for (k=0; k<nChannels; k++)
+            pnData[k][i] = pnTmp[nChannels * i + k];
     free (pnTmp);
 
 
@@ -118,12 +118,12 @@ int main(int argc, char **argv)
     // ----- output samples  -----
     printf ("# Data (Integer):\n# Ch0  Ch1\n");
     for (i=0; i<lMemsize; i++)
-        {
-    	for (j=0; j<nChannels; j++)
-	    printf ("% 5i ", pnData[j][i]);
+    {
+        for (j=0; j<nChannels; j++)
+            printf ("% 5i ", pnData[j][i]);
         printf ("\n");
-        }
-  
+    }
+
     // ----- free data memory -----
     for (i=0; i<nChannels; i++)
         free (pnData[i]);
@@ -132,4 +132,4 @@ int main(int argc, char **argv)
 
 
     return 0;
-    }
+}
