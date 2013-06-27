@@ -1,4 +1,4 @@
-damaris (0.14-svn725) UNRELEASED; urgency=low
+damaris (0.14-svn727) experimental; urgency=low
 
  * r714 Big Kernel Lock was removed in linux kernel 2.6.39, 
  * kernel driver adjusted accordingly, compiles on kernel 3.2.0
