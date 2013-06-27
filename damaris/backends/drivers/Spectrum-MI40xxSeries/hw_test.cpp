@@ -42,7 +42,7 @@ int main(int argc, char **argv)
     lChEnable = CHANNEL0 | CHANNEL1;
 
     // ----- set memsize for recording ----
-    lMemsize = 32*1024; 
+    lMemsize = 2*1024; 
 
     // ----- setup board for recording -----
     for (j=0; j<nChannels; j++)
@@ -56,6 +56,10 @@ int main(int argc, char **argv)
 
     SpcSetParam (hDrv, SPC_PLL_ENABLE,          1);             // Internal PLL enabled for clock
     SpcSetParam (hDrv, SPC_EXTERNALCLOCK,       0);             // Internal clock used
+    SpcSetParam (hDrv, SPC_CLOCKOUT,       0);             // no clock out
+    SpcSetParam (hDrv, SPC_REFERENCECLOCK,       50000000);             // Internal clock used
+    SpcSetParam (hDrv, SPC_CLOCK50OHM,       0);             // clock 50 Ohm
+    printf ("Using external reference clock\n");
     SpcSetParam (hDrv, SPC_SAMPLERATE,          10000000);      // Samplerate: 10 MHz
     SpcSetParam (hDrv, SPC_EXTERNOUT,           0);             // No clock output
 
@@ -66,7 +70,7 @@ int main(int argc, char **argv)
 
 
     // ----- start the board -----
-    printf("Starting recording");
+    printf("Starting recording\n");
     nErr = SpcSetParam (hDrv, SPC_COMMAND,      SPC_START);     // start the board
 
 

@@ -1,5 +1,5 @@
 CPPFLAGS=-Iinclude -I../..
-CXXFLAGS=-Wshadow -Wall -pedantic -O0 -g
+CXXFLAGS=-Wshadow -Wall -pedantic -O0  -DSPC_DEBUG=0
 AR=ar
 
 

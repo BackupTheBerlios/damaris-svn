@@ -37,8 +37,8 @@
 #endif
 
 class SpectrumMI40xxSeries_error: public ADC_exception {
- public:
-  SpectrumMI40xxSeries_error(const std::string& message): ADC_exception(message) {}
+public:
+    SpectrumMI40xxSeries_error(const std::string& message): ADC_exception(message) {}
 };
 
 
@@ -47,7 +47,7 @@ class SpectrumMI40xxSeries_error: public ADC_exception {
  */
 class SpectrumMI40xxSeries: public ADC {
     /**
-       analogin device number 
+       analogin device number
     */
     int deviceno;
 
@@ -80,123 +80,123 @@ class SpectrumMI40xxSeries: public ADC {
 
 
 # if defined __linux__
-  // ----- include the easy ioctl commands from the driver -----
+    // ----- include the easy ioctl commands from the driver -----
 #  include "include/spcioctl.inc"
 # endif
 
 # if defined __CYGWIN__
-  HINSTANCE spectrum_driver_dll;
-  int16 boardcount;
-  int16 PCIVersion;
+    HINSTANCE spectrum_driver_dll;
+    int16 boardcount;
+    int16 PCIVersion;
 # define define_spectrum_function(name, returntype, ... ) typedef returntype (__attribute__((stdcall)) *name##_type)(__VA_ARGS__); name##_type name
-  define_spectrum_function(SpcSetParam, int16, int16, int32, int32);
-  define_spectrum_function(SpcGetParam, int16, int16, int32, int32*);
-  define_spectrum_function(SpcGetData, int16, int16, int16, int32, int32, void*);
-  define_spectrum_function(SpcInitPCIBoards, int16, int16*, int16*);
+    define_spectrum_function(SpcSetParam, int16, int16, int32, int32);
+    define_spectrum_function(SpcGetParam, int16, int16, int32, int32*);
+    define_spectrum_function(SpcGetData, int16, int16, int16, int32, int32, void*);
+    define_spectrum_function(SpcInitPCIBoards, int16, int16*, int16*);
 # endif
 
-  class Configuration {
-  public:
-      /* sampling frequency in Hz */
-      double samplefreq;
-      /* acquired data description */
-      DataManagementNode* data_structure;
-      /* a timeout for acquiring data in s*/
-      double timeout;
-      /** configured input impedance in Ohm*/
-      double* impedance;
-      /** configured input sensitivity in V*/
-      double* sensitivity;
-      /** coupling 0=DC else AC */
-      int coupling;
-      /** external reference clock **/
-      int ext_reference_clock;
+    class Configuration {
+    public:
+        /* sampling frequency in Hz */
+        double samplefreq;
+        /* acquired data description */
+        DataManagementNode* data_structure;
+        /* a timeout for acquiring data in s*/
+        double timeout;
+        /** configured input impedance in Ohm*/
+        double* impedance;
+        /** configured input sensitivity in V*/
+        double* sensitivity;
+        /** coupling 0=DC else AC */
+        int coupling;
+        /** external reference clock **/
+        int ext_reference_clock;
 
-      /** offsets for each channel in % of sensitivity **/
-      int* offset;
-      
-      /** \brief Number of used channels for this run */
-      int lSetChannels;
-      /** \brief Bitmap for currently enabled channels */
-	  channel_array qwSetChEnableMap;
+        /** offsets for each channel in % of sensitivity **/
+        int* offset;
 
-      /** print data for debug purpose  */
-      void print(FILE* f);
-      
-      
+        /** \brief Number of used channels for this run */
+        int lSetChannels;
+        /** \brief Bitmap for currently enabled channels */
+        channel_array qwSetChEnableMap;
 
-      Configuration() {
-	    samplefreq=0; 
-        timeout=0;
-        impedance=NULL;
-	    sensitivity=NULL;
-	    offset = NULL;
-	    coupling=0;
-	    ext_reference_clock=0; 
-	    data_structure=NULL;
-	    lSetChannels=0;
-	    qwSetChEnableMap=0;
-      }
+        /** print data for debug purpose  */
+        void print(FILE* f);
 
-      Configuration(const Configuration& orig) {
-	    samplefreq=orig.samplefreq;
-	    timeout=orig.timeout;
-	    impedance=orig.impedance;
-	    sensitivity=orig.sensitivity;
-	    coupling=orig.coupling;
-	    ext_reference_clock=orig.ext_reference_clock;
-	    qwSetChEnableMap = orig.qwSetChEnableMap;
-	    lSetChannels = orig.lSetChannels;
-	    if (orig.data_structure==NULL) data_structure=NULL;
-	    else data_structure=new DataManagementNode(*orig.data_structure);
-      }
-      
-      ~Configuration() {
-	if (data_structure!=NULL) delete data_structure;
-      }
-  };
 
-  /**
-     these settings are copied and modified at need to derive effective settings
-   */
-  Configuration default_settings;
 
-  /**
-     only available with started measurement
-   */
-  Configuration* effective_settings;
+        Configuration() {
+            samplefreq=0;
+            timeout=0;
+            impedance=NULL;
+            sensitivity=NULL;
+            offset = NULL;
+            coupling=0;
+            ext_reference_clock=0;
+            data_structure=NULL;
+            lSetChannels=0;
+            qwSetChEnableMap=0;
+        }
 
-  short int* split_adcdata_recursive(short int* data, const DataManagementNode& structure, adc_results& result_splitted);
+        Configuration(const Configuration& orig) {
+            samplefreq=orig.samplefreq;
+            timeout=orig.timeout;
+            impedance=orig.impedance;
+            sensitivity=orig.sensitivity;
+            coupling=orig.coupling;
+            ext_reference_clock=orig.ext_reference_clock;
+            qwSetChEnableMap = orig.qwSetChEnableMap;
+            lSetChannels = orig.lSetChannels;
+            if (orig.data_structure==NULL) data_structure=NULL;
+            else data_structure=new DataManagementNode(*orig.data_structure);
+        }
 
-  void collect_config_recursive(state_sequent& exp, SpectrumMI40xxSeries::Configuration& settings);
-  
-  bool IsChannelMaskLegal(int mask);
+        ~Configuration() {
+            if (data_structure!=NULL) delete data_structure;
+        }
+    };
+
+    /**
+       these settings are copied and modified at need to derive effective settings
+     */
+    Configuration default_settings;
+
+    /**
+       only available with started measurement
+     */
+    Configuration* effective_settings;
+
+    short int* split_adcdata_recursive(short int* data, const DataManagementNode& structure, adc_results& result_splitted);
+
+    void collect_config_recursive(state_sequent& exp, SpectrumMI40xxSeries::Configuration& settings);
+
+    bool IsChannelMaskLegal(int mask);
 
 public:
-  SpectrumMI40xxSeries(const ttlout& t_line, float impedance=1e6, int ext_reference_clock=(int)100e6);
+    SpectrumMI40xxSeries(const ttlout& t_line, float impedance=1e6, int ext_reference_clock=(int)100e6);
 
-  virtual void sample_after_external_trigger(double rate, size_t samples, double sensitivity=5.0, size_t resolution=14);
+    virtual void sample_after_external_trigger(double rate, size_t samples, double sensitivity=5.0, size_t resolution=14);
 
-  virtual void set_daq(state & exp);
+    virtual void set_daq(state & exp);
 
 
-  /**
-     for syncronization purposes with sample clock
-   */
-  double get_sample_clock_frequency() const;
+    /**
+       for syncronization purposes with sample clock
+     */
+    double get_sample_clock_frequency() const;
 
-  /**
-     get results from transient recorder
-     timeout: 0.0 return immediately
-  */
-  virtual result* get_samples(double timeout=0.0);
+    /**
+       get results from transient recorder
+       timeout: 0.0 return immediately
+    */
+    virtual result* get_samples(double timeout=0.0);
 
-  /**
-     timeout issues during fifo acquisition
-   */
-  int TimeoutThread();
+    /**
+       timeout issues during fifo acquisition
+     */
+    int TimeoutThread();
 
-  virtual ~SpectrumMI40xxSeries();
+    virtual ~SpectrumMI40xxSeries();
 };
 
 #endif
