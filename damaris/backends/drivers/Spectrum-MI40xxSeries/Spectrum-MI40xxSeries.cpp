@@ -303,143 +303,154 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
                     throw ADC_exception("Number of samples must be a multiple of four");
                 }
 
-
-
-                // adapt sample count
-                if (inputs.front()->samples%4!=0) {
-                    throw ADC_exception("number of samples must be multiple of four");
-                }
-
-                // calculate the time required
-                double delayed_gating_time=0.0;
-                // the gating time has an offset, which was found to be 1.5 dwelltimes for <2.5MHz and 4.5 dwelltimes for >=2.5MHz
-                double gating_time;
-                fprintf(stderr, "ADC Channels: %lx\n", settings.qwSetChEnableMap.to_ulong());
-
-                /* check if channel mask is legal for the card */
-                if (this->IsChannelMaskLegal(inputs.front()->channels.to_ulong())) {
-                    settings.qwSetChEnableMap = inputs.front()->channels;
-                    settings.lSetChannels = inputs.front()->nchannels;
-                } else {
-                    throw SpectrumMI40xxSeries_error("Selected channels combination not allowed for this card type");
-                }
-                /* apply proper timing */
-                if ( settings.qwSetChEnableMap.to_ulong()==(CHANNEL0|CHANNEL1) || settings.qwSetChEnableMap.to_ulong()==(CHANNEL0|CHANNEL1|CHANNEL2|CHANNEL3) )  {
-                    fprintf(stderr, "Default Channels\n");
-                    if (settings.samplefreq<2.5e6) {
+		    // calculate the time required
+		    double delayed_gating_time=0.0;
+		    // the gating time has an offset, which was found to be 1.5 dwelltimes for <2.5MHz and 4.5 dwelltimes for >=2.5MHz
+		    double gating_time;
+		    
 #if SPC_DEBUG
-                        printf("Special case sampling freq <2.5MHz\n");
+		    fprintf(stderr, "Channels: %lu\n", settings.qwSetChEnableMap.to_ulong());
 #endif
-                        // if sampling rate is <2.5MHz, there is another data handling mode,
-                        // see MI4021 manual page 79: "Accquisition Delay: -6 Samples"
-                        // it might be necessary to add 0.1 dwelltime to shift the sampling start a little more...
-                        gating_time=(inputs.front()->samples+1.5)/settings.samplefreq;
-                        delayed_gating_time=ceil(1e8*6.0/settings.samplefreq)/1e8;
-                    } else {
-                        gating_time=(inputs.front()->samples+4.5)/settings.samplefreq;
-                        delayed_gating_time=0.0;
-                    }
-                } else if (settings.qwSetChEnableMap.to_ulong()==CHANNEL0 || settings.qwSetChEnableMap.to_ulong()==(CHANNEL0|CHANNEL2) )  {
-#if SPC_DEBUG
-                    fprintf(stderr, "Unusual channel combination\n");
+		    
+		    /* check if channel mask is legal for the card */
+	        if (this->IsChannelMaskLegal(inputs.front()->channels.to_ulong())) {
+    		    settings.qwSetChEnableMap = inputs.front()->channels;
+			    settings.lSetChannels = inputs.front()->nchannels;
+		    } else {
+		        throw SpectrumMI40xxSeries_error("Selected channels combination not allowed for this card type");
+		    }
+		    /* apply proper timing */
+		    if ( settings.qwSetChEnableMap.to_ulong()==(CHANNEL0|CHANNEL1) || settings.qwSetChEnableMap.to_ulong()==(CHANNEL0|CHANNEL1|CHANNEL2|CHANNEL3) )  {
+#if SPC_DEBUG		    
+                fprintf(stderr, "Default Channels\n");
 #endif
-                    if (settings.samplefreq<5e6) {
-                        gating_time=(inputs.front()->samples+1.5)/settings.samplefreq;
-                        delayed_gating_time=ceil(1e8*6.0/settings.samplefreq)/1e8;
-                    } else {
-                        gating_time=(inputs.front()->samples+4.5)/settings.samplefreq;
-                        delayed_gating_time=-ceil(1e8*7.0/settings.samplefreq)/1e8;
+		        if (settings.samplefreq<2.5e6) {
+		            // if sampling rate is <2.5MHz, there is another data handling mode,
+		            // see MI4021 manual page 79: "Accquisition Delay: -6 Samples"
+		            // it might be necessary to add 0.1 dwelltime to shift the sampling start a little more...
+		            
+		            // edit by Stefan Reutter @2013-06, it seems that the MI4021 cards actually have a second 
+		            // threshold at 500 kHz that is not mentioned in the manual.
+		            // this can be tested by disabling the if below and switching over the threshold
+		            gating_time=(inputs.front()->samples)/settings.samplefreq;
+		            if (settings.samplefreq >= 5e5) {
+    		            delayed_gating_time=ceil(1e8*6.0/settings.samplefreq)/1e8;
+		            } else {
+    		            delayed_gating_time=0.0;
+		            }
+		        } else {
+		            gating_time=(inputs.front()->samples+3)/settings.samplefreq;
+		            delayed_gating_time=0.0;
+		        }
+		    }
+		    // disabled the more exotic channel setup as it is untested with the updated timings and probably not used anyways
+		    /* else if (settings.qwSetChEnableMap.to_ulong()==CHANNEL0 || settings.qwSetChEnableMap.to_ulong()==(CHANNEL0|CHANNEL2) )  {
+#if SPC_DEBUG		    
+                fprintf(stderr, "Weird Channels\n");
+#endif
+		        if (settings.samplefreq<5e6) {
+		            gating_time=(inputs.front()->samples+1.5)/settings.samplefreq;
+		            delayed_gating_time=ceil(1e8*6.0/settings.samplefreq)/1e8;
+        		} else {
+		            gating_time=(inputs.front()->samples+4.5)/settings.samplefreq;
+		            delayed_gating_time=-ceil(1e8*7.0/settings.samplefreq)/1e8;
+
+            } */else {
+		        throw SpectrumMI40xxSeries_error("Selected channels combination not allowed");
+		    }
+		
+		    gating_time=ceil(1e8*gating_time)/1e8; 
+		    double time_required=delayed_gating_time+gating_time;
+		    // check time requirements
+		    if (a_state->length < gating_time) {
+		        char parameter_info[512];
+		        snprintf(parameter_info,sizeof(parameter_info),
+			        "(%" SIZETPRINTFLETTER " samples, %g samplerate, %e time required, %e state time)",
+			        inputs.front()->samples,
+			        settings.samplefreq,
+			        time_required,
+			        a_state->length);
+#if SPC_DEBUG	
+			    fprintf(stderr, "state is shorter than acquisition time %e time required, %e state time\n", gating_time, a_state->length);
+#endif
+			    a_state->length = time_required;    // update the state length if it's shorter than the gate. this is usually due to rounding to 10 ns for the pulseblaster
+		        //throw ADC_exception(std::string("state is shorter than acquisition time")+parameter_info);
+		    }
+            // if necessary, add the gating pulse delay...
+            if (delayed_gating_time>0.0) {
+                state* delayed_gating_state=new state(*a_state);
+                delayed_gating_state->length=delayed_gating_time;
+                // insert before me
+                exp.insert(i,(state_atom*)delayed_gating_state);
+		    } else if (delayed_gating_time < 0.0)  {
+                /*
+		        For +samples delays
+                    1. get the previous state
+                    2. if the length is not long enough (6*dw) add the state before
+                    3. split the state(s) so that we have the gating on 6*dw before the actual recording
+                */
+                double rest_length = delayed_gating_time;
+                state_sequent::iterator i_prev;
+                state* prev_state;
+                i_prev = i;
+                do {
+                    i_prev--;
+                    prev_state = dynamic_cast<state*>(*(i_prev));
+                    rest_length -= prev_state->length;
+                    fprintf(stderr, "DW rest_length: %g\n", rest_length);
+                    fprintf(stderr, "DW state_length: %g\n", prev_state->length);
+                    if (rest_length >= 0)
+                        prev_state->push_back(trigger_line.copy_new()); // add trigger to this state
+                    else { // split final state
+                        state* prev_state_1 = prev_state->copy_flat(); //create copy of current state
+                        prev_state_1->length += rest_length; // adjust 1st part length
+                        exp.insert(i_prev,(state_atom*) prev_state_1); // insert AFTER prev_state
+                        prev_state->length = -rest_length; // adjust 2nd part length
+                        prev_state->push_back(trigger_line.copy_new()); // add trigger to 2nd part
+                        break;
                     }
-                } else {
-                    throw SpectrumMI40xxSeries_error("Selected channels combination not allowed");
-                }
 
-                gating_time=round(1e8*gating_time)/1e8;
-                double time_required=delayed_gating_time+gating_time;
-                // check time requirements
-                char parameter_info[512];
-                snprintf(parameter_info,sizeof(parameter_info),
-                         "(%" SIZETPRINTFLETTER " samples, %g samplerate, %e time required, %e state time)",
-                         inputs.front()->samples,
-                         settings.samplefreq,
-                         time_required,
-                         a_state->length);
-                if (a_state->length<=time_required) {
-                    throw ADC_exception(std::string("state is shorter than acquisition time")+parameter_info);
-                }
-                // if necessary, add the gating pulse delay...
-                if (delayed_gating_time>0.0) {
-                    state* delayed_gating_state=new state(*a_state);
-                    delayed_gating_state->length=delayed_gating_time;
-                    // insert before me
-                    exp.insert(i,(state_atom*)delayed_gating_state);
-                } else if (delayed_gating_time < 0.0)  {
-                    /*
-                    For +samples delays
-
-                        1. get the previous state
-                        2. if the length is not long enough (6*dw) add the state before
-                        3. split the state(s) so that we have the gating on 6*dw before the actual recording
-                    */
-                    double rest_length = delayed_gating_time;
-                    state_sequent::iterator i_prev;
-                    state* prev_state;
-                    i_prev = i;
-                    do {
-                        i_prev--;
-                        prev_state = dynamic_cast<state*>(*(i_prev));
-                        rest_length -= prev_state->length;
-                        fprintf(stderr, "DW rest_length: %g\n", rest_length);
-                        fprintf(stderr, "DW state_length: %g\n", prev_state->length);
-                        if (rest_length >= 0)
-                            prev_state->push_back(trigger_line.copy_new()); // add trigger to this state
-                        else { // split final state
-                            state* prev_state_1 = prev_state->copy_flat(); //create copy of current state
-                            prev_state_1->length += rest_length; // adjust 1st part length
-                            exp.insert(i_prev,(state_atom*) prev_state_1); // insert AFTER prev_state
-                            prev_state->length = -rest_length; // adjust 2nd part length
-                            prev_state->push_back(trigger_line.copy_new()); // add trigger to 2nd part
-                            break;
-                        }
-
-                    } while (i_prev!=exp.begin() || rest_length > 0.0);
-                }
+                } while (i_prev!=exp.begin() || rest_length > 0.0);
+            }
 # if SPC_DEBUG
-                fprintf(stderr, "sequence after pre_trigger correction:\n");
-                xml_state_writer().write_states(stderr, exp);
+            fprintf(stderr, "sequence after pre_trigger correction:\n");
+            xml_state_writer().write_states(stderr, exp);
 # endif
-
-                // adapt the pulse program for gated sampling
-                if (a_state->length == gating_time) {
-                    // state has proper length
-                    a_state->push_back(trigger_line.copy_new());
-                } else {
-                    // state is too long...
-                    // create new one with proper time and gated sampling pulse
-                    state* gated_sampling_pulse=new state(*a_state);
-                    gated_sampling_pulse->length=gating_time;
-                    gated_sampling_pulse->push_back(trigger_line.copy_new());
-                    // insert gate pulse state before remaining (original) state
-                    exp.insert(i,(state_atom*)gated_sampling_pulse);
-                    // shorten this state
-                    a_state->length-=time_required;
-                }
+			
+		    // adapt the pulse program for gated sampling
+		    if (a_state->length == gating_time) {
+		        // state has proper length
+		        a_state->push_back(trigger_line.copy_new());
+	        } else {
+# if SPC_DEBUG
+	            fprintf(stderr, "state too long, length %e, time required %e\n", a_state->length, time_required);
+# endif
+		        // state is too long... 
+		        // create new one with proper time and gated sampling pulse
+		        state* gated_sampling_pulse=new state(*a_state);
+		        gated_sampling_pulse->length=gating_time;
+		        gated_sampling_pulse->push_back(trigger_line.copy_new());
+		        // insert gate pulse state before remaining (original) state
+		        exp.insert(i,(state_atom*)gated_sampling_pulse);
+		        // shorten this state
+		        a_state->length-=time_required;
+		    }
+		    
 # if SPC_DEBUG
                 fprintf(stderr, "sequence after correcting trigger state:\n");
                 xml_state_writer().write_states(stderr, exp);
 # endif
-                /* save sampleno */
-                DataManagementNode* new_one=new DataManagementNode(new_branch);
-                new_one->n=inputs.front()->samples;
-                new_one->child=NULL;
-                new_one->next=where_to_append->next;
-                where_to_append->next=new_one;
-                where_to_append=new_one;
-                while (!inputs.empty()) {
-                    delete inputs.front();
-                    inputs.pop_front();
-                }
-            } /* !inputs.empty() */
+		    
+		    /* save sampleno */
+		    DataManagementNode* new_one=new DataManagementNode(new_branch);
+		    new_one->n=inputs.front()->samples;
+		    new_one->child=NULL;
+		    new_one->next=where_to_append->next;
+		    where_to_append->next=new_one;
+		    where_to_append=new_one;
+		    while (!inputs.empty()) {delete inputs.front(); inputs.pop_front();}
+	    } /* !inputs.empty() */
+
 
 
         } /* end working on state */
@@ -560,17 +571,29 @@ void SpectrumMI40xxSeries::set_daq(state & exp) {
 
     SpcSetParam (deviceno, SPC_SAMPLERATE,          (int)floor(effective_settings->samplefreq));      // Samplerate
 
-    // decide for aquisition mode and start it
-    int16 nErr=ERR_OK;
-    if (sampleno<fifo_minimal_size) {
+    // the MI4021 card doesn't accept all sampling frequency settings. check if the sampling rate is set correctly. if not, throw an exception
+    int setSamplingRate = 0;
+    SpcGetParam (deviceno, SPC_SAMPLERATE,          &setSamplingRate);
+    if (setSamplingRate != (int)floor(effective_settings->samplefreq)) {
+        char parameter_info[16];
+        snprintf(parameter_info,sizeof(parameter_info), "%d", setSamplingRate);
+        throw ADC_exception(std::string("DAC sampling rate not available. Try setting to: ")+parameter_info);
+    }
+
+  // decide for aquisition mode and start it
+  int16 nErr=ERR_OK;
+  if (sampleno<fifo_minimal_size) {
+
 #if SPC_DEBUG
         fprintf(stderr, "expecting %" SIZETPRINTFLETTER " samples in normal mode\n",sampleno);
 #endif
-        SpcSetParam (deviceno, SPC_MEMSIZE,             sampleno);      // Memory size
-        // ----- start the board -----
-        nErr = SpcSetParam (deviceno, SPC_COMMAND,      SPC_START);     // start the board
-    }
-    else {
+
+      SpcSetParam (deviceno, SPC_MEMSIZE,             sampleno);      // Memory size
+	  
+      // ----- start the board -----
+      nErr = SpcSetParam (deviceno, SPC_COMMAND,      SPC_START);     // start the board
+  } else {
+
 #if SPC_DEBUG
         fprintf(stderr, "expecting %" SIZETPRINTFLETTER " samples in fifo mode\n",sampleno);
 #endif

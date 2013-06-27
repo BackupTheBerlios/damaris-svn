@@ -125,7 +125,7 @@ class Experiment:
 
 
     def record(self, samples, frequency, timelength=None, sensitivity = None, ttls=None, channels = 3, offset = None, impedance = None):
-        attributes='s="%d" f="%g"'%(samples,frequency)
+        attributes='s="%d" f="%d"'%(samples,frequency)#%g
         if channels != 1 and channels != 3 and channels != 5 and channels != 15:
             raise ValueError, "Channel definition is illegal"
         attributes += ' channels="%i"'%(channels)
@@ -166,7 +166,7 @@ class Experiment:
     	if ttls is not None:
 	        s_content+='<ttlout value="0x%06x"/>' % ttls
         if timelength is None:
-            timelength = samples / float(frequency)*1.01
+            timelength = samples / float(frequency)#*1.01
         self.state_list.append(StateSimple(timelength, s_content))
 
 
