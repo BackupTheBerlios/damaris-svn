@@ -331,7 +331,9 @@ Gives out \emph{either} a \textsf{TTL} pulse with duration \textbf{length} on \t
 \caption{Line driver with a decimal value 17 set (or 0x11 hexadecimal). In binary, channel 0 and channel 3 are on}
 \label{binary}
 \end{figure}
-\newline
+
+%\newline
+
 \emph{\textbf{Example}}:
 \begin{lstlisting}
 e.ttl_pulse(lenght=5e-6, channel=1)
@@ -723,7 +725,7 @@ Arbitrary shaping of gradient pulses is also possible by using the command \text
 Shaping the gradients was not the focus of this work but the general function was tested using an oscilloscope at the current monitor of the PFG current source with the DAC creating a sine wave using several resolutions (Figure \ref{shapegrad}).
 \begin{figure}[h]
 \centering
-\includegraphics[]{shapegrad1}
+\includegraphics[]{pics/shapegrad1}
 \caption{A $\sin^2$  PFG pulse with \unit[1]{ms} length. The upper one with \unit[100]{$\mu$s}, the lower one with \unit[3.78]{$\mu$s} resolution }
 \label{shapegrad}
 \end{figure}
@@ -733,7 +735,7 @@ Shaping the gradients was not the focus of this work but the general function wa
 %\begin{floatingfigure}{\textwidth}
 \begin{figure}[ht]
 \centering
-\includegraphics[]{dac_fc}
+\includegraphics[]{pics/dac_fc}
 \caption{The DAC is controlling the $B_{0}$ field and the peak position of the FFT signal has been recorded. For each signal the DAC is newly set to the same value. The time delay between each scan is \unit[50]{s} }
 \label{gradstability}
 \end{figure}

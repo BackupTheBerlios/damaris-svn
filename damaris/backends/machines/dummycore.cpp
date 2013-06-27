@@ -49,7 +49,7 @@ class dummycore: public core {
 
 public:
     dummycore(const core_config& conf): core(conf) {
-	dummycore_name="dummy core";
+	dummycore_name="dummycore";
 	the_hardware=new dummy_hardware();
     }
 

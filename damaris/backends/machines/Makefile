@@ -12,7 +12,7 @@ CXXCPPFLAGS= -I. -I.. `pkg-config --cflags glib-2.0`
 LDFLAGS=
 LIBS=-lexpat -lxerces-c -lm `pkg-config --libs glib-2.0`
 
-EXEEXT = .exe
+EXEEXT = 
 
 MACHINES = \
 	dummycore$(EXEEXT) \

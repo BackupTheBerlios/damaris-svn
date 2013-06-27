@@ -69,6 +69,7 @@ class StateLoop(StateList):
 import dac
 
 class Experiment:
+    ## Experiment class holding the state tree
 
     job_id = 0
     
@@ -82,16 +83,34 @@ class Experiment:
 
 
     # Commands -------------------------------------------------------------------------------------
-
+    ## Deprecated
     def rf_pulse(self, value, length = None):
+        """
+        deprecated: use ttl_pulse
+        """
         s_content = '<ttlout value="0x%06x"/>' % value
 
         if length is None:
             self.state_list.append(s_content)
         else:
             self.state_list.append(StateSimple(length, s_content))
-
+    
+    ## Creates a state with ttl signals of duration *length*.
+    #
+    # **Example:**
+    # ttl_pulse(length=1e-6,value=3) 
+    # will create a ttl pulse on channels 0 and 1 (2**0 + 2**1) of duration 1us
+    # @param length time length if this state
+    # @param channel select a single channel (1...24)
+    # @param value select the channels via decimal representation (2**0 + 2**1 ...)
     def ttl_pulse(self, length, channel = None, value = None):
+        """
+        Creates a state with length *length* and switches 
+        some bits of the pulse programmer to HIGH:
+         * channel: this selects a single channel (No. 1 - 24)
+         * value: this is the integer representation of the 24bit word, 
+                  as an example value=3 selects channels 1 and 2 (2**1 + 2**2)
+        """
         the_value=0
         if value is not None:
             the_value=int(value)
@@ -100,22 +119,35 @@ class Experiment:
         self.state_list.append(StateSimple(length, \
             '<ttlout value="0x%06x"/>' % the_value))
 
+    ## Same as ttl_pulse, but no *channel* keyword
     def ttls(self, length = None, value = None):
+        """
+        same as ttl_pulse, but no *channel* keyword
+        """
         the_value=int(value)
         s_content = '<ttlout value="0x%06x"/>' % the_value
         if length is not None:
             self.state_list.append(StateSimple(length, s_content))
         else:
             self.state_list.append(s_content)
-
+    ## Beginning of a new state
     def state_start(self, time):
+        """
+        starts a state in the pulse programs with duration *time*. 
+        This must be closed with state_end
+        """
         self.state_list.append('<state time="%s">\n' % repr(time))
 
-
+    ## End of *state_start*
     def state_end(self):
+        """
+        closes a state after start_state 
+        """
         self.state_list.append('</state>\n')
 
-
+    ## An empty state doing nothing
+    # @param time Duration of this state
+    # @param ttls Additinional ttl channels
     def wait(self, time, ttls=None):
     	if ttls is not None:
 	        s_content = '<ttlout value="0x%06x"/>' % ttls
@@ -123,7 +155,12 @@ class Experiment:
         else:
         	self.state_list.append(StateSimple(time))
 
-
+    ## Records  data with given number of samples, sampling-frequency frequency and sensitivity
+    # @param samples Number of samples to record
+    # @param frequency Sampling frequency
+    # @param timelength Length of this state, per default calculated automatically
+    # @param sensitivity Sensitivity in Umax/V
+    # @param ttls Additional ttl channels
     def record(self, samples, frequency, timelength=None, sensitivity = None, ttls=None, channels = 3, offset = None, impedance = None):
         attributes='s="%d" f="%d"'%(samples,frequency)#%g
         if channels != 1 and channels != 3 and channels != 5 and channels != 15:
@@ -169,28 +206,48 @@ class Experiment:
             timelength = samples / float(frequency)#*1.01
         self.state_list.append(StateSimple(timelength, s_content))
 
-
+    ## Create a loop on the pulse programmer. Loop contents can not change inside the loop.
+    # @params iterations Number of loop iterations
     def loop_start(self, iterations):
+        """creates a loop of given number of iterations and has to be closed by loop_end().
+        Commands inside the loop can not change, i.e. the parameters are the same for each loop run. 
+        This loop is created on the pulse programmer, thus saving commands.
+        One must close the loop with loop_end (see below)"""
         l = StateLoop(iterations)
         self.state_list.append(l)
         # (These two lines could probably be guarded by a mutex)
         self.list_stack.append(self.state_list)
         self.state_list = l
 
-
+    ## End loop state
     def loop_end(self):
         # (This line could probably be guarded by a mutex)
         self.state_list = self.list_stack.pop(-1)
 
-
+    ## Set the frequency and phase of the frequency source.
+    ## This state needs 2us.
+    # @param frequency New frequency in Hz
+    # @param phase New phase in degrees 
+    # @param ttls Additional ttl channels
     def set_frequency(self, frequency, phase, ttls=0):
+        """
+        Sets the frequency and phase of the frequency source and optionally further channels. 
+        The time needed to set the frequency is 2 us.
+        Switch pulse programmer line with *ttls* .
+
+        """
         "Sets the frequency generator to a desired frequency (Hz)"
         s_content = '<analogout id="0" f="%f" phase="%f"/>' % (frequency, phase)
         if ttls != 0:
             s_content += '<ttlout value="0x%06x"/>' % ttls
         self.state_list.append(StateSimple(2e-6, s_content))
-    
-    def set_pfg(self, dac_value=None, length=None, shape=('rec',0), trigger=4, is_seq=0):
+    ## Creates a, possibly shaped, pulsed gradient.
+    # @param dac_value DAC value to set
+    # @param length Duration of the state, minimum length is 42*90ns=3.78us (default)
+    # @param shape Tuple of (shape, resolution/seconds), shape can be one of: rec (default), sin2, sin
+    # @param is_seq If set to *True*, do NOT set DAC to zero after this state
+    # @param trigger Additional ttl channels
+    def set_pfg(self, dac_value=None, length=None, shape=('rec',0), trigger=4, is_seq=False):
         """
         This sets the value for the PFG, it also sets it back automatically.
         If you don't whish to do so (i.e. line shapes)  set is_seq=1
@@ -208,20 +265,20 @@ class Experiment:
             length=42*9e-8
         if resolution >= length:
             raise ValueError, "Resolution %.3e of shaped gradients can not be longer than total length %.3e"%(resolution, length)
+
         if resolution < 42*9e-8:
             raise ValueError, "Resulution %.3e can not be smaller than %.3e"%(resolution, 42*9e-8)
 
-
         t_steps = numpy.arange(0,length,resolution)
         
-
         if form == 'rec': # shape==None --> rectangular gradients
             s_content = '<ttlout value="%s"/><analogout id="1" dac_value="%i"/>' % (trigger, dac_value)
             self.state_list.append(StateSimple(length, s_content))
         
-            if is_seq == 0 and shape == None:
+            if not is_seq and shape == None:
                 s_content = '<analogout id="1" dac_value="0"/>'
                 self.state_list.append(StateSimple(42*9e-8, s_content))
+
         elif form == 'sin2':
             # sin**2 shape
             for t in t_steps:
@@ -244,7 +301,8 @@ class Experiment:
 
         else: # don't know what to do
             raise SyntaxError , "form is unknown: %s"%form
-     
+
+    ## Deprecated, use set_pfg instead 
     def set_pfg_wt(self, I_out=None, dac_value=None, length=None, is_seq=0, trigger=4):
     	"""
         This sets the value for the PFG (plus trigger, default=2**2), it also sets it back automatically.
@@ -270,6 +328,12 @@ class Experiment:
                 % trigger
             self.state_list.append(StateSimple(42*9e-8, s_content))
 
+    ## sets the value of a DAC
+    # @param dac_value DAC value to set
+    # @param dac_id ID of the dac in case of multiple DAC(default=1)
+    # @param length Duration of the state
+    # @param is_seq If set to *True*, do NOT set DAC to zero after this state
+    # @param ttls Additional ttl channels
     def set_dac(self, dac_value, dac_id=1, length=None, is_seq=False, ttls=0):
         """
         This sets the value for the DAC and possibly some TTLs.
@@ -286,21 +350,35 @@ class Experiment:
                 % (dac_id, ttls)
             self.state_list.append(StateSimple(42*9e-8, s_content))
 
+    ## sets the phase of the frequency source.
+    ## This state needs 0.5us, though the phase switching time is dependent on the frequency source
+    # @param phase New phase to set
+    # @param ttls Additional ttl channels
     def set_phase(self, phase, ttls=0):
         s_content = '<analogout phase="%f" />' % (phase)
         if ttls!=0:
             s_content += '<ttlout value="%d"/>' % ttls
         self.state_list.append(StateSimple(0.5e-6, s_content))
         
-
+    ## sets a description which is carried via the back end result 
+    ## file to the result script in the front end. In the result script 
+    ## you can extract the description with get_description(key)
+    # @param key Name of description
+    # @param value Value of description
     def set_description(self, key, value):
-        "Sets a description"
+        """Sets a description which is carried via the back end result 
+        file to the result script in the front end. In the result script 
+        you can extract the description with get_description"""
         if key in self.description.keys():
             print 'Warning: Overwriting existing description "%s" = "%s" with "%s"' % (key, self.description[key], value)
 
         self.description[key] = value
 
+    ## set the PTS310/PTS500 frequency source to local mode
     def set_pts_local(self):
+        """
+        this will set the PTS310/PTS500 frequency source to local mode
+        """
         self.state_list.append(StateSimple(1e-6, '<ttlout value="0xf000"/>'))
         self.state_list.append(StateSimple(1e-6, '<ttlout value="0x8000"/>'))
 
