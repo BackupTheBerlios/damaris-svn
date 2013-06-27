@@ -828,7 +828,6 @@ result* SpectrumMI40xxSeries::get_samples(double _timeout) {
             free(adc_data);
             return NULL;
         }
-        // SpcGetParam(deviceno, SPC_STATUS, &adc_status); // this seems to be always SPC_READY after SPC_STOP and negates following test!
 
 # if defined __linux__
         size_t data_length=SpcGetData (deviceno, 0, 0, nchannels * sampleno, 2, (dataptr) adc_data);
