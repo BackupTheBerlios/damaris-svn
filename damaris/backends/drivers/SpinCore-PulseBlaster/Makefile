@@ -13,7 +13,7 @@ endif
 
 THISDIR=$(shell cd . >/dev/null; pwd)
 LIBS=-lm -lxerces-c -lexpat
-CXXFLAGS=-DSP_DEBUG=0 -g -O0 -Wall -Wshadow -pedantic
+CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic
 CXXCPPFLAGS=-I../..
 
 all: PulseBlasterProgram.o SpinCore-PulseBlaster.o

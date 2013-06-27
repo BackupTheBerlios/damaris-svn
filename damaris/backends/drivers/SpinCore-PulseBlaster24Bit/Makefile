@@ -1,5 +1,5 @@
 CXXFLAGS=-g -O0 -Wshadow -Wall -pedantic
-CXXCPPFLAGS=-I../.. -DSP_DEBUG=0
+CXXCPPFLAGS=-I../..
 CXX=g++
 
 all: SpinCore-PulseBlaster24Bit.o
