@@ -46,16 +46,13 @@ matplotlib.rcParams["axes.formatter.limits"]="-3,3"
 
 if matplotlib.rcParams["backend"]=="GTK":
     from matplotlib.backends.backend_gtk import FigureCanvasGTK as FigureCanvas
-    from matplotlib.backends.backend_gtk import NavigationToolbar2GTK as NavigationToolbar
     max_points_to_display=0 # no limit
-elif matplotlib.rcParams["backend"]=="GTKAgg":
-    from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
-    from matplotlib.backends.backend_gtkagg import NavigationToolbar2GTK as NavigationToolbar
-    max_points_to_display=0 # no limit
+elif matplotlib.rcParams["backend"]=="GTKCairo":
+    from matplotlib.backends.backend_gtkcairo import FigureCanvasGTKCairo as FigureCanvas
+    max_points_to_display=1<<14 # cairo cannot render longer paths than 18???
 else:
     # default
-    from matplotlib.backends.backend_gtkcairo import FigureCanvasGTKCairo as FigureCanvas
-    from matplotlib.backends.backend_gtkcairo import NavigationToolbar2GTK as NavigationToolbar
+    from matplotlib.backends.backend_gtkagg import FigureCanvasGTKAgg as FigureCanvas
     max_points_to_display=0
 
 import matplotlib.axes
