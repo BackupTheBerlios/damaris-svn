@@ -1,17 +1,24 @@
+damaris (0.14-svn730) experimental; urgency=low
+
+  * removed exe extensions from backends
+  * changed default frontend renderer to GTKAgg
+
+ -- Markus Rosenstihl <markusro@deut.fkp.physik.tu-darmstadt.de>  Fri, 28 Jun 2013 17:13:10 +0200
+
 damaris (0.14-svn727) experimental; urgency=low
 
- * r714 Big Kernel Lock was removed in linux kernel 2.6.39, 
- * kernel driver adjusted accordingly, compiles on kernel 3.2.0
- * new driver from Spectrum GmbH for kernel > 2.6.39
- * DAMARIS builds now in Wheezy
- * several fixes/more prices warnings in Spectrum and Spincore drivers
- * external clock impedance not set to 50 Ohms anymore.
- * (new PB24-64k SP17-revB boards clock is not capable of driveing 50 Ohms)
- * Stefan: some fixes for the ADC driver:
-   - frequency is not always set correctly, which could lead to TOs, exception
+  * r714 Big Kernel Lock was removed in linux kernel 2.6.39, 
+  * kernel driver adjusted accordingly, compiles on kernel 3.2.0
+  * new driver from Spectrum GmbH for kernel > 2.6.39
+  * DAMARIS builds now in Wheezy
+  * several fixes/more prices warnings in Spectrum and Spincore drivers
+  * external clock impedance not set to 50 Ohms anymore.
+  * (new PB24-64k SP17-revB boards clock is not capable of driveing 50 Ohms)
+  * Stefan: some fixes for the ADC driver:
+    - frequency is not always set correctly, which could lead to TOs, exception
      added to handle this
-   - gating delay does not appear to be active below 500 kHz, despite manual
-   - gating time is now correctly rounded up to next 10 ns
+    - gating delay does not appear to be active below 500 kHz, despite manual
+    - gating time is now correctly rounded up to next 10 ns
 
  -- Markus Rosenstihl <markusro@deut.fkp.physik.tu-darmstadt.de>  Thu, 27 Jun 2013 14:34:24 +0200
 
