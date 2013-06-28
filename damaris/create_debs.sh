@@ -1,5 +1,5 @@
 #!/bin/bash
-export SPC_SOURCE=/home/markusro/sources/spc_driver/micx_drv
+export SPC_SOURCE=/home/markusro/sources/linux/src_all/micx_drv
 export DEBEMAIL="Markus.Rosenstihl@physik.tu-darmstadt.de"
 export DEBFULLNAME="Markus Rosenstihl"
 #dch -i
@@ -13,9 +13,9 @@ cd -
 # extract revision
 rev=$(svn info|grep Revision|cut -d" " -f2)
 # extract debian release
-if [ $(cat /etc/debian_version) == "7.0" ]; then
+if [ $(cat /etc/debian_version)=="7.0" ]; then
 	release="wheezy"
-elif [ $(cat /etc/debian_version) == "6.0" ]; then
+elif [ $(cat /etc/debian_version)=="6.0" ]; then
 	release="squeeze"
 else
 	release="none"

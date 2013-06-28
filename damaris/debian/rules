@@ -7,17 +7,17 @@
 export DH_VERBOSE=1
 BACKENDSBASE=$(shell pwd)/debian/damaris-backends
 BACKENDSMACHINES = \
-	dummycore.exe \
-	deuteron_backend.exe \
+	dummycore \
+	deuteron_backend \
 	magnexgrad_backend \
 	magnexgrad_backend_dds \
-	PFGcore.exe \
-	fc2_backend.exe \
+	PFGcore \
+	fc2_backend \
 	bg_backend \
-	Mobilecore.exe \
+	Mobilecore \
 	berta \
         birgit \
-	Mobile_wo_sync_backend.exe \
+	Mobile_wo_sync_backend \
         general
 
 tmp_kernel_makefiles = $(wildcard /lib/modules/*/build/Makefile)
