@@ -373,8 +373,12 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 #if SPC_DEBUG	
 			    fprintf(stderr, "state is shorter than acquisition time %e time required, %e state time\n", gating_time, a_state->length);
 #endif
-			    a_state->length = time_required;    // update the state length if it's shorter than the gate. this is usually due to rounding to 10 ns for the pulseblaster
-		        //throw ADC_exception(std::string("state is shorter than acquisition time")+parameter_info);
+			    // update the state length if it's shorter than the gate. this is usually due to rounding to 10 ns for the pulseblaster
+		        if (ceil(1e8*a_state->length)/1e8 < time_required) {
+				    throw ADC_exception(std::string("state is shorter than acquisition time")+parameter_info);
+			    } else {
+			        a_state->length = time_required;
+			    }
 		    }
             // if necessary, add the gating pulse delay...
             if (delayed_gating_time>0.0) {

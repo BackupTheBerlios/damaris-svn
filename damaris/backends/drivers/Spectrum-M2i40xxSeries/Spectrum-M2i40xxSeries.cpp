@@ -168,7 +168,7 @@ SpectrumM2i40xxSeries::SpectrumM2i40xxSeries(const ttlout& t_line, int ext_refer
 		
     spcm_dwSetParam_i32(default_settings.hDrv, SPC_CLOCKMODE, SPC_CM_EXTREFCLOCK);
     spcm_dwSetParam_i32(default_settings.hDrv, SPC_REFERENCECLOCK, default_settings.ext_reference_clock);
-    spcm_dwSetParam_i32(default_settings.hDrv, SPC_CLOCK50OHM, 1);
+    spcm_dwSetParam_i32(default_settings.hDrv, SPC_CLOCK50OHM, 1); // ToDo: test this
 
 	fprintf(stderr, "\nADC card initialized\n");
 }
@@ -326,21 +326,26 @@ void SpectrumM2i40xxSeries::collect_config_recursive(state_sequent& exp, Spectru
 
 
 				// calculate the time required
-				// the gating time has an offset, which was found to be 1.5 dwelltimes for <2.5MHz and 4.5 dwelltimes for >=2.5MHz
 				double time_required;
 				time_required = (inputs.front()->samples)/settings.samplefreq;
-				time_required=round(1e8*time_required)/1e8;
+				time_required = ceil(1e8*time_required)/1e8;
 
 				// check time requirements
 				if (a_state->length < time_required) {
-				  char parameter_info[512];
-				  snprintf(parameter_info,sizeof(parameter_info),
+				    char parameter_info[512];
+				    snprintf(parameter_info,sizeof(parameter_info),
 					   "(%" SIZETPRINTFLETTER " samples, %g samplerate, %e time required, %e state time)",
 					   inputs.front()->samples,
 					   settings.samplefreq,
 					   time_required,
 					   a_state->length);
-				  throw ADC_exception(std::string("state is shorter than acquisition time")+parameter_info);
+					   
+					// update the state length if it's shorter than the gate. this is usually due to rounding to 10 ns for the pulseblaster
+			        if (ceil(1e8*a_state->length)/1e8 < time_required) {
+    				    throw ADC_exception(std::string("state is shorter than acquisition time")+parameter_info);
+				    } else {
+				        a_state->length = time_required;
+				    }
 				}
 
 				// adapt the pulse program for gated sampling
@@ -358,6 +363,11 @@ void SpectrumM2i40xxSeries::collect_config_recursive(state_sequent& exp, Spectru
 				  // shorten this state
 				  a_state->length -= time_required;
 				}
+				
+# if SPC_DEBUG
+                fprintf(stderr, "state sequence:\n");
+                xml_state_writer().write_states(stderr, exp);
+# endif
 
 				/* insert a new state */
 				DataManagementNode* new_one = new DataManagementNode(new_branch);
@@ -452,11 +462,21 @@ void SpectrumM2i40xxSeries::set_daq(state & exp) {
 	}
 	spcm_dwSetParam_i32(effective_settings->hDrv, SPC_CHENABLE, effective_settings->qwSetChEnableMap.to_ulong()); // set channels
 	spcm_dwSetParam_i32(effective_settings->hDrv, SPC_SAMPLERATE, (int)floor(effective_settings->samplefreq)); // set sample rate
+	
+	// check if frequency was set correctly
+	int setSamplingRate = 0;
+	spcm_dwGetParam_i32(effective_settings->hDrv, SPC_SAMPLERATE, &setSamplingRate);
+    if (setSamplingRate != (int)floor(effective_settings->samplefreq)) {
+        char parameter_info[16];
+        snprintf(parameter_info,sizeof(parameter_info), "%d", setSamplingRate);
+        throw ADC_exception(std::string("DAC sampling rate not available. Try setting to: ")+parameter_info);
+    }
+	
 
-	spcm_dwSetParam_i32(effective_settings->hDrv, SPC_MEMSIZE, sampleno);      // Memory size    * effective_settings->lSetChannels * effective_settings->lBytesPerSample
+	spcm_dwSetParam_i32(effective_settings->hDrv, SPC_MEMSIZE, sampleno + ADC_M2I_PRETRIGGER + ADC_M2I_POSTTRIGGER);      // Memory size    * effective_settings->lSetChannels * effective_settings->lBytesPerSample
      
-    spcm_dwSetParam_i32(effective_settings->hDrv, SPC_PRETRIGGER, 4);   
-    spcm_dwSetParam_i32(effective_settings->hDrv, SPC_POSTTRIGGER, 4);
+    spcm_dwSetParam_i32(effective_settings->hDrv, SPC_PRETRIGGER, ADC_M2I_PRETRIGGER);   
+    spcm_dwSetParam_i32(effective_settings->hDrv, SPC_POSTTRIGGER, ADC_M2I_POSTTRIGGER);
     
 	// ----- start the board -----
 	spcm_dwSetParam_i32(effective_settings->hDrv, SPC_M2CMD, M2CMD_CARD_START | M2CMD_CARD_ENABLETRIGGER);     // start the board
@@ -482,8 +502,7 @@ result* SpectrumM2i40xxSeries::get_samples(double _timeout) {
 #if SPC_DEBUG
 	fprintf(stderr, "samples: %lu\tchannels: %i\tbytes/sample: %i\n", sampleno, effective_settings->lSetChannels, effective_settings->lBytesPerSample);
 #endif
-
-	int memSize = sampleno * effective_settings->lSetChannels * effective_settings->lBytesPerSample;
+	int memSize = (sampleno + ADC_M2I_PRETRIGGER + ADC_M2I_POSTTRIGGER) * effective_settings->lSetChannels * effective_settings->lBytesPerSample;
 
 #if SPC_DEBUG
 	fprintf(stderr, "memory size: %i\n", memSize);
@@ -530,19 +549,20 @@ result* SpectrumM2i40xxSeries::get_samples(double _timeout) {
 	fprintf(stderr, "Starting data transfer.\n");
 	spcm_dwDefTransfer_i64 (effective_settings->hDrv, SPCM_BUF_DATA, SPCM_DIR_CARDTOPC, 0, adc_data, 0, memSize);
 	spcm_dwSetParam_i32 (effective_settings->hDrv, SPC_M2CMD, M2CMD_DATA_STARTDMA | M2CMD_DATA_WAITDMA);
-
+    
+    
 	char szErrorText[ERRORTEXTLEN];
 	if (spcm_dwGetErrorInfo_i32 (effective_settings->hDrv, NULL, NULL, szErrorText)){
 		delete adc_data;
 		throw SpectrumM2i40xxSeries_error(szErrorText);
 	}
 
-	short int* data_position=adc_data;
+	short int* data_position=adc_data + ADC_M2I_PRETRIGGER*effective_settings->lSetChannels; // drop first points due to pre trigger 
 	// produced results
 	adc_results* the_results = new adc_results(0);
 	data_position = split_adcdata_recursive(data_position, *(effective_settings->data_structure), *the_results);
-	if (data_position==0 || (size_t)(data_position - adc_data) != (sampleno * effective_settings->lSetChannels)) {
-		fprintf(stderr,"something went wrong while splitting data");
+	if (data_position==0 || (size_t)(data_position - adc_data - ADC_M2I_PRETRIGGER * effective_settings->lSetChannels) != (sampleno * effective_settings->lSetChannels)) {
+		fprintf(stderr,"something went wrong while splitting data\n");
 	}
 	free(adc_data);
 	

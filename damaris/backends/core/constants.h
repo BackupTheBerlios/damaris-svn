@@ -23,6 +23,10 @@ const int ADC_M2I_DEFAULT_RESOLUTION = 14;
 /** allowed sensitivity settings */
 const double ADC_M2I_ALLOWED_SENSITIVITY[6] = {0.2, 0.5, 1, 2, 5, 10};
 const int ADC_M2I_ALLOWED_SENSITIVITY_LENGTH = 6;
+/** size of the pre trigger, must be at least 4 and increase in steps of 4 */
+const int ADC_M2I_PRETRIGGER = 4;
+/** size of the post trigger, must be at least 4 and increase in steps of 4 */
+const int ADC_M2I_POSTTRIGGER = 4;
 
 /* Settings for the spectrum MI ADC driver */
 
@@ -43,3 +47,4 @@ const double ADC_MI_ALLOWED_SENSITIVITY[6] = {0.2, 0.5, 1, 2, 5, 10};
 const int ADC_MI_ALLOWED_SENSITIVITY_LENGTH = 6;
 
 #endif /* CONSTANTS_H_ */
+

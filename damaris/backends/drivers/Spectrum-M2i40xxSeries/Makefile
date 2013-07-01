@@ -1,5 +1,5 @@
 CPPFLAGS=-Iinclude -I../..
-CXXFLAGS=-Wshadow -Wall -O0 -g
+CXXFLAGS=-Wshadow -Wall -O0 -g -DSPC_DEBUG=0
 AR=ar
 LIBS+= -lpthread -lm -lxerces-c -lexpat
 

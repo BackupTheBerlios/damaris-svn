@@ -33,7 +33,7 @@
 #endif
 
 #ifndef SPC_DEBUG
-# define SPC_DEBUG 1
+# define SPC_DEBUG 0
 #endif
 
 /**
