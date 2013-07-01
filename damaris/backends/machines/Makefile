@@ -292,9 +292,12 @@ general: general.o \
 		hardware.o \
 		$(DRV_SPC_MI40xx) \
 		$(DRV_PTS) \
-		$(DRV_PB_24BIT) $(DRV_PB) $(DRV_PB_PROG) \
+		$(DRV_PB_24BIT) $(DRV_PB_DDSIII) $(DRV_PB) $(DRV_PB_PROG) \
 		../core/core.a
 	@$(LINK_MACHINE) $^ $(LIBS) -o $@ -lpthread 
 
 general.o: general.cpp \
-../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \
+../drivers/SpinCore-PulseBlasterDDSIII/SpinCore-PulseBlasterDDSIII.h \
+../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h \
+../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h \
+../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \

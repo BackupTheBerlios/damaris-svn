@@ -173,6 +173,7 @@ void SpinCorePulseBlaster::run_pulse_program_w_sync(state& exp, double sync_freq
     prog->push_front(c); 
 
     // first command: wait for monoflop on P136 up again
+    // set sync bit and wait for HW_Trigger
     c=prog->create_command();
     c->ttls=sync_mask;
     c->instruction=SpinCorePulseBlaster::WAIT;
@@ -187,7 +188,7 @@ void SpinCorePulseBlaster::run_pulse_program_w_sync(state& exp, double sync_freq
 	    c->length=shortest_pulse+2;
 	    prog->push_front(c);
     }
-    duration+=2.0*shortest_pulse/clock+1.0/sync_freq;
+    duration+=2.0*shortest_pulse/clock + 1.0/sync_freq;
   }
   // workaround for another PulseBlaster Bug:
   // extra CONTINUE opcodes with little more duration to force proper initialization of all internal counters
@@ -207,6 +208,7 @@ void SpinCorePulseBlaster::run_pulse_program_w_sync(state& exp, double sync_freq
 #if SP_DEBUG
   prog->write_to_file(stderr);
 #endif
+  // run actual program
   run_pulse_program(*prog);
   time_running.start();
   duration+=3.0*shortest_pulse/clock;

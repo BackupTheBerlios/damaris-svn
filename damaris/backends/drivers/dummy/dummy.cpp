@@ -113,6 +113,10 @@ void dummy::run_pulse_program(state& exp) {
   }
 }
 
+
+void dummy::run_pulse_program_w_sync(state& exp, double sync_freq) {
+	dummy::run_pulse_program(exp);
+}
 double dummy::get_temperature() const {
   pthread_mutex_lock((pthread_mutex_t*)&device_lock);
   pthread_mutex_unlock((pthread_mutex_t*)&device_lock);

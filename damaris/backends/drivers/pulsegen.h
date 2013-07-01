@@ -33,6 +33,10 @@ class pulsegen {
      compiles and runs the pulse program
    */
   virtual void run_pulse_program(state& exp)=0;
+  /**
+     compiles and runs the pulse program with synchronization
+   */
+  virtual void run_pulse_program_w_sync(state& exp, double sync_freq)=0;
 
   /**
      wait till end of pulseprogram
