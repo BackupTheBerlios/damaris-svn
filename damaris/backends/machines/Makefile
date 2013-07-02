@@ -22,7 +22,6 @@ MACHINES = \
 	PFGcore$(EXEEXT) \
 	fc2_backend$(EXEEXT) \
 	fc1neu_backend$(EXEEXT) \
-	fc1_vierkanal_backend$(EXEEXT) \
 	bg_backend \
 	Mobilecore$(EXEEXT) \
 	Mobile_wo_sync_backend$(EXEEXT) \

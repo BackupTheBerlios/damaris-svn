@@ -3,59 +3,59 @@ import types
 import numpy
 
 class StateBase(object):
-	def __init__(self):
-		pass
-	def to_xml(self, indent = ""):
-		return indent + "<!-- " + repr(self) + " -->"
+    def __init__(self):
+        pass
+    def to_xml(self, indent = ""):
+        return indent + "<!-- " + repr(self) + " -->"
 
 class StateSimple(StateBase):
-	def __init__(self, time, content=None):
-		super(StateSimple, self).__init__()
-		if time < 0:
-			raise AssertionError("time for state is negative!")
-		self.time = time
-		self.content = content
+    def __init__(self, time, content=None):
+        super(StateSimple, self).__init__()
+        if time < 0:
+            raise AssertionError("time for state is negative!")
+        self.time = time
+        self.content = content
 
-	def to_xml(self, indent = ""):
-		s = indent + '<state time="%s"' % repr(self.time)
-		if self.content is None:
-			return s + '/>\n'
-		s += '>\n'
-		s += indent + '  ' + str(self.content) + '\n'
-		s += indent + '</state>\n'
-		return s
-	def __repr__(self):
-		return 'StateSimple(%s, %s)' % (self.time, repr(self.content))
+    def to_xml(self, indent = ""):
+        s = indent + '<state time="%s"' % repr(self.time)
+        if self.content is None:
+            return s + '/>\n'
+        s += '>\n'
+        s += indent + '  ' + str(self.content) + '\n'
+        s += indent + '</state>\n'
+        return s
+    def __repr__(self):
+        return 'StateSimple(%s, %s)' % (self.time, repr(self.content))
 
 class StateList(StateBase):
-	def __init__(self):
-		super(StateList, self).__init__()
-		self.list = []
-	def to_xml(self, indent = "  "):
-		s = ""
-		for k in self.list:
-			if hasattr(k, "to_xml"):
-				s += k.to_xml(indent)
-			else:
-				s += indent + str(k)
-		return s
-	def append(self, val):
-		self.list.append(val)
+    def __init__(self):
+        super(StateList, self).__init__()
+        self.list = []
+    def to_xml(self, indent = "  "):
+        s = ""
+        for k in self.list:
+            if hasattr(k, "to_xml"):
+                s += k.to_xml(indent)
+            else:
+                s += indent + str(k)
+        return s
+    def append(self, val):
+        self.list.append(val)
 
 
 class StateLoop(StateList):
-	"""Represents a loop in the state tree"""
-	def __init__(self, repeat):
-		super(StateLoop, self).__init__()
-		self.repeat = repeat
-	def to_xml(self, indent = ""):
-		s = indent + ('<sequent repeat="%d">\n' % self.repeat)
-		s += super(StateLoop, self).to_xml(indent + "  ")
-		s += indent + '</sequent>\n'
-		return s
-	def __repr__(self):
-		return 'StateLoop(repeat=%d, %s)' \
-			% (self.repeat, repr(self.list))
+    """Represents a loop in the state tree"""
+    def __init__(self, repeat):
+        super(StateLoop, self).__init__()
+        self.repeat = repeat
+    def to_xml(self, indent = ""):
+        s = indent + ('<sequent repeat="%d">\n' % self.repeat)
+        s += super(StateLoop, self).to_xml(indent + "  ")
+        s += indent + '</sequent>\n'
+        return s
+    def __repr__(self):
+        return 'StateLoop(repeat=%d, %s)' \
+            % (self.repeat, repr(self.list))
 
 
 #############################################################
@@ -149,11 +149,11 @@ class Experiment:
     # @param time Duration of this state
     # @param ttls Additinional ttl channels
     def wait(self, time, ttls=None):
-    	if ttls is not None:
-	        s_content = '<ttlout value="0x%06x"/>' % ttls
-        	self.state_list.append(StateSimple(time,s_content))
+        if ttls is not None:
+            s_content = '<ttlout value="0x%06x"/>' % ttls
+            self.state_list.append(StateSimple(time,s_content))
         else:
-        	self.state_list.append(StateSimple(time))
+            self.state_list.append(StateSimple(time))
 
     ## Records  data with given number of samples, sampling-frequency frequency and sensitivity
     # @param samples Number of samples to record
@@ -200,8 +200,8 @@ class Experiment:
                     attributes += ' impedance%i="%i"'%(i, impedance[i])
                 
         s_content = '<analogin %s/>' % attributes
-    	if ttls is not None:
-	        s_content+='<ttlout value="0x%06x"/>' % ttls
+        if ttls is not None:
+            s_content+='<ttlout value="0x%06x"/>' % ttls
         if timelength is None:
             timelength = samples / float(frequency)#*1.01
         self.state_list.append(StateSimple(timelength, s_content))
@@ -304,13 +304,13 @@ class Experiment:
 
     ## Deprecated, use set_pfg instead 
     def set_pfg_wt(self, I_out=None, dac_value=None, length=None, is_seq=0, trigger=4):
-    	"""
+        """
         This sets the value for the PFG (plus trigger, default=2**2), it also sets it back automatically.
-	    If you don't whish to do so (i.e. line shapes)  set is_seq=1
+        If you don't whish to do so (i.e. line shapes)  set is_seq=1
         """
 #        raise DeprecationWarning, "to be removed in future, use set_pfg instead"
-    	if I_out == None and dac_value == None:
-	        dac_value=0
+        if I_out == None and dac_value == None:
+            dac_value=0
         if I_out != None and dac_value == None:
             dac_value=dac.conv(I_out)
         if I_out == None and dac_value != None:
@@ -338,7 +338,7 @@ class Experiment:
         """
         This sets the value for the DAC and possibly some TTLs.
             It also sets it back automatically.
-	    If you don't whish to do so (i.e. line shapes)  set is_seq=True
+        If you don't whish to do so (i.e. line shapes)  set is_seq=True
         """
         if length==None:
             length=42*9e-8
@@ -406,35 +406,31 @@ class Experiment:
             xml_string += '  <description/>\n'
         else:
             xml_string += '  <description>\n'
-            for key,value in self.description.iteritems():
-	        type_string="repr"
-		if value is None:
-		    type_string="None"
-		    value=""
-	        if type(value) is types.FloatType \
-	        	or isinstance(value, numpy.floating):
-		    type_string="Float"
-		    value=repr(value)
-		elif type(value) is types.IntType \
-			or isinstance(value, numpy.integer):
-		    type_string="Int"
-		    value=repr(value)
-		elif type(value) is types.LongType:
-		    type_string="Long"
-		    value=repr(value)
-		elif type(value) is types.ComplexType \
-			or isinstance(value, numpy.complexfloating):
-		    type_string="Complex"
-		    value=repr(value)
-		elif type(value) is types.BooleanType \
-			or isinstance(value, numpy.bool_):
-		    type_string="Boolean"
-		    value=repr(value)
-		elif type(value) in types.StringTypes:
-		    type_string="String"
-	        else:
-		    value=repr(value)
-		xml_string += '    <item key="%s" type="%s">%s</item>\n'%(key, type_string ,value)
+        	for key,value in self.description.iteritems():
+            	type_string="repr"
+        		if value is None:
+            		type_string="None"
+              		value=""
+            	elif type(value) is types.FloatType or isinstance(value, numpy.floating):
+              		type_string="Float"
+            	    value=repr(value)
+        		elif type(value) is types.IntType or isinstance(value, numpy.integer):
+            		type_string="Int"
+              		value=repr(value)
+        		elif type(value) is types.LongType:
+            		type_string="Long"
+              		value=repr(value)
+        		elif type(value) is types.ComplexType or isinstance(value, numpy.complexfloating):
+            		type_string="Complex"
+              		value=repr(value)
+        		elif type(value) is types.BooleanType or isinstance(value, numpy.bool_):
+            		type_string="Boolean"
+              		value=repr(value)
+        		elif type(value) in types.StringTypes:
+            		type_string="String"
+              	else:
+            	   value=repr(value)
+        		xml_string += '    <item key="%s" type="%s">%s</item>\n'%(key, type_string ,value)
             xml_string += "  </description>\n"
 
         # Experiment-Inhalt einfügen
@@ -460,36 +456,36 @@ class Quit(Experiment):
 
 
 def self_test():
-	e = Experiment()
-	e.set_description("key", "value")
-	e.set_frequency(85e6, 90, ttls=16)
-	e.wait(1e-6)
-	e.rf_pulse(1, 1e-6/3)        # val = 1
-	e.ttl_pulse(1e-6/3, 1)       # val = 2
-	e.ttl_pulse(1e-6/3, None, 7) # val = 7
-	if True:
-		e.loop_start(30)
-		e.set_pfg(dac_value=1024, is_seq = True)
-		e.set_pfg_wt(dac_value=2048)
-		e.loop_start(400)
-		e.set_phase(270, ttls = 32)
-		e.loop_end()
-		e.ttl_pulse(5e-6, channel = 6)
-		e.loop_end()
-	else:
-		l = StateLoop(3)
-		l.append(StateSimple(5e-6, '<ttlout value="1"/>'))
-		e.state_list.append(l)
-	e.set_dac(12345, dac_id=2, is_seq = True, ttls=16)
-	e.record(1024, 20e6)
-	try:
-		e.wait(-1)
-	except AssertionError:
-		pass
-	else:
-		raise AssertionError("An exception should happen")
-	e.set_pts_local()
-	print e.write_xml_string()
+    e = Experiment()
+    e.set_description("key", "value")
+    e.set_frequency(85e6, 90, ttls=16)
+    e.wait(1e-6)
+    e.rf_pulse(1, 1e-6/3)        # val = 1
+    e.ttl_pulse(1e-6/3, 1)       # val = 2
+    e.ttl_pulse(1e-6/3, None, 7) # val = 7
+    if True:
+        e.loop_start(30)
+        e.set_pfg(dac_value=1024, is_seq = True)
+        e.set_pfg_wt(dac_value=2048)
+        e.loop_start(400)
+        e.set_phase(270, ttls = 32)
+        e.loop_end()
+        e.ttl_pulse(5e-6, channel = 6)
+        e.loop_end()
+    else:
+        l = StateLoop(3)
+        l.append(StateSimple(5e-6, '<ttlout value="1"/>'))
+        e.state_list.append(l)
+    e.set_dac(12345, dac_id=2, is_seq = True, ttls=16)
+    e.record(1024, 20e6)
+    try:
+        e.wait(-1)
+    except AssertionError:
+        pass
+    else:
+        raise AssertionError("An exception should happen")
+    e.set_pts_local()
+    print e.write_xml_string()
 
 if __name__ == '__main__':
-	self_test()
+    self_test()

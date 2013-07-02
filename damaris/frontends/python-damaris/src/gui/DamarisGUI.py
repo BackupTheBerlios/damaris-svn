@@ -2550,8 +2550,13 @@ class MonitorWidgets:
                     self.matplot_axes.set_ylim(ymin, ymax)
 
             xdata=in_result.get_xdata()
-            ydata0=in_result.get_ydata(0)
-            ydata1=in_result.get_ydata(1)
+            chans = in_result.get_number_of_channels()
+            data = []
+            colors = [(0,0,0.8,1), (0.7,0,0,1), (0,0.7,0,1), (0.7,0.5,0,1), (0,0,0,1)] # rgba tuples: blue, red, green, yellow
+            
+            for i in xrange(chans):
+                data.append(in_result.get_ydata(i))
+                
             moving_average=data_slice=None
             if max_points_to_display>0 and len(xdata)>max_points_to_display:
                 print "decimating data to %d points by moving average (prevent crash of matplotlib)"%max_points_to_display
@@ -2561,45 +2566,36 @@ class MonitorWidgets:
                                                    /max_points_to_display*len(xdata)),
                                        dtype="int")
                 xdata=xdata.take(data_slice) # no average !?
-                ydata0=numpy.convolve(ydata0, moving_average, "same").take(data_slice)
-                ydata1=numpy.convolve(ydata1, moving_average, "same").take(data_slice)
+                for i in xrange(chans):
+                    data[i] = numpy.convolve(data[i], moving_average, "same").take(data_slice)
 
             if len(self.graphen)==0:
-                self.graphen.extend(self.matplot_axes.plot(xdata, ydata0, "b-", linewidth = 2))
-                self.graphen.extend(self.matplot_axes.plot(xdata, ydata1, "r-", linewidth = 2))
-                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
-                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "b-", linewidth = 0.5))
-                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
-                self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], "r-", linewidth = 0.5))
+                for i in xrange(chans):
+                    self.graphen.extend(self.matplot_axes.plot(xdata, data[i], linestyle="-", color=colors[i], linewidth = 2))
+                for i in xrange(chans):
+                    # initialize error bars
+                    self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], linestyle="-", color=colors[i], linewidth = 0.5))
+                    self.graphen.extend(self.matplot_axes.plot([0.0], [0.0], linestyle="-", color=colors[i], linewidth = 0.5))
             else:
-                self.graphen[0].set_data(xdata, ydata0)
-                self.graphen[1].set_data(xdata, ydata1)
+                for i in xrange(chans):
+                    self.graphen[i].set_data(xdata, data[i])
 
             # Statistics activated?
             if (self.display_statistics_checkbutton.get_active() and
                 in_result.uses_statistics() and in_result.ready_for_drawing_error()):
-                yerr0=in_result.get_yerr(0)
-                yerr1=in_result.get_yerr(1)
-                if moving_average is not None:
-                    yerr0=numpy.convolve(yerr0, moving_average, "same").take(data_slice)
-                    yerr1=numpy.convolve(yerr1, moving_average, "same").take(data_slice)
-                # Real-Errors
-                self.graphen[2].set_data(xdata, ydata0 + yerr0)
-                self.graphen[3].set_data(xdata, ydata0 - yerr0)
-                # Img-Errors
-                self.graphen[4].set_data(xdata, ydata1 + yerr1)
-                self.graphen[5].set_data(xdata, ydata1 - yerr1)
-                yerr0=yerr1=None
+                
+                for i in xrange(chans):
+                    err = in_result.get_yerr(i)
+                    if moving_average is not None:
+                        err = numpy.convolve(err, moving_average, "same").take(data_slice)
+                    self.graphen[chans+2*i].set_data(xdata, data[i] + err)
+                    self.graphen[chans+2*i+1].set_data(xdata, data[i] - err)
             else:
-                # Maybe theres a better place for deleting the error-lines
-                # Real-Errors
-                self.graphen[2].set_data([0.0],[0.0])
-                self.graphen[3].set_data([0.0],[0.0])
-                # Img-Errors
-                self.graphen[4].set_data([0.0],[0.0])
-                self.graphen[5].set_data([0.0],[0.0])
+                for i in xrange(chans):
+                    self.graphen[chans+2*i].set_data([0.0],[0.0])
+                    self.graphen[chans+2*i+1].set_data([0.0],[0.0])
             moving_average=data_mask=None
-            xdata=ydata0=ydata1=None
+            data=None
 
             # Any title to be set?
             in_result_title=in_result.get_title()
