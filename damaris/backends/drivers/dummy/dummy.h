@@ -43,7 +43,6 @@ class dummy:  public virtual device, public ADC, public frequgen, public pulsege
      print states of the subprogram and generate ADC results
    */
   virtual void run_pulse_program(state& exp);
-  virtual void run_pulse_program_w_sync(state& exp, double sync_freq);
 
   /**
      do not wait, just continue

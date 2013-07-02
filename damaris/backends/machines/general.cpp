@@ -4,14 +4,12 @@
  Created: June 2010
 
 ****************************************************************************/
-#include <glib.h>
-
 #include "machines/hardware.h"
 #include "core/core.h"
 #include "drivers/PTS-Synthesizer/PTS.h"
 #include "drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h"
 #include "drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h"
-#include "drivers/SpinCore-PulseBlasterDDSIII/SpinCore-PulseBlasterDDSIII.h"
+#include <glib.h>
 
 
 
@@ -37,11 +35,11 @@
 class general_hardware: public hardware {
 
     PTS* my_pts;
-    pulsegen* my_pulseblaster;
+    SpinCorePulseBlaster24Bit* my_pulseblaster;
     SpectrumMI40xxSeries* my_adc;
 
 public:
-    general_hardware() {  // start hardware definition
+    general_hardware() {
         int SYSCONF=0;
         int USRCONF=0;
         GKeyFile* cfg_file;
@@ -82,10 +80,8 @@ public:
                 printf("not found!\n");
             error = NULL;
         }
-        else {
-            if (SYSCONF) fprintf(stdout, "using user config\n");
+        else
             USRCONF=1;
-	}
         if ( !(SYSCONF|USRCONF))
             throw(core_exception("configuration failed!\n"));
         printf("done!\n");
@@ -108,9 +104,6 @@ public:
         my_adc=new SpectrumMI40xxSeries(trigger, impedance, ext_reference_clock);
 
         /* configure PulseBlaster */
-        int pb_type = g_key_file_get_integer(cfg_file, "PB", "type", &error);
-        if (error) g_error(error->message);
-        error = NULL;
         int pb_id = g_key_file_get_integer(cfg_file, "PB", "id", &error);
         if (error) g_error(error->message);
         error = NULL;
@@ -122,13 +115,9 @@ public:
         error = NULL;
         int pb_sync = 0;
         if (pb_sync_bit != 128) pb_sync=1<<pb_sync_bit;
-	/* configure pulse programmer */
-	if (pb_type==0)
-        	my_pulseblaster=new SpinCorePulseBlaster24Bit(pb_id, pb_refclock, pb_sync);
-	else if (pb_type==1)
-        	my_pulseblaster=new SpinCorePulseBlasterDDSIII(pb_id, pb_refclock, pb_sync);
-	else
-            throw(core_exception("PB configuration failed (type unkown)!\n"));
+
+        my_pulseblaster=new SpinCorePulseBlaster24Bit(pb_id, pb_refclock, pb_sync);
+
         /* configure PTS */
         int pts_id = g_key_file_get_integer(cfg_file, "PTS", "id", &error);
         if (error) g_error(error->message);
@@ -143,7 +132,7 @@ public:
         the_pg=my_pulseblaster;
         the_adc=my_adc;
         the_fg=my_pts;
-    } // end hardware definition
+    }
 
     result* experiment(const state& exp) {
         result* r=NULL;
@@ -156,7 +145,7 @@ public:
                 if (the_adc!=NULL)
                     the_adc->set_daq(*work_copy);
                 // the pulse generator is necessary
-                the_pg->run_pulse_program_w_sync(*work_copy, my_adc->get_sample_clock_frequency());
+                my_pulseblaster->run_pulse_program_w_sync(*work_copy, my_adc->get_sample_clock_frequency());
                 // wait for pulse generator
                 the_pg->wait_till_end();
                 // after that, the result must be available
