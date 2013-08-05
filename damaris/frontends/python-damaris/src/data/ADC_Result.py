@@ -32,6 +32,7 @@ class ADC_Result(Resultable, Drawable, DamarisFFT, Signalpath):
         self.xlabel = "Time (s)"
         self.ylabel = "Samples [Digits]"
         self.lock=threading.RLock()
+        self.nChannels = 0
 
         if (x is None) and (y is None) and (index is None) and (sampl_freq is None) and (desc is None) and (job_id is None) and (job_date is None):
             self.cont_data = False
@@ -132,6 +133,15 @@ class ADC_Result(Resultable, Drawable, DamarisFFT, Signalpath):
     def set_sampling_rate(self, hz):
         "Sets the samplingfrequency in hz"
         self.sampling_rate = float(hz)    
+        
+        
+    def get_nChannels(self):
+        "Gets the number of channels"
+        return self.nChannels + 0   
+        
+    def set_nChannels(self, channels):
+        "Sets the number of channels"
+        self.nChannels = int(channels)
 
 
     def get_index_bounds(self, index):

@@ -152,6 +152,7 @@ class ResultReader:
                     self.result.set_sampling_rate(float(elem.get("rate")))
                     self.result.set_job_id(self.result_job_number)
                     self.result.set_job_date(self.result_job_date)
+                    self.result.set_nChannels(int(elem.get("channels")))
 
                     self.result.set_description_dictionary(self.result_description.copy())
                     title = "ADC-Result: job-id=%d"%int(self.result_job_number)
@@ -215,17 +216,20 @@ class ResultReader:
             self.result.x=numpy.arange(self.adc_result_sample_counter, dtype="Float64")/\
                                                                 self.result.get_sampling_rate()
             self.result.y = []
+            nChannels = self.result.get_nChannels()
             # initialise the y arrays
-            for i in xrange(2):
+            for i in xrange(nChannels):
                 self.result.y.append(numpy.empty(self.adc_result_sample_counter, dtype='Int16'))
                 # remove from result stack
             tmp_index = 0
             while self.adc_result_parts:
                 tmp_part=self.adc_result_parts.pop(0)
-                tmp_size = tmp_part.size/2
-                # split interleaved data
-                self.result.y[0][tmp_index:tmp_index+tmp_size] = tmp_part[0::2]
-                self.result.y[1][tmp_index:tmp_index+tmp_size] = tmp_part[1::2]
+                tmp_size = tmp_part.size/nChannels
+                
+                for i in xrange(nChannels):
+                    # split interleaved data
+                    self.result.y[i][tmp_index:tmp_index+tmp_size] = tmp_part[i::nChannels]
+                    self.result.y[i][tmp_index:tmp_index+tmp_size] = tmp_part[i::nChannels]
 
                 if self.result.index != []:
                     self.result.index.append((tmp_index, tmp_index+tmp_size-1))

@@ -406,31 +406,31 @@ class Experiment:
             xml_string += '  <description/>\n'
         else:
             xml_string += '  <description>\n'
-        	for key,value in self.description.iteritems():
-            	type_string="repr"
-        		if value is None:
-            		type_string="None"
-              		value=""
-            	elif type(value) is types.FloatType or isinstance(value, numpy.floating):
-              		type_string="Float"
-            	    value=repr(value)
-        		elif type(value) is types.IntType or isinstance(value, numpy.integer):
-            		type_string="Int"
-              		value=repr(value)
-        		elif type(value) is types.LongType:
-            		type_string="Long"
-              		value=repr(value)
-        		elif type(value) is types.ComplexType or isinstance(value, numpy.complexfloating):
-            		type_string="Complex"
-              		value=repr(value)
-        		elif type(value) is types.BooleanType or isinstance(value, numpy.bool_):
-            		type_string="Boolean"
-              		value=repr(value)
-        		elif type(value) in types.StringTypes:
-            		type_string="String"
-              	else:
-            	   value=repr(value)
-        		xml_string += '    <item key="%s" type="%s">%s</item>\n'%(key, type_string ,value)
+            for key,value in self.description.iteritems():
+                type_string="repr"
+                if value is None:
+                    type_string="None"
+                    value=""
+                elif type(value) is types.FloatType or isinstance(value, numpy.floating):
+                    type_string="Float"
+                    value=repr(value)
+                elif type(value) is types.IntType or isinstance(value, numpy.integer):
+                    type_string="Int"
+                    value=repr(value)
+                elif type(value) is types.LongType:
+                    type_string="Long"
+                    value=repr(value)
+                elif type(value) is types.ComplexType or isinstance(value, numpy.complexfloating):
+                    type_string="Complex"
+                    value=repr(value)
+                elif type(value) is types.BooleanType or isinstance(value, numpy.bool_):
+                    type_string="Boolean"
+                    value=repr(value)
+                elif type(value) in types.StringTypes:
+                    type_string="String"
+                else:
+                   value=repr(value)
+                xml_string += '    <item key="%s" type="%s">%s</item>\n'%(key, type_string ,value)
             xml_string += "  </description>\n"
 
         # Experiment-Inhalt einfügen
