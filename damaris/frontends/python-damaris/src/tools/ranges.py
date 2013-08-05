@@ -1,48 +1,50 @@
 import numpy as N
 import sys
 if sys.version_info > (2,6,0):
-	import numbers
+    import numbers
 else:
-	pass
+    pass
 
 if sys.version_info > (2,6,0):
-	def lin_range(start,stop,step):
-		if isinstance(step, numbers.Integral):
-			return N.linspace(start,stop,step)
-		else:
-			return N.arange(start,stop,step)
+    def lin_range(start,stop,step):
+        if isinstance(step, numbers.Integral):
+            return N.linspace(start,stop,step)
+        else:
+            return N.arange(start,stop,step)
 else:
-	def lin_range(start,stop,step):
-		return N.arange(start,stop,step)
+    def lin_range(start,stop,step):
+        return N.arange(start,stop,step)
 
 
 
 def log_range(start, stop, stepno):
-	if (start<=0 or stop<=0 or stepno<1):
-		raise ValueError("start, stop must be positive and stepno must be >=1")
-	return N.logspace(N.log10(start),N.log10(stop), num=stepno)
+    if (start<=0 or stop<=0 or stepno<1):
+        raise ValueError("start, stop must be positive and stepno must be >=1")
+    return N.logspace(N.log10(start),N.log10(stop), num=stepno)
 
 
 def staggered_range(some_range, size=3):
-	m=0
-	if isinstance(some_range, N.ndarray):
-		is_numpy = True
-		some_range = list(some_range)
-	new_list=[]
-	for k in xrange(len(some_range)):
-		for i in xrange(size):
-			try:
-				index = (m*size)
-				new_list.append(some_range.pop(index))
-			except IndexError:
-				break
-		m+=1
-	if is_numpy:
-		new_list = N.asarray(new_list+some_range)
-	else:
-		new_list+=some_range
-	return new_list
-		
+    m=0
+    if isinstance(some_range, N.ndarray):
+        is_numpy = True
+        some_range = list(some_range)
+    else:
+        is_numpy = False
+    new_list=[]
+    for k in xrange(len(some_range)):
+        for i in xrange(size):
+            try:
+                index = (m*size)
+                new_list.append(some_range.pop(index))
+            except IndexError:
+                break
+        m+=1
+    if is_numpy:
+        new_list = N.asarray(new_list+some_range)
+    else:
+        new_list+=some_range
+    return new_list
+        
 
 def combine_ranges(*ranges):
     new_list = []
@@ -53,21 +55,21 @@ def combine_ranges(*ranges):
 combined_ranges=combine_ranges
 
 def interleaved_range(some_list, left_out):
-	"""
-	in first run, do every n-th, then do n-1-th of the remaining values and so on...
-	"""
-	m=0
-	new_list = []
-	for j in xrange(left_out):
-		for i in xrange(len(some_list)):
-			if (i*left_out+m) < len(some_list):
-				new_list.append(some_list[i*left_out+m])
-			else:
-				m+=1
-				break
-	if isinstance(some_list, N.ndarray):
-		new_list = N.array(new_list) 
-	return new_list
+    """
+    in first run, do every n-th, then do n-1-th of the remaining values and so on...
+    """
+    m=0
+    new_list = []
+    for j in xrange(left_out):
+        for i in xrange(len(some_list)):
+            if (i*left_out+m) < len(some_list):
+                new_list.append(some_list[i*left_out+m])
+            else:
+                m+=1
+                break
+    if isinstance(some_list, N.ndarray):
+        new_list = N.array(new_list) 
+    return new_list
 
 
 # These are the generators
