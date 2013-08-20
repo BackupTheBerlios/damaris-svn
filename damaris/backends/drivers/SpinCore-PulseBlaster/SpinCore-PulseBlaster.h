@@ -11,7 +11,7 @@
 #include <drivers/pulsegen.h>
 
 #ifndef SP_DEBUG
-# define SP_DEBUG 0
+# define SP_DEBUG 1
 #endif
 
 class SpinCorePulseBlaster_error: public pulse_exception {

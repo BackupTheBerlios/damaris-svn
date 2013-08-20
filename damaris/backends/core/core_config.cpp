@@ -22,20 +22,21 @@ core_config::core_config(const char** argv, int argc) {
     result_encoding=xml_result_writer::base64;
     // find spool directory argument
     for (int i=1; i<argc; ++i) {
-	if (strncmp(argv[i],"--spool",7)==0) {
-	    if (argv[i][7]==0) {
-		if (i>=argc || argv[i+1]==NULL) throw core_exception("spool directory not specified after --spool argument");
-		++i;
-		spool_directory=argv[i];
-	    } else if (argv[i][7]=='=') {
-		spool_directory=(argv[i]+8);
-	    }
-	    else
-		throw core_exception("spool directory not specified after --spool argument");
-	}
-	else {
-	    fprintf(stderr, "ignoring argument %s\n", argv[i]);
-	}
+		if (strncmp(argv[i],"--spool",7)==0) {
+			if (argv[i][7]==0) {
+				if (i>=argc || argv[i+1]==NULL) {
+					throw core_exception("spool directory not specified after --spool argument");
+				}
+				++i;
+				spool_directory=argv[i];
+			} else if (argv[i][7]=='=') {
+				spool_directory=(argv[i]+8);
+			} else {
+				throw core_exception("spool directory not specified after --spool argument");
+			}
+		} else {
+			fprintf(stderr, "ignoring argument %s\n", argv[i]);
+		}
     }
 }
 

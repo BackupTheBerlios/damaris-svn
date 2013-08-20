@@ -36,6 +36,15 @@
 # define SPC_DEBUG 0
 #endif
 
+
+/**
+   \defgroup spectrummi40xxadc Spectrum MI-40xx ADC
+   \ingroup drivers
+   \brief Driver for the Spectrum MI-40xx Series analog-to-digital converter (acquisition) boards
+
+   @{
+ */
+
 class SpectrumMI40xxSeries_error: public ADC_exception {
 public:
     SpectrumMI40xxSeries_error(const std::string& message): ADC_exception(message) {}
@@ -198,5 +207,9 @@ public:
 
     virtual ~SpectrumMI40xxSeries();
 };
+
+/**
+   @}
+*/
 
 #endif

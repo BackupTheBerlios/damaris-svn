@@ -297,3 +297,10 @@ general: general.o \
 
 general.o: general.cpp \
 ../drivers/SpinCore-PulseBlaster24Bit/SpinCore-PulseBlaster24Bit.h ../drivers/SpinCore-PulseBlaster/SpinCore-PulseBlaster.h ../drivers/SpinCore-PulseBlaster/PulseBlasterProgram.h \
+
+pb_radio_processor_g_backend: pb_radio_processor_g_backend.o \
+		../core/core.a
+	@$(LINK_MACHINE) $^ $(LIBS) -o $@ -lpthread 
+
+pb_radio_processor_g_backend.o: pb_radio_processor_g_backend.cpp \
+	pb_radio_processor_g_backend.h  

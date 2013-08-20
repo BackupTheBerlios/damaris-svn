@@ -7,13 +7,13 @@
 
 CXX=g++
 CXXFLAGS=-g -O0 -Wshadow -Wall -pedantic
-CXXCPPFLAGS= -I. -I.. -I/usr/include 
-LIBS=-lexpat -L/usr/lib
+CXXCPPFLAGS= -I. -I.. -I/usr/include `pkg-config --cflags glib-2.0`
+LIBS=-lexpat -L/usr/lib `pkg-config --libs glib-2.0`
 AR=ar
 
 .PHONY: clean all install
 
-CORE_CLASSES=job.o job_receiver.o result.o core_config.o core.o states.o xml_states.o xml_result.o
+CORE_CLASSES=job.o job_receiver.o result.o core_config.o core.o states.o xml_states.o xml_result.o backend_config_reader.o
 
 all: core.a
 
@@ -22,6 +22,8 @@ all: core.a
 
 core.a:	$(CORE_CLASSES)
 	$(AR) rs $@ $^
+
+backend_config_reader.o: backend_config_reader.cpp backend_config_reader.h
 
 core.o: core.cpp core.h core_exception.h job.h
 

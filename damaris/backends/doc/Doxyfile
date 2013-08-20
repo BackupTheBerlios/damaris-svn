@@ -96,6 +96,7 @@ INPUT                  = ../core/ \
                          ../drivers/Eurotherm-2000Series/Eurotherm-2000Series.cpp \
                          ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.h \
                          ../drivers/Spectrum-MI40xxSeries/Spectrum-MI40xxSeries.cpp \
+                         ../drivers/Spectrum-MI40xxSeries/ \
                          ../drivers/Spectrum-MI40xxSeries/GatedData.h \
                          ../drivers/Spectrum-MI40xxSeries/GatedData.cpp \
                          ../drivers/TiePie-HS3/TiePie-HS3.h \
