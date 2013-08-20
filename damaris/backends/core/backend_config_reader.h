@@ -15,6 +15,14 @@ namespace DAMARIS
 {
 
 /**
+ * \defgroup BackendConfigReader Backend Config Reader
+ * \ingroup machines
+ *
+ * Allows reading in a backend configuration file implemented as a Glib Key-Value file
+ */
+/*@{*/
+
+/**
  * Exception class for the config file.
  */
 class BackendConfigException : public std::runtime_error
@@ -27,14 +35,24 @@ public:
 };
 
 /**
- * \defgroup BackendConfigReader Backend Config Reader
- * \ingroup machines
+ * Class for reading a backend configuration file. Must be constructed with a c string providing the relative path to the config file.
  *
- * Allows reading in a backend configuration file implemented as a Glib Key-Value file
+ * BackendConfigReader will first look in the XDG user config folder for the file, then in all system config folders. If no
+ * config file is found in any of these locations, a BackendConfigException will be thrown.
+ *
+ * Example:
+ * \code
+ * DAMARIS::BackendConfigReader cfgReader("/damaris/backend.conf");
+ * std::cout << cfgReader.getInteger("ADC", "id") << "\n";
+ * \endcode
+ *
  */
 class BackendConfigReader
 {
 public:
+	/**
+	 * \param configPath C String containing the relative path to the config file
+	 */
 	BackendConfigReader(const gchar *configPath);
 	
 	~BackendConfigReader() { g_key_file_free(_keyFile); }; // I hope this is exception safe
@@ -51,12 +69,15 @@ public:
 	/**
 	 * This allows you to pass a function pointer to BackendConfigReader in order to call one of the functions on GKeyFile that are not driectly provided.
 	 *
-	 * Because a function pointer needs to know the full signature, the
+	 * Because a function pointer needs to know the full signature, the function pointer must reflect this.
+	 *
 	 * Example usage:
-	 *  gchar* groupName; // initialized
-	 *  gchar* key; // initialized
+	 * \code
+	 * 	gchar* groupName; // initialized
+	 * 	gchar* key; // initialized
 	 * 	gint64 (*f)(GKeyFile*, const gchar *, const gchar *, GError*) = &g_key_file_get_int64;
 	 * 	gint64 value = getSomething<gint64> (f, groupName, key);
+	 * \endcode
 	 */
 	template<typename returnType>
 	returnType getSomething(returnType (*func)(GKeyFile*, const gchar *, const gchar *, GError*), const gchar *groupName, const gchar *key)
@@ -90,6 +111,7 @@ private:
 
 	GKeyFile *_keyFile;
 };
+/*@}*/
 
 
 } // namespace DAMARIS
