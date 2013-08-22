@@ -7,7 +7,7 @@
 
 
 CXX=g++
-CXXFLAGS=-g -O0 -Wall -Wshadow -pedantic
+CXXFLAGS=-g -O0 -W -Wall -Wextra -Wshadow -pedantic
 CXXCPPFLAGS= -I. -I.. `pkg-config --cflags glib-2.0`
 LDFLAGS=
 LIBS=-lexpat -lxerces-c -lm `pkg-config --libs glib-2.0`
@@ -111,6 +111,16 @@ $(DRV_TEMPCONT):
 hardware.o: hardware.cpp hardware.h
 
 
+clean: ../tools/add_endline$(EXEEXT)
+	for f in *.cpp *.h; do ../tools/add_endline$(EXEEXT) $$f;done
+	rm -f $(MACHINES)
+	rm -f *~ *.o *.exe *.stackdump
+	rm -f ../tools/add_endline$(EXEEXT)
+
+install: $(MACHINES)
+	install $(MACHINES) $(PREFIX)
+
+
 Mobilecore$(EXEEXT): Mobilecore.o \
 		hardware.o \
 		$(DRV_SPC_MI40xx) \
@@ -210,14 +220,6 @@ dummycore$(EXEEXT): dummycore.o \
 		../core/core.a
 	@$(LINK_MACHINE) $^ $(LIBS) -o $@ -lpthread
 
-clean: ../tools/add_endline$(EXEEXT)
-	for f in *.cpp *.h; do ../tools/add_endline$(EXEEXT) $$f;done
-	rm -f $(MACHINES)
-	rm -f *~ *.o *.exe *.stackdump
-	rm -f ../tools/add_endline$(EXEEXT)
-
-install: $(MACHINES)
-	install $(MACHINES) $(PREFIX)
 
 PFGcore$(EXEEXT): PFGcore.o \
 		hardware.o \

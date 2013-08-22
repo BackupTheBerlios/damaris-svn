@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 		return 0;
 	}
 	catch(pfg_exception pfg_e){
-		fprintf(stderr,"DAC20: %s\n",pfg_e.c_str());
+		fprintf(stderr,"DAC20: %s\n",pfg_e.what());
 		return_result=1;           
 	}
 }

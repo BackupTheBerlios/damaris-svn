@@ -68,7 +68,7 @@ class ttlout: public state_atom {
   int id;
   /** the ttl levels */
   channel_array ttls;
-  
+
   /** default: all off */
   ttlout() {
     id=0;
@@ -207,7 +207,7 @@ class state: public state_atom, public std::list<state_atom*> {
    */
   state(double _length, const state* my_parent=NULL): state_atom(), std::list<state_atom*>(), length(_length), parent(my_parent) {
   }
-  
+
   state(const state& orig): state_atom(), std::list<state_atom*>(), length(orig.length), parent(orig.parent) {
     for (state::const_iterator i=orig.begin(); i!=orig.end(); i++)
       push_back((**i).copy_new());
@@ -217,17 +217,18 @@ class state: public state_atom, public std::list<state_atom*> {
     return new state(*this);
   }
 
-  virtual state* copy_flat(size_t enroll=1) const {
+  virtual state* copy_flat(size_t enroll = 1) const {
+      (void) enroll;    // get rid of compiler unused parameter warning
     return new state(*this);
   }
-  
+
   virtual ~state() {
     while (!empty()) {
       if (back()!=NULL) delete (back());
       pop_back();
     }
   }
-  
+
 };
 
 class state_parallel: public state {
@@ -267,7 +268,7 @@ class state_sequent: public state {
   /** \brief how often this state or state sequence should be repeated
   */
   size_t repeat;
-  
+
   state_sequent(size_t _repeat=1, const state* my_parent=NULL): state(0.0,my_parent), repeat(_repeat) {
   }
 
@@ -304,7 +305,7 @@ class state_iterator {
     /// time in seconds in a substate until iterator position
     double elapsed_time;
   } subsequence_iterator;
-  
+
   std::list<subsequence_iterator> subsequence_stack;
   /// time in seconds till iterator position for first loop run
   double total_time;
@@ -318,7 +319,7 @@ class state_iterator {
     total_time=0.0;
     (void)get_state();
   }
-  
+
   /**
      time of end of first traversal
    */
@@ -354,14 +355,14 @@ class state_iterator {
     ++subsequence_stack.back().subsequence_pos;
     return get_state();
   }
-  
+
   /**
      return true, if iterator is at end
    */
   int is_last() const {
     return subsequence_stack.empty();
   }
-  
+
   /**
      get a pointer of this state
      if the iterator is actually not on a state, it will go to the next (traverse loops and sections)

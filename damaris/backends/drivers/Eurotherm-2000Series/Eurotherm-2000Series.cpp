@@ -13,6 +13,7 @@
 #include <termios.h>
 #include <errno.h>
 #include <locale.h>
+#include <string>
 
 Eurotherm2000Series::Eurotherm2000Series(const std::string& dev_name, int dev_address, int failure_status_mask): tempcont() {
   /*
@@ -41,7 +42,7 @@ Eurotherm2000Series::Eurotherm2000Series(const std::string& dev_name, int dev_ad
   int_format="%05d.";
   hex_format=">%04x";
   std::map<std::string,std::string> config;
-  // configure for °K output
+  // configure for ï¿½K output
   config["Q1"]="2.";
   // configure for nnn.n format output/precision
   config["QD"]="1.";
@@ -83,13 +84,13 @@ void Eurotherm2000Series::configure(const std::map<std::string,std::string>& con
       }
     }
   }
-  catch (Eurotherm2000Series_error e) {
-    throw Eurotherm2000Series_error("got error while configuration: "+e);
+  catch (const Eurotherm2000Series_error& e) {
+    throw Eurotherm2000Series_error("got error while configuration: "+std::string(e.what()));
   }
   if (error_message.size()!=0) {
     throw Eurotherm2000Series_error("Could not set "+error_message.substr(0,error_message.size()-1));
   }
- 
+
 }
 
 void Eurotherm2000Series::reset() {
@@ -156,7 +157,7 @@ void Eurotherm2000Series::read_value(const std::string& param_name, std::string&
     }
     if (return_value.size()==0 && got_byte==4) throw Eurotherm2000Series_error("read_value: invalid register");
     return_value+=got_byte;
-  }  
+  }
   pthread_mutex_unlock((pthread_mutex_t*)&device_lock);
 
   if (0) {
@@ -267,7 +268,7 @@ double Eurotherm2000Series::set_setpoint(double ct) {
   // extra wait, until the get_setpoint function returns the same value
   timespec write_latency;
   write_latency.tv_sec=0; write_latency.tv_nsec=50000000;
-  nanosleep(&write_latency,NULL);  
+  nanosleep(&write_latency,NULL);
   write_latency.tv_nsec=100000000;
   int i=100;
   while(fabs(get_setpoint()-ct)>1e-4) {
@@ -297,5 +298,5 @@ void Eurotherm2000Series::get_setpoint_limits(double& min, double& max) const {
   read_value("LS",answer);
   min=strtod(answer.c_str(),NULL);
   read_value("HS",answer);
-  max=strtod(answer.c_str(),NULL);  
+  max=strtod(answer.c_str(),NULL);
 }

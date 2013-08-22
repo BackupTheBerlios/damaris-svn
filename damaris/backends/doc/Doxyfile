@@ -110,6 +110,7 @@ INPUT                  = ../core/ \
                          ../drivers/dummy \
                          ../machines/ \
                          ../tests/ \
+                         ../tests/stefan/ \
                          /home/achim/build/backends/machines/bg_backend.cpp \
                          /home/achim/build/backends/machines/deuteron_backend.cpp \
                          /home/achim/build/backends/machines/dummycore.cpp \

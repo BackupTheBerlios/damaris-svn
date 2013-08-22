@@ -385,7 +385,7 @@ result* xml_result_reader::read(const std::string& jobfilename) {
 
     if (! XML_ParseBuffer(parser, bytes_read, bytes_read == 0)) {
       /* handle parse error */
-      fprintf(stderr,"error while parsing line %d: %s\n",XML_GetCurrentLineNumber(parser),XML_ErrorString(XML_GetErrorCode(parser)));
+      fprintf(stderr,"error while parsing line %d: %s\n",static_cast<int>(XML_GetCurrentLineNumber(parser)),XML_ErrorString(XML_GetErrorCode(parser)));
       break;
     }
 

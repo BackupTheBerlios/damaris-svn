@@ -15,25 +15,27 @@ namespace DAMARIS
 {
 
 
-class pbRadioProcGHardware: public hardware {
+class pbRadioProcessorGHardware: public hardware {
 	
 };
 
-class pbRadioProcGCore: public core {
-    std::string the_name;
+class pbRadioProcessorGCore: public core {
+
 public:
     /* -------------------------------------------------------------------- */
-    pbRadioProcGCore(const core_config& conf): 
+    pbRadioProcessorGCore(const core_config& conf):
     	core(conf),
     	the_name("PB RadioProcessorG Core")
     {
-        the_hardware=new pbRadioProcGHardware();
+        the_hardware=new pbRadioProcessorGHardware();
     }
     
     /* -------------------------------------------------------------------- */
     virtual const std::string& core_name() const {
         return the_name;
     }
+private:
+    std::string the_name;
 };
 
 } //namespace DAMARIS

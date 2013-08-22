@@ -103,7 +103,7 @@ class do_nothing_job: public control {
  public:
   do_nothing_job(const size_t n): control(n) {}
 
-  virtual result* do_it(core* c) {
+  virtual result* do_it(core*) {
     /* of course nothing to do...*/
     return new result(job_no);
   }
@@ -122,7 +122,7 @@ class wait_job: public control {
     sec=0;
   }
   wait_job(const size_t n, const XERCES_CPP_NAMESPACE_QUALIFIER DOMNamedNodeMap* attrs);
-  
+
   wait_job(const size_t n, double sec_to_wait): control(n) {
     sec=sec_to_wait;
   }
@@ -209,7 +209,7 @@ class configuration: public job {
   void print(FILE* f=stdout) const;
 
   result* do_it(hardware* hw);
-  
+
 };
 
 

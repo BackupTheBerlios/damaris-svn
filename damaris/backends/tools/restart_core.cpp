@@ -28,7 +28,7 @@ int main(int argc, const char** argv) {
     the_pid=core_state(std::string(argv[argc-1])).pid;
   }
   catch(core_exception e) {
-    fprintf(stderr,e.c_str());
+    fprintf(stderr,e.what());
     return 1;
   }
 

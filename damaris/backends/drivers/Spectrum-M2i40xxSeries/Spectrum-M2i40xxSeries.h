@@ -45,9 +45,14 @@
   @{
 */
 
-class SpectrumM2i40xxSeries_error: public ADC_exception {
- 	public:
-		SpectrumM2i40xxSeries_error(const std::string& message): ADC_exception(message) {}
+class SpectrumM2i40xxSeries_error: public ADC_exception
+{
+public:
+    explicit SpectrumM2i40xxSeries_error(const std::string& msg) throw (): ADC_exception(msg) {}
+    explicit SpectrumM2i40xxSeries_error(const char* msg) throw (): ADC_exception(msg) {}
+    virtual ~SpectrumM2i40xxSeries_error() throw () {}
+protected:
+    virtual const std::string prefix() const { return "ERROR (SpectrumM2i40xxSeries_error): "; }
 };
 
 
@@ -212,7 +217,7 @@ class SpectrumM2i40xxSeries: public ADC {
 			else
 				data_structure=new DataManagementNode(*orig.data_structure);
 		}
-      
+
 		~Configuration() {
 			if (data_structure!=NULL)
 				delete data_structure;

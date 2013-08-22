@@ -45,9 +45,14 @@
    @{
  */
 
-class SpectrumMI40xxSeries_error: public ADC_exception {
+class SpectrumMI40xxSeries_error: public ADC_exception
+{
 public:
-    SpectrumMI40xxSeries_error(const std::string& message): ADC_exception(message) {}
+    explicit SpectrumMI40xxSeries_error(const std::string& msg) throw (): ADC_exception(msg) {}
+    explicit SpectrumMI40xxSeries_error(const char* msg) throw (): ADC_exception(msg) {}
+    virtual ~SpectrumMI40xxSeries_error() throw () {}
+protected:
+    virtual const std::string prefix() const { return "ERROR (SpectrumMI40xxSeries_error): "; }
 };
 
 
@@ -152,6 +157,7 @@ class SpectrumMI40xxSeries: public ADC {
             timeout=orig.timeout;
             impedance=orig.impedance;
             sensitivity=orig.sensitivity;
+            offset=orig.offset;
             coupling=orig.coupling;
             ext_reference_clock=orig.ext_reference_clock;
             qwSetChEnableMap = orig.qwSetChEnableMap;

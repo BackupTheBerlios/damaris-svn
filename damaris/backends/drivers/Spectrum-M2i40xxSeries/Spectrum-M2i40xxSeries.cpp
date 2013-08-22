@@ -161,7 +161,7 @@ SpectrumM2i40xxSeries::SpectrumM2i40xxSeries(const ttlout& t_line, int ext_refer
 	default_settings.lCardID = 0;
 
 	if(default_settings.bOpenCard())
-		fprintf(stderr, default_settings.PrintInfo());
+		fprintf(stderr, "%s", default_settings.PrintInfo());
 	else
 		throw SpectrumM2i40xxSeries_error("Could not open card");
 	
@@ -488,7 +488,7 @@ void SpectrumM2i40xxSeries::set_daq(state & exp) {
 		if (effective_settings!=NULL) delete effective_settings;
 		effective_settings=NULL;
 
-		fprintf(stderr, szErrorText);
+		fprintf(stderr, "%s", szErrorText);
 		throw SpectrumM2i40xxSeries_error(szErrorText);
 	}
 	fprintf(stderr, "Data acquisition setup successful\n");

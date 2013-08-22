@@ -492,7 +492,9 @@ void SpectrumMI40xxSeries::collect_config_recursive(state_sequent& exp, Spectrum
 }
 
 static void* SpectrumMI40xxSeries_TimeoutThread(void* data) {
-    return (void*)((SpectrumMI40xxSeries*)data)->TimeoutThread();
+	int *ret = new int;
+	*ret = ((SpectrumMI40xxSeries*)data)->TimeoutThread();
+    return (void*) ret;
 }
 
 void SpectrumMI40xxSeries::set_daq(state & exp) {

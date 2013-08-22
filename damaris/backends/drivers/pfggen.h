@@ -7,6 +7,7 @@
 #ifndef PFGGEN_H
 #define PFGGEN_H
 #include "core/states.h"
+#include "core/core_exception.h"
 
 /**
    \addtogroup basedrivers
@@ -14,11 +15,16 @@
 */
 
 /**
-   \brief pulsed field gradient related error handling
+ * PFG exception
  */
-class pfg_exception: public std::string {
- public:
-  pfg_exception(const std::string& s): std::string(s){}
+class pfg_exception: public RecoverableException
+{
+public:
+    explicit pfg_exception(const std::string& msg) throw (): RecoverableException(msg) {}
+    explicit pfg_exception(const char* msg) throw (): RecoverableException(msg) {}
+    virtual ~pfg_exception() throw () {}
+protected:
+    virtual const std::string prefix() const { return "ERROR (pfg_exception): "; }
 };
 
 

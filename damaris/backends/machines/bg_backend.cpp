@@ -3,7 +3,7 @@
  Author: Achim Gaedke
  Created: October 2006
 
-****************************************************************************/
+ ****************************************************************************/
 #include "machines/hardware.h"
 #include "core/core.h"
 #include "drivers/PTS-Synthesizer/PTS.h"
@@ -21,7 +21,7 @@
    \li Switch on Computer and start Windows or linux
 
    @{
-*/
+ */
 
 
 
@@ -34,46 +34,46 @@
 class bg_hardware: public hardware {
 
 public:
-  bg_hardware(){
-      ttlout trigger;
-      trigger.id=0;
-      trigger.ttls=4; /* line 2 */
-      int refclock=50e6; /* 50 MHz for Pulseblaster SP-17; 100 MHz for SP-2 */
-      double impedance=1e6; /* 1MOhm or 50 Ohm impedance */
-      the_adc=new SpectrumMI40xxSeries(trigger, impedance, refclock);
-      the_pg=new SpinCorePulseBlaster24Bit();
-      PTS* my_pts=new PTS(0);
+    bg_hardware(){
+        ttlout trigger;
+        trigger.id=0;
+        trigger.ttls=4; /* line 2 */
+        int refclock=50e6; /* 50 MHz for Pulseblaster SP-17; 100 MHz for SP-2 */
+        double impedance=1e6; /* 1MOhm or 50 Ohm impedance */
+        the_adc=new SpectrumMI40xxSeries(trigger, impedance, refclock);
+        the_pg=new SpinCorePulseBlaster24Bit();
+        PTS* my_pts=new PTS(0);
 
-      ttlout t;
-      for (int i=23; i>15; --i) {
-	t.ttls=std::bitset<32>(1<<i);
-	my_pts->ttl_masks.push_back(t);
-      }
-      my_pts->negative_logic=0;
-      the_fg=my_pts;
-  }
+        ttlout t;
+        for (int i=23; i>15; --i) {
+            t.ttls=std::bitset<32>(1<<i);
+            my_pts->ttl_masks.push_back(t);
+        }
+        my_pts->negative_logic=0;
+        the_fg=my_pts;
+    }
 
-  virtual ~bg_hardware() {
-    if (the_adc!=NULL) delete the_adc;
-    if (the_fg!=NULL) delete the_fg;
-    if (the_pg!=NULL) delete the_pg;
-  }
+    virtual ~bg_hardware() {
+        if (the_adc!=NULL) delete the_adc;
+        if (the_fg!=NULL) delete the_fg;
+        if (the_pg!=NULL) delete the_pg;
+    }
 
 };
 
 /**
    \brief brings standard core together with the Mobile NMR hardware
-*/
+ */
 class bg_core: public core {
-  std::string the_name;
+    std::string the_name;
 public:
-  bg_core(const core_config& conf): core(conf) {
-	the_hardware=new bg_hardware();
-	the_name="Burkhard's core";
-  }
-  virtual const std::string& core_name() const {
-  	return the_name;
-  }
+    bg_core(const core_config& conf): core(conf) {
+        the_hardware=new bg_hardware();
+        the_name="Burkhard's core";
+    }
+    virtual const std::string& core_name() const {
+        return the_name;
+    }
 };
 
 /**
@@ -81,25 +81,18 @@ public:
  */
 
 int main(int argc, const char** argv) {
-  int return_result=0;
-  try {
-      core_config my_conf(argv, argc);
-      // setup input and output
-      bg_core my_core(my_conf);
-      // start core application
-      my_core.run();
-  }
-  catch(ADC_exception ae) {
-    fprintf(stderr,"adc: %s\n",ae.c_str());
-    return_result=1;
-  }
-  catch(core_exception ce) {
-    fprintf(stderr,"core: %s\n",ce.c_str());
-    return_result=1;
-  }
-  catch(pulse_exception pe) {
-    fprintf(stderr,"pulse: %s\n",pe.c_str());
-    return_result=1;
-  }
-  return return_result;
+    int return_result=0;
+    try {
+        core_config my_conf(argv, argc);
+        // setup input and output
+        bg_core my_core(my_conf);
+        // start core application
+        my_core.run();
+    }
+    catch(const DamarisException& e)
+    {
+        fprintf(stderr,"%s\n",e.what());
+        return_result=1;
+    }
+    return return_result;
 }

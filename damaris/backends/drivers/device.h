@@ -1,21 +1,30 @@
 #include <string>
 #include "core/job.h"
 #include "core/result.h"
+#include "core/core_exception.h"
 
 #ifndef DEVICE_H
 #define DEVICE_H
 
 
-class device_error: public std::string {
- public:
-  device_error(std::string message): std::string(message) {}
-  device_error(const device_error& orig): std::string(orig) {}
+/**
+ * device exception
+ */
+class device_error: public RecoverableException
+{
+public:
+    explicit device_error(const std::string& msg) throw (): RecoverableException(msg) {}
+    explicit device_error(const char* msg) throw (): RecoverableException(msg) {}
+    virtual ~device_error() throw () {}
+protected:
+    virtual const std::string prefix() const { return "ERROR (core_exception): "; }
 };
+
 
 
 /**
    base class for devices
-   devices can be configured   
+   devices can be configured
  */
 class device {
  public:

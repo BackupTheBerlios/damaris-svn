@@ -9,6 +9,7 @@
 
 #include <string>
 #include "core/states.h"
+#include "core/core_exception.h"
 
 /**
    \addtogroup basedrivers
@@ -16,11 +17,16 @@
 */
 
 /**
-   \brief pulse generation related error handling
+ * pulse generator exception
  */
-class pulse_exception: public std::string {
- public:
-  pulse_exception(const std::string& s): std::string(s){}
+class pulse_exception: public RecoverableException
+{
+public:
+    explicit pulse_exception(const std::string& msg) throw (): RecoverableException(msg) {}
+    explicit pulse_exception(const char* msg) throw (): RecoverableException(msg) {}
+    virtual ~pulse_exception() throw () {}
+protected:
+    virtual const std::string prefix() const { return "ERROR (pulse_exception): "; }
 };
 
 /**

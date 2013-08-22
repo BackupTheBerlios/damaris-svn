@@ -7,6 +7,7 @@
 #ifndef FREQUGEN_H
 #define FREQUGEN_H
 #include "core/states.h"
+#include "core/core_exception.h"
 
 /**
    \addtogroup basedrivers
@@ -14,11 +15,16 @@
 */
 
 /**
-   \brief frequency generation related error handling
+ * frequency generator exception
  */
-class frequ_exception: public std::string {
- public:
-  frequ_exception(const std::string& s): std::string(s){}
+class frequ_exception: public RecoverableException
+{
+public:
+    explicit frequ_exception(const std::string& msg) throw (): RecoverableException(msg) {}
+    explicit frequ_exception(const char* msg) throw (): RecoverableException(msg) {}
+    virtual ~frequ_exception() throw () {}
+protected:
+    virtual const std::string prefix() const { return "ERROR (frequ_exception): "; }
 };
 
 

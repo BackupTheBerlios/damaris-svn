@@ -14,9 +14,14 @@
 # define SP_DEBUG 1
 #endif
 
-class SpinCorePulseBlaster_error: public pulse_exception {
+class SpinCorePulseBlaster_error: public pulse_exception
+{
 public:
-  SpinCorePulseBlaster_error(const std::string& message): pulse_exception(message) {}
+    explicit SpinCorePulseBlaster_error(const std::string& msg) throw (): pulse_exception(msg) {}
+    explicit SpinCorePulseBlaster_error(const char* msg) throw (): pulse_exception(msg) {}
+    virtual ~SpinCorePulseBlaster_error() throw () {}
+protected:
+    virtual const std::string prefix() const { return "ERROR (SpinCorePulseBlaster_error): "; }
 };
 
 #if !( defined(__linux__)||defined(__CYGWIN__))
@@ -146,7 +151,7 @@ class SpinCorePulseBlaster: protected SpinCorePulseBlasterLowlevel, public pulse
        clock in Hz
     */
     double clock;
-    
+
     /**
        shortest pulse in clock cycles
     */
@@ -175,10 +180,10 @@ class SpinCorePulseBlaster: protected SpinCorePulseBlasterLowlevel, public pulse
        id of ttlout sections affecting this device
      */
     int ttl_device_id;
-    
+
     /**
        bit mask to set while WAIT command for synchronization is executed
-       
+
        no synchronization when zero.
      */
     unsigned int sync_mask;
@@ -211,7 +216,7 @@ public:
   inline void set_initialized() {
     write_register(7,0);
   }
-  
+
   /**
      starts execution of pulseprogram, needs an initialized pulseblaster
    */

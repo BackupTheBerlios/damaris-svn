@@ -24,7 +24,7 @@ configuration_result* temp_history::as_result() const {
   XERCES_CPP_NAMESPACE_QUALIFIER DOMElement* newelement=res->tag->createElement(myname);
   res->tag->insertBefore(newelement,NULL);
   XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&myname);
-  
+
   // print step [s]
   XMLCh* step_name=XERCES_CPP_NAMESPACE_QUALIFIER XMLString::transcode("step");
   char step_value_char_buf[100];
@@ -43,7 +43,7 @@ configuration_result* temp_history::as_result() const {
   newelement->setAttribute(latest_name,latest_value);
   XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&latest_name);
   XERCES_CPP_NAMESPACE_QUALIFIER XMLString::release(&latest_value);
-  
+
   // append values to buffer
   if (!empty()) {
     for (const_iterator i=begin(); i!=end(); ++i){
@@ -127,7 +127,7 @@ void tempcont::maintain_history() {
 	}
 	catch (tempcont_error e) {
 	  pthread_mutex_unlock(&history_lock);
-	  fprintf(stderr,"history maintainance thread caught exception: %s, terminating\n",e.c_str());
+	  fprintf(stderr,"history maintainance thread caught exception: %s, terminating\n",e.what());
 	  device_failed=1;
 	  pthread_exit(NULL);
 	}

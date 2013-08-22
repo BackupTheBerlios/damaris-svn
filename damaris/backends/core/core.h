@@ -169,6 +169,8 @@ class core {
    */
   virtual ~core();
 
+  char* _cwd;
+
 };
 
 #endif

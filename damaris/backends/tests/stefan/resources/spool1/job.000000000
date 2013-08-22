@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<experiment no="0">
+  <description/>
+  <state time="5e-07">
+    <analogout phase="0.000000" />
+  </state>
+  <state time="5e-06">
+    <ttlout value="0x000001"/>
+  </state>
+  <state time="1e-06"/>
+  <state time="5e-06">
+    <analogout id="1" dac_value="100"/><ttlout value="0x000000"/>
+  </state>
+  <state time="5.12e-05">
+    <analogin s="1024" f="20000000" channels="3" sensitivity0="10.000000" sensitivity1="10.000000"/>
+  </state>
+</experiment>

@@ -53,7 +53,9 @@ class ADC_Result(Resultable, Drawable, DamarisFFT, Signalpath):
             title="ADC-Result: job-id=%d"%int(self.job_id)
             if len(self.description)>0:
                 for k,v in self.description.iteritems():
-                    title+=", %s=%s"%(k,v)
+                    # string keys can be made invisible by adding two underscores in front of them
+                    if not (type(k) in types.StringTypes and k[0] == '_' and k[1] == '_'):
+                        title+=", %s=%s"%(k,v)
             self.set_title(title)
 
         else:
@@ -305,7 +307,7 @@ class ADC_Result(Resultable, Drawable, DamarisFFT, Signalpath):
                 accu_group=None
                 self.lock.release()
 
-    # Überladen von Operatoren und Built-Ins -------------------------------------------------------
+    # ï¿½berladen von Operatoren und Built-Ins -------------------------------------------------------
 
     def __len__(self):
         "Redefining len(ADC_Result obj), returns the number of samples in one channel and 0 without data"

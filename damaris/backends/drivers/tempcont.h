@@ -19,12 +19,16 @@
 */
 
 /**
-   exception for errors of temperature control hardware
-*/
-class tempcont_error: public device_error {
- public:
-  tempcont_error(std::string message): device_error(message) {}
-  tempcont_error(const tempcont_error& orig): device_error((const device_error&)orig) {}
+ * Temperature control exception
+ */
+class tempcont_error: public RecoverableException
+{
+public:
+    explicit tempcont_error(const std::string& msg) throw (): RecoverableException(msg) {}
+    explicit tempcont_error(const char* msg) throw (): RecoverableException(msg) {}
+    virtual ~tempcont_error() throw () {}
+protected:
+    virtual const std::string prefix() const { return "ERROR (tempcont_error): "; }
 };
 
 /**
@@ -113,10 +117,10 @@ class tempcont: public virtual device {
   tempcont();
 
   /**
-     
+
    */
   virtual int device_failure() const {return device_failed;}
-  
+
   /**
      get a temperature history, that lasts the given number of seconds
      \return an extract of the temperature history

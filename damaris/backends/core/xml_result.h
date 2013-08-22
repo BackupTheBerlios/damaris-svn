@@ -88,7 +88,7 @@ class xml_result_writer {
   data_save_mode_type data_save_mode;
 
   /**
-     the pattern for filename ceration from job number by snprintf
+     the pattern for filename creation from job number by snprintf
    */
   std::string resultfilename_pattern;
 

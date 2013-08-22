@@ -6,7 +6,7 @@
 #############################################################################
 
 CXX=g++
-CXXFLAGS=-g -O0 -Wshadow -Wall -pedantic
+CXXFLAGS=-g -O0 -Wshadow -Wall -Wextra -pedantic
 CXXCPPFLAGS= -I. -I.. -I/usr/include `pkg-config --cflags glib-2.0`
 LIBS=-lexpat -L/usr/lib `pkg-config --libs glib-2.0`
 AR=ar
